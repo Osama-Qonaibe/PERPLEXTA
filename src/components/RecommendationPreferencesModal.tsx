@@ -111,7 +111,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
           {/* Top Bar */}
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                 <Sliders size={18} />
               </div>
               <div>
@@ -133,7 +133,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
           </div>
 
           {isLoading ? (
-            <div className="py-12 flex items-center justify-center text-emerald-500">
+            <div className="py-12 flex items-center justify-center text-accent">
               <RefreshCw size={24} className="animate-spin" />
             </div>
           ) : (
@@ -141,7 +141,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
               {/* Category Selector */}
               <div>
                 <label className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5 mb-2.5">
-                  <Tag size={14} className="text-emerald-500" />
+                  <Tag size={14} className="text-accent" />
                   <span>{language === 'ar' ? 'مجالات الاهتمام المفضلّة' : 'Preferred Categories'}</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto custom-scrollbar p-1">
@@ -154,12 +154,12 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
                         onClick={() => handleToggleCategory(cat.id)}
                         className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-theme text-start ${
                           isSelected
-                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 shadow-sm'
+                            ? 'bg-accent/10 text-accent border-accent/30 shadow-sm'
                             : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border-[var(--border)] hover:border-gray-400 dark:hover:border-gray-700'
                         }`}
                       >
                         <span className="truncate">{language === 'ar' ? cat.name_ar : cat.name_en}</span>
-                        {isSelected && <Check size={14} className="shrink-0 text-emerald-500" />}
+                        {isSelected && <Check size={14} className="shrink-0 text-accent" />}
                       </button>
                     );
                   })}
@@ -170,10 +170,10 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <DollarSign size={14} className="text-emerald-500" />
+                    <DollarSign size={14} className="text-accent" />
                     <span>{language === 'ar' ? 'الحد الأقصى للميزانية' : 'Maximum Budget Limit'}</span>
                   </label>
-                  <span className="text-xs font-extrabold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                  <span className="text-xs font-extrabold text-accent bg-accent/10 px-2.5 py-1 rounded-lg border border-accent/20">
                     ${maxPrice} USD
                   </span>
                 </div>
@@ -184,7 +184,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
                   step="50"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  className="w-full accent-emerald-500 cursor-pointer"
+                  className="w-full accent-accent cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-semibold mt-1">
                   <span>$50 USD</span>
@@ -194,7 +194,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
 
               {/* Success Alert */}
               {successMsg && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-500 flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-accent/10 border border-accent/20 text-xs font-bold text-accent flex items-center gap-2">
                   <Check size={16} />
                   <span>{successMsg}</span>
                 </div>
@@ -213,7 +213,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-5 py-2 rounded-xl bg-emerald-500 text-black font-extrabold text-xs flex items-center gap-2 hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-accent text-black font-extrabold text-xs flex items-center gap-2 hover:bg-accent transition-colors shadow-lg shadow-none disabled:opacity-50"
                 >
                   {isSaving ? (
                     <RefreshCw size={14} className="animate-spin" />

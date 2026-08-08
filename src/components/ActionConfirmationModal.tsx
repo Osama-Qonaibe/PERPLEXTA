@@ -69,9 +69,9 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
       btnClass: 'bg-[#db6b7a] hover:bg-[#c95968] text-white shadow-[0_0_12px_rgba(219,107,122,0.25)]',
     },
     success: {
-      accent: 'text-emerald-500 dark:text-emerald-400',
-      icon: <CheckCircle size={20} className="text-emerald-500 shrink-0" />,
-      btnClass: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.25)]',
+      accent: 'text-accent dark:text-accent',
+      icon: <CheckCircle size={20} className="text-accent shrink-0" />,
+      btnClass: 'bg-accent hover:bg-accent text-white shadow-[0_0_12px_rgba(16,185,129,0.25)]',
     },
     warning: {
       accent: 'text-amber-500 dark:text-amber-400',

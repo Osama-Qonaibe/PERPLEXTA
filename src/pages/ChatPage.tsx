@@ -169,7 +169,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass}`}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-accent/40 w-full ${currentRatioClass}`}
         >
           <img 
             src={srcVal}
@@ -187,7 +187,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsPreviewOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'معاينة' : 'Preview'}
               >
                 <Maximize2 size={13} />
@@ -196,16 +196,16 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 onClick={handleShare}
                 className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-theme shadow-md active:scale-95 ${
                   shareStatus === 'copied' 
-                    ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
-                    : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
+                    ? 'bg-accent/25 text-accent border-accent/45 hover:bg-accent/35' 
+                    : 'bg-zinc-900 border border-zinc-805 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 text-gray-200'
                 }`}
                 title={dir === 'rtl' ? 'مشاركة' : 'Share'}
               >
-                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-emerald-400' : ''} />
+                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-accent' : ''} />
               </button>
               <button 
                 onClick={handleDownload}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'تنزيل' : 'Download'}
               >
                 <Download size={13} />
@@ -230,7 +230,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[11px] font-bold text-emerald-400/90 tracking-widest uppercase font-mono">
+                  <span className="text-[11px] font-bold text-accent/90 tracking-widest uppercase font-mono">
                     {dir === 'rtl' ? 'مستكشف الدقة الفائقة من بريليكستا' : 'PERPLEXTA HIGH-FIDELITY PREVIEW'}
                   </span>
                   <span className="text-[10px] text-gray-400 font-medium font-sans">
@@ -240,14 +240,14 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownload}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                   >
                     <Download size={15} />
                   </button>
                   <button
                     onClick={handleShare}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'مشاركة' : 'Share'}
                   >
                     <Share2 size={15} />
@@ -269,8 +269,8 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 {!isImageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center z-10 bg-zinc-950/20 backdrop-blur-sm">
                     <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                      <span className="text-[10px] font-mono text-emerald-400/80 tracking-wider">
+                      <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                      <span className="text-[10px] font-mono text-accent/80 tracking-wider">
                         {dir === 'rtl' ? 'تجهيز بكسلات الإطار الفائقة...' : 'INGESTING ULTRA-RES CANVAS...'}
                       </span>
                     </div>
@@ -313,7 +313,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center gap-1.5 border-r border-zinc-700/60 pe-3 text-gray-400">
-                  <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">{dir === 'rtl' ? 'التقريب' : 'ZOOM'}:</span>
+                  <span className="text-[10px] uppercase tracking-wider text-accent font-bold">{dir === 'rtl' ? 'التقريب' : 'ZOOM'}:</span>
                   <span className="text-[11px] font-bold text-gray-200">{(scale * 100).toFixed(0)}%</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -330,7 +330,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                   </button>
                   <button
                     onClick={resetZoom}
-                    className="px-2 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-[9px] uppercase font-bold text-emerald-400 hover:text-emerald-300 active:scale-95"
+                    className="px-2 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-[9px] uppercase font-bold text-accent hover:text-accent active:scale-95"
                     title={dir === 'rtl' ? 'إعادة ضبط' : 'Reset View'}
                   >
                     {dir === 'rtl' ? 'ضبط' : 'Reset'}
@@ -427,17 +427,17 @@ const VideoGenerationPlaceholder = ({
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-3.5 w-full my-4 items-start">
         <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
         >
           <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
 
-          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-emerald-500/10'} backdrop-blur-sm z-10`}>
+          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-accent/10'} backdrop-blur-sm z-10`}>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                {!isFailed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                {!isFailed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-accent'}`} />
               </span>
-              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-emerald-400'} tracking-wider`}>
+              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-accent'} tracking-wider`}>
                 {isFailed 
                   ? (dir === 'rtl' ? 'فشل إنتاج الفيديو' : 'VIDEO SYNTHESIS CRITICAL') 
                   : (dir === 'rtl' ? 'جاري بناء التدفق البصري' : 'AI VIDEO STREAM ACTIVE')}
@@ -458,9 +458,9 @@ const VideoGenerationPlaceholder = ({
                 <motion.div 
                   animate={{ scale: [0.95, 1.05, 0.95], opacity: [0.5, 0.9, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-10 h-10 rounded-full border border-emerald-500/30 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full border border-accent/30 flex items-center justify-center"
                 />
-                <div className="absolute text-[10px] font-mono font-bold text-emerald-400">
+                <div className="absolute text-[10px] font-mono font-bold text-accent">
                   {liveElapsed.toFixed(0)}s
                 </div>
               </div>
@@ -468,7 +468,7 @@ const VideoGenerationPlaceholder = ({
 
             <div className="w-full max-w-[280px] flex flex-col gap-2">
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className={`font-black tracking-tight ${isFailed ? 'text-rose-400' : 'text-emerald-400'}`}>
+                <span className={`font-black tracking-tight ${isFailed ? 'text-rose-400' : 'text-accent'}`}>
                   {progressValue}%
                 </span>
                 <span className="text-gray-400 max-w-[200px] truncate text-right">
@@ -478,7 +478,7 @@ const VideoGenerationPlaceholder = ({
 
               <div className={`h-1.5 w-full ${isFailed ? 'bg-rose-950/40 border-rose-900/30' : 'bg-zinc-900 border-zinc-800'} rounded-full overflow-hidden border p-0.5`}>
                 <motion.div 
-                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-accent shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${progressValue}%` }}
                   transition={{ duration: 0.15, ease: 'easeOut' }}
@@ -645,13 +645,13 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-emerald-500/40 w-full ${currentRatioClass} bg-black/40`}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-accent/40 w-full ${currentRatioClass} bg-black/40`}
         >
           {providerMeta.isValid && (
-            <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-emerald-500/10 text-[8px] font-mono text-emerald-400 z-10 transition-theme hover:border-emerald-500/30 flex items-center gap-1`}>
+            <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-accent/10 text-[8px] font-mono text-accent z-10 transition-theme hover:border-accent/30 flex items-center gap-1`}>
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
               </span>
               <span>{providerMeta.label}</span>
             </div>
@@ -679,7 +679,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
           {!isVideoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/95 pointer-events-none z-20">
               <div className="flex flex-col items-center gap-2.5">
-                <Loader2 size={24} className="animate-spin text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <Loader2 size={24} className="animate-spin text-accent " />
                 <span className="text-[10px] font-sans font-medium text-zinc-400 tracking-wide">
                   {dir === 'rtl' ? 'جاري التحميل...' : 'Loading video...'}
                 </span>
@@ -693,14 +693,14 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             onClick={togglePlay}
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto cursor-pointer"
           >
-            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-emerald-500/40 flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:scale-110 active:scale-95 transition-theme shadow-[0_0_20px_rgba(0,0,0,0.6)]">
-              {isPlaying ? <Pause size={18} className="fill-emerald-400/20" /> : <Play size={18} className="fill-emerald-400/20 ml-0.5" />}
+            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-accent/40 flex items-center justify-center text-accent hover:text-accent hover:scale-110 active:scale-95 transition-theme shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+              {isPlaying ? <Pause size={18} className="fill-accent-400/20" /> : <Play size={18} className="fill-accent-400/20 ml-0.5" />}
             </div>
           </div>
 
           <div className="absolute bottom-0 inset-x-0 h-1 bg-zinc-900/40 backdrop-blur-xs z-10 overflow-hidden pointer-events-none">
             <div 
-              className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
+              className="h-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -709,7 +709,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             className="absolute inset-x-0 bottom-0 p-3.5 bg-gradient-to-t from-black/90 via-black/45 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center backdrop-blur-[2px] z-10"
           >
             <div onClick={handleSeek} className="absolute top-0 inset-x-0 h-1.5 bg-zinc-850 cursor-pointer overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="h-full bg-emerald-500" style={{ width: `${progress}%` }} />
+              <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
             </div>
 
             <div className="flex items-center gap-1.5 font-mono text-[9px] text-gray-400">
@@ -721,14 +721,14 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             <div className="flex items-center gap-2">
               <button 
                 onClick={toggleMute}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={isMuted ? (dir === 'rtl' ? 'إلغاء الكتم' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
               >
                 {isMuted ? <VolumeX size={13} className="text-gray-400" /> : <Volume2 size={13} />}
               </button>
               <button 
                 onClick={() => setIsPreviewOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'ملء الشاشة' : 'Fullscreen'}
               >
                 <Maximize2 size={13} />
@@ -737,16 +737,16 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 onClick={handleShare}
                 className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-theme shadow-md active:scale-95 ${
                   shareStatus === 'copied' 
-                    ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/45 hover:bg-emerald-500/35' 
-                    : 'bg-zinc-900 border border-zinc-805 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 text-gray-200'
+                    ? 'bg-accent/25 text-accent border-accent/45 hover:bg-accent/35' 
+                    : 'bg-zinc-900 border border-zinc-805 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 text-gray-200'
                 }`}
                 title={dir === 'rtl' ? 'مشاركة' : 'Share'}
               >
-                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-emerald-400' : ''} />
+                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-accent' : ''} />
               </button>
               <button 
                 onClick={handleDownload}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-emerald-500 hover:border-emerald-500/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
+                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
                 title={dir === 'rtl' ? 'تنزيل' : 'Download'}
               >
                 <Download size={13} />
@@ -771,7 +771,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[11px] font-bold text-emerald-400/90 tracking-widest uppercase font-mono">
+                  <span className="text-[11px] font-bold text-accent/90 tracking-widest uppercase font-mono">
                     {dir === 'rtl' ? 'عرض السينما الفائقة من بيربليكستا' : 'PERPLEXTA CINEMATIC PRO PREVIEW'}
                   </span>
                   <span className="text-[10px] text-gray-400 font-medium font-sans">
@@ -781,14 +781,14 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDownload}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'تنزيل' : 'Download'}
                   >
                     <Download size={15} />
                   </button>
                   <button
                     onClick={handleShare}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
+                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
                     title={dir === 'rtl' ? 'مشاركة' : 'Share'}
                   >
                     <Share2 size={15} />
@@ -833,8 +833,8 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                     onClick={togglePreviewPlay}
                     className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                   >
-                    <div className="w-16 h-16 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-850/80 flex items-center justify-center text-emerald-400 shadow-2xl">
-                      {isPreviewPlaying ? <Pause size={24} className="fill-emerald-400/25" /> : <Play size={24} className="fill-emerald-400/25 ml-1" />}
+                    <div className="w-16 h-16 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-850/80 flex items-center justify-center text-accent shadow-2xl">
+                      {isPreviewPlaying ? <Pause size={24} className="fill-accent-400/25" /> : <Play size={24} className="fill-accent-400/25 ml-1" />}
                     </div>
                   </div>
                 </motion.div>
@@ -847,15 +847,15 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 <div className="flex items-center gap-2">
                   <button
                     onClick={togglePreviewPlay}
-                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-theme"
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-accent hover:text-accent flex items-center justify-center active:scale-95 transition-theme"
                     title={isPreviewPlaying ? (dir === 'rtl' ? 'إيقاف' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
                   >
-                    {isPreviewPlaying ? <Pause size={13} className="fill-emerald-400/10" /> : <Play size={13} className="fill-emerald-400/10 ml-0.5" />}
+                    {isPreviewPlaying ? <Pause size={13} className="fill-accent-400/10" /> : <Play size={13} className="fill-accent-400/10 ml-0.5" />}
                   </button>
 
                   <button
                     onClick={togglePreviewMute}
-                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-emerald-400 hover:text-emerald-300 flex items-center justify-center active:scale-95 transition-theme"
+                    className="w-8 h-8 rounded-[4px] bg-zinc-800 hover:bg-zinc-700/80 border border-zinc-700/60 text-accent hover:text-accent flex items-center justify-center active:scale-95 transition-theme"
                     title={isPreviewMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
                   >
                     {isPreviewMuted ? <VolumeX size={13} className="text-zinc-500" /> : <Volume2 size={13} />}
@@ -867,7 +867,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                   className="flex-1 h-1.5 bg-zinc-950/80 rounded-full cursor-pointer relative overflow-hidden"
                 >
                   <div 
-                    className="h-full bg-emerald-500 transition-theme shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
+                    className="h-full bg-accent transition-theme shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
                     style={{ width: `${previewProgress}%` }}
                   />
                 </div>
@@ -920,18 +920,18 @@ const BlockquoteWithActions = ({ children, dir }: any) => {
   };
 
   return (
-    <div className="relative group/bq transition-theme my-4 p-4 rounded-[4px] border border-emerald-500/15 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01]">
+    <div className="relative group/bq transition-theme my-4 p-4 rounded-[4px] border border-accent/15 bg-accent/[0.02] dark:bg-accent/[0.01]">
       <div className={`absolute top-2 ${dir === 'rtl' ? 'left-2' : 'right-2'} opacity-100 sm:opacity-0 sm:group-hover/bq:opacity-100 transition-opacity duration-300 flex items-center gap-1 z-10 pointer-events-auto`}>
         <button
           onClick={handleCopy}
-          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-accent hover: cursor-pointer"
           title={dir === 'rtl' ? 'نسخ النص' : 'Copy Text'}
         >
-          {copied ? <Check size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-accent  animate-pulse" /> : <Copy size={14} />}
         </button>
         <button
           onClick={handleApply}
-          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-[4px] bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme text-gray-400 hover:text-accent hover: cursor-pointer"
           title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
         >
           <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
@@ -1273,7 +1273,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-theme">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-[#1a1a1c]/40 border-b border-gray-100 dark:border-gray-800/40 rounded-t-md">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
 
@@ -1282,13 +1282,13 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
             <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-[4px] border border-gray-200/20 dark:border-gray-700/20 shadow-inner mr-2">
               <button
                 onClick={() => { setSandboxMode(false); handleStop(); }}
-                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${!sandboxMode ? 'bg-[var(--bg-secondary)] text-accent shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 {dir === 'rtl' ? 'مصدر الكود' : 'Source Code'}
               </button>
               <button
                 onClick={() => { setSandboxMode(true); }}
-                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${sandboxMode ? 'bg-[var(--bg-secondary)] text-emerald-500 shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wider rounded-sm transition-theme ${sandboxMode ? 'bg-[var(--bg-secondary)] text-accent shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
               >
                 {dir === 'rtl' ? 'بيئة الاختبار' : 'Interactive Sandbox'}
               </button>
@@ -1297,14 +1297,14 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <div className="flex items-center gap-1 transition-theme">
             {isMediaUrl ? (
-              <button onClick={() => downloadFile(children)} className="p-1.5 rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
+              <button onClick={() => downloadFile(children)} className="p-1.5 rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download">
                 <Download size={13} />
               </button>
             ) : (
               <>
                 <button 
                   onClick={copyToClipboard} 
-                  className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" 
+                  className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" 
                   title={copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied!') : (dir === 'rtl' ? 'نسخ الكود' : 'Copy code')}
                 >
                   <AnimatePresence mode="wait">
@@ -1315,7 +1315,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.5, opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                        className="text-accent "
                       >
                         <Check size={14} />
                       </motion.div>
@@ -1332,19 +1332,19 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                     )}
                   </AnimatePresence>
                   {copied && (
-                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap font-sans pointer-events-none">
+                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-accent text-white text-[10px] px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap font-sans pointer-events-none">
                       {dir === 'rtl' ? 'تم النسخ!' : 'Copied!'}
                     </span>
                   )}
                 </button>
                 <button 
                   onClick={() => window.dispatchEvent(new CustomEvent('insert_to_prompt', { detail: editableCode }))}
-                  className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95 cursor-pointer"
+                  className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95 cursor-pointer"
                   title={dir === 'rtl' ? 'تطبيق كأمر للدردشة' : 'Apply as Chat Prompt'}
                 >
                   <Send size={14} className={dir === 'rtl' ? 'transform -scale-x-100' : ''} />
                 </button>
-                <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-emerald-500 transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
+                <button onClick={downloadCode} className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" title="Download source code">
                   <FileText size={14} />
                 </button>
               </>
@@ -1360,17 +1360,17 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="relative overflow-hidden bg-[#0a0a0b] border border-[var(--border-main)] rounded-b-lg p-8 flex flex-col items-center gap-6 shadow-2xl"
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-500/10 to-transparent pointer-events-none" />
 
           <div className="relative">
-             <div className="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full" />
-             <div className="relative w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+             <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full" />
+             <div className="relative w-20 h-20 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(16,185,129,0.1)]">
                   <Volume2 size={32} />
              </div>
           </div>
 
           <div className="text-center space-y-1">
-            <h3 className="text-xs font-black text-emerald-500 tracking-[0.2em] uppercase">Perplexta Orchestra Master</h3>
+            <h3 className="text-xs font-black text-accent tracking-[0.2em] uppercase">Perplexta Orchestra Master</h3>
             <p className="text-[10px] text-[var(--text-secondary)] font-medium tracking-widest leading-none">
               {dir === 'rtl' ? 'الإنتاج الأوركسترالي الحصري' : 'EXCLUSIVE ORCHESTRAL PRODUCTION'}
             </p>
@@ -1379,12 +1379,12 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           <audio 
             controls 
             src={codeContent} 
-            className="w-full max-w-md accent-emerald-500 h-10 custom-audio-player" 
+            className="w-full max-w-md accent-accent h-10 custom-audio-player" 
           />
 
           <button 
             onClick={() => downloadFile(codeContent)}
-            className="flex items-center gap-2 px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-sm text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
+            className="flex items-center gap-2 px-8 py-3 bg-accent text-white hover:bg-accent rounded-sm text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
           >
             <Download size={14} />
             {dir === 'rtl' ? 'تنزيل فوري' : 'INSTANT DOWNLOAD'}
@@ -1429,12 +1429,12 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                   <button
                     onClick={handleRun}
                     disabled={isRunning}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-[4px] bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 hover: transition-theme disabled:opacity-50"
                   >
                     {isRunning ? (
-                      <Loader2 size={13} className="animate-spin text-emerald-500" />
+                      <Loader2 size={13} className="animate-spin text-accent" />
                     ) : (
-                      <Play size={13} className="fill-emerald-500/20 stroke-emerald-500" />
+                      <Play size={13} className="fill-accent stroke-accent-500" />
                     )}
                     <span>{dir === 'rtl' ? 'تنفيذ برمجياً' : 'Run Sandbox'}</span>
                   </button>
@@ -1470,7 +1470,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                             setTimeout(() => URL.revokeObjectURL(url), 1000);
                           }
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-theme border border-transparent"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-[4px] hover:bg-accent/10 text-[var(--text-muted)] hover:text-accent transition-theme border border-transparent"
                       >
                         <ExternalLink size={12} />
                         <span>{dir === 'rtl' ? 'فتح في المتصفح' : 'Open in Browser'}</span>
@@ -1497,8 +1497,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                         <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 select-none flex items-center justify-between">
                           <span>{dir === 'rtl' ? 'معاينة النتيجة التفاعلية' : 'LIVE COMPONENT INTERFACE'}</span>
                           <span className="flex h-1.5 w-1.5 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
                           </span>
                         </div>
                         {iframeSrc ? (
@@ -1520,7 +1520,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                           <span>{dir === 'rtl' ? 'مخرجات كونسول الآلة' : 'CONSOLE RUNTIME WORKSPACE'}</span>
                           <button
                             onClick={() => setOutputLogs([])}
-                            className="text-gray-600 hover:text-emerald-500 transition-theme"
+                            className="text-gray-600 hover:text-accent transition-theme"
                             title="Clear Logs"
                           >
                             <Trash2 size={11} />
@@ -1532,7 +1532,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                             <div key={lidx} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
                               log.type === 'error' ? 'text-red-400 bg-red-950/20 px-2 rounded-sm' :
                               log.type === 'warn' ? 'text-amber-400 bg-amber-950/20 px-2 rounded-sm' :
-                              log.type === 'info' ? 'text-emerald-400 bg-emerald-950/10 px-2 rounded-sm' : 'text-gray-300'
+                              log.type === 'info' ? 'text-accent bg-accent-950/10 px-2 rounded-sm' : 'text-gray-300'
                             }`}>
                               <span className="text-gray-600 select-none text-[9px] mt-0.5 font-bold tracking-tighter">[{log.time}]</span>
                               {log.type === 'error' && <AlertTriangle size={12} className="mt-0.5 shrink-0" />}
@@ -1558,11 +1558,11 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               <div className="w-full p-4 bg-[var(--bg-secondary)] rounded-b-md border-t border-gray-100 dark:border-gray-800/40">
                 {codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
                   <div className="flex flex-col items-center gap-4 py-8">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent">
                       <Music size={32} />
                     </div>
-                    <span className="text-sm font-bold text-emerald-500 tracking-widest uppercase">Sonic Draft Ready</span>
-                    <audio controls src={codeContent} className="w-full max-w-md accent-emerald-500" />
+                    <span className="text-sm font-bold text-accent tracking-widest uppercase">Sonic Draft Ready</span>
+                    <audio controls src={codeContent} className="w-full max-w-md accent-accent" />
                   </div>
                 ) : (
                   <img src={codeContent} alt="Generated" className="max-w-full rounded-md mx-auto" referrerPolicy="no-referrer" />
@@ -1659,8 +1659,8 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
     return {
       label: dir === 'rtl' ? 'الذكاء الفائق والتحليل المتقدم' : 'Elite Reasoning',
       icon: Sparkles,
-      colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-      bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+      colorClass: 'text-accent ',
+      bgClass: 'bg-accent/10 border-accent/20'
     };
   }
   if (normId.startsWith('chat_reasoning')) {
@@ -1677,8 +1677,8 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       return {
         label: t('code') || (dir === 'rtl' ? 'توليد وتحليل البرمجيات' : 'Code Engine'),
         icon: Code,
-        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+        colorClass: 'text-accent ',
+        bgClass: 'bg-accent/10 border-accent/20'
       };
     case 'video':
       return {
@@ -1712,8 +1712,8 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       return {
         label: t('sovereign_search') || (dir === 'rtl' ? 'البحث الاستخباراتي السيادي' : 'Sovereign Intelligence Search'),
         icon: Search,
-        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+        colorClass: 'text-accent ',
+        bgClass: 'bg-accent/10 border-accent/20'
       };
     case 'sovereign_memory':
       return {
@@ -1761,8 +1761,8 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       return {
         label: t('chat') || (dir === 'rtl' ? 'مساعد بيربليكستا المباشر' : 'AI Companion'),
         icon: MessageSquare,
-        colorClass: 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]',
-        bgClass: 'bg-emerald-500/10 border-emerald-500/20'
+        colorClass: 'text-accent ',
+        bgClass: 'bg-accent/10 border-accent/20'
       };
   }
 };
@@ -1777,7 +1777,7 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
         {isGenerating ? (
           <>
             <motion.div 
-              className="absolute inset-0 rounded-[4px] bg-emerald-500/20 blur-sm"
+              className="absolute inset-0 rounded-[4px] bg-accent/20 blur-sm"
               animate={{ 
                 scale: [1, 1.3, 1],
                 opacity: [0.3, 0.7, 0.3]
@@ -1817,8 +1817,8 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
           </span>
           {isGenerating && (
             <span className="relative flex h-1.5 w-1.5 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
             </span>
           )}
         </div>
@@ -1839,12 +1839,12 @@ const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps']
   return (
     <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3" id="thinking-steps-container">
       <div className="flex items-center gap-2 mb-2 sm:mb-4 opacity-70">
-         <div className="w-1 h-3 sm:w-1.5 sm:h-4 bg-emerald-500/60 rounded-full" />
+         <div className="w-1 h-3 sm:w-1.5 sm:h-4 bg-accent/60 rounded-full" />
          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
            {dir === 'rtl' ? 'مراحل التحليل والبحث' : 'ANALYSIS & RESEARCH PHASES'}
          </span>
       </div>
-      <div className="space-y-1 sm:space-y-2 ps-2.5 sm:ps-5 border-s-2 border-emerald-500/10 ml-0.5 sm:ml-2">
+      <div className="space-y-1 sm:space-y-2 ps-2.5 sm:ps-5 border-s-2 border-accent/10 ml-0.5 sm:ml-2">
         {steps.map((step, idx) => (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -1854,12 +1854,12 @@ const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps']
             className="flex items-center gap-2 sm:gap-4 group"
           >
             {step.status === 'completed' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-emerald-500/5 flex items-center justify-center text-emerald-500/70">
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-accent/5 flex items-center justify-center text-accent/70">
                 <Check size={10} strokeWidth={3} />
               </div>
             ) : step.status === 'processing' ? (
-              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-emerald-500/5 flex items-center justify-center">
-                <Loader2 size={10} className="animate-spin text-emerald-500/60" style={{ animationDuration: '2s' }} />
+              <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-accent/5 flex items-center justify-center">
+                <Loader2 size={10} className="animate-spin text-accent/60" style={{ animationDuration: '2s' }} />
               </div>
             ) : (
               <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center">
@@ -2114,11 +2114,11 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
       href={cleanUrl || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3.5 p-2.5 rounded-md hover:bg-emerald-500/[0.03] dark:hover:bg-emerald-500/[0.02] transition-theme group min-w-0 cursor-pointer border-b border-[var(--border-main)]/30 dark:border-zinc-800/20 last:border-0"
+      className="flex items-center gap-3.5 p-2.5 rounded-md hover:bg-accent/[0.03] dark:hover:bg-accent/[0.02] transition-theme group min-w-0 cursor-pointer border-b border-[var(--border-main)]/30 dark:border-zinc-800/20 last:border-0"
     >
       <div className="flex-shrink-0">
         <div 
-          className="w-7 h-7 rounded-full flex items-center justify-center border border-[var(--border-main)]/60 bg-white dark:bg-zinc-900 shadow-sm transition-theme group-hover:scale-105 group-hover:border-emerald-500/20"
+          className="w-7 h-7 rounded-full flex items-center justify-center border border-[var(--border-main)]/60 bg-white dark:bg-zinc-900 shadow-sm transition-theme group-hover:scale-105 group-hover:border-accent/20"
           style={{ color: brand ? brand.color : 'inherit' }}
         >
           {brand ? (
@@ -2136,13 +2136,13 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-[9px] font-black text-emerald-500 shrink-0 group-hover:bg-emerald-500 group-hover:text-white transition-theme">
+          <div className="w-4 h-4 rounded-full bg-accent/10 flex items-center justify-center text-[9px] font-black text-accent shrink-0 group-hover:bg-accent group-hover:text-white transition-theme">
             {cite.index || (idx + 1)}
           </div>
-          <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate group-hover:text-emerald-500 transition-theme group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+          <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate group-hover:text-accent transition-theme group-hover:">
             <HighlightText text={displayTitle} query={query} />
           </span>
-          <ExternalLink size={10} className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-2px] group-hover:translate-x-0" />
+          <ExternalLink size={10} className="text-[var(--text-muted)] group-hover:text-accent transition-theme shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-[-2px] group-hover:translate-x-0" />
         </div>
 
         {displayDesc ? (
@@ -2161,7 +2161,7 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
           <img
             src={displayImage}
             alt=""
-            className="w-12 h-8 object-cover rounded border border-[var(--border-main)]/60 bg-zinc-100 dark:bg-zinc-800 shadow-sm group-hover:border-emerald-500/30 transition-theme"
+            className="w-12 h-8 object-cover rounded border border-[var(--border-main)]/60 bg-zinc-100 dark:bg-zinc-800 shadow-sm group-hover:border-accent/30 transition-theme"
             referrerPolicy="no-referrer"
           />
         </div>
@@ -2201,7 +2201,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
         rel="noopener noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded bg-emerald-500/[0.04] dark:bg-emerald-500/[0.02] border border-emerald-500/15 hover:border-emerald-500/35 hover:bg-emerald-500/[0.08] transition-theme text-emerald-500 font-semibold no-underline text-[12px] align-middle shadow-sm hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 rounded bg-accent/[0.04] dark:bg-accent/[0.02] border border-accent/15 hover:border-accent/35 hover:bg-accent/[0.08] transition-theme text-accent font-semibold no-underline text-[12px] align-middle shadow-sm hover: cursor-pointer"
       >
         <span className="shrink-0 flex items-center justify-center" style={{ color: brand ? brand.color : 'inherit' }}>
           {brand ? (
@@ -2222,7 +2222,7 @@ const MarkdownLink = ({ href, children }: { href?: string, children: React.React
       {showTooltip && (meta?.title || meta?.description) && (
         <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-theme">
           <div className="flex items-start gap-2 min-w-0">
-            <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-emerald-500">
+            <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-accent">
               {brand ? brand.icon("w-3.5 h-3.5") : <img src={favicon} className="w-3.5 h-3.5 object-contain" alt="" />}
             </div>
             <div className="flex-1 min-w-0">
@@ -2283,10 +2283,10 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
         rel="noopener noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-theme transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-emerald-500/20"
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-theme transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-accent/20"
       >
         <span 
-          className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-gray-400 group-hover/cite:text-emerald-500 group-hover/cite:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+          className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-gray-400 group-hover/cite:text-accent group-hover/cite: transition-theme"
           style={{ color: brand ? brand.color : 'inherit' }}
         >
           {brand ? brand.icon("w-3.5 h-3.5 rounded-full") : <img src={favicon} className="w-3.5 h-3.5 object-contain rounded-full bg-white dark:bg-zinc-805" alt="" />}
@@ -2296,7 +2296,7 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
       {showTooltip && (displayTitle || displayDesc) && (
         <div className="absolute z-[9999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-[280px] p-3 bg-white dark:bg-zinc-950 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.42)] border border-[var(--border-main)] dark:border-zinc-800 flex flex-col gap-2 pointer-events-none transition-theme">
           <div className="flex items-start gap-2 min-w-0">
-            <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-emerald-500">
+            <div className="w-5.5 h-5.5 rounded overflow-hidden bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 flex items-center justify-center border border-[var(--border-main)]/40 text-accent">
               {brand ? brand.icon("w-3.5 h-3.5") : <img src={favicon} className="w-3.5 h-3.5 object-contain" alt="" />}
             </div>
             <div className="flex-1 min-w-0">
@@ -2333,7 +2333,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
     <div className="mt-4" id="citations-container">
       <button 
         onClick={onToggle}
-        className="flex items-center gap-2.5 px-3.5 py-1.5 rounded bg-transparent border border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-theme group shadow-sm active:scale-95 cursor-pointer"
+        className="flex items-center gap-2.5 px-3.5 py-1.5 rounded bg-transparent border border-[var(--border-main)] hover:border-accent/30 hover:bg-accent/5 transition-theme group shadow-sm active:scale-95 cursor-pointer"
       >
         <div className="flex -space-x-1.5 rtl:space-x-reverse">
           {citations.slice(0, 3).map((cite, i) => {
@@ -2361,12 +2361,12 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
           })}
         </div>
         <div className="w-px h-3 bg-[var(--border)] mx-0.5" />
-        <span className="text-[11px] font-black text-[var(--text-secondary)] group-hover:text-emerald-500 transition-theme uppercase tracking-wider">
+        <span className="text-[11px] font-black text-[var(--text-secondary)] group-hover:text-accent transition-theme uppercase tracking-wider">
           {citations.length} {dir === 'rtl' ? 'مصادر موثقة' : 'Verified Sources'}
         </span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
-          className="text-[var(--text-muted)] group-hover:text-emerald-500 transition-theme"
+          className="text-[var(--text-muted)] group-hover:text-accent transition-theme"
         >
           <Plus size={11} strokeWidth={3} />
         </motion.div>
@@ -2407,8 +2407,8 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
   return (
     <div className="mt-8 pt-6 border-t border-[var(--border-main)]" id="follow-ups-container">
       <div className="flex items-center gap-2 mb-4 px-0">
-        <Sparkles size={14} className="text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500">
+        <Sparkles size={14} className="text-accent shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-accent">
           {dir === 'rtl' ? 'استكمال البحث' : 'FURTHER EXPLORATION'}
         </span>
       </div>
@@ -2418,12 +2418,12 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-emerald-500/40 hover:bg-emerald-500/[0.03] transition-theme text-start relative overflow-hidden rounded-md flex-row"
+            className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-accent/40 hover:bg-accent/[0.03] transition-theme text-start relative overflow-hidden rounded-md flex-row"
           >
-            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-emerald-500 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 order-first">
+            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-accent group-hover:border-accent/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 order-first">
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
             </div>
-            <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme flex-1 min-w-0 leading-tight">
+            <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-accent transition-theme flex-1 min-w-0 leading-tight">
               {q}
             </span>
           </button>
@@ -2952,7 +2952,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         />
       )}
 
-      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/15 shadow-2xl bg-black">
+      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-accent/15 shadow-2xl bg-black">
         {coverImageUrl ? (
           <img 
             src={coverImageUrl} 
@@ -2962,14 +2962,14 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#0b0c10] via-gray-950 to-black flex items-center justify-center">
-             <Music className={`text-emerald-500/10 transition-transform duration-1000 ${isPlaying ? 'rotate-6 scale-110' : ''}`} size={140} />
+             <Music className={`text-accent/10 transition-transform duration-1000 ${isPlaying ? 'rotate-6 scale-110' : ''}`} size={140} />
           </div>
         )}
 
         {}
         <div className={`absolute top-4 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex flex-col gap-1 z-10`}>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-accent">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
             {dir === 'rtl' ? styleLabel.ar : styleLabel.en}
           </div>
           <p className="text-[10px] text-gray-400 font-medium px-1">
@@ -2985,16 +2985,16 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="w-20 h-20 rounded-full border-2 border-t-emerald-500 border-r-emerald-500/30 border-b-emerald-500/10 border-l-transparent shadow-[0_0_30px_rgba(16,185,129,0.15)]" 
+                  className="w-20 h-20 rounded-full border-2 border-t-accent-500 border-r-accent-500/30 border-b-accent-500/10 border-l-transparent shadow-[0_0_30px_rgba(16,185,129,0.15)]" 
                 />
-                <div className="absolute w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center backdrop-blur-sm">
-                  <span className="text-[11px] font-mono font-black text-emerald-400">
+                <div className="absolute w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center backdrop-blur-sm">
+                  <span className="text-[11px] font-mono font-black text-accent">
                     {progressPercent}%
                   </span>
                 </div>
               </div>
               <div className="flex flex-col items-center text-center">
-                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest animate-pulse leading-none mb-1">
+                <span className="text-[11px] font-black text-accent uppercase tracking-widest animate-pulse leading-none mb-1">
                   {dir === 'rtl' ? 'جاري التوليف الابتكاري والهندسة الفنية...' : 'SYNTHESIZING & ORCHESTRATING SOUNDWAVE...'}
                 </span>
                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
@@ -3013,13 +3013,13 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <div className="flex flex-col items-center gap-4">
               <button 
                 onClick={handlePlayPause}
-                className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border-2 border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/30 text-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
+                className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border-2 border-accent/40 hover:border-accent hover:bg-accent/30 text-accent shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
                 title={isPlaying ? (dir === 'rtl' ? 'إيقاف مؤقت' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
               >
                 {isPlaying ? (
-                  <Pause size={30} className="fill-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <Pause size={30} className="fill-accent text-accent " />
                 ) : (
-                  <Play size={30} className="ml-1.5 fill-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <Play size={30} className="ml-1.5 fill-accent text-accent " />
                 )}
               </button>
 
@@ -3027,7 +3027,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <h4 className="text-sm font-black text-white tracking-[0.2em] uppercase mb-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                   {dir === 'rtl' ? 'تحفة الأوركسترا من بيربليكستا' : 'PERPLEXTA ORCHESTRA MASTERPIECE'}
                 </h4>
-                <p className="text-[9px] text-emerald-400 font-black tracking-widest uppercase">
+                <p className="text-[9px] text-accent font-black tracking-widest uppercase">
                   {dir === 'rtl' ? 'أصلية بالكامل • جودة استوديو 24 بت' : 'FULLY ORIGINAL • 24-BIT CUSTOM SYNTH'}
                 </p>
               </div>
@@ -3048,7 +3048,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-emerald-500/70 rounded-full transition-theme shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  className="w-1 bg-accent/70 rounded-full transition-theme shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                 />
               );
             } else if (status === 'rendering' || status === 'idle') {
@@ -3065,7 +3065,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     ease: "easeInOut",
                     delay: i * 0.05 
                   }}
-                  className="w-1 bg-emerald-500/60 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                  className="w-1 bg-accent/60 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                 />
               );
             } else {
@@ -3075,7 +3075,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-emerald-500/40 rounded-full transition-theme shadow-[0_0_4px_rgba(16,185,129,0.1)]"
+                  className="w-1 bg-accent/40 rounded-full transition-theme shadow-[0_0_4px_rgba(16,185,129,0.1)]"
                 />
               );
             }
@@ -3103,7 +3103,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           >
             <div 
               style={{ width: `${(currentTime / mixDuration) * 100}%` }}
-              className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.7)]"
+              className="absolute left-0 top-0 h-full bg-accent rounded-full shadow-[0_0_10px_rgba(16,185,129,0.7)]"
             />
             {}
             <div 
@@ -3122,10 +3122,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           <div className="flex items-center gap-2">
             <button 
               onClick={toggleMute}
-              className="w-10 h-10 rounded-[4px] bg-transparent border border-transparent transition-theme hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              className="w-10 h-10 rounded-[4px] bg-transparent border border-transparent transition-theme hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-accent hover:"
               title={isMuted ? (dir === 'rtl' ? 'إلغاء كتم الصوت' : 'Unmute') : (dir === 'rtl' ? 'كتم الصوت' : 'Mute')}
             >
-              <Volume2 size={16} className={isMuted ? 'text-gray-500 line-through' : 'text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'} />
+              <Volume2 size={16} className={isMuted ? 'text-gray-500 line-through' : 'text-accent hover:'} />
             </button>
 
             <input 
@@ -3135,13 +3135,13 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               step="0.05"
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
-              className="w-16 sm:w-24 h-1 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-700 cursor-pointer"
+              className="w-16 sm:w-24 h-1 rounded-lg accent-accent bg-gray-200 dark:bg-gray-700 cursor-pointer"
             />
           </div>
 
           {}
           <div className="hidden sm:flex flex-col text-center">
-            <span className="text-[10px] text-[#10b981] font-[#10b981] drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] font-bold uppercase tracking-widest leading-none">
+            <span className="text-[10px] text-[#10b981] font-[#10b981]  font-bold uppercase tracking-widest leading-none">
               {styleName} • {vocalName}
             </span>
             <span className="text-[8px] text-[var(--text-muted)] font-mono mt-0.5">
@@ -3154,7 +3154,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <a 
               href={audioUrl}
               download={`perplexta_song_${styleName.toLowerCase()}_${durationVal}s.wav`}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase text-emerald-400 hover:bg-emerald-500 hover:text-white transition-theme group/down shadow-md"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-accent/10 border border-accent/20 text-[10px] font-black uppercase text-accent hover:bg-accent hover:text-white transition-theme group/down shadow-md"
               title={dir === 'rtl' ? 'تنزيل الأغنية بصيغة WAV' : 'Download fully-mastered WAV track'}
             >
               <Download size={12} className="group-hover/down:translate-y-0.5 transition-transform duration-300" />
@@ -3181,11 +3181,11 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <span className="absolute inset-0 bg-emerald-500 rounded-full blur-[6px] opacity-15 animate-pulse" />
-              <Sliders size={16} className="text-emerald-400 relative drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+              <span className="absolute inset-0 bg-accent rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <Sliders size={16} className="text-accent relative " />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">
+              <span className="text-[10px] font-black text-accent uppercase tracking-widest leading-none mb-1">
                 {dir === 'rtl' ? 'مستودع هندسة وتوليف الصوت' : 'STUDIO PRODUCTION MIXER'}
               </span>
               <h5 className="text-[12px] font-bold text-[var(--text-primary)] leading-none">
@@ -3197,7 +3197,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           <button 
             type="button"
             onClick={() => setIsMixerExpanded(!isMixerExpanded)}
-            className="text-[10px] font-black text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] uppercase tracking-wider transition-colors pt-1"
+            className="text-[10px] font-black text-[var(--text-muted)] hover:text-accent hover: uppercase tracking-wider transition-colors pt-1"
           >
             {isMixerExpanded 
               ? (dir === 'rtl' ? 'طي اللوحة' : 'COLLAPSE PANEL') 
@@ -3226,10 +3226,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-theme ${
                     uploadedFile 
-                      ? 'border-emerald-500/30 bg-emerald-500/[0.02]' 
+                      ? 'border-accent/30 bg-accent/[0.02]' 
                       : isDragging 
-                        ? 'border-emerald-500 bg-emerald-500/[0.04]' 
-                        : 'border-gray-300 dark:border-gray-800/80 hover:border-emerald-500/40 hover:bg-emerald-500/[0.01]'
+                        ? 'border-accent bg-accent/[0.04]' 
+                        : 'border-gray-300 dark:border-gray-800/80 hover:border-accent/40 hover:bg-accent/[0.01]'
                   }`}
                 >
                   <input 
@@ -3242,7 +3242,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
                   {uploadedFile ? (
                     <div className="flex flex-col items-center gap-1.5 w-full">
-                      <div className="flex items-center gap-2 text-emerald-400">
+                      <div className="flex items-center gap-2 text-accent">
                         <Check size={16} />
                         <span className="text-[11px] font-bold truncate max-w-[180px]">{uploadedFile.name}</span>
                       </div>
@@ -3265,7 +3265,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                       <Paperclip 
                         size={18} 
                         className={`transition-theme ${
-                          isDragging ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-gray-400'
+                          isDragging ? 'text-accent ' : 'text-gray-400'
                         }`} 
                       />
                       <div className="flex flex-col gap-0.5 animate-pulse">
@@ -3291,10 +3291,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
-                      <Sparkles size={11} className="text-emerald-400" />
+                      <Sparkles size={11} className="text-accent" />
                       {dir === 'rtl' ? 'قناة الذكاء الاصطناعي (مورث)' : 'AI Synthesized Stem'}
                     </span>
-                    <span className="font-mono text-emerald-500 font-bold">
+                    <span className="font-mono text-accent font-bold">
                       {Math.round(aiVolume * 100)}%
                     </span>
                   </div>
@@ -3312,7 +3312,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                         aiGainNodeRef.current.gain.setValueAtTime(val, audioCtxRef.current?.currentTime || 0);
                       }
                     }}
-                    className="w-full h-1.5 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50"
+                    className="w-full h-1.5 rounded-lg accent-accent bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50"
                   />
                 </div>
 
@@ -3320,10 +3320,10 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div className="flex flex-col gap-1.5">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="font-bold text-[var(--text-primary)] flex items-center gap-1">
-                      <Paperclip size={11} className={uploadedFile ? 'text-emerald-400' : 'text-gray-500'} />
+                      <Paperclip size={11} className={uploadedFile ? 'text-accent' : 'text-gray-500'} />
                       {dir === 'rtl' ? 'القناة المضافة الخارجية' : 'External Companion Stem'}
                     </span>
-                    <span className={`font-mono font-bold ${uploadedFile ? 'text-emerald-500' : 'text-gray-500'}`}>
+                    <span className={`font-mono font-bold ${uploadedFile ? 'text-accent' : 'text-gray-500'}`}>
                       {uploadedFile ? `${Math.round(uploadedVolume * 100)}%` : (dir === 'rtl' ? 'غير نشط' : 'INACTIVE')}
                     </span>
                   </div>
@@ -3341,7 +3341,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                         uploadedGainNodeRef.current.gain.setValueAtTime(val, audioCtxRef.current?.currentTime || 0);
                       }
                     }}
-                    className="w-full h-1.5 rounded-lg accent-emerald-500 bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-1.5 rounded-lg accent-accent bg-gray-200 dark:bg-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -3349,7 +3349,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
             {}
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-black/5 dark:bg-white/[0.02] border border-gray-200/50 dark:border-gray-800/30 text-[10px] text-[var(--text-muted)] font-medium leading-normal">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
               <span>
                 {dir === 'rtl' 
                   ? 'بروتوكول ويب أوديو (Web Audio API) يقوم بدمج المسارين في بث واحد فائق الدقة ٢٤ بت بالوقت الفعلي.' 
@@ -3370,11 +3370,11 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <span className="absolute inset-0 bg-emerald-500 rounded-full blur-[6px] opacity-15 animate-pulse" />
-              <Music size={16} className="text-emerald-400 relative drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+              <span className="absolute inset-0 bg-accent rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <Music size={16} className="text-accent relative " />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">
+              <span className="text-[10px] font-black text-accent uppercase tracking-widest leading-none mb-1">
                 {dir === 'rtl' ? 'توليد الموسيقى الذكي عبر Google Lyria' : 'GOOGLE LYRIA AI MUSIC GENERATOR'}
               </span>
               <h5 className="text-[12px] font-bold text-[var(--text-primary)] leading-none">
@@ -3386,7 +3386,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           <button 
             type="button"
             onClick={() => setIsLyriaPanelExpanded(!isLyriaPanelExpanded)}
-            className="text-[10px] font-black text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] uppercase tracking-wider transition-colors pt-1"
+            className="text-[10px] font-black text-[var(--text-muted)] hover:text-accent hover: uppercase tracking-wider transition-colors pt-1"
           >
             {isLyriaPanelExpanded 
               ? (dir === 'rtl' ? 'إغلاق اللوحة' : 'CLOSE STUDIO') 
@@ -3405,7 +3405,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 value={lyriaPrompt}
                 onChange={(e) => setLyriaPrompt(e.target.value)}
                 placeholder={dir === 'rtl' ? 'مثال: معزوفة عود هادئة مع قانون وإيقاع شرقي كلاسيكي...' : 'e.g. A serene acoustic guitar track with soft violin ambient backing...'}
-                className="w-full min-h-[70px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
+                className="w-full min-h-[70px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-accent transition-colors leading-relaxed"
               />
             </div>
 
@@ -3418,7 +3418,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   value={lyriaLyrics}
                   onChange={(e) => setLyriaLyrics(e.target.value)}
                   placeholder={dir === 'rtl' ? 'اكتب كلمات الأغنية ليقوم الذكاء الاصطناعي بغنائها أو دمجها...' : 'Write lyrics for the AI model to sing or voice...'}
-                  className="w-full min-h-[50px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors leading-relaxed"
+                  className="w-full min-h-[50px] rounded-[4px] border border-gray-200 dark:border-gray-800 bg-transparent py-2.5 px-3 text-xs focus:outline-none focus:border-accent transition-colors leading-relaxed"
                 />
               </div>
 
@@ -3437,7 +3437,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                   type="button"
                   onClick={handleSaveTrackToLibrary}
                   disabled={isSavingTrack || isTrackSaved}
-                  className={`py-2.5 px-4 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-theme hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`py-2.5 px-4 rounded-[4px] border border-accent/30 bg-accent/10 text-accent font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-theme hover:bg-accent/20 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isSavingTrack ? (
                     <>
@@ -3446,7 +3446,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     </>
                   ) : isTrackSaved ? (
                     <>
-                      <Check size={13} className="text-emerald-500" />
+                      <Check size={13} className="text-accent" />
                       <span>{dir === 'rtl' ? 'تم الحفظ في مكتبتك' : 'SAVED TO LIBRARY'}</span>
                     </>
                   ) : (
@@ -3461,7 +3461,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 type="button"
                 onClick={handleGenerateLyria}
                 disabled={isLyriaGenerating || !lyriaPrompt.trim()}
-                className={`py-2.5 px-5 rounded-[4px] bg-emerald-500 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-theme hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
+                className={`py-2.5 px-5 rounded-[4px] bg-accent text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-theme hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
                   isLyriaGenerating ? 'animate-pulse' : ''
                 }`}
               >
@@ -3481,8 +3481,8 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
             {/* Generated Lyrics section */}
             {lyriaLyricsResponse && (
-              <div className="mt-2 p-4 rounded-[4px] border border-emerald-500/10 bg-emerald-500/[0.01] flex flex-col gap-1.5">
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{dir === 'rtl' ? 'كلمات الأغنية المولدة من الذكاء الاصطناعي' : 'AI GENERATED LYRICS & TRANSCRIPT'}</span>
+              <div className="mt-2 p-4 rounded-[4px] border border-accent/10 bg-accent/[0.01] flex flex-col gap-1.5">
+                <span className="text-[10px] font-black text-accent uppercase tracking-widest">{dir === 'rtl' ? 'كلمات الأغنية المولدة من الذكاء الاصطناعي' : 'AI GENERATED LYRICS & TRANSCRIPT'}</span>
                 <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap font-sans italic">
                   {lyriaLyricsResponse}
                 </p>
@@ -3590,7 +3590,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               theme === 'dark' 
                 ? 'bg-[#121214] border-[var(--border)] shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
                 : 'bg-[var(--bg-surface)] border-[var(--border)] shadow-none'
-            } ${isPending ? 'opacity-85 border-dashed border-emerald-500/20 bg-emerald-500/[0.01]' : ''}`}
+            } ${isPending ? 'opacity-85 border-dashed border-accent/20 bg-accent/[0.01]' : ''}`}
           >
             {}
             <div className={`px-8 py-6 border-b flex items-center justify-between ${
@@ -3598,11 +3598,11 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             }`}>
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md opacity-20" />
-                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-emerald-500'}`} />
+                  <div className="absolute inset-0 bg-accent rounded-full blur-md opacity-20" />
+                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-accent'}`} />
                 </div>
                 <div className="flex flex-col">
-                  <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 ${isPending ? 'text-amber-500' : 'text-emerald-500 glow-emerald'}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 ${isPending ? 'text-amber-500' : 'text-accent glow-accent'}`}>
                     {dir === 'rtl' ? 'مرحلة إنتاج بيربليكستا' : 'PERPLEXTA PRODUCTION PHASE'} {canon.phase}
                   </span>
                   <h3 className={`text-xl font-black tracking-tight uppercase ${isPending ? 'text-[var(--text-primary)] opacity-60 animate-pulse' : 'text-[var(--text-primary)]'}`}>
@@ -3617,8 +3617,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                      {dir === 'rtl' ? 'حالة العمل' : 'COMPILATION'}
                    </span>
                     <div className="flex items-center gap-2">
-                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]`} />
-                     <span className={`text-[10px] font-black uppercase ${isPending ? 'text-amber-400' : 'text-emerald-500'}`}>
+                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-accent'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]`} />
+                     <span className={`text-[10px] font-black uppercase ${isPending ? 'text-amber-400' : 'text-accent'}`}>
                        {isPending ? (dir === 'rtl' ? 'في الانتظار' : 'QUEUED') : (dir === 'rtl' ? 'مكتمل' : 'RESOLVED')}
                      </span>
                    </div>
@@ -3650,17 +3650,17 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                           theme={theme} 
                           coverImageUrl={coverImageUrl} 
                         />
-                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 animate-pulse justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                        <div className="flex items-center gap-2 text-xs font-bold text-accent animate-pulse justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
                           <span>{dir === 'rtl' ? canon.pendingTextAr : canon.pendingTextEn}</span>
                         </div>
                       </div>
                     ) : (
 
                       <div className="space-y-3">
-                        <div className="h-4 bg-emerald-500/5 rounded-md w-3/4 animate-pulse border border-emerald-500/10" />
-                        <div className="h-4 bg-emerald-500/5 rounded-md w-1/2 animate-pulse border border-emerald-500/10" />
-                        <div className="h-4 bg-emerald-500/5 rounded-md w-5/6 animate-pulse border border-emerald-500/10" />
+                        <div className="h-4 bg-accent/5 rounded-md w-3/4 animate-pulse border border-accent/10" />
+                        <div className="h-4 bg-accent/5 rounded-md w-1/2 animate-pulse border border-accent/10" />
+                        <div className="h-4 bg-accent/5 rounded-md w-5/6 animate-pulse border border-accent/10" />
                         <p className="text-xs text-[var(--text-muted)] font-bold animate-pulse mt-4">
                           {dir === 'rtl' ? canon.pendingTextAr : canon.pendingTextEn}
                         </p>
@@ -3698,10 +3698,10 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                       p: 'div',
                       blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
                       img: ({ node, ...props }: any) => (
-                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-emerald-500/20 shadow-2xl group/video">
+                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-accent/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-300 group-hover/video:scale-110" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                             <div className="w-20 h-20 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center text-emerald-500 animate-pulse">
+                             <div className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border border-accent/30 flex items-center justify-center text-accent animate-pulse">
                                <Music size={40} />
                              </div>
                           </div>
@@ -3719,8 +3719,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             </div>
 
             {}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/3 blur-[100px] pointer-events-none" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[80px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/3 blur-[100px] pointer-events-none" />
           </motion.div>
         );
       })}
@@ -3734,7 +3734,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
       >
         <div className="h-px w-24 bg-gradient-to-r from-transparent via-[var(--border)] to-transparent" />
         <div className="flex items-center gap-2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em]">
-          <LayoutGrid size={12} className="text-emerald-500" />
+          <LayoutGrid size={12} className="text-accent" />
           {dir === 'rtl' ? 'تم توليد الحزمة عبر محرك بيربليكستا الإبداعي' : 'GENERATED VIA PERPLEXTA CREATIVE ENGINE'}
         </div>
       </motion.div>
@@ -3747,19 +3747,19 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-    className={`mt-4 p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
+    className={`mt-4 p-6 rounded-lg border border-accent/20 bg-accent/[0.02] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden`}
   >
     <div className="absolute top-0 right-0 p-4 opacity-5">
-      <Settings size={64} className="text-emerald-500" />
+      <Settings size={64} className="text-accent" />
     </div>
 
     <div className="flex items-start gap-4 relative z-10">
-      <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+      <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
         <Settings size={24} className="animate-spin-slow" />
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 font-sans shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent font-sans shadow-sm">
             {dir === 'rtl' ? 'تحديث الأنظمة' : 'System Excellence Protocol'}
           </span>
         </div>
@@ -3813,19 +3813,19 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`mt-4 p-5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
+      className={`mt-4 p-5 rounded-lg border border-accent/20 bg-accent/[0.03] backdrop-blur-sm self-stretch flex flex-col gap-4 relative overflow-hidden group`}
     >
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Sparkles size={48} className="text-emerald-500" />
+        <Sparkles size={48} className="text-accent" />
       </div>
 
       <div className="flex items-start gap-4 relative z-10">
-        <div className="w-12 h-12 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
           <Zap size={24} className="animate-pulse" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Premium Upgrade Required</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Premium Upgrade Required</span>
           </div>
           <p className="text-[14px] font-bold text-[var(--text-primary)] leading-relaxed mb-1">
             {dir === 'rtl' ? data.error_ar : data.error}
@@ -3833,7 +3833,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
           <div className="flex items-center gap-4 mt-3">
              <div className="flex flex-col">
                <span className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-0.5 tracking-tighter">{dir === 'rtl' ? 'الحد المتاح' : 'Available Limit'}</span>
-               <span className="text-xs font-black text-emerald-500">{data.limit}</span>
+               <span className="text-xs font-black text-accent">{data.limit}</span>
              </div>
              <div className="w-px h-6 bg-[var(--border)]" />
              <div className="flex flex-col">
@@ -3846,21 +3846,21 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
 
       {}
       {user?.referral_activated ? (
-        <div className="relative z-10 bg-[var(--bg-overlay)] border border-emerald-500/10 rounded-md p-3 flex items-center gap-3">
+        <div className="relative z-10 bg-[var(--bg-overlay)] border border-accent/10 rounded-md p-3 flex items-center gap-3">
           <div className="flex-1 truncate text-[10px] font-mono text-[var(--text-muted)]">
             {referralLink}
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={handleCopy}
-              className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme"
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-accent/10 hover:bg-accent/20 text-accent transition-theme"
               title="Copy Link"
             >
               {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
             <button 
               onClick={handleShare}
-              className="w-10 h-10 flex items-center justify-center rounded-sm bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-accent text-white hover:bg-accent transition-theme shadow-lg shadow-none"
               title="Share"
             >
               <Share2 size={16} />
@@ -3898,13 +3898,13 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
               navigate('/subscription');
             }
           }}
-          className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-accent hover:bg-accent text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
         </button>
         <button 
           onClick={() => navigate('/rewards')}
-          className="flex-1 bg-[var(--bg-surface)] border border-emerald-500/20 hover:bg-emerald-500/5 text-emerald-500 py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-[var(--bg-surface)] border border-accent/20 hover:bg-accent/5 text-accent py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'صفحة المكافآت' : 'Rewards Page'}
         </button>
@@ -3990,7 +3990,7 @@ export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: 
             </button>
             <button 
               onClick={handleShare}
-              className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-red-500/20"
+              className="w-10 h-10 flex items-center justify-center rounded-sm bg-red-500 text-white hover:bg-accent transition-theme shadow-lg shadow-red-500/20"
               title="Share"
             >
               <Share2 size={16} />
@@ -5835,9 +5835,9 @@ export const ChatPage: React.FC = () => {
   };
 
   const models = [
-    { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-emerald-500', dotColor: 'bg-emerald-500' },
-    { id: 'fast', label: t('fast'), icon: <Zap size={18} />, color: 'text-emerald-500', dotColor: 'bg-emerald-500' },
-    { id: 'thinking', label: t('thinking'), icon: <Brain size={18} />, color: 'text-emerald-500', dotColor: 'bg-emerald-500' },
+    { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
+    { id: 'fast', label: t('fast'), icon: <Zap size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
+    { id: 'thinking', label: t('thinking'), icon: <Brain size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
   ];
 
   const renderImageSettings = () => {
@@ -5863,7 +5863,7 @@ export const ChatPage: React.FC = () => {
                   onClick={() => setImageSettings(prev => ({ ...prev, aspectRatio: r }))}
                   className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                     imageSettings.aspectRatio === r 
-                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110' 
+                      ? 'text-accent  scale-110' 
                       : 'text-gray-400/40 hover:text-gray-200'
                   }`}
                 >
@@ -5881,7 +5881,7 @@ export const ChatPage: React.FC = () => {
                   onClick={() => setImageSettings(prev => ({ ...prev, quality: q }))}
                   className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                     imageSettings.quality === q 
-                      ? 'text-emerald-500 underline underline-offset-4 decoration-2 scale-105' 
+                      ? 'text-accent underline underline-offset-4 decoration-2 scale-105' 
                       : 'text-[var(--text-muted)]/30 hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -5899,7 +5899,7 @@ export const ChatPage: React.FC = () => {
                   onClick={() => setImageSettings(prev => ({ ...prev, style: s }))}
                   className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-theme whitespace-nowrap pointer-events-auto cursor-pointer ${
                     imageSettings.style === s 
-                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] scale-110 font-bold underline underline-offset-4 decoration-2' 
+                      ? 'text-accent  scale-110 font-bold underline underline-offset-4 decoration-2' 
                       : 'text-gray-400 hover:text-gray-200'
                   }`}
                 >
@@ -5917,7 +5917,7 @@ export const ChatPage: React.FC = () => {
 
             <button 
               onClick={() => setShowImageSettings(false)}
-              className="text-gray-400/10 hover:text-emerald-500 transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
+              className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
               title={dir === 'rtl' ? 'إغلاق' : 'Close'}
             >
               <Plus size={10} className="rotate-45" />
@@ -5978,7 +5978,7 @@ export const ChatPage: React.FC = () => {
                   }}
                   className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                     audioSettings.mood === m.id 
-                      ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110 font-bold' 
+                      ? 'text-accent  scale-110 font-bold' 
                       : 'text-gray-400/40 hover:text-gray-200'
                   }`}
                 >
@@ -5999,7 +5999,7 @@ export const ChatPage: React.FC = () => {
                   }}
                   className={`text-[7px] md:text-[9px] font-bold tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                     audioSettings.duration === d 
-                      ? 'text-emerald-500 underline underline-offset-4 decoration-2 scale-105' 
+                      ? 'text-accent underline underline-offset-4 decoration-2 scale-105' 
                       : 'text-gray-400/30 hover:text-gray-200'
                   }`}
                 >
@@ -6020,7 +6020,7 @@ export const ChatPage: React.FC = () => {
                   }}
                   className={`text-[7px] md:text-[9px] font-bold transition-theme pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-[var(--radius)] ${
                     audioSettings.vocalType === v.id 
-                      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
+                      ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
                       : 'text-gray-400/30 hover:text-gray-200'
                   }`}
                 >
@@ -6033,7 +6033,7 @@ export const ChatPage: React.FC = () => {
 
             <button 
               onClick={() => setShowAudioSettings(false)}
-              className="text-gray-400/10 hover:text-emerald-500 transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
+              className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
               title={dir === 'rtl' ? 'إغلاق' : 'Close'}
             >
               <Plus size={10} className="rotate-45" />
@@ -6075,7 +6075,7 @@ export const ChatPage: React.FC = () => {
                 onClick={() => setVideoSettings(prev => ({ ...prev, style: st }))}
                 className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.style === st
-                    ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-105'
+                    ? 'text-accent border-accent/30 bg-accent/5  scale-105'
                     : 'text-gray-400/40 border-transparent hover:text-gray-200'
                 }`}
               >
@@ -6093,7 +6093,7 @@ export const ChatPage: React.FC = () => {
                 onClick={() => setVideoSettings(prev => ({ ...prev, aspectRatio: r }))}
                 className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.aspectRatio === r 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110' 
+                    ? 'text-accent  scale-110' 
                     : 'text-gray-400/40 hover:text-gray-200'
                 }`}
               >
@@ -6111,7 +6111,7 @@ export const ChatPage: React.FC = () => {
                 onClick={() => setVideoSettings(prev => ({ ...prev, resolution: res }))}
                 className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.resolution === res 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] scale-110' 
+                    ? 'text-accent  scale-110' 
                     : 'text-gray-400/30 hover:text-gray-200'
                 }`}
               >
@@ -6124,14 +6124,14 @@ export const ChatPage: React.FC = () => {
         <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
           <button 
             onClick={() => setShowVideoSettings(false)}
-            className="text-gray-400/10 hover:text-emerald-500 transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
+            className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
             title="Close Settings"
           >
             <Plus size={10} className="rotate-45" />
           </button>
 
           <div className={`flex items-center gap-1.5 md:gap-3 min-w-[80px] md:min-w-[150px] ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
-            <span className="text-[8px] font-black text-emerald-500/80 whitespace-nowrap drop-shadow-[0_0_5px_rgba(16,185,129,0.2)]">{videoSettings.duration}s</span>
+            <span className="text-[8px] font-black text-accent/80 whitespace-nowrap ">{videoSettings.duration}s</span>
 
             <div className="relative flex-1 h-3 flex items-center group/slider">
               <input 
@@ -6140,7 +6140,7 @@ export const ChatPage: React.FC = () => {
                 max="15" 
                 value={videoSettings.duration} 
                 onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full h-0.5 bg-[var(--bg-overlay)] rounded-full appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-theme pointer-events-auto"
+                className="w-full h-0.5 bg-[var(--bg-overlay)] rounded-full appearance-none cursor-pointer accent-accent hover:accent-accent-400 transition-theme pointer-events-auto"
               />
             </div>
 
@@ -6211,7 +6211,7 @@ export const ChatPage: React.FC = () => {
         <motion.div 
           className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
             isFocused 
-              ? 'border-emerald-500/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
+              ? 'border-accent/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
               : ''
           }`}
         >
@@ -6282,7 +6282,7 @@ export const ChatPage: React.FC = () => {
                     });
                     setInterimText('');
                   }}
-                  className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 px-2 py-1 rounded transition-theme shrink-0"
+                  className="text-[10px] font-black uppercase text-accent hover:text-accent border border-accent/20 hover:bg-accent/10 px-2 py-1 rounded transition-theme shrink-0"
                 >
                   {dir === 'rtl' ? 'إدراج' : 'Insert'}
                 </button>
@@ -6300,7 +6300,7 @@ export const ChatPage: React.FC = () => {
                     <img src={previewUrl} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ) : (
-                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center bg-[var(--bg-base)] text-emerald-500 shadow-sm`}>
+                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center bg-[var(--bg-base)] text-accent shadow-sm`}>
                     {getFileIcon(selectedFile.type)}
                   </div>
                 )}
@@ -6334,9 +6334,9 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={triggerForensicDiagnostic}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-transparent hover:border-emerald-500/30 hover:bg-emerald-500/5 text-xs font-semibold text-emerald-500 transition-theme shadow-none bg-transparent"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-transparent hover:border-accent/30 hover:bg-accent/5 text-xs font-semibold text-accent transition-theme shadow-none bg-transparent"
                 >
-                  <Sparkles size={13} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+                  <Sparkles size={13} className="text-accent  animate-pulse" />
                   <span>{dir === 'rtl' ? 'فحص جنائي مباشر' : 'Run Forensic Scan'}</span>
                 </button>
 
@@ -6350,10 +6350,10 @@ export const ChatPage: React.FC = () => {
                       onChange={(e) => setForensicMode(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-theme ${forensicMode ? 'bg-emerald-500/80 dark:bg-emerald-500/50' : ''}`} />
-                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-emerald-500' : ''}`} />
+                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-theme ${forensicMode ? 'bg-accent/80 dark:bg-accent/50' : ''}`} />
+                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-accent' : ''}`} />
                   </div>
-                  <span className={`text-[10px] font-bold ${forensicMode ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-[var(--text-muted)]'}`}>
+                  <span className={`text-[10px] font-bold ${forensicMode ? 'text-accent ' : 'text-[var(--text-muted)]'}`}>
                     {dir === 'rtl' ? 'وضع التحقيق الجنائي' : 'Forensic Mode'}
                   </span>
                 </label>
@@ -6370,7 +6370,7 @@ export const ChatPage: React.FC = () => {
               className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
-                  : 'hover:bg-emerald-500/5 hover:border-emerald-500/20 active:scale-95'
+                  : 'hover:bg-accent/5 hover:border-accent/20 active:scale-95'
                 } border border-transparent`}
               disabled={!isGenerating && !query.trim()}
               animate={isGenerating ? {
@@ -6393,8 +6393,8 @@ export const ChatPage: React.FC = () => {
             >
               {isGenerating ? (
                 <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10">
-                   <div className="absolute inset-0 rounded-full border-2 border-emerald-500/10 border-t-emerald-500 animate-spin w-5 h-5 md:w-7 md:h-7 m-auto" />
-                   <Square size={10} className="md:size-[14px] text-emerald-500 relative z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" fill="currentColor" />
+                   <div className="absolute inset-0 rounded-full border-2 border-accent/10 border-t-accent-500 animate-spin w-5 h-5 md:w-7 md:h-7 m-auto" />
+                   <Square size={10} className="md:size-[14px] text-accent relative z-10 " fill="currentColor" />
                 </div>
               ) : (
                 <div className={`${dir === 'rtl' ? 'transform -scale-x-100' : ''} flex items-center justify-center`}>
@@ -6402,8 +6402,8 @@ export const ChatPage: React.FC = () => {
                     size={18} 
                     className={`md:w-6 md:h-6 transition-theme ${
                       query.trim() 
-                        ? 'text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] scale-100' 
-                        : 'text-gray-400 group-hover:text-emerald-500'
+                        ? 'text-accent  scale-100' 
+                        : 'text-gray-400 group-hover:text-accent'
                     }`} 
                   />
                 </div>
@@ -6461,10 +6461,10 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               disabled={isInputDisabled}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/5 group hover:border-emerald-500/20 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]'}`}
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]'}`}
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-theme" />
-              <Paperclip size={18} className="md:w-5 md:h-5 text-emerald-500 hidden group-hover:block transition-theme drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
+              <Paperclip size={18} className="md:w-5 md:h-5 text-accent hidden group-hover:block transition-theme " />
             </button>
           </div>
         </div>
@@ -6483,11 +6483,11 @@ export const ChatPage: React.FC = () => {
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'tool'
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                      : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/5'
+                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-accent hover:bg-accent/5'
                 }`}
               >
-                <span className={activeDropdown === 'tool' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
+                <span className={activeDropdown === 'tool' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
                   {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'md:w-4 md:h-4' })}
                 </span>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentTool.label}</span>
@@ -6512,17 +6512,17 @@ export const ChatPage: React.FC = () => {
                         }}
                         className={`flex items-center gap-3 px-3 py-2 rounded-sm transition-theme text-[13px] font-bold ${
                           selectedTool === tool.id && activeDropdown === 'tool'
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                            ? 'bg-accent/10 text-accent dark:text-accent' 
                             : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'text-[var(--text-muted)]'}>
+                        <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-accent ' : 'text-[var(--text-muted)]'}>
                           {tool.icon}
                         </span>
                         <div className="flex items-center justify-between flex-1 min-w-0">
                           <span className="truncate">{tool.label}</span>
                           {tool.isNew && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-500 text-[8px] font-black text-white ml-2 animate-pulse">
+                            <span className="px-1.5 py-0.5 rounded-md bg-accent text-[8px] font-black text-white ml-2 animate-pulse">
                               NEW
                             </span>
                           )}
@@ -6548,11 +6548,11 @@ export const ChatPage: React.FC = () => {
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'model'
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
                       : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)]'
                 }`}
               >
-                <span className={activeDropdown === 'model' ? 'drop-shadow-[0_0_10px_rgba(16,185,129,0.7)] text-emerald-500' : 'opacity-60 group-hover:opacity-100'}>
+                <span className={activeDropdown === 'model' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
                   {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'md:w-4 md:h-4' })}
                 </span>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
@@ -6599,7 +6599,7 @@ export const ChatPage: React.FC = () => {
                   ? 'opacity-30 cursor-not-allowed border-transparent rounded-[4px]' 
                   : isRecording
                     ? 'rounded-[18px_18px_0px_18px] bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0)] hover:shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0)] hover:shadow-[0_0_12px_rgba(16,185,129,0.2)]'
               }`}
             >
               {isRecording ? (
@@ -6613,7 +6613,7 @@ export const ChatPage: React.FC = () => {
               ) : (
                 <Mic 
                   size={18} 
-                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
+                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-accent group-hover: transition-theme" 
                 />
               )}
             </button>
@@ -6706,7 +6706,7 @@ export const ChatPage: React.FC = () => {
                  type="text" 
                  value={chatRenameTitle} 
                  onChange={(e) => setChatRenameTitle(e.target.value)}
-                 className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-sm px-4 py-3 outline-none focus:border-emerald-500/50 transition-theme font-bold text-sm mb-6 text-[var(--text-primary)]"
+                 className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-sm px-4 py-3 outline-none focus:border-accent/50 transition-theme font-bold text-sm mb-6 text-[var(--text-primary)]"
                  autoFocus
                  onKeyDown={(e) => e.key === 'Enter' && handleThreadRename()}
                />
@@ -6719,7 +6719,7 @@ export const ChatPage: React.FC = () => {
                  </button>
                  <button 
                    onClick={handleThreadRename}
-                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
+                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase bg-accent text-white hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
                  >
                    {dir === 'rtl' ? 'حفظ' : 'Save'}
                  </button>
@@ -6757,7 +6757,7 @@ export const ChatPage: React.FC = () => {
               </div>
 
               <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-none flex flex-col gap-2">
-                <div className="flex items-center justify-center gap-2.5 text-[9.5px] text-emerald-500 font-bold">
+                <div className="flex items-center justify-center gap-2.5 text-[9.5px] text-accent font-bold">
                   <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'من نحن' : 'About Us'}</span>
                   <span className="text-gray-500/20">•</span>
                   <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
@@ -6785,26 +6785,26 @@ export const ChatPage: React.FC = () => {
                   >
 
                     {isChatMessagesLoading && (
-                      <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-emerald-500/10 overflow-hidden z-40">
-                        <div className="animate-sovereign-progress h-full bg-emerald-500 rounded-full animate-pulse" />
+                      <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-accent/10 overflow-hidden z-40">
+                        <div className="animate-sovereign-progress h-full bg-accent rounded-full animate-pulse" />
                       </div>
                     )}
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
-                  <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 truncate max-w-[120px] md:max-w-[300px] font-mono">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
+                  <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-accent truncate max-w-[120px] md:max-w-[300px] font-mono">
                     {dir === 'rtl' ? 'نشط' : 'Active'}
                   </h2>
                </div>
                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setShowPinnedModal(true)}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme text-gray-400 hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] relative"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme text-gray-400 hover:bg-[var(--bg-overlay)] hover:text-accent hover: relative"
                     title={dir === 'rtl' ? 'الرسائل المثبتة' : 'Pinned Messages'}
                   >
-                    <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "transition-theme"} />
+                    <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-accent " : "transition-theme"} />
                     {messages.filter(m => m.is_pinned).length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(16,185,129,0.6)]">
+                      <span className="absolute -top-1 -right-1 bg-accent text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(16,185,129,0.6)]">
                         {messages.filter(m => m.is_pinned).length}
                       </span>
                     )}
@@ -6815,22 +6815,22 @@ export const ChatPage: React.FC = () => {
                       disabled={isExporting}
                       className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme group ${
                         isExporting
-                          ? 'text-emerald-500 bg-emerald-500/10 cursor-wait'
+                          ? 'text-accent bg-accent/10 cursor-wait'
                           : isExportMenuOpen 
-                            ? 'text-emerald-500 bg-emerald-500/10' 
+                            ? 'text-accent bg-accent/10' 
                             : 'text-gray-400 hover:bg-[var(--bg-overlay)]'
                       }`}
                       title={dir === 'rtl' ? 'خيارات المحادثة' : 'Thread Options'}
                     >
                       {isExporting ? (
-                        <Loader2 size={20} className="animate-spin text-emerald-500" />
+                        <Loader2 size={20} className="animate-spin text-accent" />
                       ) : (
                         <MoreHorizontal 
                           size={20} 
                           className={`transition-theme ${
                             isExportMenuOpen 
-                              ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                              : 'group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                              ? '' 
+                              : 'group-hover:text-accent group-hover:'
                           }`} 
                         />
                       )}
@@ -6853,7 +6853,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <Bookmark size={14} className="group-hover:text-emerald-500" />
+                              <Bookmark size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'إضافة علامة مرجعية' : 'Add Bookmark'}</span>
                             </button>
 
@@ -6865,7 +6865,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FolderPlus size={14} className="group-hover:text-emerald-500" />
+                              <FolderPlus size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'إضافة إلى مساحة' : 'Add to Space'}</span>
                             </button>
 
@@ -6894,7 +6894,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <Pencil size={14} className="group-hover:text-emerald-500" />
+                              <Pencil size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'إعادة تسمية' : 'Rename Thread'}</span>
                             </button>
 
@@ -6905,7 +6905,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileDown size={14} className="group-hover:text-emerald-500" />
+                              <FileDown size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'تصدير كـ PDF' : 'Export as PDF'}</span>
                             </button>
 
@@ -6914,7 +6914,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileCode size={14} className="group-hover:text-emerald-500" />
+                              <FileCode size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'تصدير كـ Markdown' : 'Export as Markdown'}</span>
                             </button>
 
@@ -6923,7 +6923,7 @@ export const ChatPage: React.FC = () => {
                               disabled={isExporting}
                               className="w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)] rounded-sm transition-theme group disabled:opacity-50"
                             >
-                              <FileText size={14} className="group-hover:text-emerald-500" />
+                              <FileText size={14} className="group-hover:text-accent" />
                               <span>{dir === 'rtl' ? 'تصدير كـ DOCX' : 'Export as DOCX'}</span>
                             </button>
 
@@ -6948,7 +6948,7 @@ export const ChatPage: React.FC = () => {
                   {messages.some(m => m.is_pinned) && (
                     <button 
                       onClick={() => setShowPinnedModal(true)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/5 transition-theme border border-emerald-500/10 hover:bg-emerald-500/10"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-wider text-accent bg-accent/5 transition-theme border border-accent/10 hover:bg-accent/10"
                     >
                       <Bookmark size={14} />
                       <span className="hidden lg:inline">{dir === 'rtl' ? 'المثبتة' : 'Pinned'}</span>
@@ -7006,10 +7006,10 @@ export const ChatPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
                 transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-emerald-500/10 w-full relative overflow-hidden"
+                className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-accent/10 w-full relative overflow-hidden"
               >
 
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/[0.02] via-transparent to-transparent pointer-events-none select-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-500/10[0.02] via-transparent to-transparent pointer-events-none select-none" />
 
                 <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
 
@@ -7027,7 +7027,7 @@ export const ChatPage: React.FC = () => {
                     }
                   </p>
 
-                  <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+                  <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
                 </div>
               </motion.div>
             ) : (
@@ -7061,7 +7061,7 @@ export const ChatPage: React.FC = () => {
                                       referrerPolicy="no-referrer"
                                     />
                                   ) : (
-                                    <div className="w-10 h-10 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                    <div className="w-10 h-10 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent">
                                       {getFileIcon(msg.file.type)}
                                     </div>
                                   )}
@@ -7100,7 +7100,7 @@ export const ChatPage: React.FC = () => {
                                     </button>
                                     <button 
                                       onClick={() => handleEditSubmit(idx)}
-                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-theme"
+                                      className="px-4 py-1.5 text-[10px] uppercase font-bold bg-accent text-white rounded-[var(--radius)] hover:bg-accent transition-theme"
                                     >
                                       {dir === 'rtl' ? 'حفظ وإرسال' : 'Save & Send'}
                                     </button>
@@ -7119,9 +7119,9 @@ export const ChatPage: React.FC = () => {
                                   </div>
 
                                   {msg.is_pinned && (
-                                    <div className="flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
-                                      <Pin size={8} className="text-emerald-500" />
-                                      <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
+                                    <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
+                                      <Pin size={8} className="text-accent" />
+                                      <span className="text-[7px] font-black uppercase text-accent/80 tracking-tighter">Pinned</span>
                                     </div>
                                   )}
 
@@ -7129,7 +7129,7 @@ export const ChatPage: React.FC = () => {
                                     <button 
                                       onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                                       className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-theme shrink-0 ${
-                                        msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
+                                        msg.is_pinned ? 'text-accent hover:text-accent' : 'text-gray-400 hover:text-accent'
                                       }`}
                                       title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
                                     >
@@ -7140,7 +7140,7 @@ export const ChatPage: React.FC = () => {
                                         setEditingMessageIndex(idx);
                                         setEditValue(msg.content);
                                       }}
-                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 transition-theme shrink-0"
+                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-accent transition-theme shrink-0"
                                       title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                                     >
                                       <Pencil size={13} />
@@ -7226,9 +7226,9 @@ export const ChatPage: React.FC = () => {
                         ) : (
                           <>
                             {msg.is_pinned && (
-                              <div className="absolute -top-4 -start-2 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] z-10 scale-75 md:scale-90 origin-top-left">
-                                <Pin size={10} className="text-emerald-500" />
-                                <span className="text-[9px] font-black uppercase text-emerald-500 tracking-tighter">Pinned Response</span>
+                              <div className="absolute -top-4 -start-2 flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] z-10 scale-75 md:scale-90 origin-top-left">
+                                <Pin size={10} className="text-accent" />
+                                <span className="text-[9px] font-black uppercase text-accent tracking-tighter">Pinned Response</span>
                               </div>
                             )}
                             <ThinkingSteps 
@@ -7276,14 +7276,14 @@ export const ChatPage: React.FC = () => {
                                       <div className="last:mb-0 mb-3 text-sm leading-relaxed text-slate-900 dark:text-slate-100 antialiased font-normal">
                                         {renderChildrenWithCitations(children, msg)}
                                         {isStreamingActive && isLastParagraph && (
-                                          <span className="typing-cursor-emerald" />
+                                          <span className="typing-cursor-accent" />
                                         )}
                                       </div>
                                     );
                                   },
-                                  h1: ({ children }) => <h1 className="text-xs md:text-sm font-black text-emerald-500 mb-3 mt-5 uppercase tracking-wider border-b border-emerald-500/10 pb-1.5">{children}</h1>,
+                                  h1: ({ children }) => <h1 className="text-xs md:text-sm font-black text-accent mb-3 mt-5 uppercase tracking-wider border-b border-accent/10 pb-1.5">{children}</h1>,
                                   h2: ({ children }) => <h2 className="text-[11px] md:text-xs font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
-                                    <div className="w-0.5 h-3 bg-emerald-500 rounded-full" />
+                                    <div className="w-0.5 h-3 bg-accent rounded-full" />
                                     {children}
                                   </h2>,
                                   h3: ({ children }) => <h3 className="text-[10px] md:text-[11px] font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
@@ -7358,7 +7358,7 @@ export const ChatPage: React.FC = () => {
                         <motion.button 
                           
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-accent hover:'}`}
                         >
                           <ThumbsUp size={13} />
                         </motion.button>
@@ -7374,7 +7374,7 @@ export const ChatPage: React.FC = () => {
                           
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/5'}`}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-accent hover:bg-accent/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </motion.button>
@@ -7382,7 +7382,7 @@ export const ChatPage: React.FC = () => {
                           
                           onClick={() => handleTTS(msg.content, msg.client_id || msg.id || idx)}
                           title={playingTTSId === (msg.client_id || msg.id || idx) ? (dir === 'rtl' ? 'إيقاف الصوت' : 'Stop') : (dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud')}
-                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-accent hover:'}`}
                         >
                           {playingTTSId === (msg.client_id || msg.id || idx) ? (
                             <Square size={13} fill="currentColor" />
@@ -7394,7 +7394,7 @@ export const ChatPage: React.FC = () => {
                           
                           onClick={() => handleRegenerate(idx)}
                           title={dir === 'rtl' ? 'إعادة توليد' : 'Regenerate'}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-accent hover: transition-theme ${isGenerating && idx === messages.length - 1 ? 'animate-spin opacity-50' : ''}`}
                         >
                           <RefreshCw size={13} />
                         </motion.button>
@@ -7405,7 +7405,7 @@ export const ChatPage: React.FC = () => {
                             toast.success(dir === 'rtl' ? 'تم النسخ بنجاح' : 'Copied successfully');
                           }}
                           title={dir === 'rtl' ? 'نسخ' : 'Copy'}
-                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-accent hover: transition-theme"
                         >
                           <Copy size={13} />
                         </motion.button>
@@ -7421,7 +7421,7 @@ export const ChatPage: React.FC = () => {
                             URL.revokeObjectURL(url);
                           }}
                           title={dir === 'rtl' ? 'تحميل' : 'Download'}
-                          className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                          className="hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-accent hover: transition-theme"
                         >
                           <Download size={13} />
                         </motion.button>
@@ -7431,7 +7431,7 @@ export const ChatPage: React.FC = () => {
                             id={`fork-btn-${msg.id}`}
                             onClick={() => handleForkThread(msg.id!)}
                             title={dir === 'rtl' ? 'تفريع المحادثة' : 'Fork Thread'}
-                            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
+                            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-[4px] bg-transparent border border-transparent text-gray-400 hover:text-accent hover: hover:bg-gray-50 dark:hover:bg-gray-800 transition-theme"
                           >
                             <GitFork size={13} />
                           </motion.button>
@@ -7442,9 +7442,9 @@ export const ChatPage: React.FC = () => {
                         {msg.generation_time !== undefined && (
                           <motion.div 
                             
-                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 select-none mr-1 sm:mr-2"
+                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] bg-accent/5 dark:bg-accent/5 border border-accent/10 text-accent select-none mr-1 sm:mr-2"
                           >
-                            <Zap size={10} className="text-emerald-500" />
+                            <Zap size={10} className="text-accent" />
                             <span className="text-[10px] font-mono leading-none font-semibold">
                               {Number(msg.generation_time).toFixed(2)}s
                             </span>
@@ -7464,15 +7464,15 @@ export const ChatPage: React.FC = () => {
                             setIsShareModalOpen(true);
                           }}
                           title={dir === 'rtl' ? 'مشاركة كلقطة اجتماعية' : 'Share to Social'}
-                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/10 transition-theme ml-1 sm:ml-2"
+                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-accent/10 transition-theme ml-1 sm:ml-2"
                         >
-                          <Share2 size={14} className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                          <Share2 size={14} className="" />
                         </motion.button>
 
                          <motion.div  className="relative">
                            <button 
                              onClick={() => setOpenMenuId(openMenuId === (msg.id?.toString() || idx.toString()) ? null : (msg.id?.toString() || idx.toString()))}
-                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-emerald-500 bg-emerald-500/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-emerald-500'}`}
+                             className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] transition-theme ${openMenuId === (msg.id?.toString() || idx.toString()) ? 'text-accent bg-accent/10' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-accent'}`}
                            >
                              <MoreHorizontal size={14} />
                            </button>
@@ -7504,7 +7504,7 @@ export const ChatPage: React.FC = () => {
                                    }}
                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] rounded-[var(--radius)] transition-theme group"
                                  >
-                                   <Bookmark size={15} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
+                                   <Bookmark size={15} className="text-gray-400 group-hover:text-accent transition-theme" />
                                    <span>{dir === 'rtl' ? 'حفظ كاختصار' : 'Save query as shortcut'}</span>
                                  </button>
                                  <button 
@@ -7571,7 +7571,7 @@ export const ChatPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-emerald-500/5 border-emerald-500/10 text-emerald-500 select-none shadow-[0_0_15px_rgba(16,185,129,0.1)] mb-4 shrink-0 transition-theme"
+                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-accent/5 border-accent/10 text-accent select-none shadow-[0_0_15px_rgba(16,185,129,0.1)] mb-4 shrink-0 transition-theme"
                   >
                     <div className="flex gap-1 items-center justify-center">
                       <span className="perplexta-dot" />
@@ -7585,7 +7585,7 @@ export const ChatPage: React.FC = () => {
                           : (dir === 'rtl' ? `${typingName || 'مستخدم آخر'} يكتب الآن...` : `${typingName || 'Someone'} is typing...`)}
                       </span>
                       {typingParty === 'assistant' && liveElapsed > 0 && (
-                        <span className="text-emerald-500/75 dark:text-emerald-400 font-mono text-[10px] ml-1 bg-emerald-500/10 dark:bg-emerald-400/10 px-1.5 py-0.5 rounded-[4px] leading-none">
+                        <span className="text-accent/75 dark:text-accent font-mono text-[10px] ml-1 bg-accent/10 dark:bg-accent/10 px-1.5 py-0.5 rounded-[4px] leading-none">
                           ({liveElapsed.toFixed(1)}s)
                         </span>
                       )}
@@ -7611,7 +7611,7 @@ export const ChatPage: React.FC = () => {
               transition={{ duration: 0.15, ease: "easeOut" }}
               onClick={() => scrollToBottom('smooth')}
               style={{ left: '50%' }}
-              className="absolute bottom-full mb-3 z-40 flex items-center justify-center p-2 text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme cursor-pointer active:scale-95 bg-transparent border-0"
+              className="absolute bottom-full mb-3 z-40 flex items-center justify-center p-2 text-gray-400 hover:text-accent hover: transition-theme cursor-pointer active:scale-95 bg-transparent border-0"
               title={dir === 'rtl' ? 'الرجوع للأسفل' : 'Scroll to Bottom'}
             >
               <ArrowDown size={22} className="animate-[bounce_2s_infinite]" />
@@ -7643,7 +7643,7 @@ export const ChatPage: React.FC = () => {
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center text-accent">
                     <Bookmark size={20} />
                   </div>
                   <div>
@@ -7664,7 +7664,7 @@ export const ChatPage: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.filter(m => m.is_pinned).length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Pin size={32} className="text-[var(--text-muted)] opacity-35 mb-3 animate-pulse text-emerald-500/40" />
+                    <Pin size={32} className="text-[var(--text-muted)] opacity-35 mb-3 animate-pulse text-accent/40" />
                     <p className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                       {dir === 'rtl' ? 'لا توجد رسائل مثبتة حالياً' : 'No pinned messages yet'}
                     </p>
@@ -7674,14 +7674,14 @@ export const ChatPage: React.FC = () => {
                   </div>
                 ) : (
                   messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                    <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/30 transition-theme">
+                    <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/30 transition-theme">
                       <div className="flex items-center justify-between mb-2">
-                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
+                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent">
                            {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
                          </span>
                          <button
                            onClick={() => handlePinMessage(msg.id!, false)}
-                           className="text-gray-400 hover:text-emerald-500 transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
+                           className="text-gray-400 hover:text-accent transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
                            title={dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin'}
                          >
                            <PinOff size={12} />
@@ -7714,11 +7714,11 @@ export const ChatPage: React.FC = () => {
 
               <div className="p-6 border-b border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+                  <div className="w-10 h-10 rounded-md bg-accent/10 flex items-center justify-center text-accent ">
                     <Sparkles size={20} className="animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-emerald-400">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-accent">
                       {dir === 'rtl' ? 'التحليل الجنائي للوثيقة' : 'Document Forensic Audit'}
                     </h2>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter mt-0.5">
@@ -7737,7 +7737,7 @@ export const ChatPage: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {isAnalyzingForensic ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <Loader2 size={36} className="text-emerald-500 animate-spin mb-4" />
+                    <Loader2 size={36} className="text-accent animate-spin mb-4" />
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">
                       {dir === 'rtl' ? 'جاري فحص الطبقات المخفية وهيكل الملف المصدري...' : 'Analyzing binary optional content streams & file layers...'}
                     </p>
@@ -7761,12 +7761,12 @@ export const ChatPage: React.FC = () => {
                         </ul>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-md bg-emerald-950/20 border border-emerald-900/40 text-emerald-200">
+                      <div className="p-4 rounded-md bg-accent-950/20 border border-accent-900/40 text-accent-200">
                         <div className="flex items-center gap-2 font-black text-xs tracking-wider uppercase">
-                          <Check size={14} className="text-emerald-500" />
+                          <Check size={14} className="text-accent" />
                           <span>{dir === 'rtl' ? 'التحقق السليم لهيكل الملف' : 'Document Format Integrity Verified'}</span>
                         </div>
-                        <p className="text-[10px] text-emerald-400/75 mt-1">
+                        <p className="text-[10px] text-accent/75 mt-1">
                           No deceptive multi-incremental states or nested active script payloads detected in this scope.
                         </p>
                       </div>
@@ -7775,7 +7775,7 @@ export const ChatPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                       <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-accent/80 mb-2">
                           {dir === 'rtl' ? 'مؤشرات الهيكل الكوديكى' : 'Core Forensic Properties'}
                         </h3>
                         <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-3">
@@ -7791,11 +7791,11 @@ export const ChatPage: React.FC = () => {
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-gray-400">{dir === 'rtl' ? 'إجمالي كائنات الـ Object' : 'Parsed Objects Count'}</span>
-                            <span className="font-mono font-bold text-emerald-400">{forensicReport.totalObjectsCount}</span>
+                            <span className="font-mono font-bold text-accent">{forensicReport.totalObjectsCount}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-gray-400">{dir === 'rtl' ? 'مجموعات المحتوى الاختياري OCG (الأطياف)' : 'Optional Content Layers (OCG)'}</span>
-                            <span className="font-mono font-bold text-emerald-400">{forensicReport.optionalContentGroupsCount}</span>
+                            <span className="font-mono font-bold text-accent">{forensicReport.optionalContentGroupsCount}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-gray-400">{dir === 'rtl' ? 'الملفات المدمجة داخلياً' : 'Nested Embedded Files'}</span>
@@ -7826,7 +7826,7 @@ export const ChatPage: React.FC = () => {
                           {forensicReport.hiddenLayers.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {forensicReport.hiddenLayers.map((layer: string, lIdx: number) => (
-                                <span key={lIdx} className="text-[9px] font-bold tracking-tight bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-1 rounded-[4px]">
+                                <span key={lIdx} className="text-[9px] font-bold tracking-tight bg-accent/10 border border-accent/20 text-accent px-2 py-1 rounded-[4px]">
                                   {layer}
                                 </span>
                               ))}
@@ -7840,7 +7840,7 @@ export const ChatPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-accent/80 mb-2">
                           {dir === 'rtl' ? 'سجل البيانات الوصفية الملحقة' : 'Embedded Metadata Trail'}
                         </h3>
                         <div className="bg-[#121214] border border-gray-800/60 rounded-md p-4 space-y-4">
@@ -7850,7 +7850,7 @@ export const ChatPage: React.FC = () => {
                           </div>
                           <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'المؤلف / المالك المصدري':'Author / Owner'}</span>
-                            <p className="text-xs mt-1 font-semibold text-emerald-400">{forensicReport.metadata.author !== 'N/A' ? forensicReport.metadata.author : (dir==='rtl'?'غير محدد':'None')}</p>
+                            <p className="text-xs mt-1 font-semibold text-accent">{forensicReport.metadata.author !== 'N/A' ? forensicReport.metadata.author : (dir==='rtl'?'غير محدد':'None')}</p>
                           </div>
                           <div>
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dir==='rtl'?'الموضوع':'Subject'}</span>
@@ -7873,12 +7873,12 @@ export const ChatPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 pt-2 border-t border-gray-800">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500/80 mb-2">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-accent/80 mb-2">
                         {dir === 'rtl' ? 'سجل الفحص المعالج خطوة بخطوة' : 'Scanner Processing Stream Logs'}
                       </h3>
                       <div className="bg-[#0b0b0c] border border-gray-900 rounded p-4 font-mono text-[9px] text-gray-400 space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
                         {forensicReport.detailedLog.map((log: string, lIdx: number) => (
-                          <div key={lIdx} className="leading-relaxed hover:text-emerald-400 transition-colors">
+                          <div key={lIdx} className="leading-relaxed hover:text-accent transition-colors">
                             {log}
                           </div>
                         ))}
@@ -7895,7 +7895,7 @@ export const ChatPage: React.FC = () => {
               <div className="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
                 <button
                   onClick={() => setIsForensicModalOpen(false)}
-                  className="px-5 py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs uppercase tracking-widest transition-theme cursor-pointer border-transparent"
+                  className="px-5 py-2.5 rounded-[4px] bg-accent hover:bg-accent text-black font-black text-xs uppercase tracking-widest transition-theme cursor-pointer border-transparent"
                 >
                   {dir === 'rtl' ? 'إغلاق نافذة الفحص' : 'Close Forensic Console'}
                 </button>
@@ -7981,7 +7981,7 @@ export const ChatPage: React.FC = () => {
                   : 'bg-white border-gray-150 text-gray-900'
               }`}
             >
-              <h3 className="text-base font-bold tracking-tight font-sans text-start text-emerald-500 dark:text-emerald-400 flex items-center gap-2">
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-accent dark:text-accent flex items-center gap-2">
                 <Share2 size={16} />
                 {dir === 'rtl' ? 'مشاركة اللقطة مع الشبكات الاجتماعية' : 'Share Snapshot to Social'}
               </h3>
@@ -8006,8 +8006,8 @@ export const ChatPage: React.FC = () => {
                       placeholder={dir === 'rtl' ? 'مثال: تحليل البيتكوين الاستراتيجي...' : 'e.g., Strategic Bitcoin Analysis...'}
                       className={`w-full px-3 py-2 text-xs font-sans rounded-[4px] border outline-none transition-theme ${
                         theme === 'dark' 
-                          ? 'bg-[#1e1e21] border-zinc-800 text-white focus:border-emerald-500' 
-                          : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-emerald-500'
+                          ? 'bg-[#1e1e21] border-zinc-800 text-white focus:border-accent' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-accent'
                       }`}
                     />
                   </div>
@@ -8055,7 +8055,7 @@ export const ChatPage: React.FC = () => {
                           setIsGeneratingShare(false);
                         }
                       }}
-                      className="px-4 py-2 text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-black rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
+                      className="px-4 py-2 text-xs font-extrabold bg-accent hover:bg-accent text-black rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
                     >
                       {isGeneratingShare ? (
                         <>
@@ -8099,7 +8099,7 @@ export const ChatPage: React.FC = () => {
                           toast.success(dir === 'rtl' ? 'تم نسخ الرابط!' : 'Link copied!');
                         } catch (e) {}
                       }}
-                      className="absolute right-2 text-emerald-500 hover:text-emerald-400 p-1"
+                      className="absolute right-2 text-accent hover:text-accent p-1"
                     >
                       <Copy size={14} />
                     </button>
@@ -8114,7 +8114,7 @@ export const ChatPage: React.FC = () => {
                         const tweetText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 flex items-center justify-center text-[var(--text-muted)] hover:text-accent transition-theme"
                       title="Share on X"
                     >
                       <Twitter size={16} />
@@ -8126,7 +8126,7 @@ export const ChatPage: React.FC = () => {
                         const targetUrl = `${window.location.origin}/share/${generatedShareId}`;
                         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 flex items-center justify-center text-[var(--text-muted)] hover:text-accent transition-theme"
                       title="Share on LinkedIn"
                     >
                       <Linkedin size={16} />
@@ -8139,7 +8139,7 @@ export const ChatPage: React.FC = () => {
                         const tText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://t.me/share/url?url=${encodeURIComponent(targetUrl)}&text=${encodeURIComponent(tText)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 flex items-center justify-center text-[var(--text-muted)] hover:text-accent transition-theme"
                       title="Share on Telegram"
                     >
                       <Send size={16} />
@@ -8152,7 +8152,7 @@ export const ChatPage: React.FC = () => {
                         const waText = dir === 'rtl' ? `شاهد هذا التحليل التقني المذهل على بيربليكستا!` : `Check out this technical insight on Perplexta!`;
                         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText + ' ' + targetUrl)}`, '_blank');
                       }}
-                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-emerald-500/30 flex items-center justify-center text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
+                      className="w-10 h-10 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 flex items-center justify-center text-[var(--text-muted)] hover:text-accent transition-theme"
                       title="Share on WhatsApp"
                     >
                       <MessageSquare size={16} />

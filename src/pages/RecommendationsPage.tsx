@@ -59,7 +59,7 @@ export const RecommendationsPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md w-full p-8 rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] text-center shadow-2xl relative overflow-hidden"
         >
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mx-auto mb-5 shadow-inner">
+          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mx-auto mb-5 shadow-inner">
             <Sparkles size={32} />
           </div>
           <h2 className="text-xl font-black text-[var(--text-primary)] mb-2">
@@ -72,7 +72,7 @@ export const RecommendationsPage: React.FC = () => {
           </p>
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="w-full py-3.5 px-6 rounded-xl bg-emerald-500 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 transition-theme flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-6 rounded-xl bg-accent text-black font-extrabold text-sm shadow-lg shadow-none hover:bg-accent transition-theme flex items-center justify-center gap-2"
           >
             <UserCheck size={18} />
             <span>{language === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</span>
@@ -88,13 +88,13 @@ export const RecommendationsPage: React.FC = () => {
       <div className="sticky top-0 z-30 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 py-3.5 transition-theme">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-sm">
               <Compass size={22} className="animate-spin-slow" />
             </div>
             <div>
               <h1 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
                 {language === 'ar' ? 'محرك الاكتشاف الذكي' : 'AI Discovery Hub'}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
                   v2.0 Elite Engine
                 </span>
               </h1>
@@ -109,7 +109,7 @@ export const RecommendationsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPrefModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/15 hover:bg-emerald-400 transition-theme"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-accent text-black font-extrabold text-xs shadow-lg shadow-none hover:bg-accent transition-theme"
             >
               <Sliders size={14} />
               <span>{language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}</span>
@@ -120,15 +120,15 @@ export const RecommendationsPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
         {/* User Interaction & Vector Intelligence Banner */}
-        <div className="p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-emerald-500/[0.04] via-[var(--bg-surface)] to-teal-500/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-sm">
+        <div className="p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-gray-500/10[0.04] via-[var(--bg-surface)] to-teal-500/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-sm">
           <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5">
+            <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 mt-0.5">
               <Activity size={22} />
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                 {language === 'ar' ? 'ملف التوصيات المخصصة لـ ' : 'Recommendation Vector for '}
-                <span className="text-emerald-500">{user?.name || (language === 'ar' ? 'المستخدم' : 'Guest')}</span>
+                <span className="text-accent">{user?.name || (language === 'ar' ? 'المستخدم' : 'Guest')}</span>
               </h3>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {language === 'ar'
@@ -144,7 +144,7 @@ export const RecommendationsPage: React.FC = () => {
                   {userSummary.top_inferred_categories.map((cat: string, idx: number) => (
                     <span
                       key={idx}
-                      className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md capitalize"
+                      className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md capitalize"
                     >
                       {cat}
                     </span>
@@ -156,13 +156,13 @@ export const RecommendationsPage: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-emerald-500">98%</p>
+              <p className="text-lg font-black text-accent">98%</p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
                 {language === 'ar' ? 'دقة الترشيح' : 'Match Precision'}
               </p>
             </div>
             <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-emerald-500">24+</p>
+              <p className="text-lg font-black text-accent">24+</p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
                 {language === 'ar' ? 'عنصر مرشح' : 'Active Recommendations'}
               </p>
@@ -188,7 +188,7 @@ export const RecommendationsPage: React.FC = () => {
         <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                 <ShoppingBag size={18} />
               </div>
               <div>

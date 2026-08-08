@@ -374,7 +374,7 @@ authenticateAgent();`;
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-6 py-3 rounded-[4px] backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.15)] flex items-center gap-2"
+            className="fixed bottom-6 right-6 z-50 bg-accent/10 border border-accent/20 text-accent px-6 py-3 rounded-[4px] backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.15)] flex items-center gap-2"
           >
             <ShieldCheck size={16} />
             <span className="text-sm font-bold">{localToast}</span>
@@ -384,11 +384,11 @@ authenticateAgent();`;
 
       {/* Hero Header */}
       <div className="p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/10 dark:bg-[#1a1a1c]/40 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5 text-emerald-500">
+        <div className="absolute top-0 right-0 p-8 opacity-5 text-accent">
           <Terminal size={140} />
         </div>
         <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[11px] font-bold tracking-wider uppercase">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold tracking-wider uppercase">
             <Cpu size={12} />
             {isAr ? 'بروتوكول الوكلاء والأتمتة' : 'AI Bot & Agent Integration Profile'}
           </div>
@@ -410,7 +410,7 @@ authenticateAgent();`;
         <div className="lg:col-span-5 space-y-6">
           <div className="p-6 md:p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/5 dark:bg-[#1a1a1c]/20 space-y-6">
             <div className="flex items-center gap-2.5 pb-4 border-b border-gray-200 dark:border-gray-800/40">
-              <Key size={18} className="text-emerald-500" />
+              <Key size={18} className="text-accent" />
               <h3 className="font-bold text-base text-gray-900 dark:text-white">
                 {isAr ? 'تسجيل وكيل برامجي جديد' : 'Register New Bot Client'}
               </h3>
@@ -425,7 +425,7 @@ authenticateAgent();`;
                   type="text"
                   required
                   placeholder={isAr ? 'مثال: نظام التحليل الآلي، Slack Bot' : 'e.g., Analytical Python Script, Telegram Bot'}
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-accent rounded-[4px] transition-theme outline-none"
                   value={clientName}
                   onChange={e => setClientName(e.target.value)}
                 />
@@ -436,7 +436,7 @@ authenticateAgent();`;
                   {isAr ? 'نوع الهوية البرمجية' : 'Identity Persona Type'}
                 </label>
                 <select 
-                  className="w-full text-sm px-3.5 py-2.5 bg-[var(--bg-base)] border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-[var(--bg-base)] border border-gray-200 dark:border-gray-800 focus:border-accent rounded-[4px] transition-theme outline-none"
                   value={identityType}
                   onChange={e => setIdentityType(e.target.value)}
                 >
@@ -453,7 +453,7 @@ authenticateAgent();`;
                 <input 
                   type="text"
                   placeholder="e.g., PerplextaExternalAgent/1.0"
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-accent rounded-[4px] transition-theme outline-none"
                   value={userAgent}
                   onChange={e => setUserAgent(e.target.value)}
                 />
@@ -466,7 +466,7 @@ authenticateAgent();`;
                 <input 
                   type="text"
                   placeholder={isAr ? 'الرابط للتوثيق المنقسم (مفصولة بفاصلة)' : 'Comma-separated URLs, if using interactive auth flows'}
-                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-emerald-500 rounded-[4px] transition-theme outline-none"
+                  className="w-full text-sm px-3.5 py-2.5 bg-transparent border border-gray-200 dark:border-gray-800 focus:border-accent rounded-[4px] transition-theme outline-none"
                   value={redirectUris}
                   onChange={e => setRedirectUris(e.target.value)}
                 />
@@ -478,7 +478,7 @@ authenticateAgent();`;
               <button
                 type="submit"
                 disabled={isRegistering}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-black font-bold text-sm tracking-tight rounded-[4px] shadow-lg transition-theme disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-accent hover:bg-accent active:bg-accent text-black font-bold text-sm tracking-tight rounded-[4px] shadow-lg transition-theme disabled:opacity-50"
               >
                 {isRegistering ? (
                   <RefreshCw size={16} className="animate-spin" />
@@ -500,19 +500,19 @@ authenticateAgent();`;
           <div className="p-6 md:p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/5 dark:bg-[#1a1a1c]/20 space-y-4">
             <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-800/40">
               <div className="flex items-center gap-2">
-                <Globe size={18} className="text-emerald-500" />
+                <Globe size={18} className="text-accent" />
                 <h3 className="font-bold text-base text-gray-900 dark:text-white">
                   {isAr ? 'الوكلاء والأجهزة المرتبطة حالياً' : 'Your Registered Connected Systems'}
                 </h3>
               </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent/10 text-accent font-bold">
                 {agents.length}
               </span>
             </div>
 
             {isLoading ? (
               <div className="h-32 flex items-center justify-center">
-                <RefreshCw size={24} className="animate-spin text-emerald-500" />
+                <RefreshCw size={24} className="animate-spin text-accent" />
               </div>
             ) : agents.length === 0 ? (
               <div className="h-32 flex flex-col items-center justify-center text-center space-y-2">
@@ -538,12 +538,12 @@ authenticateAgent();`;
                       </div>
                       <div className="flex items-center gap-1 font-mono text-[10px] text-gray-400">
                         <span>ID:</span>
-                        <span className="text-emerald-500/90">{agent.client_id}</span>
+                        <span className="text-accent/90">{agent.client_id}</span>
                         <button 
                           onClick={() => handleCopy(agent.client_id, `cid-${agent.id}`)}
                           className="p-1 hover:text-white transition-colors"
                         >
-                          {copiedId === `cid-${agent.id}` ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+                          {copiedId === `cid-${agent.id}` ? <Check size={10} className="text-accent" /> : <Copy size={10} />}
                         </button>
                       </div>
                     </div>
@@ -572,10 +572,10 @@ authenticateAgent();`;
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="p-6 md:p-8 rounded-[4px] border border-emerald-500/20 bg-emerald-500/[0.02] space-y-4 overflow-hidden"
+                className="p-6 md:p-8 rounded-[4px] border border-accent/20 bg-accent/[0.02] space-y-4 overflow-hidden"
               >
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 shrink-0">
+                  <div className="p-2 rounded-full bg-accent/10 text-accent shrink-0">
                     <ShieldAlert size={18} />
                   </div>
                   <div className="space-y-1.5">
@@ -597,13 +597,13 @@ authenticateAgent();`;
                   </div>
                   <div className="flex items-center justify-between gap-4 py-1.5 border-t border-gray-800/60">
                     <span className="text-gray-400">Client ID:</span>
-                    <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                    <div className="flex items-center gap-1.5 text-accent font-bold">
                       <span>{generatedCredentials.client_id}</span>
                       <button 
                         onClick={() => handleCopy(generatedCredentials.client_id, 'gen-cid')}
                         className="p-1 hover:text-white transition-colors"
                       >
-                        {copiedId === 'gen-cid' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        {copiedId === 'gen-cid' ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
                       </button>
                     </div>
                   </div>
@@ -615,7 +615,7 @@ authenticateAgent();`;
                         onClick={() => handleCopy(generatedCredentials.client_secret, 'gen-sec')}
                         className="p-1 hover:text-white transition-colors"
                       >
-                        {copiedId === 'gen-sec' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        {copiedId === 'gen-sec' ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
                       </button>
                     </div>
                   </div>
@@ -628,7 +628,7 @@ authenticateAgent();`;
           <div className="p-6 md:p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/5 dark:bg-[#1a1a1c]/20 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
               <div className="flex items-center gap-2">
-                <Code size={18} className="text-emerald-500" />
+                <Code size={18} className="text-accent" />
                 <h4 className="font-bold text-sm text-gray-900 dark:text-white">
                   {isAr ? 'أمثلة للاتصال وحجز الرموز الأمنية' : 'Code Integration Samples'}
                 </h4>
@@ -638,19 +638,19 @@ authenticateAgent();`;
               <div className="flex items-center gap-1 bg-black/20 p-0.5 rounded-[4px] self-start border border-gray-800/50">
                 <button
                   onClick={() => setCodeLanguage('python')}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'python' ? 'bg-emerald-500 text-black' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'python' ? 'bg-accent text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                   Python
                 </button>
                 <button
                   onClick={() => setCodeLanguage('node')}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'node' ? 'bg-emerald-500 text-black' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'node' ? 'bg-accent text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                   NodeJS
                 </button>
                 <button
                   onClick={() => setCodeLanguage('curl')}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'curl' ? 'bg-emerald-500 text-black' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-[2px] transition-colors ${codeLanguage === 'curl' ? 'bg-accent text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                   cURL
                 </button>
@@ -663,7 +663,7 @@ authenticateAgent();`;
                 className="absolute top-3 right-3 p-1.5 rounded-[4px] bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-theme"
                 title={isAr ? 'نسخ الكود' : 'Copy Code'}
               >
-                {copiedId === 'code-copy' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                {copiedId === 'code-copy' ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
               </button>
               <pre className="text-[10px] font-mono leading-relaxed p-4 bg-black/50 text-gray-300 rounded-[4px] overflow-x-auto max-h-52 no-scrollbar border border-gray-800/80">
                 {getCodeSnippet()}
@@ -685,13 +685,13 @@ authenticateAgent();`;
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-200 dark:border-gray-800/40">
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Cpu size={20} className="text-emerald-500 animate-pulse" />
-                  <div className="absolute -inset-1 rounded-full bg-emerald-500/20 blur opacity-75"></div>
+                  <Cpu size={20} className="text-accent animate-pulse" />
+                  <div className="absolute -inset-1 rounded-full bg-accent/20 blur opacity-75"></div>
                 </div>
                 <div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
                     {isAr ? 'مركز عمليات بروتوكول WebMCP المتكامل' : 'WebMCP Integrated Protocol Workspace'}
-                    <span className="px-1.5 py-0.5 rounded-[2px] bg-emerald-500/10 text-emerald-500 text-[9px] font-mono font-bold tracking-widest uppercase">
+                    <span className="px-1.5 py-0.5 rounded-[2px] bg-accent/10 text-accent text-[9px] font-mono font-bold tracking-widest uppercase">
                       ACTIVE
                     </span>
                   </h4>
@@ -706,14 +706,14 @@ authenticateAgent();`;
                 <button
                   type="button"
                   onClick={() => setMcpMode('server')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'server' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'server' ? 'bg-accent text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'تشخيص الخادم المحلي' : 'Local Server Diagnostic'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMcpMode('federation')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'federation' ? 'bg-emerald-500 text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'federation' ? 'bg-accent text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'الترابط الفيدرالي الخارجي' : 'External Federation'}
                 </button>
@@ -727,7 +727,7 @@ authenticateAgent();`;
                 <div className="lg:col-span-6 space-y-4">
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-                      <Activity size={14} className="text-emerald-500" />
+                      <Activity size={14} className="text-accent" />
                       {isAr ? 'أدوات التحكم وتدفق الاكتشاف:' : 'Discovery Flow controls:'}
                     </span>
                     <p className="text-[11px] text-gray-400 leading-relaxed">
@@ -742,9 +742,9 @@ authenticateAgent();`;
                       type="button"
                       onClick={handleFetchMcpCard}
                       disabled={isMcpWorking}
-                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
+                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-accent hover:text-accent flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
                     >
-                      <Layers size={13} className="text-emerald-500" />
+                      <Layers size={13} className="text-accent" />
                       {isAr ? 'فحص بطاقة الاكتشاف' : 'Query Server Card'}
                     </button>
 
@@ -752,9 +752,9 @@ authenticateAgent();`;
                       type="button"
                       onClick={handleFetchMcpTools}
                       disabled={isMcpWorking}
-                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
+                      className="text-xs font-bold px-4 py-2 bg-[#1a1a1c] hover:bg-[#252528] rounded-[4px] border border-gray-800 text-accent hover:text-accent flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50"
                     >
-                      <Database size={13} className="text-emerald-500" />
+                      <Database size={13} className="text-accent" />
                       {isAr ? 'استرداد الأدوات النشطة' : 'List Active Tools'}
                     </button>
                   </div>
@@ -764,9 +764,9 @@ authenticateAgent();`;
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-3 bg-black/40 rounded-[4px] border border-emerald-500/10 space-y-1.5"
+                      className="p-3 bg-black/40 rounded-[4px] border border-accent/10 space-y-1.5"
                     >
-                      <span className="text-[10px] text-emerald-500 font-bold font-mono uppercase tracking-wider block">
+                      <span className="text-[10px] text-accent font-bold font-mono uppercase tracking-wider block">
                         [LIVE DISCOVERY META]
                       </span>
                       <div className="text-[11px] font-mono text-gray-300 space-y-1">
@@ -787,7 +787,7 @@ authenticateAgent();`;
                     >
                       <div className="space-y-1">
                         <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-                          <CheckCircle2 size={13} className="text-emerald-500" />
+                          <CheckCircle2 size={13} className="text-accent" />
                           {isAr ? 'استدعاء أداة WebMCP مباشرة:' : 'Execute Custom WebMCP Tool:'}
                         </span>
                         <p className="text-[10px] text-gray-500">
@@ -801,7 +801,7 @@ authenticateAgent();`;
                           <select
                             value={mcpSelectedTool}
                             onChange={(e) => setMcpSelectedTool(e.target.value)}
-                            className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2 text-white font-mono focus:border-emerald-500 focus:outline-none transition-colors"
+                            className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2 text-white font-mono focus:border-accent focus:outline-none transition-colors"
                           >
                             {mcpTools.map(t => (
                               <option key={t.name} value={t.name}>{t.name} - {t.description}</option>
@@ -817,13 +817,13 @@ authenticateAgent();`;
                               value={mcpTestPrompt}
                               onChange={(e) => setMcpTestPrompt(e.target.value)}
                               placeholder={isAr ? 'اكتب معلمات المدخلات هنا...' : 'Enter prompt target here...'}
-                              className="flex-1 text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2 text-white focus:border-emerald-500 focus:outline-none transition-colors"
+                              className="flex-1 text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2 text-white focus:border-accent focus:outline-none transition-colors"
                             />
                             <button
                               type="button"
                               onClick={handleExecuteMcpTool}
                               disabled={isMcpWorking || !mcpSelectedTool}
-                              className="px-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-xs rounded-[4px] flex items-center justify-center transition-theme cursor-pointer"
+                              className="px-3.5 bg-accent hover:bg-accent disabled:opacity-50 text-black font-bold text-xs rounded-[4px] flex items-center justify-center transition-theme cursor-pointer"
                             >
                               <Play size={12} fill="currentColor" />
                             </button>
@@ -834,8 +834,8 @@ authenticateAgent();`;
                       {/* Display Execution Result */}
                       {mcpExecutionResult && (
                         <div className="space-y-1">
-                          <span className="text-[10px] text-emerald-400 font-mono font-bold block">[EXECUTION RESULT]:</span>
-                          <pre className="text-[10px] font-mono leading-relaxed p-3 bg-black/60 text-gray-300 rounded-[4px] border border-emerald-500/20 overflow-x-auto max-h-40 no-scrollbar select-all">
+                          <span className="text-[10px] text-accent font-mono font-bold block">[EXECUTION RESULT]:</span>
+                          <pre className="text-[10px] font-mono leading-relaxed p-3 bg-black/60 text-gray-300 rounded-[4px] border border-accent/20 overflow-x-auto max-h-40 no-scrollbar select-all">
                             {mcpExecutionResult}
                           </pre>
                         </div>
@@ -848,7 +848,7 @@ authenticateAgent();`;
                 <div className="lg:col-span-6 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-                      <Terminal size={14} className="text-emerald-500" />
+                      <Terminal size={14} className="text-accent" />
                       {isAr ? 'سجل العمليات (WebMCP Stream Logs):' : 'Operations log (WebMCP Stream Logs):'}
                     </span>
                     <button
@@ -860,21 +860,21 @@ authenticateAgent();`;
                     </button>
                   </div>
 
-                  <div className="h-56 bg-[#0f0f12] p-4 rounded-[4px] border border-gray-800/80 font-mono text-[10px] text-emerald-500/95 overflow-y-auto no-scrollbar space-y-2 flex flex-col-reverse shadow-inner">
+                  <div className="h-56 bg-[#0f0f12] p-4 rounded-[4px] border border-gray-800/80 font-mono text-[10px] text-accent/95 overflow-y-auto no-scrollbar space-y-2 flex flex-col-reverse shadow-inner">
                     {mcpLogs.length === 0 ? (
                       <span className="text-[10px] text-gray-500 block uppercase tracking-wider select-none h-full flex items-center justify-center text-center">
                         {isAr ? 'بانتظار تنفيذ العمليات في المنصة...' : 'System Idle. Awaiting WebMCP requests...'}
                       </span>
                     ) : (
                       mcpLogs.map((log, index) => (
-                        <div key={index} className="leading-relaxed break-all border-l-2 border-emerald-500/20 pl-2">
+                        <div key={index} className="leading-relaxed break-all border-l-2 border-accent/20 pl-2">
                           {log}
                         </div>
                       ))
                     )}
                   </div>
 
-                  <div className="p-3 bg-emerald-500/[0.01] rounded-[4px] border border-emerald-500/10 text-[10px] text-gray-400 leading-relaxed">
+                  <div className="p-3 bg-accent/[0.01] rounded-[4px] border border-accent/10 text-[10px] text-gray-400 leading-relaxed">
                     {isAr 
                       ? '💡 يدعم خادم WebMCP معيار SSE لنقل التدفق في بيئة الإنتاج المجهزة بكافة طاقاتها والبروتوكول متواضع بصفة آمنة تماماً.' 
                       : '💡 WebMCP Server natively supports active Server-Sent Events (SSE) stream channels to communicate synchronously with parent agents.'}
@@ -886,7 +886,7 @@ authenticateAgent();`;
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-                    <Wifi size={14} className="text-emerald-500 animate-pulse" />
+                    <Wifi size={14} className="text-accent animate-pulse" />
                     {isAr ? 'ربط شبكي فيدرالي مع خوادم WebMCP الخارجية:' : 'Federate with external WebMCP Platforms:'}
                   </span>
                   <p className="text-xs text-gray-400 leading-relaxed">
@@ -903,20 +903,20 @@ authenticateAgent();`;
                       value={externalMcpUrl}
                       onChange={(e) => setExternalMcpUrl(e.target.value)}
                       placeholder="https://mcp-server.example.com/sse"
-                      className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2.5 text-white focus:border-emerald-500 focus:outline-none transition-theme"
+                      className="w-full text-xs bg-[#1a1a1c] border border-gray-800 rounded-[4px] p-2.5 text-white focus:border-accent focus:outline-none transition-theme"
                       required
                     />
                     {externalMcpStatus === 'connected' && (
                       <span className="absolute right-3 top-2.5 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
                       </span>
                     )}
                   </div>
                   <button
                     type="submit"
                     disabled={isMcpWorking}
-                    className="px-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs rounded-[4px] flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50 blur-none shrink-0"
+                    className="px-4 bg-accent hover:bg-accent text-black font-bold text-xs rounded-[4px] flex items-center gap-1.5 transition-theme cursor-pointer disabled:opacity-50 blur-none shrink-0"
                   >
                     <RefreshCw size={12} className={isMcpWorking ? 'animate-spin' : ''} />
                     {isAr ? 'ربط الخادم' : 'Federate'}
@@ -928,10 +928,10 @@ authenticateAgent();`;
                   <motion.div
                     initial={{ opacity: 0, scale: 0.99 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 rounded-[4px] border border-emerald-500/20 bg-emerald-500/[0.01] space-y-3 max-w-xl"
+                    className="p-4 rounded-[4px] border border-accent/20 bg-accent/[0.01] space-y-3 max-w-xl"
                   >
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-500" />
+                      <CheckCircle2 size={16} className="text-accent" />
                       <span className="text-xs font-bold text-gray-800 dark:text-white">
                         {isAr ? 'تم استيراد الأدوات وبث الخصائص بنجاح!' : 'Federated tools & capabilities merged!'}
                       </span>
@@ -943,11 +943,11 @@ authenticateAgent();`;
                       </div>
                       <div className="flex justify-between border-b border-gray-800/40 py-1">
                         <span>{isAr ? 'إصدار البروتوكول:' : 'MCP Version:'}</span>
-                        <span className="text-emerald-500 font-bold">2024-11-05</span>
+                        <span className="text-accent font-bold">2024-11-05</span>
                       </div>
                       <div className="flex justify-between pt-1">
                         <span>{isAr ? 'الأدوات المتكاملة المستوردة:' : 'Imported capabilities:'}</span>
-                        <span className="text-emerald-400">tools (4), resources (2)</span>
+                        <span className="text-accent">tools (4), resources (2)</span>
                       </div>
                     </div>
                   </motion.div>
@@ -959,7 +959,7 @@ authenticateAgent();`;
           {/* DNS for AI Discovery (DNS-AID) & Discoverability Docs */}
           <div className="p-6 md:p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/5 dark:bg-[#1a1a1c]/20 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800/40">
-              <Globe size={18} className="text-emerald-500" />
+              <Globe size={18} className="text-accent" />
               <h4 className="font-bold text-sm text-gray-900 dark:text-white">
                 {isAr ? 'بروتوكول اكتشاف الوكلاء الذاتي بالـ DNS (DNS-AID)' : 'DNS for AI Discovery (DNS-AID) & Discovery'}
               </h4>
@@ -974,7 +974,7 @@ authenticateAgent();`;
             <div className="space-y-4">
               {/* DNS records block */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-emerald-500">
+                <span className="text-[11px] font-bold text-accent">
                   {isAr ? '1. سجلات DNS المطلوبة (SVCB / HTTPS):' : '1. Required DNS Records (SVCB/HTTPS / Zone DNSSEC):'}
                 </span>
                 <div className="relative">
@@ -983,7 +983,7 @@ authenticateAgent();`;
                     className="absolute top-2 right-2 p-1 rounded bg-black/40 hover:bg-black/80 border border-gray-800/50 text-gray-400 hover:text-white transition-theme text-[10px]"
                     title={isAr ? 'نسخ السجل' : 'Copy DNS Record'}
                   >
-                    {copiedId === 'dns-copy' ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
+                    {copiedId === 'dns-copy' ? <Check size={10} className="text-accent" /> : <Copy size={10} />}
                   </button>
                   <pre className="text-[10px] font-mono leading-relaxed p-3 bg-black/50 text-gray-300 rounded-[4px] overflow-x-auto no-scrollbar border border-gray-800/80">
                     {`_a2a._agents.${window.location.hostname || 'example.com'}. 3600 IN SVCB 1 ${window.location.hostname || 'example.com'}. alpn="a2a" port=443 mandatory=alpn,port`}
@@ -998,7 +998,7 @@ authenticateAgent();`;
 
               {/* Link Headers block */}
               <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-800/40">
-                <span className="text-[11px] font-bold text-emerald-500">
+                <span className="text-[11px] font-bold text-accent">
                   {isAr ? '2. ترويسة اكتشاف الروابط المعينة (HTTP Link Headers):' : '2. Advertised Link HTTP Response Headers (RFC 8288):'}
                 </span>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -1016,7 +1016,7 @@ authenticateAgent();`;
           {/* x402 Agent-Native Payments (HTTP 402) */}
           <div className="p-6 md:p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/5 dark:bg-[#1a1a1c]/20 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800/40">
-              <Cpu size={18} className="text-emerald-500" />
+              <Cpu size={18} className="text-accent" />
               <h4 className="font-bold text-sm text-gray-900 dark:text-white">
                 {isAr ? 'بروتوكول الدفع الذاتي للوكلاء (x402 Protocol)' : 'x402 Agent-Native Programmatic Payments'}
               </h4>
@@ -1030,7 +1030,7 @@ authenticateAgent();`;
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="p-4 bg-black/30 rounded-[4px] border border-gray-800/60 space-y-2 font-mono text-xs">
-                <span className="text-emerald-400 font-bold block mb-1">
+                <span className="text-accent font-bold block mb-1">
                   {isAr ? '⚙️ طرف التوصيل المحمي برمجياً:' : '⚙️ Protected Resource Endpoint:'}
                 </span>
                 <div className="text-white bg-black/50 p-2 rounded text-[11px] select-all border border-gray-800/40">
@@ -1047,7 +1047,7 @@ authenticateAgent();`;
                   </div>
                   <div className="flex justify-between">
                     <span>{isAr ? 'العنوان المستهدف محفظة:' : 'Recipient PayTo:'}</span>
-                    <span className="text-emerald-500 font-bold">0xX402...Wallet</span>
+                    <span className="text-accent font-bold">0xX402...Wallet</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{isAr ? 'السعر المحدد:' : 'Asset Pricing:'}</span>
@@ -1057,7 +1057,7 @@ authenticateAgent();`;
               </div>
 
               <div className="p-4 bg-black/30 rounded-[4px] border border-gray-800/60 space-y-2">
-                <span className="text-emerald-400 font-bold text-xs block mb-1">
+                <span className="text-accent font-bold text-xs block mb-1">
                   {isAr ? '💻 استجابة ترويسة x402 المتوقعة:' : '💻 Expected HTTP 402 Headers:'}
                 </span>
                 <p className="text-[10px] text-gray-400">

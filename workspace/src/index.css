@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --theme-transition-duration: 150ms;
+
+  /* === النظام المحايد === */
+  --bg-base: #F8FAFC;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F1F5F9;
+  --bg-overlay: #E2E8F0;
+  --border-main: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+
+  /* === لون التمييز الوحيد (مصدر واحد) === */
+  --accent-primary: #334155;
+  --accent-hover: #1E293B;
+  --accent-glow: transparent;
+
+  /* === الألوان الدلالية (وظيفية فقط) === */
+  --color-success: #15803D;
+  --color-danger: #B91C1C;
+  --color-warning: #B45309;
+  --color-info: #475569;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+}
+
+.dark {
+  --bg-base: #0B0B0D;
+  --bg-primary: #151517;
+  --bg-secondary: #1C1C1F;
+  --bg-overlay: #232326;
+  --border-main: #2A2A2E;
+  --text-primary: #F4F4F5;
+  --text-secondary: #D4D4D8;
+  --text-muted: #8A8A90;
+
+  --accent-primary: #64748B;
+  --accent-hover: #94A3B8;
+  --accent-glow: transparent;
+
+  --color-success: #5B8A6E;
+  --color-danger: #C2645F;
+  --color-warning: #C79355;
+  --color-info: #94A3B8;
+}
+
+@theme {
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
+
+  --color-bg-base: var(--bg-base);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-overlay: var(--bg-overlay);
+  --color-border-main: var(--border-main);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+}
+
+@layer utilities {
+  .btn-primary {
+    @apply bg-accent text-white font-medium transition-all shadow-none;
+    transition-duration: var(--theme-transition-duration);
+    border-radius: var(--radius-sm);
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+}
+
+/* Base resets & custom scrollbars */
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace, system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.4);
+}

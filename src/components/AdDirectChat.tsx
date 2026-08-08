@@ -282,14 +282,14 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
               <img
                 src={otherParticipant.avatar}
                 alt={otherParticipant.name}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/30"
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-accent-500/30"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-sm ring-2 ring-emerald-500/30">
+              <div className="w-9 h-9 rounded-full bg-accent/10 dark:bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent-500/30">
                 <User size={18} />
               </div>
             )}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
           </div>
 
           <div>
@@ -297,13 +297,13 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
               <h4 className="font-extrabold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">
                 {otherParticipant?.name || (isRtl ? 'محادثة خاصة' : 'Private Inquiry')}
               </h4>
-              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20 shrink-0">
                 <Lock size={10} />
                 <span>E2EE</span>
               </span>
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 flex items-center gap-1">
-              <ShieldCheck size={12} className="text-emerald-500 shrink-0" />
+              <ShieldCheck size={12} className="text-accent shrink-0" />
               <span>{isRtl ? 'مشفر بالكامل (AES-256)' : 'End-to-End Encrypted'}</span>
             </p>
           </div>
@@ -321,7 +321,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
       </div>
 
       {/* Security Banner */}
-      <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-3 py-1.5 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 text-center shrink-0">
+      <div className="bg-accent/10 border-b border-accent/20 px-3 py-1.5 flex items-center justify-center gap-1.5 text-[11px] font-bold text-accent dark:text-accent text-center shrink-0">
         <Lock size={12} className="shrink-0" />
         <span>
           {isRtl
@@ -334,14 +334,14 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
       <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-gray-50/50 dark:bg-[#121215]">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
-            <Loader2 size={24} className="animate-spin text-emerald-500" />
+            <Loader2 size={24} className="animate-spin text-accent" />
             <span className="text-xs font-semibold">
               {isRtl ? 'جاري فك التشفير وجلب الرسائل...' : 'Decrypting & loading messages...'}
             </span>
           </div>
         ) : messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3 shadow-inner">
+            <div className="w-12 h-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-3 shadow-inner">
               <MessageSquare size={22} />
             </div>
             <h5 className="font-extrabold text-sm text-gray-800 dark:text-gray-200 mb-1">
@@ -363,7 +363,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(q)}
-                    className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1c1c20] hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition-theme text-start shadow-xs"
+                    className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1c1c20] hover:bg-accent hover:text-white dark:hover:bg-accent text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition-theme text-start shadow-xs"
                   >
                     {q}
                   </button>
@@ -382,7 +382,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
                 <div
                   className={`max-w-[85%] sm:max-w-[78%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed shadow-xs relative group transition-theme ${
                     isMe
-                      ? 'bg-emerald-500 text-white rounded-br-xs font-medium'
+                      ? 'bg-accent text-white rounded-br-xs font-medium'
                       : 'bg-white dark:bg-[#1e1e22] text-gray-800 dark:text-gray-100 rounded-bl-xs border border-gray-200/80 dark:border-gray-800'
                   }`}
                 >
@@ -401,7 +401,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
 
                   <div
                     className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                      isMe ? 'text-emerald-100' : 'text-gray-400 dark:text-gray-500'
+                      isMe ? 'text-accent-100' : 'text-gray-400 dark:text-gray-500'
                     }`}
                   >
                     <span className="font-mono text-[9px]">
@@ -432,9 +432,9 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
         {recipientTyping && (
           <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#1e1e22] px-3 py-1.5 rounded-full w-fit border border-gray-200 dark:border-gray-800">
             <span className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.2s]" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.4s]" />
             </span>
             <span>{isRtl ? 'المعلن يكتب الآن...' : 'Typing message...'}</span>
           </div>
@@ -450,7 +450,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
             <button
               key={idx}
               onClick={() => handleSendMessage(q)}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500/10 hover:text-emerald-500 dark:hover:bg-emerald-500/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
+              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-accent/10 hover:text-accent dark:hover:bg-accent/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
             >
               {q}
             </button>
@@ -488,7 +488,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-2 rounded-xl text-gray-400 hover:text-emerald-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="p-2 rounded-xl text-gray-400 hover:text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           title={isRtl ? 'إرفاق صورة' : 'Attach image'}
         >
           <Paperclip size={18} />
@@ -507,13 +507,13 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
           placeholder={
             isRtl ? 'اكتب استفسارك المباشر هنا (مشفر بالكامل)...' : 'Type your encrypted inquiry...'
           }
-          className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
+          className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-accent focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
         />
 
         <button
           onClick={() => handleSendMessage()}
           disabled={(!inputMessage.trim() && !attachedImage) || sending}
-          className="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
+          className="p-2.5 rounded-xl bg-accent hover:bg-accent disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-none flex items-center justify-center shrink-0"
           title={isRtl ? 'إرسال الرسالة المشفرة' : 'Send message'}
         >
           {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

@@ -65,7 +65,7 @@ export const ResetPasswordPage: React.FC = () => {
         <div className="text-center space-y-4">
            <AlertCircle size={48} className="mx-auto text-red-500 opacity-50" />
            <h2 className="text-xl font-bold text-gray-500 uppercase tracking-widest">{t('invalidRequest') || 'Invalid Request'}</h2>
-           <button onClick={() => navigate('/')} className="text-emerald-500 hover:underline">{t('backToHome') || 'Back to Home'}</button>
+           <button onClick={() => navigate('/')} className="text-accent hover:underline">{t('backToHome') || 'Back to Home'}</button>
         </div>
       </div>
     );
@@ -82,8 +82,8 @@ export const ResetPasswordPage: React.FC = () => {
     >
       {/* Background Decorative Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-[120px] animate-pulse delay-700"></div>
       </div>
 
       <motion.div 
@@ -92,8 +92,8 @@ export const ResetPasswordPage: React.FC = () => {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8">
-           <div className="inline-flex items-center justify-center w-16 h-16 rounded-md bg-emerald-500/10 border border-emerald-500/20 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-              <ShieldCheck size={32} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+           <div className="inline-flex items-center justify-center w-16 h-16 rounded-md bg-accent/10 border border-accent/20 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              <ShieldCheck size={32} className="text-accent " />
            </div>
            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
              {language === 'ar' ? 'إعادة ضبط كلمة المرور' : 'Reset Password'}
@@ -109,16 +109,16 @@ export const ResetPasswordPage: React.FC = () => {
               key="success"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="p-8 rounded-md border bg-emerald-500/5 border-emerald-500/20 text-center space-y-4"
+              className="p-8 rounded-md border bg-accent/5 border-accent/20 text-center space-y-4"
             >
-               <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+               <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                  <CheckCircle2 size={24} className="text-black" />
                </div>
-               <h3 className="text-xl font-bold text-emerald-500">{language === 'ar' ? 'تم التحديث بنجاح' : 'Credential Synchronized'}</h3>
+               <h3 className="text-xl font-bold text-accent">{language === 'ar' ? 'تم التحديث بنجاح' : 'Credential Synchronized'}</h3>
                <p className="text-gray-500 text-sm">
                  {language === 'ar' ? 'ستتم إعادة توجيهك إلى تسجيل الدخول خلال لحظات...' : 'Redirecting to secure terminal access shortly...'}
                </p>
-               <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500/40" />
+               <Loader2 className="w-6 h-6 animate-spin mx-auto text-accent/40" />
             </motion.div>
           ) : (
             <motion.div 
@@ -127,7 +127,7 @@ export const ResetPasswordPage: React.FC = () => {
               animate={{ opacity: 1 }}
               className="p-8 rounded-lg shadow-2xl border bg-[var(--bg-secondary)] border-[var(--border-main)] relative overflow-hidden group"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
@@ -136,13 +136,13 @@ export const ResetPasswordPage: React.FC = () => {
                       {language === 'ar' ? 'كلمة المرور الجديدة' : 'New Access Key'}
                     </label>
                     <div className="relative group/input">
-                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-emerald-500 transition-colors" />
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-accent transition-colors" />
                       <input
                         type="password"
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-accent/40 focus:ring-4 focus:ring-accent-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -153,13 +153,13 @@ export const ResetPasswordPage: React.FC = () => {
                         {language === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Access Key'}
                     </label>
                     <div className="relative group/input">
-                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-emerald-500 transition-colors" />
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/input:text-accent transition-colors" />
                       <input
                         type="password"
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-emerald-500/40 focus:ring-4 focus:ring-emerald-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
+                        className="w-full h-12 pl-12 pr-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus:border-accent/40 focus:ring-4 focus:ring-accent-500/5 transition-theme outline-none text-gray-900 dark:text-white font-mono text-sm"
                         placeholder="••••••••"
                       />
                     </div>
@@ -183,7 +183,7 @@ export const ResetPasswordPage: React.FC = () => {
                 <button 
                   type="submit" 
                   disabled={isLoading} 
-                  className="w-full h-12 bg-emerald-500 text-black rounded-sm font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-theme shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
+                  className="w-full h-12 bg-accent text-black rounded-sm font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-theme shadow-[0_4px_20px_rgba(16,185,129,0.2)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.3)] active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

@@ -795,13 +795,13 @@ router.get("/google/callback", async (req, res) => {
               --radius-lg: 20px;
               --radius-md: 12px;
               --radius-sm: 6px;
-              --emerald-500: #10b981;
+              --accent-500: #10b981;
               --bg-dark: #09090b;
               --bg-panel: rgba(17, 17, 19, 0.9);
             }
             @keyframes spin { to { transform: rotate(360deg); } }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-            @keyframes emeraldPulse {
+            @keyframes accentPulse {
               0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
               70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
               100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
@@ -847,7 +847,7 @@ router.get("/google/callback", async (req, res) => {
               position: absolute;
               inset: 0;
               border: 5px solid transparent;
-              border-top-color: var(--emerald-500);
+              border-top-color: var(--accent-500);
               border-radius: 50%;
               animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
               filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
@@ -858,7 +858,7 @@ router.get("/google/callback", async (req, res) => {
               display: flex;
               align-items: center;
               justify-content: center;
-              animation: emeraldPulse 2s infinite;
+              animation: accentPulse 2s infinite;
               border-radius: 50%;
             }
             .title {

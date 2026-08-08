@@ -104,7 +104,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
     return (
         <div className="flex flex-col md:flex-row md:items-center justify-between py-10 border-b border-[var(--border-main)] group gap-4">
         <div className="flex items-center gap-6 flex-1">
-          <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-emerald-500 transition-theme shrink-0">
+          <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-accent transition-theme shrink-0">
             {React.cloneElement(icon as React.ReactElement<{ size?: number; className?: string }>, { size: 20 })}
           </div>
           <div className="flex-1 w-full">
@@ -114,7 +114,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                 <textarea
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-theme font-medium bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-slate-50 min-h-[120px] text-sm"
+                  className="w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent transition-theme font-medium bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-slate-50 min-h-[120px] text-sm"
                   autoFocus
                 />
             ) : (
@@ -129,7 +129,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   type={type}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-full p-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-theme font-bold bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-slate-50"
+                  className="w-full p-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent transition-theme font-bold bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-slate-50"
                   autoFocus
                 />
               </form>
@@ -146,7 +146,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             <div className="flex gap-2">
               <button 
                 onClick={handleSave}
-                className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-[var(--radius)] transition-theme hover:scale-110 active:scale-95"
+                className="p-2 text-accent hover:bg-accent/10 rounded-[var(--radius)] transition-theme hover:scale-110 active:scale-95"
               >
                 <Check size={20} />
               </button>
@@ -160,7 +160,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
           ) : (
             <button 
               onClick={() => handleStartEdit(field, field === 'password' ? '' : value)}
-              className="text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 text-[11px] md:text-sm font-black flex items-center gap-2 transition-theme px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-emerald-500/10"
+              className="text-accent hover:text-accent dark:text-accent dark:hover:text-accent text-[11px] md:text-sm font-black flex items-center gap-2 transition-theme px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-accent/10"
             >
               <Edit2 size={16} />
               {t('edit').toUpperCase()}
@@ -189,7 +189,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             onClick={() => setActiveCategory(item.id as any)}
             className={`flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-theme rounded-[var(--radius)] ${
               activeCategory === item.id 
-                ? 'bg-zinc-100 dark:bg-zinc-800 text-emerald-500 shadow-lg' 
+                ? 'bg-zinc-100 dark:bg-zinc-800 text-accent shadow-lg' 
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
             }`}
           >
@@ -230,13 +230,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     />
                   ) : (
                     <div 
-                      className="w-20 h-20 rounded-[var(--radius)] bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 transition-theme border-4"
+                      className="w-20 h-20 rounded-[var(--radius)] bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-accent transition-theme border-4"
                       style={{ borderColor: user.subscription?.plan_color || 'transparent' }}
                     >
                       {isUploading ? <Loader2 className="animate-spin" /> : <Camera size={28} />}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 p-2 bg-emerald-500 rounded-[var(--radius)] text-white shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-theme" onClick={() => fileInputRef.current?.click()}>
+                  <div className="absolute -bottom-1 -right-1 p-2 bg-accent rounded-[var(--radius)] text-white shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-theme" onClick={() => fileInputRef.current?.click()}>
                     {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                   <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('avatar')}</p>
                   <div className="flex items-center gap-3">
                     {user.subscription?.plan_name_en && (
-                      <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-accent/10 text-accent border border-accent/20">
                         {user.subscription.plan_name_en}
                       </span>
                     )}
@@ -258,7 +258,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-black flex items-center gap-2 transition-theme px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-emerald-500/10"
+                className="text-accent hover:text-accent dark:text-accent dark:hover:text-accent text-sm font-black flex items-center gap-2 transition-theme px-4 py-2 rounded-[var(--radius)] bg-transparent hover:bg-accent/10"
               >
                 {t('edit').toUpperCase()}
               </button>
@@ -275,7 +275,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('kycStatus')}</p>
-                  <p className={`font-black text-sm tracking-widest uppercase flex items-center gap-2 ${user.kyc_status === 'verified' ? 'text-emerald-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                  <p className={`font-black text-sm tracking-widest uppercase flex items-center gap-2 ${user.kyc_status === 'verified' ? 'text-accent' : 'text-slate-800 dark:text-slate-100'}`}>
                     {kycStatus}
                     {user.kyc_status === 'verified' && <Check size={14} />}
                   </p>
@@ -290,9 +290,9 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">{t('currentPlan')}</p>
-                  <p className="font-black text-sm tracking-[0.2em] text-emerald-500 uppercase flex items-center gap-2 shadow-emerald-500/10">
+                  <p className="font-black text-sm tracking-[0.2em] text-accent uppercase flex items-center gap-2 shadow-none">
                     {planName}
-                    {user.subscription?.status === 'active' && <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                    {user.subscription?.status === 'active' && <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />}
                   </p>
                 </div>
               </div>
@@ -312,7 +312,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             {/* Language Selection */}
             <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
                <div className="flex items-center gap-6">
-                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-emerald-500 transition-theme">
+                  <div className="p-3 rounded-[var(--radius)] bg-[var(--bg-primary)] text-slate-500 dark:text-slate-400 group-hover:text-accent transition-theme">
                     <Languages size={20} />
                   </div>
                   <div>
@@ -323,13 +323,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                <div className="flex gap-2 p-1 bg-white dark:bg-zinc-900 rounded-[var(--radius)] border border-slate-200 dark:border-zinc-800">
                   <button 
                     onClick={() => setLanguage('ar')}
-                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${language === 'ar' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${language === 'ar' ? 'bg-accent text-white shadow-lg shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
                   >
                     العربية
                   </button>
                   <button 
                     onClick={() => setLanguage('en')}
-                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${language === 'en' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
+                    className={`px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme ${language === 'en' ? 'bg-accent text-white shadow-lg shadow-none' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-zinc-800/50'}`}
                   >
                     English
                   </button>
@@ -383,7 +383,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
 
             <div className="p-8 rounded-[var(--radius)] border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 mt-12">
                <div className="flex gap-4">
-                  <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                  <div className="w-12 h-12 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shrink-0">
                      <Target size={24} />
                   </div>
                   <div className="space-y-2">

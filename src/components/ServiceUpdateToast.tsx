@@ -30,9 +30,9 @@ export const ServiceUpdateToast: React.FC = () => {
           exit={{ opacity: 0, scale: 0.95 }}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-md"
         >
-          <div className="bg-[#1a1a1c] border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.15)] rounded-xl p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0 border border-emerald-500/20">
-              <Sparkles className="w-6 h-6 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <div className="bg-[#1a1a1c] border border-accent/30 shadow-[0_0_20px_rgba(16,185,129,0.15)] rounded-xl p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 border border-accent/20">
+              <Sparkles className="w-6 h-6 text-accent " />
             </div>
             
             <div className="flex-grow">
@@ -45,7 +45,7 @@ export const ServiceUpdateToast: React.FC = () => {
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleUpdate}
-                className="bg-emerald-500 hover:bg-emerald-600 text-black px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2"
+                className="bg-accent hover:bg-accent text-black px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 تحديث

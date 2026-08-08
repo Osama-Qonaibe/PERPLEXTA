@@ -256,7 +256,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   if (ads.length === 0) {
     return (
       <div className="text-center py-16 px-4 bg-white dark:bg-[#1a1a1c] rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4 w-full">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+        <div className="w-16 h-16 rounded-full bg-accent/10 text-accent flex items-center justify-center mx-auto">
           <Megaphone size={32} />
         </div>
         <h3 className="text-base font-bold">
@@ -269,7 +269,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
         </p>
         <button
           onClick={onCreateAdClick}
-          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-theme"
+          className="px-5 py-2.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs shadow-md transition-theme"
         >
           {isRtl ? 'أنشئ إعلانك الآن' : 'Create Ad Now'}
         </button>
@@ -300,7 +300,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-b border-emerald-500/30 bg-gray-950 p-1 sm:p-2 overflow-hidden"
+                  className="border-b border-accent/30 bg-gray-950 p-1 sm:p-2 overflow-hidden"
                 >
                   <AdInsightsTab
                     adId={ad.id}
@@ -334,7 +334,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   />
                   {ad.page_id && (
                     <span
-                      className="absolute -bottom-0.5 -end-0.5 bg-emerald-500 text-white rounded-full p-[2px] border border-white dark:border-[#18181b]"
+                      className="absolute -bottom-0.5 -end-0.5 bg-accent text-white rounded-full p-[2px] border border-white dark:border-[#18181b]"
                       title={isRtl ? 'صفحة تجارية معتمدة' : 'Verified Business Page'}
                     >
                       <CheckCircle2 size={10} />
@@ -349,7 +349,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                         ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)
                       }
                       className={`text-xs font-extrabold truncate text-gray-900 dark:text-gray-100 ${
-                        ad.page_id ? 'cursor-pointer hover:text-emerald-500 transition-colors' : ''
+                        ad.page_id ? 'cursor-pointer hover:text-accent transition-colors' : ''
                       }`}
                     >
                       {ad.author_name}
@@ -358,7 +358,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 pt-0.5">
                     <span className="flex items-center gap-0.5 font-medium">
-                      <MapPin size={10} className="text-emerald-500 shrink-0" />
+                      <MapPin size={10} className="text-accent shrink-0" />
                       {ad.location_city || 'فلسطين'}
                     </span>
                     <span>•</span>
@@ -408,14 +408,14 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black flex items-center gap-1 shadow-sm ${
                     ad.ad_format === 'reel' 
                       ? 'bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400' 
-                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-accent/10 border-accent/30 text-accent dark:text-accent'
                   }`}>
-                    {ad.ad_format === 'reel' ? <Clapperboard size={11} className="text-purple-500" /> : <Camera size={11} className="text-emerald-500" />}
+                    {ad.ad_format === 'reel' ? <Clapperboard size={11} className="text-purple-500" /> : <Camera size={11} className="text-accent" />}
                     <span>{ad.ad_format === 'reel' ? (isRtl ? 'ريلز' : 'Reel') : (isRtl ? 'قصة' : 'Story')}</span>
                   </span>
                 )}
                 {ad.is_boosted && (
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border border-amber-500/40 text-amber-500 dark:text-amber-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
+                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-gray-500/10 to-amber-500/20 border border-amber-500/40 text-amber-500 dark:text-amber-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
                     <Rocket size={11} className="text-amber-500 animate-bounce" />
                     <span className="hidden sm:inline">{isRtl ? 'مُموَّل VIP' : 'Boosted'}</span>
                   </span>
@@ -427,8 +427,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     onClick={() => setActiveInsightsAdId(activeInsightsAdId === ad.id ? null : ad.id)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-theme shadow-sm ${
                       activeInsightsAdId === ad.id
-                        ? 'bg-emerald-500 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/40'
-                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        ? 'bg-accent text-white shadow-none ring-2 ring-accent-400/40'
+                        : 'bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent border border-accent/20'
                     }`}
                     title={isRtl ? 'عرض إحصائيات ورؤى الإعلان للمنشئ' : 'View Ad Insights for Creators'}
                   >
@@ -443,7 +443,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     {onEditAd && (
                       <button
                         onClick={() => onEditAd(ad)}
-                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-theme border border-transparent hover:border-emerald-500/20"
+                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 transition-theme border border-transparent hover:border-accent/20"
                         title={isRtl ? 'تعديل المنشور' : 'Edit Post'}
                       >
                         <Edit size={12} />
@@ -467,8 +467,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     onClick={() => onToggleSave(ad)}
                     className={`w-7 h-7 rounded-lg flex items-center justify-center transition-theme border ${
                       ad.user_has_saved
-                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/30'
-                        : 'bg-gray-100 dark:bg-gray-800/80 text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border-transparent hover:border-emerald-500/20'
+                        ? 'bg-accent text-white border-accent shadow-sm shadow-none'
+                        : 'bg-gray-100 dark:bg-gray-800/80 text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 border-transparent hover:border-accent/20'
                     }`}
                     title={ad.user_has_saved ? (isRtl ? 'إزالة من المحفوظات' : 'Remove from Saved') : (isRtl ? 'حفظ في المحفوظات' : 'Save to Board')}
                   >
@@ -479,7 +479,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {ad.page_id && onOpenPageDetail && (
                   <button
                     onClick={() => onOpenPageDetail(ad.page_id!)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[10px] font-extrabold transition-theme"
+                    className="px-2.5 py-1 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-[10px] font-extrabold transition-theme"
                   >
                     {isRtl ? 'زيارة الصفحة' : 'Visit Page'}
                   </button>
@@ -488,7 +488,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {onBoostAd && (
                   <button
                     onClick={() => onBoostAd(ad)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 hover:from-amber-500 hover:to-emerald-500 text-amber-600 dark:text-amber-400 hover:text-white font-black text-[10px] flex items-center gap-1 border border-amber-500/30 transition-theme shadow-sm"
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-gray-500/5 hover:from-amber-500 hover:to-gray-500/5 text-amber-600 dark:text-amber-400 hover:text-white font-black text-[10px] flex items-center gap-1 border border-amber-500/30 transition-theme shadow-sm"
                     title={isRtl ? 'تمويل وتنشيط الإعلان لزيادة الوصول' : 'Boost Post for Higher Visibility'}
                   >
                     <Rocket size={11} className="shrink-0" />
@@ -565,7 +565,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 {isLongText && (
                   <button
                     onClick={() => toggleTextExpand(ad.id)}
-                    className="text-emerald-500 font-bold hover:underline inline-flex items-center gap-1 text-[10px]"
+                    className="text-accent font-bold hover:underline inline-flex items-center gap-1 text-[10px]"
                   >
                     <span>
                       {isTextExpanded
@@ -586,7 +586,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   {ad.hashtags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                      className="text-[10px] font-bold text-accent dark:text-accent hover:underline cursor-pointer"
                     >
                       <HighlightText text={tag.startsWith('#') ? tag : `#${tag}`} query={searchQuery} />
                     </span>
@@ -624,7 +624,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                   <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-black/80 text-xs font-bold shadow-lg text-gray-800 dark:text-white flex items-center gap-1.5 backdrop-blur-md">
-                    <Sparkles size={13} className="text-emerald-500" />
+                    <Sparkles size={13} className="text-accent" />
                     <span>{isRtl ? 'عرض بصورة مكبرة' : 'Expand Image'}</span>
                   </span>
                 </div>
@@ -634,12 +634,12 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             {/* Promotional Video / Reels Media Section with Multi-Format Player */}
             {ad.video_url && (
               <div className="p-3 border-b border-gray-100 dark:border-gray-800/60 bg-black/95 text-white rounded-b-xl">
-                <div className="flex items-center justify-between pb-2 text-[11px] font-extrabold text-emerald-400">
+                <div className="flex items-center justify-between pb-2 text-[11px] font-extrabold text-accent">
                   <span className="flex items-center gap-1.5">
-                    <Film size={14} className="animate-pulse text-emerald-400" />
+                    <Film size={14} className="animate-pulse text-accent" />
                     <span>{isRtl ? 'وسائط العرض / الفيديو الترويجي' : 'Media / Promotional Video'}</span>
                   </span>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-mono">
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent/20 border border-accent/30 text-accent font-mono">
                     {ad.ad_format === 'reel' ? 'REELS (9:16)' : ad.ad_format === 'story' ? 'STORY (9:16)' : 'VIDEO (16:9)'}
                   </span>
                 </div>
@@ -688,8 +688,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 disabled={messagingAdId === ad.id}
                 className={`px-3 py-1.5 rounded-lg text-white font-bold flex items-center justify-center gap-1.5 transition-theme shadow-sm shrink-0 ${
                   activeChatAdId === ad.id
-                    ? 'bg-emerald-600 ring-2 ring-emerald-400/50 shadow-emerald-500/30'
-                    : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+                    ? 'bg-accent ring-2 ring-accent-400/50 shadow-none'
+                    : 'bg-accent hover:bg-accent shadow-none'
                 }`}
                 title={isRtl ? 'مراسلة مشفرة للمعلن في محادثة خاصة' : 'Encrypted Message Advertiser'}
               >
@@ -709,7 +709,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               {ad.whatsapp_number && (
                 <button
                   onClick={(e) => onWhatsApp(ad, e)}
-                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-emerald-700 transition-theme shadow-sm shrink-0"
+                  className="px-2.5 py-1.5 rounded-lg bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-accent transition-theme shadow-sm shrink-0"
                   title={isRtl ? 'تواصل عبر الواتساب' : 'WhatsApp Contact'}
                 >
                   <Phone size={13} />
@@ -739,7 +739,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   }}
                   className={`p-1.5 rounded-lg transition-theme flex items-center gap-1 shrink-0 ${
                     activeShareMenuId === ad.id
-                      ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
+                      ? 'bg-accent text-white shadow-sm shadow-none'
                       : 'hover:bg-gray-200/60 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400'
                   }`}
                   title={isRtl ? 'مشاركة ورابط الإعلان' : 'Share & Copy Link'}
@@ -771,7 +771,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                       >
                         <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/80 text-[10px] font-extrabold text-gray-400 dark:text-gray-500 flex items-center justify-between">
                           <span>{isRtl ? 'قائمة مشاركة الإعلان' : 'Share Options'}</span>
-                          <span className="text-emerald-500 font-bold">#{ad.id}</span>
+                          <span className="text-accent font-bold">#{ad.id}</span>
                         </div>
 
                         {/* Copy Link Button */}
@@ -782,15 +782,15 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                           }}
                           className={`w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between transition-colors ${
                             copiedAdId === ad.id
-                              ? 'bg-emerald-500/15 text-emerald-500'
+                              ? 'bg-accent/15 text-accent'
                               : 'hover:bg-gray-100 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-200'
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
                             {copiedAdId === ad.id ? (
-                              <Check size={15} className="text-emerald-500 shrink-0" />
+                              <Check size={15} className="text-accent shrink-0" />
                             ) : (
-                              <Copy size={15} className="text-emerald-500 shrink-0" />
+                              <Copy size={15} className="text-accent shrink-0" />
                             )}
                             <span className="text-xs">
                               {copiedAdId === ad.id
@@ -799,7 +799,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                             </span>
                           </div>
                           {copiedAdId === ad.id ? (
-                            <span className="text-[10px] font-extrabold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-extrabold bg-accent text-white px-2 py-0.5 rounded-full">
                               {isRtl ? 'تم' : 'Copied'}
                             </span>
                           ) : (
@@ -814,10 +814,10 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                             handleWhatsAppShare(ad);
                             setActiveShareMenuId(null);
                           }}
-                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-gray-700 dark:text-gray-200"
+                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Phone size={15} className="text-emerald-500 shrink-0" />
+                            <Phone size={15} className="text-accent shrink-0" />
                             <span className="text-xs">{isRtl ? 'مشاركة عبر واتساب' : 'Share to WhatsApp'}</span>
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">WA</span>
@@ -830,10 +830,10 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                             onShare(ad);
                             setActiveShareMenuId(null);
                           }}
-                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-gray-700 dark:text-gray-200"
+                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Share2 size={15} className="text-emerald-500 shrink-0" />
+                            <Share2 size={15} className="text-accent shrink-0" />
                             <span className="text-xs">{isRtl ? 'تطبيقات أخرى' : 'Other Applications'}</span>
                           </div>
                         </button>
@@ -854,13 +854,13 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   className="border-t border-gray-200 dark:border-gray-800 p-3 bg-gray-50/90 dark:bg-gray-900/50 space-y-3"
                 >
                   <h5 className="text-[11px] font-extrabold text-gray-500 flex items-center gap-1">
-                    <MessageSquare size={13} className="text-emerald-500" />
+                    <MessageSquare size={13} className="text-accent" />
                     <span>{isRtl ? 'التعليقات والتفاعلات:' : 'Comments & Discussion:'}</span>
                   </h5>
 
                   {loadingCommentsAdId === ad.id ? (
                     <div className="text-center py-2 text-xs text-gray-400 flex items-center justify-center gap-2">
-                      <Loader2 size={14} className="animate-spin text-emerald-500" />
+                      <Loader2 size={14} className="animate-spin text-accent" />
                       <span>{isRtl ? 'جاري تحميل التعليقات...' : 'Loading comments...'}</span>
                     </div>
                   ) : (commentsMap[ad.id] || []).length === 0 ? (
@@ -874,12 +874,12 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                           key={comment.id}
                           className="p-2.5 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-100 dark:border-gray-800 text-[11px] space-y-1 shadow-2xs"
                         >
-                          <div className="flex items-center justify-between font-bold text-emerald-500">
+                          <div className="flex items-center justify-between font-bold text-accent">
                             <span>{comment.author_name}</span>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setReplyToCommentId(comment.id)}
-                                className="text-[9px] text-gray-500 hover:text-emerald-500"
+                                className="text-[9px] text-gray-500 hover:text-accent"
                               >
                                 {isRtl ? 'رد' : 'Reply'}
                               </button>
@@ -891,7 +891,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                               </span>
                             </div>
                           </div>
-                          <p className={`text-gray-700 dark:text-gray-300 leading-normal ${comment.parent_id ? 'pl-4 border-l-2 border-emerald-500/20' : ''}`}>
+                          <p className={`text-gray-700 dark:text-gray-300 leading-normal ${comment.parent_id ? 'pl-4 border-l-2 border-accent/20' : ''}`}>
                             {comment.content}
                           </p>
                         </div>
@@ -911,12 +911,12 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                         }
                       }}
                       placeholder={replyToCommentId ? (isRtl ? 'اكتب ردك...' : 'Write a reply...') : (isRtl ? 'اكتب تعليقك هنا...' : 'Write a comment...')}
-                      className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-accent transition-colors"
                     />
                     <button
                       onClick={() => onAddComment(ad.id, replyToCommentId || undefined)}
                       disabled={!newCommentText.trim()}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold text-xs transition-theme shadow-sm"
+                      className="px-3 py-1.5 rounded-xl bg-accent hover:bg-accent disabled:opacity-40 text-white font-bold text-xs transition-theme shadow-sm"
                     >
                       {isRtl ? 'إرسال' : 'Send'}
                     </button>
@@ -961,8 +961,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
           className="col-span-full py-6 text-center flex flex-col items-center justify-center gap-2"
         >
           {loadingMore ? (
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-5 py-2.5 rounded-full border border-emerald-500/20 shadow-sm animate-pulse">
-              <Loader2 size={16} className="animate-spin text-emerald-500" />
+            <div className="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-5 py-2.5 rounded-full border border-accent/20 shadow-sm animate-pulse">
+              <Loader2 size={16} className="animate-spin text-accent" />
               <span>{isRtl ? 'جاري تحميل المزيد من الإعلانات...' : 'Fetching more advertisements...'}</span>
             </div>
           ) : (

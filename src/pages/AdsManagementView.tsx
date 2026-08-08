@@ -915,7 +915,7 @@ export const AdsManagementView: React.FC<{
       {/* Top Header & Stat Cards */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg-secondary)] border border-[var(--border-main)] p-5 rounded-lg shadow-sm">
         <div>
-          <div className="flex items-center gap-2 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] mb-1">
+          <div className="flex items-center gap-2 text-accent  mb-1">
             <Megaphone size={20} />
             <h2 className="text-xl font-black text-[var(--text-primary)]">
               {isRtl ? 'إدارة الإعلانات والشريط الجانبي' : 'Ads & Sidebar Sponsored Management'}
@@ -930,7 +930,7 @@ export const AdsManagementView: React.FC<{
 
         <button
           onClick={handleOpenCreateModal}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-theme shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-accent hover:bg-accent text-white font-bold text-xs shadow-lg shadow-none transition-theme shrink-0"
         >
           <Plus size={16} />
           <span>{isRtl ? 'إضافة إعلان جديد' : 'Create New Ad'}</span>
@@ -943,8 +943,8 @@ export const AdsManagementView: React.FC<{
           onClick={() => setActiveTab('platform')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'platform'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
+              ? 'bg-accent text-white shadow-md shadow-none'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-accent'
           }`}
         >
           <Megaphone size={15} />
@@ -961,8 +961,8 @@ export const AdsManagementView: React.FC<{
           }}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'bulletin'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
+              ? 'bg-accent text-white shadow-md shadow-none'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-accent'
           }`}
         >
           <Sparkles size={15} />
@@ -981,8 +981,8 @@ export const AdsManagementView: React.FC<{
           }}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'analytics'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
+              ? 'bg-accent text-white shadow-md shadow-none'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-accent'
           }`}
         >
           <BarChart2 size={15} />
@@ -997,8 +997,8 @@ export const AdsManagementView: React.FC<{
           }}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-2 ${
             activeTab === 'economy'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-emerald-500'
+              ? 'bg-accent text-white shadow-md shadow-none'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-accent'
           }`}
         >
           <Coins size={15} />
@@ -1046,7 +1046,7 @@ export const AdsManagementView: React.FC<{
         <div className="space-y-6">
           {isAnalyticsLoading || !analyticsData ? (
             <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl">
-              <RefreshCw size={24} className="animate-spin text-emerald-500" />
+              <RefreshCw size={24} className="animate-spin text-accent" />
               <span>{isRtl ? 'جاري تحميل تحليلات وإيرادات الإعلانات...' : 'Loading ad analytics & revenue...'}</span>
             </div>
           ) : (
@@ -1054,12 +1054,12 @@ export const AdsManagementView: React.FC<{
               {/* Summary Metrics */}
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex items-center gap-3 shadow-sm">
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                  <div className="p-2.5 rounded-lg bg-accent/10 text-accent ">
                     <DollarSign size={22} />
                   </div>
                   <div>
                     <div className="text-[11px] text-[var(--text-muted)] font-bold">{isRtl ? 'إجمالي إيرادات الإعلانات' : 'Total Ad Revenue'}</div>
-                    <div className="text-xl font-black text-emerald-500">${analyticsData.summary.totalRevenue}</div>
+                    <div className="text-xl font-black text-accent">${analyticsData.summary.totalRevenue}</div>
                   </div>
                 </div>
 
@@ -1111,7 +1111,7 @@ export const AdsManagementView: React.FC<{
                   <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)]">
                     <div>
                       <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                        <TrendingUp size={18} className="text-emerald-500" />
+                        <TrendingUp size={18} className="text-accent" />
                         <span>{isRtl ? 'مؤشر نمو المشاهدات والإيرادات اليومية' : 'Daily Impressions vs Revenue Timeline'}</span>
                       </h3>
                       <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -1214,7 +1214,7 @@ export const AdsManagementView: React.FC<{
                     {analyticsData.placementData.map((item: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center">
                         <span className="text-[var(--text-muted)] font-medium">{item.name}</span>
-                        <span className="font-extrabold text-emerald-500">${item.revenue}</span>
+                        <span className="font-extrabold text-accent">${item.revenue}</span>
                       </div>
                     ))}
                   </div>
@@ -1226,7 +1226,7 @@ export const AdsManagementView: React.FC<{
                 <div className="pb-3 border-b border-[var(--border-main)] flex items-center justify-between">
                   <div>
                     <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                      <Award size={18} className="text-emerald-500" />
+                      <Award size={18} className="text-accent" />
                       <span>{isRtl ? 'قائمة المعلنين والشركاء حسب الإيرادات والإنفاق' : 'Advertiser Revenue Leaderboard'}</span>
                     </h3>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -1252,7 +1252,7 @@ export const AdsManagementView: React.FC<{
                         <tr key={idx} className="hover:bg-[var(--bg-base)]/50 transition-colors">
                           <td className="p-3">
                             <div className="font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-[10px] shrink-0 font-mono">
+                              <span className="w-5 h-5 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] shrink-0 font-mono">
                                 #{idx + 1}
                               </span>
                               <span>{adv.sponsor_name}</span>
@@ -1264,7 +1264,7 @@ export const AdsManagementView: React.FC<{
                             {adv.ads_count}
                           </td>
 
-                          <td className="p-3 text-center font-black text-emerald-500 font-mono text-sm">
+                          <td className="p-3 text-center font-black text-accent font-mono text-sm">
                             ${adv.total_revenue}
                           </td>
 
@@ -1291,7 +1291,7 @@ export const AdsManagementView: React.FC<{
                 <div className="flex items-center justify-between border-b border-[var(--border-main)] pb-4">
                   <div>
                     <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                      <TrendingUp size={18} className="text-emerald-500" />
+                      <TrendingUp size={18} className="text-accent" />
                       <span>{isRtl ? 'تحليل عائد الاستثمار (Campaign ROI Analysis)' : 'Campaign ROI & Revenue Correlation'}</span>
                     </h3>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -1303,7 +1303,7 @@ export const AdsManagementView: React.FC<{
                   <button
                     onClick={fetchRoiData}
                     disabled={isRoiLoading}
-                    className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-emerald-500 transition-theme"
+                    className="p-2 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-accent transition-theme"
                   >
                     <RefreshCw size={14} className={isRoiLoading ? 'animate-spin' : ''} />
                   </button>
@@ -1380,7 +1380,7 @@ export const AdsManagementView: React.FC<{
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-[var(--border-main)]">
                   <div className="bg-[var(--bg-base)]/50 p-3 rounded-xl border border-[var(--border-main)]">
                     <div className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider mb-1">{isRtl ? 'متوسط العائد' : 'Avg ROI'}</div>
-                    <div className="text-sm font-black text-emerald-500">
+                    <div className="text-sm font-black text-accent">
                       {roiData.length > 0 
                         ? (roiData.reduce((acc, curr) => acc + Number(curr.roi_percent), 0) / roiData.length).toFixed(1)
                         : '0.0'}%
@@ -1394,7 +1394,7 @@ export const AdsManagementView: React.FC<{
                   </div>
                   <div className="bg-[var(--bg-base)]/50 p-3 rounded-xl border border-[var(--border-main)]">
                     <div className="text-[9px] text-[var(--text-muted)] font-black uppercase tracking-wider mb-1">{isRtl ? 'إجمالي الإيرادات' : 'Total Revenue'}</div>
-                    <div className="text-sm font-black text-emerald-500">
+                    <div className="text-sm font-black text-accent">
                       ${roiData.reduce((acc, curr) => acc + Number(curr.revenue), 0).toLocaleString()}
                     </div>
                   </div>
@@ -1421,7 +1421,7 @@ export const AdsManagementView: React.FC<{
                       <span className="text-[9px] text-[var(--text-muted)] font-bold">0%</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                      <div className="w-3 h-3 rounded bg-accent shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                       <span className="text-[9px] text-[var(--text-muted)] font-bold">10%+</span>
                     </div>
                     <button
@@ -1463,11 +1463,11 @@ export const AdsManagementView: React.FC<{
 
                             if (cr > 0) {
                               opacity = 'opacity-100';
-                              if (cr < 2) bgColor = 'bg-emerald-900/40';
-                              else if (cr < 5) bgColor = 'bg-emerald-700/60';
-                              else if (cr < 8) bgColor = 'bg-emerald-600/80';
+                              if (cr < 2) bgColor = 'bg-accent/40';
+                              else if (cr < 5) bgColor = 'bg-accent/60';
+                              else if (cr < 8) bgColor = 'bg-accent/80';
                               else {
-                                bgColor = 'bg-emerald-500';
+                                bgColor = 'bg-accent';
                                 glow = 'shadow-[0_0_10px_rgba(16,185,129,0.4)]';
                               }
                             }
@@ -1476,7 +1476,7 @@ export const AdsManagementView: React.FC<{
                               <div 
                                 key={hour}
                                 title={`${day} ${hour}:00 - CR: ${cr.toFixed(2)}%`}
-                                className={`flex-1 h-8 rounded-sm border border-[var(--border-main)]/50 transition-theme cursor-help group relative ${bgColor} ${opacity} ${glow} hover:scale-110 hover:z-10 hover:border-emerald-500`}
+                                className={`flex-1 h-8 rounded-sm border border-[var(--border-main)]/50 transition-theme cursor-help group relative ${bgColor} ${opacity} ${glow} hover:scale-110 hover:z-10 hover:border-accent`}
                               >
                                 {cr > 5 && (
                                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -1494,13 +1494,13 @@ export const AdsManagementView: React.FC<{
 
                 <div className="flex items-center justify-center gap-8 py-2 bg-[var(--bg-base)]/50 rounded-xl border border-[var(--border-main)]">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div className="w-2 h-2 rounded-full bg-accent"></div>
                     <span className="text-[10px] text-[var(--text-muted)] font-bold">
                       {isRtl ? 'تحويل مرتفع (>8%)' : 'High Conversion (>8%)'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-800"></div>
+                    <div className="w-2 h-2 rounded-full bg-accent"></div>
                     <span className="text-[10px] text-[var(--text-muted)] font-bold">
                       {isRtl ? 'تحويل متوسط (2-5%)' : 'Moderate Conversion (2-5%)'}
                     </span>
@@ -1565,7 +1565,7 @@ export const AdsManagementView: React.FC<{
                       </button>
                       <button
                         onClick={handleBulkVerifyOpen}
-                        className="px-6 py-2 rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 text-[10px] font-black hover:bg-emerald-600 active:scale-95 transition-theme"
+                        className="px-6 py-2 rounded-lg bg-accent text-white shadow-lg shadow-none text-[10px] font-black hover:bg-accent active:scale-95 transition-theme"
                       >
                         {isRtl ? 'موافقة جماعية (2FA)' : 'Bulk Approve (2FA)'}
                       </button>
@@ -1588,7 +1588,7 @@ export const AdsManagementView: React.FC<{
                                 setSelectedRequests([]);
                               }
                             }}
-                            className="w-4 h-4 rounded border-[var(--border-main)] bg-[var(--bg-secondary)] accent-emerald-500"
+                            className="w-4 h-4 rounded border-[var(--border-main)] bg-[var(--bg-secondary)] accent-accent"
                           />
                         </th>
                         <th className="p-3 text-start">{isRtl ? 'الطلب' : 'Request'}</th>
@@ -1605,9 +1605,9 @@ export const AdsManagementView: React.FC<{
                           animate={{ opacity: 1, y: 0 }}
                           key={req.id} 
                           className={`group transition-theme border-l-4 ${
-                            selectedRequests.includes(req.id) ? 'bg-emerald-500/5 border-emerald-500' : 'hover:bg-[var(--bg-base)]/80 border-transparent'
+                            selectedRequests.includes(req.id) ? 'bg-accent/5 border-accent' : 'hover:bg-[var(--bg-base)]/80 border-transparent'
                           } ${
-                            req.status === 'approved' ? 'hover:border-emerald-500/50' :
+                            req.status === 'approved' ? 'hover:border-accent/50' :
                             req.status === 'rejected' ? 'hover:border-red-500/50' :
                             'hover:border-amber-500/50'
                           }`}
@@ -1624,24 +1624,24 @@ export const AdsManagementView: React.FC<{
                                   setSelectedRequests(prev => prev.filter(id => id !== req.id));
                                 }
                               }}
-                              className="w-4 h-4 rounded border-[var(--border-main)] bg-[var(--bg-secondary)] accent-emerald-500 disabled:opacity-30 cursor-pointer"
+                              className="w-4 h-4 rounded border-[var(--border-main)] bg-[var(--bg-secondary)] accent-accent disabled:opacity-30 cursor-pointer"
                             />
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${
-                                req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
+                                req.status === 'approved' ? 'bg-accent/10 text-accent' :
                                 req.status === 'rejected' ? 'bg-red-500/10 text-red-500' :
                                 'bg-amber-500/10 text-amber-500'
                               }`}>
                                 {req.action_type.includes('batch') ? <Zap size={14} /> : <Coins size={14} />}
                               </div>
                               <div>
-                                <div className="font-black text-[var(--text-primary)] uppercase tracking-tight group-hover:text-emerald-500 transition-colors">
+                                <div className="font-black text-[var(--text-primary)] uppercase tracking-tight group-hover:text-accent transition-colors">
                                   {req.action_type.replace(/_/g, ' ')}
                                 </div>
                                 <div className="text-[9px] text-[var(--text-muted)] font-mono mt-0.5">
-                                  REF: <span className="text-emerald-500/70">#{req.id.toString().padStart(5, '0')}</span>
+                                  REF: <span className="text-accent/70">#{req.id.toString().padStart(5, '0')}</span>
                                 </div>
                               </div>
                             </div>
@@ -1655,7 +1655,7 @@ export const AdsManagementView: React.FC<{
                           <td className="p-3 text-center">
                             <div className="flex flex-col items-center gap-1">
                               <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm border ${
-                                req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                req.status === 'approved' ? 'bg-accent/10 text-accent border-accent/20' :
                                 req.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse' :
                                 'bg-red-500/10 text-red-500 border-red-500/20'
                               }`}>
@@ -1685,7 +1685,7 @@ export const AdsManagementView: React.FC<{
                                     actionType: req.action_type,
                                     payload: req.payload
                                   })}
-                                  className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-black text-[9px] hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-theme"
+                                  className="px-3 py-1.5 rounded-lg bg-accent text-white font-black text-[9px] hover:bg-accent shadow-lg shadow-none active:scale-95 transition-theme"
                                 >
                                   {isRtl ? 'اعتماد' : 'APPROVE'}
                                 </button>
@@ -1787,8 +1787,8 @@ export const AdsManagementView: React.FC<{
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1.5">
-                            <TrendingUp size={10} className={Number(log.new_value) > Number(log.old_value) ? 'text-emerald-500' : 'text-red-500 rotate-180'} />
-                            <span className="text-emerald-500 font-black font-mono">
+                            <TrendingUp size={10} className={Number(log.new_value) > Number(log.old_value) ? 'text-accent' : 'text-red-500 rotate-180'} />
+                            <span className="text-accent font-black font-mono">
                               ${Number(log.new_value).toFixed(log.field_name.includes('impression') ? 4 : 2)}
                             </span>
                           </div>
@@ -1819,15 +1819,15 @@ export const AdsManagementView: React.FC<{
       ) : activeTab === 'economy' ? (
         <div className="space-y-6">
           {/* Batch Pricing Adjustment Control */}
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 shadow-sm overflow-hidden relative group">
+          <div className="bg-accent/5 border border-accent/20 rounded-2xl p-6 shadow-sm overflow-hidden relative group">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-              <TrendingUp size={120} className="text-emerald-500" />
+              <TrendingUp size={120} className="text-accent" />
             </div>
             
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex-1">
                 <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                  <Zap size={18} className="text-emerald-500 animate-pulse" />
+                  <Zap size={18} className="text-accent animate-pulse" />
                   <span>{isRtl ? 'التحكم الجماعي في الأسعار' : 'Batch Pricing Adjustment'}</span>
                 </h3>
                 <p className="text-[11px] text-[var(--text-muted)] mt-1 max-w-lg">
@@ -1841,7 +1841,7 @@ export const AdsManagementView: React.FC<{
                 <div className="flex-1 space-y-1 px-2">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] font-black text-[var(--text-muted)] uppercase">{isRtl ? 'النسبة' : 'Percentage'}</span>
-                    <span className={`text-xs font-black ${batchAdjustmentPercent > 0 ? 'text-emerald-500' : batchAdjustmentPercent < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    <span className={`text-xs font-black ${batchAdjustmentPercent > 0 ? 'text-accent' : batchAdjustmentPercent < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                       {batchAdjustmentPercent > 0 ? '+' : ''}{batchAdjustmentPercent}%
                     </span>
                   </div>
@@ -1852,7 +1852,7 @@ export const AdsManagementView: React.FC<{
                     step="5"
                     value={batchAdjustmentPercent}
                     onChange={(e) => setBatchAdjustmentPercent(parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-accent"
                   />
                 </div>
                 <button
@@ -1904,7 +1904,7 @@ export const AdsManagementView: React.FC<{
                     setBatchAdjustmentPercent(0);
                   }}
                   disabled={batchAdjustmentPercent === 0}
-                  className="px-5 py-2.5 rounded-lg bg-emerald-500 text-white font-black text-xs hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed transition-theme shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="px-5 py-2.5 rounded-lg bg-accent text-white font-black text-xs hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-theme shadow-lg shadow-none active:scale-95"
                 >
                   {isRtl ? 'تطبيق التعديل' : 'Apply Adjustment'}
                 </button>
@@ -1929,7 +1929,7 @@ export const AdsManagementView: React.FC<{
             </div>
             <button
               onClick={() => setShowAdPreview(true)}
-              className="px-6 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-main)] text-[var(--text-primary)] font-black text-xs flex items-center gap-2 hover:border-emerald-500 hover:text-emerald-500 transition-theme shadow-sm group"
+              className="px-6 py-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-main)] text-[var(--text-primary)] font-black text-xs flex items-center gap-2 hover:border-accent hover:text-accent transition-theme shadow-sm group"
             >
               <ExternalLink size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               <span>{isRtl ? 'فتح المحاكي' : 'Open Simulator'}</span>
@@ -1941,7 +1941,7 @@ export const AdsManagementView: React.FC<{
             <div className="flex items-center justify-between border-b border-[var(--border-main)] pb-4">
               <div>
                 <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                  <Coins size={18} className="text-emerald-500" />
+                  <Coins size={18} className="text-accent" />
                   <span>{isRtl ? 'إعدادات تسعير المنصة والعمولات' : 'Platform Pricing & Commission Settings'}</span>
                 </h3>
                 <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -1951,7 +1951,7 @@ export const AdsManagementView: React.FC<{
               <button
                 onClick={handleUpdateEconomy}
                 disabled={isEconomyLoading}
-                className="px-4 py-2 rounded-md bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 hover:bg-emerald-600 disabled:opacity-50"
+                className="px-4 py-2 rounded-md bg-accent text-white font-bold text-xs flex items-center gap-2 hover:bg-accent disabled:opacity-50"
               >
                 {isEconomyLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
                 <span>{isRtl ? 'حفظ التغييرات المالية' : 'Save Economy Settings'}</span>
@@ -1964,13 +1964,13 @@ export const AdsManagementView: React.FC<{
                   {isRtl ? 'سعر إعلان لوحة المجتمع (يومي)' : 'Bulletin Ad Price (Daily)'}
                 </label>
                 <div className="relative">
-                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
                   <input
                     type="number"
                     step="0.1"
                     value={economySettings.bulletin_ad_daily_price}
                     onChange={(e) => setEconomySettings({ ...economySettings, bulletin_ad_daily_price: parseFloat(e.target.value) })}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none"
                   />
                 </div>
               </div>
@@ -1985,7 +1985,7 @@ export const AdsManagementView: React.FC<{
                     type="number"
                     value={economySettings.live_gift_commission_percent}
                     onChange={(e) => setEconomySettings({ ...economySettings, live_gift_commission_percent: parseInt(e.target.value) })}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none"
                   />
                 </div>
               </div>
@@ -2001,7 +2001,7 @@ export const AdsManagementView: React.FC<{
                     step="0.001"
                     value={economySettings.sidebar_ad_impression_price}
                     onChange={(e) => setEconomySettings({ ...economySettings, sidebar_ad_impression_price: parseFloat(e.target.value) })}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none"
                   />
                 </div>
               </div>
@@ -2017,7 +2017,7 @@ export const AdsManagementView: React.FC<{
                     step="0.01"
                     value={economySettings.sidebar_ad_click_price}
                     onChange={(e) => setEconomySettings({ ...economySettings, sidebar_ad_click_price: parseFloat(e.target.value) })}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md py-2.5 pl-9 pr-4 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none"
                   />
                 </div>
               </div>
@@ -2073,7 +2073,7 @@ export const AdsManagementView: React.FC<{
                   setGiftFormData({ name_en: '', name_ar: '', icon: '🌹', points: 10, is_active: true });
                   setIsGiftModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-md bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 hover:bg-emerald-600 shadow-md"
+                className="px-4 py-2 rounded-md bg-accent text-white font-bold text-xs flex items-center gap-2 hover:bg-accent shadow-md"
               >
                 <Plus size={14} />
                 <span>{isRtl ? 'إضافة هدية جديدة' : 'Add New Gift'}</span>
@@ -2082,7 +2082,7 @@ export const AdsManagementView: React.FC<{
 
             {isGiftsLoading ? (
               <div className="p-12 text-center text-xs text-gray-400">
-                <RefreshCw size={24} className="animate-spin text-emerald-500 mx-auto mb-2" />
+                <RefreshCw size={24} className="animate-spin text-accent mx-auto mb-2" />
                 <span>{isRtl ? 'جاري تحميل كتالوج الهدايا...' : 'Loading gift catalog...'}</span>
               </div>
             ) : giftCatalog.length === 0 ? (
@@ -2092,10 +2092,10 @@ export const AdsManagementView: React.FC<{
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {giftCatalog.map((gift) => (
-                  <div key={gift.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-theme hover:border-emerald-500/30">
+                  <div key={gift.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-theme hover:border-accent/30">
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{gift.icon}</span>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${gift.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${gift.is_active ? 'bg-accent/10 text-accent' : 'bg-red-500/10 text-red-500'}`}>
                         {gift.is_active ? (isRtl ? 'نشط' : 'Active') : (isRtl ? 'معطل' : 'Disabled')}
                       </span>
                     </div>
@@ -2141,7 +2141,7 @@ export const AdsManagementView: React.FC<{
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-[var(--border-main)]">
                   <h4 className="font-extrabold text-sm flex items-center gap-2">
-                    <Gift size={18} className="text-emerald-500" />
+                    <Gift size={18} className="text-accent" />
                     <span>{editingGift ? (isRtl ? 'تعديل بيانات الهدية' : 'Edit Gift') : (isRtl ? 'إضافة هدية جديدة للمنصة' : 'Add New Gift')}</span>
                   </h4>
                   <button onClick={() => setIsGiftModalOpen(false)} className="text-gray-400 hover:text-white">
@@ -2158,7 +2158,7 @@ export const AdsManagementView: React.FC<{
                         type="text"
                         value={giftFormData.name_en}
                         onChange={(e) => setGiftFormData({ ...giftFormData, name_en: e.target.value })}
-                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -2168,7 +2168,7 @@ export const AdsManagementView: React.FC<{
                         type="text"
                         value={giftFormData.name_ar}
                         onChange={(e) => setGiftFormData({ ...giftFormData, name_ar: e.target.value })}
-                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-[var(--text-primary)] focus:border-emerald-500 outline-none text-end"
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-[var(--text-primary)] focus:border-accent outline-none text-end"
                       />
                     </div>
                   </div>
@@ -2181,7 +2181,7 @@ export const AdsManagementView: React.FC<{
                         type="text"
                         value={giftFormData.icon}
                         onChange={(e) => setGiftFormData({ ...giftFormData, icon: e.target.value })}
-                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-lg text-center focus:border-emerald-500 outline-none"
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-lg text-center focus:border-accent outline-none"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -2191,7 +2191,7 @@ export const AdsManagementView: React.FC<{
                         type="number"
                         value={giftFormData.points}
                         onChange={(e) => setGiftFormData({ ...giftFormData, points: parseInt(e.target.value) })}
-                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-yellow-500 focus:border-emerald-500 outline-none"
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] rounded-md px-3 py-2 text-xs font-bold text-yellow-500 focus:border-accent outline-none"
                       />
                     </div>
                   </div>
@@ -2201,7 +2201,7 @@ export const AdsManagementView: React.FC<{
                       type="checkbox"
                       checked={giftFormData.is_active}
                       onChange={(e) => setGiftFormData({ ...giftFormData, is_active: e.target.checked })}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 accent-emerald-500"
+                      className="w-4 h-4 rounded text-accent focus:ring-accent-500 accent-accent"
                     />
                     <span className="text-xs font-bold text-[var(--text-primary)]">
                       {isRtl ? 'هذه الهدية نشطة ومتاحة للاستخدام الآن' : 'Gift is active and available for use'}
@@ -2218,7 +2218,7 @@ export const AdsManagementView: React.FC<{
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 rounded-md bg-emerald-500 text-white font-black text-xs hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
+                      className="flex-1 px-4 py-2 rounded-md bg-accent text-white font-black text-xs hover:bg-accent shadow-lg shadow-none"
                     >
                       {isRtl ? 'حفظ البيانات' : 'Save Gift'}
                     </button>
@@ -2233,7 +2233,7 @@ export const AdsManagementView: React.FC<{
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)]">
             <div>
               <h3 className="font-black text-sm text-[var(--text-primary)] flex items-center gap-2">
-                <Sparkles size={16} className="text-emerald-500" />
+                <Sparkles size={16} className="text-accent" />
                 <span>{isRtl ? 'طلبات إعلانات لوحة المجتمع (Community Bulletin Ads)' : 'Community Bulletin Ad Submissions'}</span>
               </h3>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -2243,14 +2243,14 @@ export const AdsManagementView: React.FC<{
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportSchedule}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-[var(--text-primary)] text-[10px] font-black hover:border-emerald-500 hover:text-emerald-500 transition-theme shadow-sm"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-[var(--text-primary)] text-[10px] font-black hover:border-accent hover:text-accent transition-theme shadow-sm"
               >
                 <Download size={13} />
                 <span>{isRtl ? 'تصدير الجدول' : 'Export Schedule'}</span>
               </button>
               <button
                 onClick={fetchBulletinAds}
-                className="p-2 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-gray-400 hover:text-emerald-500 transition-colors"
+                className="p-2 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-gray-400 hover:text-accent transition-colors"
               >
                 <RefreshCw size={15} className={isBulletinLoading ? 'animate-spin' : ''} />
               </button>
@@ -2286,7 +2286,7 @@ export const AdsManagementView: React.FC<{
 
           {isBulletinLoading ? (
             <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
-              <RefreshCw size={24} className="animate-spin text-emerald-500" />
+              <RefreshCw size={24} className="animate-spin text-accent" />
               <span>{isRtl ? 'جاري تحميل طلبات لوحة الإعلانات...' : 'Loading bulletin ads...'}</span>
             </div>
           ) : bulletinAds.length === 0 ? (
@@ -2310,7 +2310,7 @@ export const AdsManagementView: React.FC<{
                             setSelectedBulletinIds([]);
                           }
                         }}
-                        className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 accent-emerald-500 cursor-pointer"
+                        className="w-4 h-4 rounded text-accent focus:ring-accent-500 accent-accent cursor-pointer"
                       />
                     </th>
                     <th className="p-3 text-start">{isRtl ? 'المستخدم & الإعلان' : 'User & Ad'}</th>
@@ -2334,7 +2334,7 @@ export const AdsManagementView: React.FC<{
                               setSelectedBulletinIds(prev => prev.filter(id => id !== ad.id));
                             }
                           }}
-                          className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 accent-emerald-500 cursor-pointer"
+                          className="w-4 h-4 rounded text-accent focus:ring-accent-500 accent-accent cursor-pointer"
                         />
                       </td>
                       <td className="p-3">
@@ -2347,7 +2347,7 @@ export const AdsManagementView: React.FC<{
                           <div>
                             <div className="font-extrabold text-[var(--text-primary)] text-xs">{ad.title}</div>
                             <div className="text-[11px] text-[var(--text-muted)] line-clamp-1">{ad.description}</div>
-                            <div className="text-[10px] text-emerald-500 font-mono mt-1">
+                            <div className="text-[10px] text-accent font-mono mt-1">
                               👤 @{ad.username || 'مستخدم'} • ID: #{ad.id}
                             </div>
                           </div>
@@ -2356,7 +2356,7 @@ export const AdsManagementView: React.FC<{
 
                       <td className="p-3 text-center">
                         <div className="font-extrabold text-[var(--text-primary)]">{ad.duration_days} {isRtl ? 'أيام' : 'days'}</div>
-                        <div className="text-[11px] text-emerald-500 font-black mt-0.5">${ad.amount_paid}</div>
+                        <div className="text-[11px] text-accent font-black mt-0.5">${ad.amount_paid}</div>
                       </td>
 
                       <td className="p-3 text-center">
@@ -2368,7 +2368,7 @@ export const AdsManagementView: React.FC<{
                       <td className="p-3 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
                           ad.status === 'approved'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            ? 'bg-accent/10 text-accent border border-accent/20'
                             : ad.status === 'pending'
                             ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
                             : ad.status === 'rejected'
@@ -2388,7 +2388,7 @@ export const AdsManagementView: React.FC<{
                             <>
                               <button
                                 onClick={() => handleApproveBulletinAd(ad.id)}
-                                className="px-2.5 py-1 rounded bg-emerald-500 text-white font-bold text-[10px] hover:bg-emerald-600 transition-theme flex items-center gap-1 shadow"
+                                className="px-2.5 py-1 rounded bg-accent text-white font-bold text-[10px] hover:bg-accent transition-theme flex items-center gap-1 shadow"
                               >
                                 <CheckCircle2 size={12} />
                                 <span>{isRtl ? 'اعتماد' : 'Approve'}</span>
@@ -2514,7 +2514,7 @@ export const AdsManagementView: React.FC<{
                     type="checkbox"
                     checked={refundOnReject}
                     onChange={(e) => setRefundOnReject(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 accent-emerald-500"
+                    className="w-4 h-4 rounded text-accent focus:ring-accent-500 accent-accent"
                   />
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {isRtl ? 'إعادة المبلغ ($) لحساب/محفظة المستخدم فوراً' : 'Refund payment ($) back to user wallet'}
@@ -2550,14 +2550,14 @@ export const AdsManagementView: React.FC<{
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={isRtl ? 'بحث حسب العنوان أو الراع...' : 'Search by title or sponsor...'}
-                className="w-full ps-9 pe-4 py-1.5 text-xs rounded-md bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-emerald-500"
+                className="w-full ps-9 pe-4 py-1.5 text-xs rounded-md bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
               />
             </div>
 
             <button
               onClick={fetchAds}
               title={isRtl ? 'تحديث' : 'Refresh'}
-              className="p-2 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-gray-400 hover:text-emerald-500 transition-colors"
+              className="p-2 rounded-md border border-[var(--border-main)] bg-[var(--bg-base)] text-gray-400 hover:text-accent transition-colors"
             >
               <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
             </button>
@@ -2567,7 +2567,7 @@ export const AdsManagementView: React.FC<{
           <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg overflow-hidden shadow-sm">
             {isLoading ? (
               <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
-                <RefreshCw size={24} className="animate-spin text-emerald-500" />
+                <RefreshCw size={24} className="animate-spin text-accent" />
                 <span>{isRtl ? 'جاري تحميل قائمة الإعلانات...' : 'Loading advertisements...'}</span>
               </div>
             ) : filteredAds.length === 0 ? (
@@ -2608,12 +2608,12 @@ export const AdsManagementView: React.FC<{
                                   ad.format === 'reel' ? 'bg-pink-500/10 text-pink-500 border-pink-500/20' :
                                   ad.format === 'feed' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                                   ad.format === 'video' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                  'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                  'bg-accent/10 text-accent border-accent/20'
                                 }`}>
                                   {ad.format || 'sidebar'}
                                 </span>
                               </div>
-                              <div className="text-[10px] text-emerald-500 font-medium">
+                              <div className="text-[10px] text-accent font-medium">
                                 {ad.sponsor_name || 'Sponsor'} • <span className="text-gray-400">{ad.badge_text_ar || 'مُموَّل'}</span>
                               </div>
                             </div>
@@ -2625,7 +2625,7 @@ export const AdsManagementView: React.FC<{
                             href={ad.target_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-gray-400 hover:text-emerald-500 font-mono text-[11px] flex items-center gap-1 truncate max-w-[180px]"
+                            className="text-gray-400 hover:text-accent font-mono text-[11px] flex items-center gap-1 truncate max-w-[180px]"
                           >
                             <span className="truncate">{ad.target_url}</span>
                             <ExternalLink size={10} className="shrink-0" />
@@ -2645,7 +2645,7 @@ export const AdsManagementView: React.FC<{
                             onClick={() => handleToggleActive(ad.id)}
                             className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-theme ${
                               ad.is_active
-                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                                ? 'bg-accent/10 text-accent border-accent/20 hover:bg-accent/20'
                                 : 'bg-gray-500/10 text-gray-400 border-gray-500/20 hover:bg-gray-500/20'
                             }`}
                           >
@@ -2658,7 +2658,7 @@ export const AdsManagementView: React.FC<{
                             <button
                               onClick={() => handleOpenEditModal(ad)}
                               title={isRtl ? 'تعديل' : 'Edit'}
-                              className="p-1.5 rounded bg-gray-500/10 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-500 transition-colors"
+                              className="p-1.5 rounded bg-gray-500/10 hover:bg-accent/20 text-gray-400 hover:text-accent transition-colors"
                             >
                               <Edit size={14} />
                             </button>
@@ -2687,7 +2687,7 @@ export const AdsManagementView: React.FC<{
           <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-main)]">
-              <div className="flex items-center gap-2 text-emerald-500">
+              <div className="flex items-center gap-2 text-accent">
                 <Megaphone size={18} />
                 <h3 className="font-bold text-sm text-[var(--text-primary)]">
                   {editingAd
@@ -2716,7 +2716,7 @@ export const AdsManagementView: React.FC<{
                     required
                     value={formData.title_ar}
                     onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="مثال: حزمة الذكاء الاصطناعي"
                   />
                 </div>
@@ -2729,7 +2729,7 @@ export const AdsManagementView: React.FC<{
                     required
                     value={formData.title_en}
                     onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="e.g. Sovereign AI Suite"
                   />
                 </div>
@@ -2745,7 +2745,7 @@ export const AdsManagementView: React.FC<{
                     type="text"
                     value={formData.sponsor_name}
                     onChange={(e) => setFormData({ ...formData, sponsor_name: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="Hercules App / Perplexta"
                   />
                 </div>
@@ -2757,7 +2757,7 @@ export const AdsManagementView: React.FC<{
                     type="text"
                     value={formData.badge_text_ar}
                     onChange={(e) => setFormData({ ...formData, badge_text_ar: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="مُموَّل / Sponsored"
                   />
                 </div>
@@ -2773,7 +2773,7 @@ export const AdsManagementView: React.FC<{
                     rows={2}
                     value={formData.description_ar}
                     onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="وصف مختصر للإعلان..."
                   />
                 </div>
@@ -2785,7 +2785,7 @@ export const AdsManagementView: React.FC<{
                     rows={2}
                     value={formData.description_en}
                     onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="Short description..."
                   />
                 </div>
@@ -2801,22 +2801,22 @@ export const AdsManagementView: React.FC<{
                     type="text"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="https://images.unsplash.com/... or /uploads/..."
                   />
-                  <label className="px-3 py-1.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-colors flex items-center gap-1 shrink-0">
+                  <label className="px-3 py-1.5 rounded bg-accent/10 border border-accent/30 text-accent text-xs font-bold cursor-pointer hover:bg-accent/20 transition-colors flex items-center gap-1 shrink-0">
                     <Upload size={14} />
                     <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع صورة من الجهاز' : 'Upload File')}</span>
                     <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" onChange={handleFileUpload} className="hidden" />
                   </label>
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-[10px] text-emerald-500 font-medium">
+                  <span className="text-[10px] text-accent font-medium">
                     ✨ {getRecommendedDimensions(formData.format, isRtl)}
                   </span>
                 </div>
                 {formData.image_url && (
-                  <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400 font-medium">
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-accent font-medium">
                     <CheckCircle2 size={12} className="shrink-0" />
                     <span>
                       {formData.image_url.startsWith('/uploads/')
@@ -2829,7 +2829,7 @@ export const AdsManagementView: React.FC<{
 
               {/* Video URL & Video File Upload */}
               <div>
-                <label className="block text-[11px] font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-accent mb-1 flex items-center justify-between">
                   <span>{isRtl ? 'رابط مقطع الفيديو / ريلز (اختياري - MP4, YouTube, Vimeo, TikTok)' : 'Video / Reels URL (Optional - MP4, YouTube, Vimeo, TikTok)'}</span>
                   <span className="text-[9px] text-gray-500">{isRtl ? 'يدعم القص والتكيف تلقائياً' : 'Supports auto crop & fit'}</span>
                 </label>
@@ -2838,7 +2838,7 @@ export const AdsManagementView: React.FC<{
                     type="text"
                     value={formData.video_url || ''}
                     onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                    className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     placeholder="https://example.com/video.mp4 or YouTube / TikTok link"
                   />
                   <label className="px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold cursor-pointer hover:bg-blue-500/20 transition-colors flex items-center gap-1 shrink-0">
@@ -2862,7 +2862,7 @@ export const AdsManagementView: React.FC<{
               {/* Media Live Player Preview inside Modal */}
               {(formData.video_url || formData.image_url) && (
                 <div className="p-3 bg-black/40 rounded-xl border border-gray-800 space-y-2">
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block">
+                  <span className="text-[10px] font-black text-accent uppercase tracking-widest block">
                     {isRtl ? 'معاينة الوسائط والتكيف مع الأبعاد المعتمده' : 'Live Media Aspect Ratio Preview'}
                   </span>
                   
@@ -2893,7 +2893,7 @@ export const AdsManagementView: React.FC<{
                   required
                   value={formData.target_url}
                   onChange={(e) => setFormData({ ...formData, target_url: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                   placeholder="/subscription or https://example.com"
                 />
               </div>
@@ -2901,8 +2901,8 @@ export const AdsManagementView: React.FC<{
               {/* Format & Position Selection */}
               <div className="space-y-3 p-3 bg-black/20 rounded-lg border border-[var(--border-main)]">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-1 h-3 bg-emerald-500 rounded-full" />
-                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                  <div className="w-1 h-3 bg-accent rounded-full" />
+                  <span className="text-[10px] font-black text-accent uppercase tracking-widest">
                     {isRtl ? 'إعدادات الظهور والقياسات' : 'Display & Aspect Ratio Config'}
                   </span>
                 </div>
@@ -2915,7 +2915,7 @@ export const AdsManagementView: React.FC<{
                     <select
                       value={formData.format}
                       onChange={(e) => setFormData({ ...formData, format: e.target.value as any })}
-                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none font-bold"
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none font-bold"
                     >
                       <option value="sidebar">{isRtl ? 'إعلان جانبي (Sidebar)' : 'Sidebar Ad'}</option>
                       <option value="feed">{isRtl ? 'منشور (Feed Post)' : 'Feed Post'}</option>
@@ -2931,7 +2931,7 @@ export const AdsManagementView: React.FC<{
                     <select
                       value={formData.position}
                       onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none"
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
                     >
                       <option value="sidebar">{isRtl ? 'الشريط الجانبي' : 'Sidebar'}</option>
                       <option value="feed">{isRtl ? 'الرئيسية (Newsfeed)' : 'Newsfeed'}</option>
@@ -2943,29 +2943,29 @@ export const AdsManagementView: React.FC<{
                 </div>
 
                 {/* Technical Specs Guidance */}
-                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded p-2.5 flex items-start gap-2">
-                  <Info size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                <div className="bg-accent/5 border border-accent/10 rounded p-2.5 flex items-start gap-2">
+                  <Info size={14} className="text-accent mt-0.5 shrink-0" />
                   <div className="text-[10px] leading-relaxed text-[var(--text-muted)] font-medium">
                     {formData.format === 'story' || formData.format === 'reel' ? (
-                      <span className="text-emerald-400">
+                      <span className="text-accent">
                         {isRtl 
                           ? 'القياس الموصى به: 1080x1920 بكسل (9:16). مثالي للهواتف الذكية.'
                           : 'Recommended: 1080x1920 px (9:16 aspect ratio). Optimized for full-screen mobile.'}
                       </span>
                     ) : formData.format === 'feed' ? (
-                      <span className="text-emerald-400">
+                      <span className="text-accent">
                         {isRtl 
                           ? 'القياس الموصى به: 1080x1080 بكسل (1:1) أو 1080x1350 (4:5).'
                           : 'Recommended: 1080x1080 px (1:1) or 1080x1350 (4:5 ratio).'}
                       </span>
                     ) : formData.format === 'sidebar' ? (
-                      <span className="text-emerald-400">
+                      <span className="text-accent">
                         {isRtl 
                           ? 'القياس الموصى به: 600x600 بكسل. يظهر في الشريط الجانبي للحواسيب.'
                           : 'Recommended: 600x600 px. Displayed in the desktop sidebar area.'}
                       </span>
                     ) : (
-                      <span className="text-emerald-400">
+                      <span className="text-accent">
                         {isRtl 
                           ? 'القياس الموصى به: 1920x1080 بكسل (16:9). للفيديوهات العريضة.'
                           : 'Recommended: 1920x1080 px (16:9 ratio). Optimized for widescreen video.'}
@@ -2992,7 +2992,7 @@ export const AdsManagementView: React.FC<{
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 accent-emerald-500"
+                    className="w-4 h-4 rounded text-accent focus:ring-accent-500 accent-accent"
                   />
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {isRtl ? 'إعلان نشط' : 'Active Ad'}
@@ -3012,7 +3012,7 @@ export const AdsManagementView: React.FC<{
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-theme flex items-center gap-1.5"
+                  className="px-5 py-2 rounded text-xs font-bold bg-accent hover:bg-accent text-white shadow-lg shadow-none transition-theme flex items-center gap-1.5"
                 >
                   {isSubmitting && <RefreshCw size={14} className="animate-spin" />}
                   <span>{editingAd ? (isRtl ? 'تحديث الإعلان' : 'Save Changes') : (isRtl ? 'نشر الإعلان' : 'Publish Ad')}</span>
@@ -3028,7 +3028,7 @@ export const AdsManagementView: React.FC<{
           <div className="w-full h-full p-4 md:p-10 flex flex-col gap-6">
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/20">
+                <div className="p-3 rounded-2xl bg-accent text-white shadow-xl shadow-none">
                   <Monitor size={24} />
                 </div>
                 <div>
@@ -3048,7 +3048,7 @@ export const AdsManagementView: React.FC<{
               {/* Left Side: Control & Info */}
               <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-8 flex flex-col">
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest">{isRtl ? 'تكوين المعاينة' : 'Preview Configuration'}</h4>
+                  <h4 className="text-xs font-black text-accent uppercase tracking-widest">{isRtl ? 'تكوين المعاينة' : 'Preview Configuration'}</h4>
                   <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-4">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-400">{isRtl ? 'سعر إعلان اللوحة' : 'Bulletin Ad Price'}</span>
@@ -3072,7 +3072,7 @@ export const AdsManagementView: React.FC<{
                       <Monitor size={24} />
                       <span className="text-[10px] font-black">{isRtl ? 'سطح المكتب' : 'Desktop View'}</span>
                     </button>
-                    <button className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 text-gray-400 border border-white/5 hover:border-emerald-500/30 hover:text-white transition-theme">
+                    <button className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 text-gray-400 border border-white/5 hover:border-accent/30 hover:text-white transition-theme">
                       <Smartphone size={24} />
                       <span className="text-[10px] font-black">{isRtl ? 'الجوال' : 'Mobile View'}</span>
                     </button>
@@ -3095,7 +3095,7 @@ export const AdsManagementView: React.FC<{
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-accent/50"></div>
                   </div>
                   <div className="mx-auto w-1/2 h-5 bg-[var(--bg-primary)] rounded-md border border-white/5 flex items-center justify-center">
                     <span className="text-[8px] text-gray-500 font-mono">https://perplexta.ai/bulletin</span>
@@ -3108,7 +3108,7 @@ export const AdsManagementView: React.FC<{
                       <h3 className="text-xl font-black text-gray-900 dark:text-white">
                         {isRtl ? 'لوحة المجتمع' : 'Bulletin Board'}
                       </h3>
-                      <div className="w-24 h-8 bg-emerald-500 rounded-lg opacity-20"></div>
+                      <div className="w-24 h-8 bg-accent rounded-lg opacity-20"></div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -3118,16 +3118,16 @@ export const AdsManagementView: React.FC<{
                           <div className="absolute -top-3 -right-3 z-20 px-2 py-1 bg-amber-500 text-white text-[8px] font-black rounded shadow-lg animate-bounce">
                             {isRtl ? 'إعلان ممول' : 'SPONSORED'}
                           </div>
-                          <div className="bg-white dark:bg-[#1a1a1c] border-2 border-emerald-500/30 rounded-2xl overflow-hidden shadow-xl shadow-emerald-500/5 hover:border-emerald-500 transition-theme">
-                            <div className="h-40 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 relative flex items-center justify-center">
-                              <Zap size={40} className="text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                          <div className="bg-white dark:bg-[#1a1a1c] border-2 border-accent/30 rounded-2xl overflow-hidden shadow-xl shadow-none hover:border-accent transition-theme">
+                            <div className="h-40 bg-gradient-to-br from-gray-500/10 to-blue-500/10 relative flex items-center justify-center">
+                              <Zap size={40} className="text-accent " />
                               <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[9px] font-black text-white border border-white/10">
                                 {isRtl ? `فقط $${economySettings.bulletin_ad_daily_price} / يومياً` : `From $${economySettings.bulletin_ad_daily_price} / Day`}
                               </div>
                             </div>
                             <div className="p-4 space-y-2">
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-md bg-emerald-500 flex items-center justify-center text-white text-[10px] font-black">P</div>
+                                <div className="w-6 h-6 rounded-md bg-accent flex items-center justify-center text-white text-[10px] font-black">P</div>
                                 <span className="text-[10px] font-black text-gray-900 dark:text-white">{isRtl ? 'فريق بيربليكستا' : 'Perplexta Team'}</span>
                               </div>
                               <h5 className="font-extrabold text-sm text-gray-900 dark:text-white">
@@ -3165,7 +3165,7 @@ export const AdsManagementView: React.FC<{
                             <div className="text-[10px] font-black text-gray-900 dark:text-white leading-tight">
                               {isRtl ? 'تحليلات البيانات للمحترفين' : 'Data Analytics Elite'}
                             </div>
-                            <div className="text-[8px] text-emerald-500 font-bold uppercase">
+                            <div className="text-[8px] text-accent font-bold uppercase">
                               ${economySettings.sidebar_ad_click_price} / CLICK
                             </div>
                           </div>
@@ -3204,7 +3204,7 @@ export const AdsManagementView: React.FC<{
                 value={verificationModal.code}
                 onChange={(e) => setVerificationModal({ ...verificationModal, code: e.target.value })}
                 placeholder="000000"
-                className="w-full bg-[var(--bg-base)] border-2 border-[var(--border-main)] rounded-xl py-4 text-center text-2xl font-black tracking-[1em] focus:border-emerald-500 outline-none text-emerald-500"
+                className="w-full bg-[var(--bg-base)] border-2 border-[var(--border-main)] rounded-xl py-4 text-center text-2xl font-black tracking-[1em] focus:border-accent outline-none text-accent"
               />
               
               <div className="flex gap-3">
@@ -3217,7 +3217,7 @@ export const AdsManagementView: React.FC<{
                 <button
                   onClick={handleVerifyApproval}
                   disabled={isApproving || verificationModal.code.length < 4}
-                  className="flex-1 px-4 py-3 rounded-xl bg-emerald-500 text-white font-black text-xs hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-xl bg-accent text-white font-black text-xs hover:bg-accent shadow-lg shadow-none disabled:opacity-50"
                 >
                   {isApproving ? <RefreshCw size={18} className="animate-spin mx-auto" /> : (isRtl ? 'تأكيد الرمز' : 'Verify & Execute')}
                 </button>

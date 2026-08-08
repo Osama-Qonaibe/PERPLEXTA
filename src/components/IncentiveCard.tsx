@@ -91,10 +91,10 @@ export const IncentiveCard: React.FC = () => {
       return {
         title: t('quotaMilestoneTitle').replace('{percentage}', '50'),
         desc: t('quotaMilestone50'),
-        color: 'text-emerald-500',
-        bg: 'bg-emerald-500/10',
+        color: 'text-accent',
+        bg: 'bg-accent/10',
         progress: 'w-1/2',
-        icon: <Megaphone className="text-emerald-500" size={24} />
+        icon: <Megaphone className="text-accent" size={24} />
       };
     }
     if (percentage === 90) {
@@ -164,8 +164,8 @@ export const IncentiveCard: React.FC = () => {
 
             <div className={`mt-6 p-4 rounded-[var(--radius)] bg-[var(--bg-primary)] border border-[var(--border-main)] ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center gap-2 mb-2">
-                <Users size={16} className="text-emerald-500" />
-                <span className="text-[13px] font-bold text-emerald-500 uppercase tracking-wider">
+                <Users size={16} className="text-accent" />
+                <span className="text-[13px] font-bold text-accent uppercase tracking-wider">
                   {t('rewardFriends')}
                 </span>
               </div>
@@ -176,7 +176,7 @@ export const IncentiveCard: React.FC = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button 
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-theme shadow-lg shadow-emerald-500/20 active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-accent hover:bg-accent text-white text-xs font-bold transition-theme shadow-lg shadow-none active:scale-95"
                 >
                   <Share2 size={14} />
                   {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
@@ -185,7 +185,7 @@ export const IncentiveCard: React.FC = () => {
                   onClick={handleCopy}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs font-bold transition-theme active:scale-95"
                 >
-                  {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                  {copied ? <Check size={14} className="text-accent" /> : <Copy size={14} />}
                   {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}
                 </button>
               </div>

@@ -104,7 +104,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
     const gradient = defs
       .append('linearGradient')
-      .attr('id', 'emerald-area-gradient')
+      .attr('id', 'accent-area-gradient')
       .attr('x1', '0%')
       .attr('y1', '0%')
       .attr('x2', '0%')
@@ -123,7 +123,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('stop-opacity', 0.0);
 
     // Filter for line drop shadow / glow
-    const filter = defs.append('filter').attr('id', 'emerald-glow').attr('height', '130%');
+    const filter = defs.append('filter').attr('id', 'accent-glow').attr('height', '130%');
     filter.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 3).attr('result', 'blur');
     filter.append('feOffset').attr('in', 'blur').attr('dx', 0).attr('dy', 2).attr('result', 'offsetBlur');
     const feMerge = filter.append('feMerge');
@@ -158,7 +158,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
     g.append('path')
       .datum(data)
-      .attr('fill', 'url(#emerald-area-gradient)')
+      .attr('fill', 'url(#accent-area-gradient)')
       .attr('d', area);
 
     // D3 Line Generator
@@ -174,7 +174,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('fill', 'none')
       .attr('stroke', strokeColor)
       .attr('stroke-width', 2.5)
-      .attr('filter', 'url(#emerald-glow)')
+      .attr('filter', 'url(#accent-glow)')
       .attr('d', line);
 
     // Animate Line Path Entry
@@ -287,13 +287,13 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       {/* Header Controls & Metric Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
             <TrendingUp size={18} />
           </div>
           <div>
             <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-1.5">
               <span>{isRtl ? 'تحليلات اتجاهات التفاعل والدقة' : 'Engagement & Accuracy Trends'}</span>
-              <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-accent/10 text-accent border border-accent/20">
                 D3 Visualizer
               </span>
             </h3>
@@ -308,7 +308,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('7d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '7d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '7d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '7 أيام' : '7 Days'}
@@ -316,7 +316,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('30d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '30d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '30d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '30 يوم' : '30 Days'}
@@ -324,7 +324,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('90d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '90d' ? 'bg-emerald-500 text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '90d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '90 يوم' : '90 Days'}
@@ -338,64 +338,64 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           onClick={() => setActiveMetric('clicks')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'clicks'
-              ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
+              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
+              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
             <span>{isRtl ? 'نقرات التوصيات' : 'Total Recommendation Clicks'}</span>
-            <Activity size={12} className="text-emerald-500" />
+            <Activity size={12} className="text-accent" />
           </p>
           <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalClicks.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-emerald-500 mt-0.5">+18.4% WoW</p>
+          <p className="text-[10px] font-bold text-accent mt-0.5">+18.4% WoW</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('matchScore')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'matchScore'
-              ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
+              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
+              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
             <span>{isRtl ? 'متوسط التوافق' : 'Avg Match Precision'}</span>
-            <Sparkles size={12} className="text-emerald-500" />
+            <Sparkles size={12} className="text-accent" />
           </p>
           <p className="text-base font-black text-[var(--text-primary)] mt-1">{avgMatch}%</p>
-          <p className="text-[10px] font-bold text-emerald-500 mt-0.5">{isRtl ? 'دقة فائقة' : 'High Precision'}</p>
+          <p className="text-[10px] font-bold text-accent mt-0.5">{isRtl ? 'دقة فائقة' : 'High Precision'}</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('impressions')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'impressions'
-              ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
+              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
+              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
             <span>{isRtl ? 'الظهور والوصول' : 'Total Impressions'}</span>
-            <BarChart2 size={12} className="text-emerald-500" />
+            <BarChart2 size={12} className="text-accent" />
           </p>
           <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalImpressions.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-emerald-500 mt-0.5">+24.1% {isRtl ? 'نمو' : 'Growth'}</p>
+          <p className="text-[10px] font-bold text-accent mt-0.5">+24.1% {isRtl ? 'نمو' : 'Growth'}</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('conversions')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'conversions'
-              ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/30'
+              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
+              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
             <span>{isRtl ? 'التحويلات الناجحة' : 'Direct Conversions'}</span>
-            <Zap size={12} className="text-emerald-500" />
+            <Zap size={12} className="text-accent" />
           </p>
           <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalConversions.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-emerald-500 mt-0.5">3.8x {isRtl ? 'معدل تحويل' : 'CVR'}</p>
+          <p className="text-[10px] font-bold text-accent mt-0.5">3.8x {isRtl ? 'معدل تحويل' : 'CVR'}</p>
         </button>
       </div>
 
@@ -412,14 +412,14 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
               left: `${Math.min(tooltipPos.x, (containerRef.current?.clientWidth || 400) - 180)}px`,
               top: `${Math.max(10, tooltipPos.y - 75)}px`,
             }}
-            className="absolute z-20 pointer-events-none p-2.5 rounded-xl bg-gray-900/95 dark:bg-gray-950/95 border border-emerald-500/30 shadow-xl backdrop-blur-md text-white min-w-[160px]"
+            className="absolute z-20 pointer-events-none p-2.5 rounded-xl bg-gray-900/95 dark:bg-gray-950/95 border border-accent/30 shadow-xl backdrop-blur-md text-white min-w-[160px]"
           >
             <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 mb-1 border-b border-gray-800 pb-1">
               <span>{hoveredPoint.dateStr}</span>
-              <span className="text-emerald-400 font-extrabold">{hoveredPoint.matchScore}% {isRtl ? 'توافق' : 'Match'}</span>
+              <span className="text-accent font-extrabold">{hoveredPoint.matchScore}% {isRtl ? 'توافق' : 'Match'}</span>
             </div>
             <div className="space-y-0.5 text-xs">
-              <p className="font-extrabold text-emerald-400 flex items-center justify-between gap-3">
+              <p className="font-extrabold text-accent flex items-center justify-between gap-3">
                 <span className="text-gray-300">
                   {activeMetric === 'clicks'
                     ? isRtl ? 'النقرات:' : 'Clicks:'

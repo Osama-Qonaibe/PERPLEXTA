@@ -892,13 +892,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
         isDark ? 'bg-[#161618] border-gray-800' : 'bg-white border-gray-200 shadow-sm'
       }`}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+          <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)]">
             <Users size={24} />
           </div>
           <div>
             <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
               <span>{isRtl ? 'إدارة المستخدمين والاشتراكات' : 'User & Subscription Command Center'}</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/30">
                 {users.length} {isRtl ? 'مستخدم' : 'Users'}
               </span>
             </h1>
@@ -916,8 +916,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
             isDark ? 'bg-black/30 border-gray-800 text-gray-300' : 'bg-gray-100 border-gray-200 text-gray-700'
           }`}>
             <span className="relative flex h-2.5 w-2.5">
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${autoSync ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
-              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${autoSync ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${autoSync ? 'bg-accent opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${autoSync ? 'bg-accent' : 'bg-amber-500'}`}></span>
             </span>
             <span className="text-[11px]">
               {autoSync 
@@ -939,7 +939,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
               onClick={() => setAutoSync(!autoSync)}
               className={`px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider font-extrabold transition-all ${
                 autoSync
-                  ? 'bg-emerald-500 text-black shadow-sm'
+                  ? 'bg-accent text-black shadow-sm'
                   : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black')
               }`}
               title={isRtl ? 'تبديل المزامنة التلقائية' : 'Toggle Real-Time Auto Sync'}
@@ -952,7 +952,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                 value={pollIntervalSeconds}
                 onChange={(e) => setPollIntervalSeconds(Number(e.target.value))}
                 className={`bg-transparent text-[10px] font-mono font-bold focus:outline-none cursor-pointer px-1.5 ${
-                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                  isDark ? 'text-accent' : 'text-accent'
                 }`}
               >
                 <option value={5} className={isDark ? 'bg-gray-900 text-white' : 'bg-white text-black'}>5s</option>
@@ -975,13 +975,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
             }`}
             title={isRtl ? 'تحديث البيانات فوراً' : 'Force Refresh Data'}
           >
-            <RefreshCw size={14} className={loading || isSyncing ? 'animate-spin text-emerald-500' : ''} />
+            <RefreshCw size={14} className={loading || isSyncing ? 'animate-spin text-accent' : ''} />
             <span>{isRtl ? 'مزامنة الآن' : 'Sync Now'}</span>
           </button>
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
           >
             <UserPlus size={16} />
             <span>{isRtl ? 'إضافة مستخدم جديد' : 'Add New Explorer'}</span>
@@ -1000,7 +1000,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={isRtl ? 'بحث باسم المستخدم، البريد الإلكتروني، أو المصرّح المالي #ID...' : 'Search name, email, or user ID...'}
-            className={`w-full ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-emerald-500/50 ${
+            className={`w-full ltr:pl-9 ltr:pr-4 rtl:pr-9 rtl:pl-4 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-accent/50 ${
               isDark ? 'bg-[#0f0f11] border-gray-800 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
             }`}
           />
@@ -1095,12 +1095,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('name')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'name' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'name' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'المستخدم' : 'Explorer'}</span>
                     {sortField === 'name' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1113,12 +1113,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('role')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'role' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'role' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'الدور / الصلاحية' : 'Role'}</span>
                     {sortField === 'role' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1131,12 +1131,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('plan')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'plan' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'plan' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'الباقة الحالية' : 'Active Tier'}</span>
                     {sortField === 'plan' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1149,12 +1149,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('kyc')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'kyc' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'kyc' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'توثيق الهوية' : 'KYC Status'}</span>
                     {sortField === 'kyc' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1167,12 +1167,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('status')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'status' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'status' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'الحالة' : 'Status'}</span>
                     {sortField === 'status' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1185,12 +1185,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('balance')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'balance' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'balance' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'الرصيد والنقاط' : 'Balance & PTS'}</span>
                     {sortField === 'balance' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1203,12 +1203,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     type="button"
                     onClick={() => handleSort('joined')}
                     className={`inline-flex items-center gap-1.5 transition-colors focus:outline-none ${
-                      sortField === 'joined' ? 'text-emerald-500 font-extrabold' : 'hover:text-emerald-400'
+                      sortField === 'joined' ? 'text-accent font-extrabold' : 'hover:text-accent'
                     }`}
                   >
                     <span>{isRtl ? 'تاريخ الانضمام' : 'Joined Date'}</span>
                     {sortField === 'joined' ? (
-                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-emerald-500" /> : <ArrowDown size={12} className="text-emerald-500" />
+                      sortOrder === 'asc' ? <ArrowUp size={12} className="text-accent" /> : <ArrowDown size={12} className="text-accent" />
                     ) : (
                       <ArrowUpDown size={11} className="opacity-40 hover:opacity-100" />
                     )}
@@ -1224,8 +1224,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                 <tr>
                   <td colSpan={8} className="text-center py-16">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-                      <span className="text-xs font-bold text-emerald-500 animate-pulse">
+                      <div className="w-10 h-10 border-2 border-accent/20 border-t-accent-500 rounded-full animate-spin" />
+                      <span className="text-xs font-bold text-accent animate-pulse">
                         {isRtl ? 'جاري مزامنة بيانات المستخدمين...' : 'Syncing Galaxy Users...'}
                       </span>
                     </div>
@@ -1254,7 +1254,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${
-                              isDark ? 'bg-gray-800 border-gray-700/80 group-hover:border-emerald-500/50' : 'bg-gray-100 border-gray-200 group-hover:border-emerald-500/50'
+                              isDark ? 'bg-gray-800 border-gray-700/80 group-hover:border-accent/50' : 'bg-gray-100 border-gray-200 group-hover:border-accent/50'
                             }`}>
                               {user.avatar ? (
                                 <img
@@ -1268,12 +1268,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                               )}
                             </div>
                             {isUserActive && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-[#161618] drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full border-2 border-white dark:border-[#161618] " />
                             )}
                           </div>
                           <div>
                             <div className={`font-bold text-xs transition-colors flex items-center gap-2 ${
-                              isDark ? 'text-white group-hover:text-emerald-400' : 'text-gray-900 group-hover:text-emerald-600'
+                              isDark ? 'text-white group-hover:text-accent' : 'text-gray-900 group-hover:text-accent'
                             }`}>
                               <HighlightText text={user.name || ''} query={searchQuery} />
                               <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-gray-500/10 text-gray-400">
@@ -1300,7 +1300,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                 : user.role === 'elite'
                                 ? 'text-amber-500 border-amber-500/30 bg-amber-500/10'
                                 : user.role === 'support'
-                                ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10'
+                                ? 'text-accent border-accent/30 bg-accent/10'
                                 : isDark
                                 ? 'text-gray-400 border-gray-800 bg-[#0f0f11]'
                                 : 'text-gray-600 border-gray-200 bg-gray-50'
@@ -1352,7 +1352,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                         <div
                           className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 border ${
                             user.kyc_status === 'verified'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                              ? 'bg-accent/10 text-accent border-accent/30'
                               : user.kyc_status === 'pending'
                               ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse'
                               : user.kyc_status === 'rejected'
@@ -1365,7 +1365,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           <div
                             className={`w-1.5 h-1.5 rounded-full ${
                               user.kyc_status === 'verified'
-                                ? 'bg-emerald-500'
+                                ? 'bg-accent'
                                 : user.kyc_status === 'pending'
                                 ? 'bg-amber-500'
                                 : user.kyc_status === 'rejected'
@@ -1393,12 +1393,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           disabled={isUpdating}
                           className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 border transition-all cursor-pointer ${
                             isUserActive
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 hover:bg-amber-500/20 hover:text-amber-500 hover:border-amber-500/40'
-                              : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-emerald-500/20 hover:text-emerald-500 hover:border-emerald-500/40'
+                              ? 'bg-accent/10 text-accent border-accent/30 hover:bg-amber-500/20 hover:text-amber-500 hover:border-amber-500/40'
+                              : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-accent/20 hover:text-accent hover:border-accent/40'
                           }`}
                           title={isRtl ? 'تغيير حالة الحساب' : 'Toggle Account Status'}
                         >
-                          <div className={`w-1.5 h-1.5 rounded-full ${isUserActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          <div className={`w-1.5 h-1.5 rounded-full ${isUserActive ? 'bg-accent' : 'bg-red-500'}`} />
                           <span>{isUserActive ? (isRtl ? 'نشط' : 'Active') : (isRtl ? 'معطل' : 'Suspended')}</span>
                         </button>
                       </td>
@@ -1406,7 +1406,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       {/* Balance & Points */}
                       <td className="px-5 py-3.5">
                         <div className="flex flex-col text-[11px] font-mono">
-                          <span className="font-bold text-emerald-500">${parseFloat((user.balance || 0).toString()).toFixed(2)}</span>
+                          <span className="font-bold text-accent">${parseFloat((user.balance || 0).toString()).toFixed(2)}</span>
                           <span className="text-[10px] text-gray-500">{user.points || 0} PTS</span>
                         </div>
                       </td>
@@ -1424,8 +1424,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             onClick={() => setEmailModalUser(user)}
                             className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all ${
                               isDark
-                                ? 'bg-gray-800/60 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 border-gray-700/60 hover:border-emerald-500/30'
-                                : 'bg-gray-100 text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 border-gray-200 hover:border-emerald-300'
+                                ? 'bg-gray-800/60 text-gray-400 hover:text-accent hover:bg-accent/10 border-gray-700/60 hover:border-accent/30'
+                                : 'bg-gray-100 text-gray-600 hover:text-accent hover:bg-accent border-gray-200 hover:border-accent'
                             }`}
                             title={isRtl ? 'إرسال بريد' : 'Send Email'}
                           >
@@ -1435,7 +1435,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           {/* View Detail Modal */}
                           <button
                             onClick={() => handleOpenUserDetail(user, 'profile')}
-                            className="w-7 h-7 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 flex items-center justify-center transition-all drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                            className="w-7 h-7 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 flex items-center justify-center transition-all "
                             title={isRtl ? 'إعدادات وإدارة الحساب' : 'View Account Settings'}
                           >
                             <Eye size={13} />
@@ -1480,13 +1480,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
               <>
                 عرض <span className="font-bold text-gray-900 dark:text-gray-100">{sortedUsers.length > 0 ? startIndex + 1 : 0}</span> إلى{' '}
                 <span className="font-bold text-gray-900 dark:text-gray-100">{Math.min(startIndex + pageSize, sortedUsers.length)}</span> من أصل{' '}
-                <span className="font-bold text-emerald-500">{sortedUsers.length}</span> مستخدم
+                <span className="font-bold text-accent">{sortedUsers.length}</span> مستخدم
               </>
             ) : (
               <>
                 Showing <span className="font-bold text-gray-900 dark:text-gray-100">{sortedUsers.length > 0 ? startIndex + 1 : 0}</span> to{' '}
                 <span className="font-bold text-gray-900 dark:text-gray-100">{Math.min(startIndex + pageSize, sortedUsers.length)}</span> of{' '}
-                <span className="font-bold text-emerald-500">{sortedUsers.length}</span> users
+                <span className="font-bold text-accent">{sortedUsers.length}</span> users
               </>
             )}
           </div>
@@ -1552,7 +1552,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           onClick={() => setCurrentPage(page)}
                           className={`w-7 h-7 rounded-lg text-xs font-mono font-bold transition-all ${
                             safeCurrentPage === page
-                              ? 'bg-emerald-500 text-black shadow-sm font-black'
+                              ? 'bg-accent text-black shadow-sm font-black'
                               : isDark
                               ? 'bg-[#18181b] border border-gray-800 text-gray-300 hover:bg-gray-800'
                               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'
@@ -1628,7 +1628,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           ? 'text-purple-500 bg-purple-500/10 border-purple-500/30'
                           : selectedUser.role === 'elite'
                           ? 'text-amber-500 bg-amber-500/10 border-amber-500/30'
-                          : 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30'
+                          : 'text-accent bg-accent/10 border-accent/30'
                       }`}>
                         {selectedUser.role}
                       </span>
@@ -1655,7 +1655,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   onClick={() => setActiveTab('profile')}
                   className={`py-3 px-4 font-black text-xs border-b-2 flex items-center gap-2 transition-all ${
                     activeTab === 'profile'
-                      ? 'border-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      ? 'border-accent text-accent '
                       : isDark ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-800'
                   }`}
                 >
@@ -1667,7 +1667,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   onClick={() => setActiveTab('wallet')}
                   className={`py-3 px-4 font-black text-xs border-b-2 flex items-center gap-2 transition-all ${
                     activeTab === 'wallet'
-                      ? 'border-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      ? 'border-accent text-accent '
                       : isDark ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-800'
                   }`}
                 >
@@ -1679,7 +1679,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   onClick={() => setActiveTab('plan')}
                   className={`py-3 px-4 font-black text-xs border-b-2 flex items-center gap-2 transition-all ${
                     activeTab === 'plan'
-                      ? 'border-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      ? 'border-accent text-accent '
                       : isDark ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-800'
                   }`}
                 >
@@ -1691,7 +1691,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   onClick={() => setActiveTab('activity')}
                   className={`py-3 px-4 font-black text-xs border-b-2 flex items-center gap-2 transition-all ${
                     activeTab === 'activity'
-                      ? 'border-emerald-500 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      ? 'border-accent text-accent '
                       : isDark ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-800'
                   }`}
                 >
@@ -1710,7 +1710,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                     }`}>
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                        <UserCheck size={14} className="text-emerald-500" />
+                        <UserCheck size={14} className="text-accent" />
                         <span>{isRtl ? 'بيانات الحساب الأساسية' : 'Account Metadata'}</span>
                       </h4>
 
@@ -1734,7 +1734,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             disabled={isUpdating}
                             className={`inline-flex items-center gap-1.5 font-bold text-xs px-2.5 py-1 rounded-md border ${
                               (selectedUser.status || selectedUser.subscription_status) === 'active'
-                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                                ? 'bg-accent/10 text-accent border-accent/30'
                                 : 'bg-red-500/10 text-red-500 border-red-500/30'
                             }`}
                           >
@@ -1772,13 +1772,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     }`}>
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                          <ShieldCheck size={14} className="text-emerald-500" />
+                          <ShieldCheck size={14} className="text-accent" />
                           <span>{isRtl ? 'توثيق الهوية (KYC)' : 'Identity Verification (KYC)'}</span>
                         </h4>
 
                         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
                           selectedUser.kyc_status === 'verified'
-                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                            ? 'bg-accent/10 text-accent border-accent/30'
                             : selectedUser.kyc_status === 'pending'
                             ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
                             : selectedUser.kyc_status === 'rejected'
@@ -1803,7 +1803,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             </button>
                           </div>
                           {selectedUser.kyc_full_name && (
-                            <p className="text-xs font-bold">{isRtl ? 'الاسم بالهوية:' : 'Name on ID:'} <span className="text-emerald-500">{selectedUser.kyc_full_name}</span></p>
+                            <p className="text-xs font-bold">{isRtl ? 'الاسم بالهوية:' : 'Name on ID:'} <span className="text-accent">{selectedUser.kyc_full_name}</span></p>
                           )}
                           <div className="max-w-xs rounded-lg overflow-hidden border border-gray-700">
                             <img src={selectedUser.kyc_selfie} alt="KYC Selfie" className="w-full h-auto object-cover max-h-48" />
@@ -1831,7 +1831,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           <button
                             onClick={() => handleUpdateKYCVerificationStatus(selectedUser.id, 'verified')}
                             disabled={isUpdating}
-                            className="flex-1 py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs flex items-center justify-center gap-1.5 transition-all"
+                            className="flex-1 py-2 px-3 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs flex items-center justify-center gap-1.5 transition-all"
                           >
                             <CheckCircle2 size={14} />
                             <span>{isRtl ? 'اعتماد التوثيق' : 'Approve KYC'}</span>
@@ -1857,7 +1857,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                     }`}>
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                        <FileText size={14} className="text-emerald-500" />
+                        <FileText size={14} className="text-accent" />
                         <span>{isRtl ? 'ملاحظات الدعم الفني السرية' : 'Internal Support Notes'}</span>
                       </h4>
 
@@ -1866,7 +1866,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                         value={supportNotes}
                         onChange={(e) => setSupportNotes(e.target.value)}
                         placeholder={isRtl ? 'اكتب أي ملاحظات خاصة بهذا المستخدم تظهر للفريق فقط...' : 'Internal notes visible to team only...'}
-                        className={`w-full p-3 rounded-lg border text-xs focus:outline-none focus:border-emerald-500/50 ${
+                        className={`w-full p-3 rounded-lg border text-xs focus:outline-none focus:border-accent/50 ${
                           isDark
                             ? 'bg-[#0f0f11] border-gray-800 text-gray-200 placeholder-gray-600'
                             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -1877,7 +1877,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                         <button
                           onClick={handleSaveSupportNotes}
                           disabled={isUpdating}
-                          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-xs transition-all"
+                          className="px-4 py-2 rounded-lg bg-accent hover:bg-accent text-black font-bold text-xs transition-all"
                         >
                           {isRtl ? 'حفظ الملاحظات' : 'Save Notes'}
                         </button>
@@ -1891,11 +1891,11 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <div className="space-y-6">
                     {/* Current Balance Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+                      <div className="p-4 rounded-xl border border-accent/20 bg-accent/5">
                         <span className="text-[10px] font-black uppercase text-gray-400 block mb-1">
                           {isRtl ? 'الرصيد المالي (USD)' : 'USD Balance'}
                         </span>
-                        <h3 className="text-2xl font-black text-emerald-500 font-mono">
+                        <h3 className="text-2xl font-black text-accent font-mono">
                           ${parseFloat(selectedUser.balance || 0).toFixed(2)}
                         </h3>
                       </div>
@@ -1915,7 +1915,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                     }`}>
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                        <Wallet size={14} className="text-emerald-500" />
+                        <Wallet size={14} className="text-accent" />
                         <span>{isRtl ? 'إجراء تسوية رصيد إدارية' : 'Admin Ledger Settlement'}</span>
                       </h4>
 
@@ -1960,7 +1960,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           placeholder="0.00"
                           value={ledgerAmount}
                           onChange={(e) => setLedgerAmount(e.target.value)}
-                          className={`w-full p-2.5 rounded-lg border text-xs font-mono focus:border-emerald-500/50 ${
+                          className={`w-full p-2.5 rounded-lg border text-xs font-mono focus:border-accent/50 ${
                             isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'
                           }`}
                         />
@@ -1973,7 +1973,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           placeholder={isRtl ? 'مثال: مكافأة تشجيعية، تعويض فني...' : 'e.g. Compensation, Promo reward...'}
                           value={ledgerReason}
                           onChange={(e) => setLedgerReason(e.target.value)}
-                          className={`w-full p-2.5 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                          className={`w-full p-2.5 rounded-lg border text-xs focus:border-accent/50 ${
                             isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-900'
                           }`}
                         />
@@ -1982,7 +1982,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       <button
                         type="submit"
                         disabled={isUpdating}
-                        className="w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        className="w-full py-2.5 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                       >
                         {isRtl ? 'تأكيد التسوية وتسجيل الحركة' : 'Execute Ledger Transaction'}
                       </button>
@@ -1992,12 +1992,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                          <Activity size={14} className="text-emerald-500" />
+                          <Activity size={14} className="text-accent" />
                           <span>{isRtl ? 'سجل العمليات المالية والتحويلات المباشر' : 'Live Ledger Transactions History'}</span>
                         </h4>
                         <button
                           onClick={() => fetchUserTransactions(selectedUser.id)}
-                          className="text-[11px] font-bold text-emerald-500 hover:underline flex items-center gap-1"
+                          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1"
                         >
                           <RefreshCw size={12} className={isLoadingTransactions ? 'animate-spin' : ''} />
                           <span>{isRtl ? 'تحديث' : 'Refresh'}</span>
@@ -2016,7 +2016,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                               }`}>
                                 <div className="flex items-center gap-2.5">
                                   <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs ${
-                                    isDeposit ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                                    isDeposit ? 'bg-accent/10 text-accent border border-accent/30' : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
                                   }`}>
                                     {isDeposit ? '+' : '-'}
                                   </div>
@@ -2026,7 +2026,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <span className={`font-mono font-black block text-xs ${isDeposit ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                  <span className={`font-mono font-black block text-xs ${isDeposit ? 'text-accent' : 'text-amber-500'}`}>
                                     {isDeposit ? '+' : '-'}${Math.abs(parseFloat(tx.amount || 0)).toFixed(2)}
                                   </span>
                                   <span className="text-[10px] text-gray-500 font-mono">
@@ -2055,12 +2055,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     }`}>
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                          <CreditCard size={14} className="text-emerald-500" />
+                          <CreditCard size={14} className="text-accent" />
                           <span>{isRtl ? 'بيانات اشتراك المستخدم النشط (من قاعدة البيانات)' : 'Active Database Subscription'}</span>
                         </h4>
                         <button
                           onClick={() => fetchUserSubscription(selectedUser.id)}
-                          className="text-[11px] font-bold text-emerald-500 hover:underline flex items-center gap-1"
+                          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1"
                         >
                           <RefreshCw size={12} className={isLoadingSubscription ? 'animate-spin' : ''} />
                           <span>{isRtl ? 'مزامنة الاشتراك' : 'Sync'}</span>
@@ -2073,7 +2073,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
                           <div className="p-3 rounded-xl bg-black/20 border border-gray-800">
                             <span className="text-gray-500 block text-[10px] mb-0.5">{isRtl ? 'اسم الباقة الحالية' : 'Current Tier'}</span>
-                            <span className="font-black text-emerald-500 text-sm flex items-center gap-1.5">
+                            <span className="font-black text-accent text-sm flex items-center gap-1.5">
                               <Star size={12} className="fill-current" />
                               {isRtl ? (userSubscription.name_ar || userSubscription.nameAr) : (userSubscription.name_en || userSubscription.nameEn)}
                             </span>
@@ -2083,7 +2083,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             <span className="text-gray-500 block text-[10px] mb-0.5">{isRtl ? 'حالة الاشتراك' : 'Status'}</span>
                             <span className={`font-black uppercase px-2 py-0.5 rounded text-[10px] inline-block border ${
                               userSubscription.status === 'active'
-                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                                ? 'bg-accent/10 text-accent border-accent/30'
                                 : 'bg-amber-500/10 text-amber-500 border-amber-500/30'
                             }`}>
                               {userSubscription.status || 'active'}
@@ -2098,7 +2098,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-emerald-400 font-bold flex items-center gap-2">
+                        <div className="p-3 rounded-xl bg-accent/5 border border-accent/20 text-xs text-accent font-bold flex items-center gap-2">
                           <Sparkles size={16} />
                           <span>{isRtl ? 'الباقة الحالية المفعلة من خلال ملف المستخدم الأساسي' : 'Active tier synchronized from user profile'}</span>
                         </div>
@@ -2111,10 +2111,10 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     }`}>
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center justify-between">
                         <span className="flex items-center gap-2">
-                          <Layers size={14} className="text-emerald-500" />
+                          <Layers size={14} className="text-accent" />
                           <span>{isRtl ? 'ترقية / تعيين باقة جديدة (تنفيذ فوري برامجي)' : 'Upgrade or Reassign Plan (Instant Strict Execution)'}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-500">
+                        <span className="text-[10px] font-mono text-accent">
                           {normalizedPlans.length} {isRtl ? 'باقة متاحة' : 'Plans'}
                         </span>
                       </h4>
@@ -2127,7 +2127,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                               key={p.id}
                               className={`p-4 rounded-xl border flex flex-col justify-between space-y-3 transition-all ${
                                 isCurrent
-                                  ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                  ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
                                   : isDark
                                   ? 'border-gray-800 bg-[#0f0f11] hover:border-gray-700'
                                   : 'border-gray-200 bg-white hover:border-gray-300'
@@ -2149,7 +2149,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                     </p>
                                   </div>
                                   {isCurrent && (
-                                    <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-black flex items-center gap-1">
+                                    <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded bg-accent text-black flex items-center gap-1">
                                       <CheckCircle2 size={12} />
                                       {isRtl ? 'نشط' : 'Active'}
                                     </span>
@@ -2157,7 +2157,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                 </div>
 
                                 <div className="flex items-baseline gap-2 font-mono">
-                                  <span className="text-xl font-black text-emerald-500">
+                                  <span className="text-xl font-black text-accent">
                                     ${p.monthlyPrice}
                                   </span>
                                   <span className="text-[11px] text-gray-500">
@@ -2197,8 +2197,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                 disabled={isUpdating || isCurrent}
                                 className={`w-full py-2.5 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
                                   isCurrent
-                                    ? 'bg-emerald-500/20 text-emerald-400 cursor-default border border-emerald-500/30'
-                                    : 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-[0_0_15px_rgba(16,185,129,0.25)]'
+                                    ? 'bg-accent/20 text-accent cursor-default border border-accent/30'
+                                    : 'bg-accent hover:bg-accent text-black shadow-[0_0_15px_rgba(16,185,129,0.25)]'
                                 }`}
                               >
                                 {isCurrent ? (
@@ -2226,12 +2226,12 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                        <Activity size={14} className="text-emerald-500" />
+                        <Activity size={14} className="text-accent" />
                         <span>{isRtl ? 'سجل العمليات الأخير والتتبع المباشر' : 'Live Audit & Event Logs'}</span>
                       </h4>
                       <button
                         onClick={() => fetchActivityLogs(selectedUser.id)}
-                        className="text-[11px] font-bold text-emerald-500 hover:underline flex items-center gap-1"
+                        className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1"
                       >
                         <RefreshCw size={12} className={isLoadingLogs ? 'animate-spin' : ''} />
                         <span>{isRtl ? 'تحديث السجل' : 'Sync Logs'}</span>
@@ -2247,7 +2247,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                           }`}>
                             <div className="space-y-0.5">
-                              <span className="font-bold block text-emerald-400">{log.action || log.tool_id || log.event || 'System Event'}</span>
+                              <span className="font-bold block text-accent">{log.action || log.tool_id || log.event || 'System Event'}</span>
                               <span className="text-[10px] text-gray-400 font-mono">
                                 {log.details ? (typeof log.details === 'object' ? JSON.stringify(log.details) : log.details) : (log.description || 'No additional parameters')}
                               </span>
@@ -2287,7 +2287,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                 isDark ? 'border-gray-800' : 'border-gray-100'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                  <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                     <UserPlus size={18} />
                   </div>
                   <h3 className="font-black text-base">{isRtl ? 'إضافة مستخدم جديد' : 'Add New Explorer'}</h3>
@@ -2310,7 +2310,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     required
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-accent/50 ${
                       isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                   />
@@ -2323,7 +2323,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     required
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-accent/50 ${
                       isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                   />
@@ -2336,7 +2336,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     required
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-accent/50 ${
                       isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                   />
@@ -2371,7 +2371,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                   >
                     {isRtl ? 'إنشاء الحساب' : 'Create User'}
                   </button>
@@ -2398,7 +2398,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                 isDark ? 'border-gray-800' : 'border-gray-100'
               }`}>
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                  <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                     <Mail size={18} />
                   </div>
                   <div>
@@ -2425,7 +2425,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     placeholder={isRtl ? 'مثال: تحديث بشأن حسابك...' : 'e.g. Account update...'}
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                    className={`w-full p-2.5 rounded-lg border text-xs focus:border-accent/50 ${
                       isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                   />
@@ -2439,7 +2439,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     placeholder={isRtl ? 'اكتب نص الرسالة التي ستصل للبريد الإلكتروني...' : 'Write message content...'}
                     value={emailBody}
                     onChange={(e) => setEmailBody(e.target.value)}
-                    className={`w-full p-3 rounded-lg border text-xs focus:border-emerald-500/50 ${
+                    className={`w-full p-3 rounded-lg border text-xs focus:border-accent/50 ${
                       isDark ? 'bg-[#0f0f11] border-gray-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                     }`}
                   />
@@ -2458,7 +2458,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <button
                     type="submit"
                     disabled={isSendingEmail}
-                    className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-black text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                   >
                     <Send size={14} />
                     <span>{isSendingEmail ? (isRtl ? 'جاري الإرسال...' : 'Sending...') : (isRtl ? 'إرسال الرسالة' : 'Send Email')}</span>

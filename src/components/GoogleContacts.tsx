@@ -440,9 +440,9 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
       {/* 1. DISCONNECTED BANNER / INTRO */}
       {!isConnected ? (
         <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-500/10 via-transparent to-transparent pointer-events-none" />
           
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
+          <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-6 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
             <Users size={32} />
           </div>
 
@@ -466,7 +466,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
             <div className="gsi-material-button-content-wrapper">
               <div className="gsi-material-button-icon">
                 {isConnecting ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                  <Loader2 className="w-5 h-5 animate-spin text-accent" />
                 ) : (
                   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ display: "block" }}>
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
@@ -486,7 +486,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
           </button>
 
           <div className="mt-8 flex items-center gap-2 text-gray-500">
-            <ShieldCheck size={14} className="text-emerald-500" />
+            <ShieldCheck size={14} className="text-accent" />
             <span className="text-[10px] font-bold uppercase tracking-wider">
               {isAr ? 'أمان وسرية تامة لمزودي الخدمة الطرف الثالث' : 'OAuth 2.0 Secure Sandbox Pipeline'}
             </span>
@@ -504,16 +504,16 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                 <img 
                   src={googleUser.photoURL} 
                   alt="Avatar" 
-                  className="w-10 h-10 rounded-full border border-emerald-500/20 shadow-md"
+                  className="w-10 h-10 rounded-full border border-accent/20 shadow-md"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
                   <UserCheck size={18} />
                 </div>
               )}
               <div className="flex flex-col text-start">
-                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
+                <span className="text-xs font-bold text-accent flex items-center gap-1.5">
                   <UserCheck2 size={12} />
                   {isAr ? 'حساب متصل بنجاح' : 'Google Account Sync Active'}
                 </span>
@@ -526,10 +526,10 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <button
                 onClick={() => fetchContacts()}
                 disabled={isLoading}
-                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-theme"
+                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-accent transition-theme"
                 title={isAr ? 'تحديث جهات الاتصال' : 'Refresh contacts'}
               >
-                <RefreshCw size={16} className={isLoading ? 'animate-spin text-emerald-500' : ''} />
+                <RefreshCw size={16} className={isLoading ? 'animate-spin text-accent' : ''} />
               </button>
               
               <div className="w-px h-5 bg-gray-200 dark:bg-gray-800/80" />
@@ -562,7 +562,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={isAr ? 'بحث بالاسم، البريد أو الهاتف...' : 'Search contacts, emails, titles...'}
-                      className="w-full pl-9 pr-4 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme font-sans"
+                      className="w-full pl-9 pr-4 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme font-sans"
                     />
                   </div>
                   
@@ -570,7 +570,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     <button
                       onClick={searchDirectory}
                       disabled={isLoading}
-                      className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
+                      className="px-3 py-2 bg-accent hover:bg-accent text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
                     >
                       {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
                       <span>{isAr ? 'دليل' : 'Search'}</span>
@@ -588,8 +588,8 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       }}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-theme ${
                         activeSource === 'connections' 
-                          ? 'bg-white dark:bg-gray-700 text-emerald-500 shadow-sm' 
-                          : 'text-gray-400 hover:text-emerald-500'
+                          ? 'bg-white dark:bg-gray-700 text-accent shadow-sm' 
+                          : 'text-gray-400 hover:text-accent'
                       }`}
                     >
                       {isAr ? 'جهات اتصالي' : 'Connections'}
@@ -601,8 +601,8 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       }}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-theme ${
                         activeSource === 'directory' 
-                          ? 'bg-white dark:bg-gray-700 text-emerald-500 shadow-sm' 
-                          : 'text-gray-400 hover:text-emerald-500'
+                          ? 'bg-white dark:bg-gray-700 text-accent shadow-sm' 
+                          : 'text-gray-400 hover:text-accent'
                       }`}
                     >
                       {isAr ? 'دليل المؤسسة' : 'Directory'}
@@ -611,7 +611,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
 
                   <button
                     onClick={handleStartCreate}
-                    className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-500 rounded-lg text-xs font-bold flex items-center gap-1 transition-theme shadow-[0_0_12px_rgba(16,185,129,0.05)]"
+                    className="px-2.5 py-1.5 bg-accent/10 border border-accent/20 hover:bg-accent/20 text-accent rounded-lg text-xs font-bold flex items-center gap-1 transition-theme shadow-[0_0_12px_rgba(16,185,129,0.05)]"
                   >
                     <Plus size={13} />
                     <span>{isAr ? 'إضافة اتصال' : 'Add Connection'}</span>
@@ -623,7 +623,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <div className="flex-1 overflow-y-auto max-h-[480px] custom-scrollbar p-2 space-y-1">
                 {isLoading ? (
                   <div className="p-12 flex flex-col items-center justify-center gap-3 text-gray-500">
-                    <Loader2 size={24} className="animate-spin text-emerald-500" />
+                    <Loader2 size={24} className="animate-spin text-accent" />
                     <span className="text-xs font-semibold tracking-wider">
                       {isAr ? 'جاري استيراد ومزامنة البيانات...' : 'SYNCING GOOGLE DIRECTORY...'}
                     </span>
@@ -641,7 +641,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         }}
                         className={`p-3 rounded-lg flex items-center justify-between cursor-pointer border transition-theme relative ${
                           isSelected 
-                            ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' 
+                            ? 'bg-accent/5 border-accent/20 text-accent' 
                             : 'border-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/10 text-gray-400'
                         }`}
                       >
@@ -659,7 +659,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                             </div>
                           )}
                           <div className="flex flex-col text-start min-w-0">
-                            <span className={`text-xs font-bold truncate ${isSelected ? 'text-emerald-500 font-extrabold' : 'text-gray-200'}`}>
+                            <span className={`text-xs font-bold truncate ${isSelected ? 'text-accent font-extrabold' : 'text-gray-200'}`}>
                               <HighlightText text={contact.name} query={searchQuery} />
                             </span>
                             {contact.organization && (
@@ -673,13 +673,13 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
 
                         {/* Badges for Directory vs Connection */}
                         {contact.isDirectoryContact ? (
-                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 uppercase tracking-widest">
+                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-accent/10 text-accent uppercase tracking-widest">
                             {isAr ? 'مؤسسي' : 'Domain'}
                           </span>
                         ) : null}
 
                         {isSelected && (
-                          <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 ${
+                          <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-accent ${
                             dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
                           }`} />
                         )}
@@ -715,11 +715,11 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           <img 
                             src={selectedContact.photoUrl} 
                             alt="Contact Profile" 
-                            className="w-16 h-16 rounded-full border-2 border-emerald-500/20 shadow-lg object-cover"
+                            className="w-16 h-16 rounded-full border-2 border-accent/20 shadow-lg object-cover"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/20 text-emerald-500 flex items-center justify-center text-xl font-bold shadow-md uppercase">
+                          <div className="w-16 h-16 rounded-full bg-accent/10 border-2 border-accent/20 text-accent flex items-center justify-center text-xl font-bold shadow-md uppercase">
                             {selectedContact.name.substring(0, 2)}
                           </div>
                         )}
@@ -727,7 +727,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         <div className="flex flex-col text-center sm:text-start gap-1">
                           <h3 className="text-lg font-black text-gray-100">{selectedContact.name}</h3>
                           {selectedContact.jobTitle || selectedContact.organization ? (
-                            <span className="text-xs font-semibold text-emerald-400 flex items-center justify-center sm:justify-start gap-1">
+                            <span className="text-xs font-semibold text-accent flex items-center justify-center sm:justify-start gap-1">
                               <Briefcase size={12} />
                               {selectedContact.jobTitle} {selectedContact.jobTitle && selectedContact.organization ? 'at' : ''} {selectedContact.organization}
                             </span>
@@ -742,7 +742,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleStartEdit(selectedContact)}
-                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-[var(--border)] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-500 transition-theme"
+                            className="w-10 h-10 flex items-center justify-center rounded-lg border border-[var(--border)] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-400 hover:text-accent transition-theme"
                             title={isAr ? 'تعديل جهة الاتصال' : 'Edit details'}
                           >
                             <Edit2 size={14} />
@@ -764,7 +764,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       {/* Email Card */}
                       <div className="p-4 rounded-lg bg-[var(--bg-base)] border border-[var(--border)]/50 space-y-1">
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                          <Mail size={11} className="text-emerald-500" />
+                          <Mail size={11} className="text-accent" />
                           {isAr ? 'البريد الإلكتروني' : 'Email Address'}
                         </span>
                         <p className="text-xs font-semibold truncate font-mono text-gray-200">
@@ -775,7 +775,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       {/* Phone Card */}
                       <div className="p-4 rounded-lg bg-[var(--bg-base)] border border-[var(--border)]/50 space-y-1">
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                          <Phone size={11} className="text-emerald-500" />
+                          <Phone size={11} className="text-accent" />
                           {isAr ? 'الهاتف المحمول' : 'Phone Number'}
                         </span>
                         <p className="text-xs font-semibold truncate font-mono text-gray-200">
@@ -786,7 +786,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       {/* Birthday Card */}
                       <div className="p-4 rounded-lg bg-[var(--bg-base)] border border-[var(--border)]/50 space-y-1">
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                          <Cake size={11} className="text-emerald-500" />
+                          <Cake size={11} className="text-accent" />
                           {isAr ? 'تاريخ الميلاد' : 'Birthday'}
                         </span>
                         <p className="text-xs font-semibold text-gray-200">
@@ -797,7 +797,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                       {/* Address Card */}
                       <div className="p-4 rounded-lg bg-[var(--bg-base)] border border-[var(--border)]/50 space-y-1">
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                          <MapPin size={11} className="text-emerald-500" />
+                          <MapPin size={11} className="text-accent" />
                           {isAr ? 'الموقع والعنوان' : 'Location Address'}
                         </span>
                         <p className="text-xs font-semibold text-gray-200">
@@ -810,7 +810,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     {/* Biography / Notes */}
                     <div className="p-4 rounded-lg bg-[var(--bg-base)] border border-[var(--border)]/50 space-y-2">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
-                        <FileText size={11} className="text-emerald-500" />
+                        <FileText size={11} className="text-accent" />
                         {isAr ? 'ملاحظات وسياق المهنة' : 'Biography & Professional Context'}
                       </span>
                       <p className="text-xs leading-relaxed text-gray-300">
@@ -821,7 +821,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                   </div>
 
                   <div className="pt-6 text-gray-500 text-[10px] tracking-wide border-t border-[var(--border)]/50 flex items-center gap-1.5 mt-6">
-                    <ShieldCheck size={12} className="text-emerald-500" />
+                    <ShieldCheck size={12} className="text-accent" />
                     <span>
                       {isAr 
                         ? 'تتم معالجة التغييرات على الفور وتنعكس على جميع أجهزتك المتصلة بـ Google.' 
@@ -837,7 +837,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                 <form onSubmit={handleSaveTrigger} className="p-6 md:p-8 flex flex-col justify-between h-full text-start">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between border-b border-[var(--border)]/50 pb-4">
-                      <h3 className="text-sm font-black text-emerald-500 uppercase tracking-widest">
+                      <h3 className="text-sm font-black text-accent uppercase tracking-widest">
                         {isCreating 
                           ? (isAr ? 'إضافة اتصال جديد لـ Google' : 'CREATE NEW GOOGLE CONNECTION') 
                           : (isAr ? 'تعديل جهة الاتصال الحالية' : 'EDIT GOOGLE CONTACT DETAILS')
@@ -863,7 +863,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formFirstName}
                           onChange={(e) => setFormFirstName(e.target.value)}
                           placeholder={isAr ? 'أدخل الاسم الأول' : 'First name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -875,7 +875,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formLastName}
                           onChange={(e) => setFormLastName(e.target.value)}
                           placeholder={isAr ? 'الاسم الأخير' : 'Last name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -887,7 +887,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formEmail}
                           onChange={(e) => setFormEmail(e.target.value)}
                           placeholder="name@company.com"
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -899,7 +899,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formPhone}
                           onChange={(e) => setFormPhone(e.target.value)}
                           placeholder="+1 (555) 000-0000"
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -911,7 +911,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formOrg}
                           onChange={(e) => setFormOrg(e.target.value)}
                           placeholder={isAr ? 'الشركة' : 'Enterprise / Org name'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -923,7 +923,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           value={formTitle}
                           onChange={(e) => setFormTitle(e.target.value)}
                           placeholder={isAr ? 'المسمى الوظيفي' : 'Software Architect'}
-                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
+                          className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none transition-theme"
                         />
                       </div>
 
@@ -936,7 +936,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                         value={formNotes}
                         onChange={(e) => setFormNotes(e.target.value)}
                         placeholder={isAr ? 'ملاحظات إضافية عن الاتصال...' : 'Write notes or context regarding your connection...'}
-                        className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-emerald-500 focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none h-24 resize-none transition-theme"
+                        className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg-input)] border border-[var(--border)] focus:border-accent focus:shadow-[0_0_8px_rgba(16,185,129,0.15)] outline-none h-24 resize-none transition-theme"
                       />
                     </div>
                   </div>
@@ -953,7 +953,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     
                     <button
                       type="submit"
-                      className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[var(--radius)] shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-theme"
+                      className="px-4 py-2 text-xs font-bold bg-accent hover:bg-accent text-white rounded-[var(--radius)] shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-theme"
                     >
                       {isAr ? 'حفظ جهة الاتصال' : 'Save Connection'}
                     </button>
@@ -992,7 +992,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <div className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
                 theme === 'dark' ? 'bg-[#1a1a1c] border-[#27272a] text-gray-100' : 'bg-white border-gray-150 text-gray-900'
               }`}>
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4">
                   <ShieldCheck size={20} />
                 </div>
 
@@ -1022,7 +1022,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                     type="button"
                     onClick={handleSaveConfirm}
                     disabled={isSaving}
-                    className="px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-[4px] font-sans transition-theme flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                    className="px-4 py-2 text-xs font-bold bg-accent hover:bg-accent text-white rounded-[4px] font-sans transition-theme flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                   >
                     {isSaving && <Loader2 size={12} className="animate-spin" />}
                     <span>{isAr ? 'تأكيد الحفظ' : 'Confirm & Save'}</span>

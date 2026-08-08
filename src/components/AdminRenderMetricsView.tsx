@@ -111,7 +111,7 @@ export const AdminRenderMetricsView: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-gray-200 dark:border-gray-800">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Activity className="w-6 h-6 text-emerald-500 animate-pulse" />
+            <Activity className="w-6 h-6 text-accent animate-pulse" />
             <span>مراقبة زمن الانتقال وأداء المكونات (Render & Latency Telemetry)</span>
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -121,7 +121,7 @@ export const AdminRenderMetricsView: React.FC = () => {
         <button
           onClick={fetchMetrics}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-theme shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent text-white rounded-lg text-sm font-medium transition-theme shadow-sm disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>تحديث البيانات / Refresh</span>
@@ -133,7 +133,7 @@ export const AdminRenderMetricsView: React.FC = () => {
         <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">إجمالي عمليات الرندر</span>
-            <Cpu className="w-5 h-5 text-emerald-500" />
+            <Cpu className="w-5 h-5 text-accent" />
           </div>
           <div className="text-3xl font-bold font-mono">{totalRenders}</div>
           <p className="text-xs text-gray-500 mt-1">عبر الفلتر المحدد</p>
@@ -145,7 +145,7 @@ export const AdminRenderMetricsView: React.FC = () => {
             <Clock className="w-5 h-5 text-cyan-500" />
           </div>
           <div className="text-3xl font-bold font-mono">{avgDuration} ms</div>
-          <p className="text-xs text-emerald-500 mt-1">أداء ممتاز واستجابة فورية</p>
+          <p className="text-xs text-accent mt-1">أداء ممتاز واستجابة فورية</p>
         </div>
 
         <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
@@ -203,7 +203,7 @@ export const AdminRenderMetricsView: React.FC = () => {
         {/* Area Chart: Latency Trend */}
         <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
           <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-500" />
+            <Activity className="w-4 h-4 text-accent" />
             <span>مخطط زمن استجابة الرندر (Render Latency Area Trend)</span>
           </h3>
           <div className="h-72 w-full">
@@ -281,10 +281,10 @@ export const AdminRenderMetricsView: React.FC = () => {
               ) : (
                 filteredMetrics.map((m) => (
                   <tr key={m.id} className={`hover:${isDark ? 'bg-zinc-800/40' : 'bg-gray-50/80'} transition-colors`}>
-                    <td className="p-3 font-semibold text-emerald-500 font-sans">{m.componentName}</td>
+                    <td className="p-3 font-semibold text-accent font-sans">{m.componentName}</td>
                     <td className="p-3">{m.renderCount}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-xs ${m.renderDuration > 30 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs ${m.renderDuration > 30 ? 'bg-amber-500/10 text-amber-500' : 'bg-accent/10 text-accent'}`}>
                         {m.renderDuration} ms
                       </span>
                     </td>

@@ -26,13 +26,13 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
   const config = {
     startup: {
       desc: dir === 'rtl' ? 'يتم الآن تلخيص الجلسات وحفظ السياق...' : 'Summarizing session context...',
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
+      color: 'text-accent',
+      bg: 'bg-accent/10',
     },
     success: {
       desc: dir === 'rtl' ? 'تم تحديث الذاكرة بنجاح.' : 'Memory updated successfully.',
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
+      color: 'text-accent',
+      bg: 'bg-accent/10',
     },
     warning: {
       desc: dir === 'rtl' ? 'تنبيه: سعة الذاكرة شارفت على الانتهاء (45/50).' : 'Warning: Memory capacity almost reached (45/50).',
@@ -75,16 +75,16 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/[0.03] border border-emerald-500/20 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.05)]"
+      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-accent/[0.03] border border-accent/20 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.05)]"
     >
-      <BrainCircuit className="text-emerald-500" size={14} />
-      <span className="text-[11px] font-black text-emerald-500/90 tracking-tight uppercase whitespace-nowrap">
+      <BrainCircuit className="text-accent" size={14} />
+      <span className="text-[11px] font-black text-accent/90 tracking-tight uppercase whitespace-nowrap">
         {displayDesc}
       </span>
-      <div className="w-px h-3 bg-emerald-500/20 mx-1" />
+      <div className="w-px h-3 bg-accent/20 mx-1" />
       <button 
         onClick={onClose}
-        className="text-emerald-500/40 hover:text-emerald-500 transition-colors"
+        className="text-accent/40 hover:text-accent transition-colors"
       >
         <X size={12} />
       </button>

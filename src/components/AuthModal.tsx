@@ -129,7 +129,7 @@ export const AuthModal: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Background Accent */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent rounded-full" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent rounded-full" />
             
             <button 
               onClick={handleClose}
@@ -154,7 +154,7 @@ export const AuthModal: React.FC = () => {
           </div>
         )}
         {success && (
-          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[12px] md:text-sm text-center">
+          <div className="mb-3 md:mb-4 p-2.5 md:p-3 rounded-md bg-accent/10 border border-accent/20 text-accent text-[12px] md:text-sm text-center">
             {success}
           </div>
         )}
@@ -166,14 +166,14 @@ export const AuthModal: React.FC = () => {
             </label>
             <div className="relative group">
               <div className={`absolute inset-y-0 flex items-center pointer-events-none ${dir === 'rtl' ? 'right-4' : 'left-4'}`}>
-                <Mail size={15} className="md:w-[17px] text-gray-600 group-focus-within:text-emerald-500 transition-colors" />
+                <Mail size={15} className="md:w-[17px] text-gray-600 group-focus-within:text-accent transition-colors" />
               </div>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-accent/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                 placeholder="name@example.com"
                 dir="ltr"
               />
@@ -187,14 +187,14 @@ export const AuthModal: React.FC = () => {
               </label>
               <div className="relative group">
                 <div className={`absolute inset-y-0 flex items-center pointer-events-none ${dir === 'rtl' ? 'right-4' : 'left-4'}`}>
-                  <Lock size={15} className="md:w-[17px] text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                  <Lock size={15} className="md:w-[17px] text-gray-400 group-focus-within:text-accent transition-colors" />
                 </div>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-accent/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -213,12 +213,12 @@ export const AuthModal: React.FC = () => {
                           safeStorageSet('app_remember_me', e.target.checked ? 'true' : 'false');
                         }}
                       />
-                      <div className="w-5 h-5 rounded-sm border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-emerald-500 peer-checked:border-emerald-500 transition-theme"></div>
+                      <div className="w-5 h-5 rounded-sm border border-[var(--border)] bg-[var(--bg-base)] peer-checked:bg-accent peer-checked:border-accent transition-theme"></div>
                       <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="text-xs font-medium text-gray-500 group-hover:text-emerald-500 transition-colors">
+                    <span className="text-xs font-medium text-gray-500 group-hover:text-accent transition-colors">
                       {t('remember_me')}
                     </span>
                   </label>
@@ -242,14 +242,14 @@ export const AuthModal: React.FC = () => {
               </label>
               <div className="relative group">
                 <div className={`absolute inset-y-0 flex items-center pointer-events-none ${dir === 'rtl' ? 'right-4' : 'left-4'}`}>
-                  <Lock size={15} className="md:w-[17px] text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                  <Lock size={15} className="md:w-[17px] text-gray-400 group-focus-within:text-accent transition-colors" />
                 </div>
                 <input
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-emerald-500/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
+                  className={`w-full py-2 md:py-2.5 rounded-[var(--radius)] border outline-none transition-theme bg-[var(--bg-base)] border-[var(--border)] text-[var(--text-primary)] placeholder:text-gray-400 focus:border-accent/50 text-[13px] md:text-sm font-inter ${dir === 'rtl' ? 'pr-11 md:pr-12 pl-4' : 'pl-11 md:pl-12 pr-4'}`}
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -262,7 +262,7 @@ export const AuthModal: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 md:py-3.5 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[4px] font-bold transition-theme shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
+            className={`w-full py-3 md:py-3.5 mt-1 bg-accent hover:bg-accent text-white rounded-[4px] font-bold transition-theme shadow-lg shadow-none flex items-center justify-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} text-sm md:text-base`}
           >
             {isLoading ? (
               <>
@@ -291,7 +291,7 @@ export const AuthModal: React.FC = () => {
               whileTap={{ scale: 0.98 }}
               onClick={loginWithGoogle}
               type="button"
-              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[4px] border transition-theme bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-emerald-500/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
+              className={`w-full mt-4 md:mt-5 py-3 md:py-3.5 flex items-center justify-center gap-3 rounded-[4px] border transition-theme bg-[#0f0f11] border-[var(--border-main)] hover:bg-black hover:border-accent/40 text-white shadow-2xl text-sm md:text-base group active:scale-95`}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="group-hover:drop-shadow-[0_0_8px_rgba(66,133,244,0.4)] transition-theme">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -312,7 +312,7 @@ export const AuthModal: React.FC = () => {
                 if (mode === 'forgot-password') setMode('login');
                 else setMode(mode === 'login' ? 'signup' : 'login');
               }}
-              className="mx-2 text-emerald-500 hover:text-emerald-400 decoration-emerald-500/30 hover:decoration-emerald-400 underline underline-offset-4 font-bold transition-theme"
+              className="mx-2 text-accent hover:text-accent decoration-accent-500/30 hover:decoration-accent-400 underline underline-offset-4 font-bold transition-theme"
             >
               {mode === 'login' ? t('signup') : mode === 'signup' ? t('login') : t('login')}
             </button>

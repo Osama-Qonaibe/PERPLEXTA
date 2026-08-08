@@ -127,7 +127,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-emerald-500/20 group w-full sm:w-auto ml-auto"
+            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-accent text-white hover:bg-accent rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-none group w-full sm:w-auto ml-auto"
           >
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
             {t('addFact')}
@@ -142,8 +142,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               onClick={() => setFilterCategory(cat.id)}
               className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-theme border ${
                 filterCategory === cat.id
-                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-emerald-500/30'
+                  ? 'bg-accent text-white border-accent shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-accent/30'
               }`}
             >
               {cat.label}
@@ -160,7 +160,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2.5 md:gap-3">
               <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center ${
-                isLimitReached ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'
+                isLimitReached ? 'bg-amber-500/20 text-amber-500' : 'bg-accent/10 text-accent'
               }`}>
                 <BrainCircuit size={16} className="md:w-5 md:h-5" />
               </div>
@@ -187,7 +187,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
             <div 
               className={`h-full transition-theme ease-out rounded-full ${
-                isLimitReached ? 'bg-amber-500' : 'bg-emerald-500'
+                isLimitReached ? 'bg-amber-500' : 'bg-accent'
               }`}
               style={{ width: `${usagePercentage}%` }}
             />
@@ -207,9 +207,9 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
       </div>
 
       {/* Auto-update Indicator */}
-      <div className={`p-3 md:p-4 rounded-[var(--radius)] border flex items-start gap-2.5 md:gap-3 bg-emerald-500/5 border-emerald-500/20`}>
-        <Info className="text-emerald-500 shrink-0 mt-0.5" size={16} />
-        <p className="text-[10px] md:text-xs text-emerald-600/80 leading-relaxed font-medium">
+      <div className={`p-3 md:p-4 rounded-[var(--radius)] border flex items-start gap-2.5 md:gap-3 bg-accent/5 border-accent/20`}>
+        <Info className="text-accent shrink-0 mt-0.5" size={16} />
+        <p className="text-[10px] md:text-xs text-accent/80 leading-relaxed font-medium">
           {dir === 'rtl' 
             ? 'يقوم المساعد بتحديث هذه الذاكرة تلقائياً (AI)، ويمكنك إضافة حقائق بنفسك (User).' 
             : 'Assistant updates memory automatically (AI), or you can add facts manually (User).'}
@@ -227,7 +227,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               <select
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-accent text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
               >
                 {categories.filter(c => c.id !== 'all').map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -239,7 +239,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             placeholder={dir === 'rtl' ? 'ما الذي يجب أن يتذكره المساعد؟' : 'What should the assistant remember?'}
-            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-32 mb-4 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
+            className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-accent resize-none h-32 mb-4 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
             autoFocus
           />
           <div className="flex justify-end gap-3">
@@ -252,7 +252,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             <button 
               onClick={handleSaveNew}
               disabled={!newValue.trim()}
-              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+              className="px-6 py-2 rounded-[var(--radius)] text-sm font-medium bg-accent text-white hover:bg-accent transition-theme shadow-lg shadow-none disabled:opacity-50"
             >
               {t('save')}
             </button>
@@ -262,13 +262,13 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
           <p className="text-sm text-[var(--text-muted)] animate-pulse">{t('loadingMemory')}</p>
         </div>
       ) : filteredMemories.length === 0 ? (
         <div className={`p-12 rounded-[var(--radius)] border border-dashed flex flex-col items-center justify-center text-center border-[var(--border-main)] bg-[var(--bg-secondary)]/30`}>
-          <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
-            <BrainCircuit size={40} className="text-emerald-500/50" />
+          <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mb-6">
+            <BrainCircuit size={40} className="text-accent/50" />
           </div>
           <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">{t('noResults')}</h3>
           <p className="text-sm text-[var(--text-secondary)] max-w-sm leading-relaxed">
@@ -282,7 +282,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           {filteredMemories.map((memory) => (
             <div 
               key={memory.id} 
-              className={`group p-6 rounded-[var(--radius)] border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-emerald-500/5`}
+              className={`group p-6 rounded-[var(--radius)] border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-none`}
             >
               {editingId === memory.id ? (
                 <div className="space-y-4">
@@ -291,7 +291,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       <select
                         value={editCategory}
                         onChange={(e) => setEditCategory(e.target.value)}
-                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                        className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-accent text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                       >
                         {categories.filter(c => c.id !== 'all').map(cat => (
                           <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -302,7 +302,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500 resize-none h-28 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
+                    className={`w-full p-4 rounded-[var(--radius)] border focus:outline-none focus:border-accent resize-none h-28 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[16px] md:text-sm`}
                     autoFocus
                   />
                   <div className="flex justify-end gap-3 pt-2">
@@ -316,7 +316,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                     <button 
                       onClick={() => handleSaveEdit(memory.id)}
                       disabled={!editValue.trim()}
-                      className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-white hover:bg-emerald-600 rounded-[var(--radius)] transition-theme text-xs font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-2 px-5 py-2 bg-accent text-white hover:bg-accent rounded-[var(--radius)] transition-theme text-xs font-bold shadow-lg shadow-none disabled:opacity-50"
                     >
                       <Save size={14} />
                       {t('save')}
@@ -333,7 +333,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                           {dir === 'rtl' ? 'بواسطة المستخدم' : 'User Added'}
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
                           <BrainCircuit size={10} />
                           {dir === 'rtl' ? 'تعلم آلي' : 'AI Learned'}
                         </span>
@@ -346,7 +346,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       {memory.fact}
                     </p>
                     <p className="text-[10px] text-[var(--text-muted)] mt-3 flex items-center flex-wrap gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                      <span className="w-1 h-1 rounded-full bg-accent" />
                       <span>
                         {new Date(memory.created_at).toLocaleString(dir === 'rtl' ? 'ar-EG' : 'en-US', { 
                           year: 'numeric', 
@@ -367,10 +367,10 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                           <span className="mx-1 text-gray-300 dark:text-gray-700">•</span>
                           <a 
                             href={`/chat/${memory.chat_id}`}
-                            className="inline-flex items-center gap-1 text-emerald-500 hover:text-emerald-400 font-bold transition-theme hover:underline"
+                            className="inline-flex items-center gap-1 text-accent hover:text-accent font-bold transition-theme hover:underline"
                             title={dir === 'rtl' ? 'انتقال إلى المحادثة المصدر' : 'Go to source thread'}
                           >
-                            <MessageSquare size={10} className="text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+                            <MessageSquare size={10} className="text-accent " />
                             <span>
                               {dir === 'rtl' ? 'المصدر: ' : 'Source: '}
                               "{memory.chat_title || `#${memory.chat_id}`}"
@@ -387,7 +387,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                         setEditValue(memory.fact);
                         setEditCategory(memory.category);
                       }}
-                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-emerald-500 hover:bg-emerald-500/10 transition-theme"
+                      className="p-2.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-accent hover:bg-accent/10 transition-theme"
                       title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                     >
                       <Edit2 size={18} />

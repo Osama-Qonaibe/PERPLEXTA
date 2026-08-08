@@ -86,12 +86,12 @@ export const PwaInstallSuccessService: React.FC = () => {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl relative overflow-hidden ${
               isDark
-                ? 'bg-[#121214] border-emerald-500/30 text-white shadow-[0_0_50px_rgba(16,185,129,0.15)]'
-                : 'bg-white border-emerald-500/30 text-gray-900 shadow-[0_0_50px_rgba(16,185,129,0.2)]'
+                ? 'bg-[#121214] border-accent/30 text-white shadow-[0_0_50px_rgba(16,185,129,0.15)]'
+                : 'bg-white border-accent/30 text-gray-900 shadow-[0_0_50px_rgba(16,185,129,0.2)]'
             }`}
           >
             {/* Top decorative glow bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gray-500/10 via-teal-400 to-gray-500/5" />
 
             {/* Countdown progress bar */}
             {!autoRedirectPaused && (
@@ -100,7 +100,7 @@ export const PwaInstallSuccessService: React.FC = () => {
                   initial={{ width: '100%' }}
                   animate={{ width: `${(countdown / 5) * 100}%` }}
                   transition={{ ease: 'linear', duration: 1 }}
-                  className="h-full bg-emerald-500"
+                  className="h-full bg-accent"
                 />
               </div>
             )}
@@ -119,19 +119,19 @@ export const PwaInstallSuccessService: React.FC = () => {
             {/* Header Content */}
             <div className="flex flex-col items-center text-center mt-2">
               <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
                   {logoUrl ? (
                     <img src={logoUrl} alt={siteName} className="w-10 h-10 object-contain" />
                   ) : (
-                    <CheckCircle2 className="w-9 h-9 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
+                    <CheckCircle2 className="w-9 h-9 text-accent " />
                   )}
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-black shadow-md">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-black shadow-md">
                   <Sparkles size={13} className="fill-current" />
                 </div>
               </div>
 
-              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mb-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-accent/15 text-accent border border-accent/30 mb-2">
                 {isAr ? 'تم التثبيت بنجاح 🎉' : 'App Installed 🎉'}
               </span>
 
@@ -147,7 +147,7 @@ export const PwaInstallSuccessService: React.FC = () => {
 
               {/* Countdown badge if auto-redirect is running */}
               {!autoRedirectPaused && (
-                <div className="text-[11px] text-emerald-400/90 font-medium bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-lg mb-5 flex items-center gap-2">
+                <div className="text-[11px] text-accent/90 font-medium bg-accent/10 border border-accent/20 px-3 py-1 rounded-lg mb-5 flex items-center gap-2">
                   <span>
                     {isAr
                       ? `التوجيه التلقائي للوحة التحكم خلال ${countdown} ثوانٍ...`
@@ -168,7 +168,7 @@ export const PwaInstallSuccessService: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleGoToDashboard}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer"
                 >
                   <LayoutDashboard size={16} />
                   <span>{isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to Dashboard'}</span>

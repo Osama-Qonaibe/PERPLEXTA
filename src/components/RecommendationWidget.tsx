@@ -200,11 +200,11 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'marketplace': return <ShoppingBag size={14} className="text-emerald-500" />;
+      case 'marketplace': return <ShoppingBag size={14} className="text-accent" />;
       case 'bulletin': return <Megaphone size={14} className="text-amber-500" />;
       case 'tool': return <Zap size={14} className="text-blue-500" />;
       case 'blog': return <BookOpen size={14} className="text-purple-500" />;
-      default: return <Sparkles size={14} className="text-emerald-500" />;
+      default: return <Sparkles size={14} className="text-accent" />;
     }
   };
 
@@ -235,11 +235,11 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-2.5 border-b border-gray-100 dark:border-gray-800/80">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
             {isBulletinOnly ? (
-              <Megaphone size={16} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <Megaphone size={16} className="text-accent " />
             ) : (
-              <Sparkles size={16} className="text-emerald-500 animate-pulse" />
+              <Sparkles size={16} className="text-accent animate-pulse" />
             )}
           </div>
           <div className="min-w-0">
@@ -249,7 +249,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   ? (language === 'ar' ? 'تفضيلات الإعلانات المخصصة' : 'Recommended Ads')
                   : (language === 'ar' ? 'توصيات مخصصة لك' : 'Recommended For You'))}
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 shrink-0">
                 {language === 'ar' ? 'محرك ذكي' : 'Smart AI'}
               </span>
             </h3>
@@ -268,20 +268,20 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
               if (onOpenPreferences) onOpenPreferences();
               else setIsPrefModalOpen(true);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:text-emerald-500 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-theme shadow-2xs cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-theme shadow-2xs cursor-pointer"
             title={language === 'ar' ? 'تعديل تفضيلات التوصيات' : 'Customize preferences'}
           >
-            <Sliders size={12} className="text-emerald-500 shrink-0" />
+            <Sliders size={12} className="text-accent shrink-0" />
             <span>{language === 'ar' ? 'تخصيص' : 'Customize'}</span>
           </button>
 
           <button
             onClick={fetchRecommendations}
             disabled={isLoading}
-            className="p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/40 transition-theme cursor-pointer"
+            className="p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-accent hover:border-accent/40 transition-theme cursor-pointer"
             title={language === 'ar' ? 'تحديث التوصيات' : 'Refresh'}
           >
-            <RefreshCw size={12} className={isLoading ? 'animate-spin text-emerald-500' : ''} />
+            <RefreshCw size={12} className={isLoading ? 'animate-spin text-accent' : ''} />
           </button>
         </div>
       </div>
@@ -301,7 +301,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
               onClick={() => setActiveCategory(tab.id as any)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl whitespace-nowrap transition-theme border text-xs ${
                 activeCategory === tab.id
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold shadow-2xs'
+                  ? 'bg-accent/10 text-accent border-accent/30 font-bold shadow-2xs'
                   : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -331,7 +331,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
         </div>
       ) : visibleItems.length === 0 ? (
         <div className="p-5 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 text-center space-y-2">
-          <Megaphone size={24} className="mx-auto text-emerald-500/40" />
+          <Megaphone size={24} className="mx-auto text-accent/40" />
           <h4 className="text-xs font-bold text-[var(--text-primary)]">
             {language === 'ar' ? 'لا تتوفر إعلانات موصى بها حالياً' : 'No ad recommendations currently'}
           </h4>
@@ -342,7 +342,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
           </p>
           <button
             onClick={() => setIsPrefModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-theme shadow-xs cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs transition-theme shadow-xs cursor-pointer"
           >
             {language === 'ar' ? 'تخصيص تفضيلاتي الآن' : 'Set My Preferences'}
           </button>
@@ -372,7 +372,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   onClick={() => handleItemClick(item)}
-                  className="group relative p-2.5 sm:p-3 rounded-xl bg-gray-50/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-[#222225] border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/50 transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md overflow-hidden"
+                  className="group relative p-2.5 sm:p-3 rounded-xl bg-gray-50/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-[#222225] border border-gray-200/80 dark:border-gray-800 hover:border-accent/50 transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md overflow-hidden"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {mediaUrl ? (
@@ -396,7 +396,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-theme"
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 cursor-pointer hover:bg-accent/20 transition-theme"
                       >
                         <Megaphone size={18} />
                       </div>
@@ -408,7 +408,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="text-xs font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors truncate cursor-pointer"
+                        className="text-xs font-bold text-[var(--text-primary)] group-hover:text-accent transition-colors truncate cursor-pointer"
                       >
                         {titleText}
                       </h4>
@@ -416,24 +416,24 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {cityText && (
                           <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
-                            <MapPin size={10} className="text-emerald-500 shrink-0" />
+                            <MapPin size={10} className="text-accent shrink-0" />
                             <span className="truncate max-w-[80px]">{cityText}</span>
                           </span>
                         )}
 
-                        <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
                           <Sparkles size={9} />
                           {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
                         </span>
 
                         {price > 0 && (
-                          <span className="text-[10px] font-black text-emerald-500 ms-auto">
+                          <span className="text-[10px] font-black text-accent ms-auto">
                             ${price}
                           </span>
                         )}
                       </div>
 
-                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate mt-0.5 font-medium">
+                      <p className="text-[10px] text-accent dark:text-accent truncate mt-0.5 font-medium">
                         {reasonText}
                       </p>
                     </div>
@@ -454,7 +454,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                         handleItemClick(item);
                       }}
                       title={language === 'ar' ? 'التفاصيل' : 'Details'}
-                      className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-theme cursor-pointer"
+                      className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-theme cursor-pointer"
                     >
                       <ChevronRight size={14} className={dir === 'rtl' ? 'rotate-180' : ''} />
                     </button>
@@ -471,7 +471,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 onClick={() => handleItemClick(item)}
-                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-emerald-500/40 transition-theme hover:shadow-lg hover:shadow-emerald-500/5 p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
+                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/40 transition-theme hover:shadow-lg hover:shadow-none p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -481,7 +481,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     </span>
 
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                         <Sparkles size={10} />
                         {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
                       </span>
@@ -496,8 +496,8 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.06] border border-emerald-500/10 px-2 py-1 rounded-md mb-2.5 truncate">
-                    <Tag size={10} className="shrink-0 text-emerald-500" />
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-accent dark:text-accent bg-accent/[0.06] border border-accent/10 px-2 py-1 rounded-md mb-2.5 truncate">
+                    <Tag size={10} className="shrink-0 text-accent" />
                     <span className="truncate">{reasonText}</span>
                   </div>
 
@@ -523,7 +523,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 cursor-pointer hover:bg-emerald-500/20 transition-theme"
+                        className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 cursor-pointer hover:bg-accent/20 transition-theme"
                       >
                         {getTypeIcon(item.item_type)}
                       </div>
@@ -535,12 +535,12 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           e.stopPropagation();
                           handleItemClick(item);
                         }}
-                        className="text-xs font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors line-clamp-2 leading-tight cursor-pointer"
+                        className="text-xs font-bold text-[var(--text-primary)] group-hover:text-accent transition-colors line-clamp-2 leading-tight cursor-pointer"
                       >
                         {titleText}
                       </h4>
                       {price > 0 ? (
-                        <p className="text-[11px] font-extrabold text-emerald-500 mt-1">
+                        <p className="text-[11px] font-extrabold text-accent mt-1">
                           ${price} USD
                         </p>
                       ) : (
@@ -557,7 +557,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     e.stopPropagation();
                     handleItemClick(item);
                   }}
-                  className="w-full mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-emerald-500 font-bold hover:text-emerald-400 group-hover:translate-x-0.5 transition-theme text-start cursor-pointer"
+                  className="w-full mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-accent font-bold hover:text-accent group-hover:translate-x-0.5 transition-theme text-start cursor-pointer"
                 >
                   <span className="text-[11px]">
                     {language === 'ar' ? 'التفاصيل واستكشاف المحتوى' : 'View Details & Explore'}

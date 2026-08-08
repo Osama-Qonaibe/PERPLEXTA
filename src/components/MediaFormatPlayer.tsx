@@ -157,7 +157,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
           allowFullScreen
         />
         {/* Floating Format Badge */}
-        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-emerald-400 text-[10px] font-black border border-emerald-500/30 flex items-center gap-1 pointer-events-none">
+        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-accent text-[10px] font-black border border-accent/30 flex items-center gap-1 pointer-events-none">
           <Film size={11} />
           <span>{videoInfo.type.toUpperCase()} Embed</span>
         </div>
@@ -206,7 +206,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       {!isPlaying && (
         <button
           onClick={togglePlay}
-          className="absolute inset-0 z-20 m-auto w-14 h-14 rounded-full bg-emerald-500/90 hover:bg-emerald-400 text-white flex items-center justify-center shadow-xl shadow-emerald-500/30 transition-transform duration-200 hover:scale-110 cursor-pointer"
+          className="absolute inset-0 z-20 m-auto w-14 h-14 rounded-full bg-accent/90 hover:bg-accent text-white flex items-center justify-center shadow-xl shadow-none transition-transform duration-200 hover:scale-110 cursor-pointer"
           title={isRtl ? 'تشغيل' : 'Play'}
         >
           <Play size={28} className="translate-x-0.5 fill-white" />
@@ -216,8 +216,8 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       {/* Top Bar: Format Badge & Aspect Ratio Selector */}
       <div className={`absolute top-2 left-2 right-2 z-20 flex items-center justify-between transition-opacity duration-300 ${showOverlayControls || !isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         <div className="flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-emerald-400 text-[10px] font-black border border-emerald-500/30 flex items-center gap-1">
-            <Sparkles size={11} className="text-emerald-400" />
+          <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-accent text-[10px] font-black border border-accent/30 flex items-center gap-1">
+            <Sparkles size={11} className="text-accent" />
             <span className="uppercase">{adFormat || 'VIDEO'}</span>
           </span>
           <span className="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-gray-300 text-[10px] font-mono border border-gray-700">
@@ -230,7 +230,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
             {/* Toggle Aspect Ratio Button */}
             <button
               onClick={cycleAspectRatio}
-              className="p-1.5 rounded-md bg-black/80 hover:bg-emerald-600 text-white text-[10px] font-bold border border-gray-700 flex items-center gap-1 backdrop-blur-md transition-colors"
+              className="p-1.5 rounded-md bg-black/80 hover:bg-accent text-white text-[10px] font-bold border border-gray-700 flex items-center gap-1 backdrop-blur-md transition-colors"
               title={isRtl ? 'تبديل أبعاد العرض' : 'Cycle Aspect Ratio'}
             >
               <RotateCcw size={12} />
@@ -240,7 +240,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
             {/* Toggle Fit/Crop Mode */}
             <button
               onClick={toggleFitMode}
-              className="p-1.5 rounded-md bg-black/80 hover:bg-emerald-600 text-white text-[10px] font-bold border border-gray-700 flex items-center gap-1 backdrop-blur-md transition-colors"
+              className="p-1.5 rounded-md bg-black/80 hover:bg-accent text-white text-[10px] font-bold border border-gray-700 flex items-center gap-1 backdrop-blur-md transition-colors"
               title={isRtl ? `نمط التكيف: ${fitMode === 'cover' ? 'تغطية وقص' : fitMode === 'contain' ? 'احتواء كامل' : 'تمدد'}` : `Fit mode: ${fitMode}`}
             >
               <Crop size={12} />
@@ -264,7 +264,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
               if (videoRef.current) videoRef.current.currentTime = val;
               setCurrentTime(val);
             }}
-            className="w-full h-1 bg-white/20 hover:h-1.5 rounded-lg appearance-none cursor-pointer accent-emerald-500 transition-theme"
+            className="w-full h-1 bg-white/20 hover:h-1.5 rounded-lg appearance-none cursor-pointer accent-accent transition-theme"
           />
 
           <div className="flex items-center justify-between text-white text-xs font-mono">
@@ -291,7 +291,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
 
             {/* Right Side: Fullscreen & Mode Indicator */}
             <div className="flex items-center gap-2 text-[10px]">
-              <span className="text-emerald-400 font-sans font-bold hidden sm:inline">
+              <span className="text-accent font-sans font-bold hidden sm:inline">
                 {fitMode === 'cover' ? (isRtl ? 'قص ملائم' : 'Fill & Crop') : (isRtl ? 'عرض كامل' : 'Fit Container')}
               </span>
               <button

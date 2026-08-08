@@ -60,7 +60,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <div className="w-10 h-10 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent">
                     {getFileIcon(msg.file.type)}
                   </div>
                 )}
@@ -99,7 +99,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                   </button>
                   <button 
                     onClick={() => handleEditSubmit(idx)}
-                    className="px-4 py-1.5 text-[10px] uppercase font-bold bg-emerald-500 text-white rounded-[var(--radius)] hover:bg-emerald-600 transition-theme"
+                    className="px-4 py-1.5 text-[10px] uppercase font-bold bg-accent text-white rounded-[var(--radius)] hover:bg-accent transition-theme"
                   >
                     {dir === 'rtl' ? 'حفظ وإرسال' : 'Save & Send'}
                   </button>
@@ -117,9 +117,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                 </div>
 
                 {msg.is_pinned && (
-                  <div className="flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
-                    <Pin size={8} className="text-emerald-500" />
-                    <span className="text-[7px] font-black uppercase text-emerald-500/80 tracking-tighter">Pinned</span>
+                  <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
+                    <Pin size={8} className="text-accent" />
+                    <span className="text-[7px] font-black uppercase text-accent/80 tracking-tighter">Pinned</span>
                   </div>
                 )}
 
@@ -127,7 +127,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                   <button 
                     onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                     className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-colors duration-200 shrink-0 ${
-                      msg.is_pinned ? 'text-emerald-500 hover:text-emerald-600' : 'text-gray-400 hover:text-emerald-500'
+                      msg.is_pinned ? 'text-accent hover:text-accent' : 'text-gray-400 hover:text-accent'
                     }`}
                     title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
                   >
@@ -138,7 +138,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                       setEditingMessageIndex(idx);
                       setEditValue(msg.content);
                     }}
-                    className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-emerald-500 transition-colors duration-200 shrink-0"
+                    className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-accent transition-colors duration-200 shrink-0"
                     title={dir === 'rtl' ? 'تعديل' : 'Edit'}
                   >
                     <Pencil size={13} />

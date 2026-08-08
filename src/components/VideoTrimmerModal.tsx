@@ -152,7 +152,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-black/40">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent">
               <Scissors size={20} />
             </div>
             <div>
@@ -191,19 +191,19 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             {!isPlaying && (
               <button
                 onClick={togglePlay}
-                className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 cursor-pointer z-10"
+                className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-accent hover:bg-accent text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 cursor-pointer z-10"
               >
                 <Play size={26} className="translate-x-0.5 fill-white" />
               </button>
             )}
 
-            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-emerald-400 text-xs font-mono border border-emerald-500/30 flex items-center gap-1.5 z-20">
+            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-accent text-xs font-mono border border-accent/30 flex items-center gap-1.5 z-20">
               <Sparkles size={12} />
               <span className="uppercase font-bold">{adFormat} ({aspectRatio})</span>
             </div>
 
             {selectedFilter !== 'normal' && (
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-emerald-500/90 text-white text-[11px] font-bold shadow-lg z-20">
+              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-accent/90 text-white text-[11px] font-bold shadow-lg z-20">
                 {isRtl ? VIDEO_FILTERS.find(f => f.id === selectedFilter)?.nameAr : VIDEO_FILTERS.find(f => f.id === selectedFilter)?.nameEn}
               </div>
             )}
@@ -214,7 +214,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             <div className="flex items-center gap-3">
               <button
                 onClick={togglePlay}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent text-white text-xs font-bold flex items-center gap-1.5 transition-colors"
               >
                 {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                 <span>{isPlaying ? (isRtl ? 'إيقاف مؤقت' : 'Pause') : (isRtl ? 'تشغيل المقطع' : 'Play Clip')}</span>
@@ -226,7 +226,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                 {isMuted ? <VolumeX size={16} className="text-red-400" /> : <Volume2 size={16} />}
               </button>
             </div>
-            <div className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+            <div className="text-xs font-mono text-accent bg-accent/10 px-3 py-1 rounded-lg border border-accent/20">
               {formatTime(currentTime)} / {formatTime(duration)}
             </div>
           </div>
@@ -235,8 +235,8 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
           <div className="flex flex-col gap-3 bg-black/40 p-4 rounded-xl border border-gray-800">
             <div className="flex items-center justify-between text-xs text-gray-300 font-medium">
               <span className="flex items-center gap-1.5">
-                <Clock size={14} className="text-emerald-400" />
-                {isRtl ? 'نطاق القص الزمني:' : 'Trim Time Range:'} <strong className="text-white font-mono">{formatTime(startTime)}</strong> إلى <strong className="text-white font-mono">{formatTime(endTime)}</strong> (المدة: <span className="text-emerald-400">{Math.max(0, Math.round(endTime - startTime))} ثانية</span>)
+                <Clock size={14} className="text-accent" />
+                {isRtl ? 'نطاق القص الزمني:' : 'Trim Time Range:'} <strong className="text-white font-mono">{formatTime(startTime)}</strong> إلى <strong className="text-white font-mono">{formatTime(endTime)}</strong> (المدة: <span className="text-accent">{Math.max(0, Math.round(endTime - startTime))} ثانية</span>)
               </span>
               <button
                 onClick={() => { setStartTime(0); setEndTime(duration); if (videoRef.current) videoRef.current.currentTime = 0; }}
@@ -263,7 +263,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     setStartTime(val);
                     if (videoRef.current) videoRef.current.currentTime = val;
                   }}
-                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent"
                 />
               </div>
 
@@ -281,7 +281,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     const val = parseFloat(e.target.value);
                     setEndTime(val);
                   }}
-                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent"
                 />
               </div>
             </div>
@@ -309,7 +309,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition-theme border ${
                       adFormat === fmt.id
-                        ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/20'
+                        ? 'bg-accent text-white border-accent shadow-md shadow-none'
                         : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800'
                     }`}
                   >
@@ -331,7 +331,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     onClick={() => setAspectRatio(ratio as any)}
                     className={`py-2 px-1 rounded-xl text-xs font-mono font-bold transition-theme border ${
                       aspectRatio === ratio
-                        ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/20'
+                        ? 'bg-accent text-white border-accent shadow-md shadow-none'
                         : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800'
                     }`}
                   >
@@ -346,7 +346,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-300 font-bold flex items-center justify-between">
               <span>{isRtl ? 'فلاتر تصحيح الألوان الاحترافية (Color Grading Filters):' : 'Professional Color Grading Filters:'}</span>
-              <span className="text-[11px] text-emerald-400 font-mono font-normal">
+              <span className="text-[11px] text-accent font-mono font-normal">
                 {isRtl ? VIDEO_FILTERS.find(f => f.id === selectedFilter)?.nameAr : VIDEO_FILTERS.find(f => f.id === selectedFilter)?.nameEn}
               </span>
             </label>
@@ -358,7 +358,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                   onClick={() => setSelectedFilter(flt.id)}
                   className={`py-2 px-2 rounded-xl text-xs font-medium transition-theme border flex flex-col items-center gap-1.5 ${
                     selectedFilter === flt.id
-                      ? 'bg-emerald-500 text-white border-emerald-400 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30'
+                      ? 'bg-accent text-white border-accent shadow-md shadow-none ring-2 ring-accent-500/30'
                       : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800 hover:border-gray-700'
                   }`}
                 >
@@ -389,7 +389,7 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
             type="button"
             disabled={isProcessing}
             onClick={handleApplyTrim}
-            className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-theme disabled:opacity-50"
+            className="px-6 py-2 rounded-xl bg-gradient-to-r from-gray-500/10 to-teal-600 hover:from-gray-500/10 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-none flex items-center gap-2 transition-theme disabled:opacity-50"
           >
             <Check size={16} />
             <span>{isRtl ? 'تطبيق وقص ونشر' : 'Apply & Publish'}</span>

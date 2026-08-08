@@ -124,8 +124,8 @@ const GoogleHubPage: React.FC = () => {
       id: 'chat',
       title: isRtl ? TOOL_DEFINITIONS.chat.title.ar : TOOL_DEFINITIONS.chat.title.en,
       description: isRtl ? TOOL_DEFINITIONS.chat.description.ar : TOOL_DEFINITIONS.chat.description.en,
-      icon: <MessageSquare size={24} className="text-emerald-500" />,
-      color: 'emerald',
+      icon: <MessageSquare size={24} className="text-accent" />,
+      color: 'accent',
       available: true,
       status: 'connected',
       unreadCount: 3,
@@ -316,7 +316,7 @@ const GoogleHubPage: React.FC = () => {
         
         toast.success(isRtl ? 'تم سحب جميع صلاحيات الوصول بنجاح' : 'All access tokens revoked successfully', {
           description: isRtl ? 'تم قطع الاتصال بكافة خدمات قوقل وتأمين حسابك.' : 'All Google services disconnected and account secured.',
-          icon: <ShieldAlert className="text-emerald-500" size={18} />
+          icon: <ShieldAlert className="text-accent" size={18} />
         });
       } else {
         throw new Error('Revocation failed');
@@ -333,9 +333,9 @@ const GoogleHubPage: React.FC = () => {
     switch(status) {
       case 'connected':
         return (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-            <span className="text-[9px] font-black uppercase tracking-wider text-emerald-500">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <span className="text-[9px] font-black uppercase tracking-wider text-accent">
               {isRtl ? 'متصل' : 'Connected'}
             </span>
           </div>
@@ -393,7 +393,7 @@ const GoogleHubPage: React.FC = () => {
             </button>
             <div className="text-start">
               <h1 className="text-base sm:text-lg font-black font-sans tracking-tight flex items-center gap-2">
-                <LayoutGrid size={20} className="text-emerald-500 shrink-0" />
+                <LayoutGrid size={20} className="text-accent shrink-0" />
                 <span>{isRtl ? 'تكاملات قوقل الذكية' : 'Google Smart Integrations'}</span>
               </h1>
               <p className="text-[10px] text-gray-500 font-medium flex items-center gap-2 flex-wrap">
@@ -416,7 +416,7 @@ const GoogleHubPage: React.FC = () => {
             <div className="relative w-full group">
               <Search 
                 size={16} 
-                className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 group-focus-within:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme pointer-events-none`} 
+                className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent group-focus-within: transition-theme pointer-events-none`} 
               />
               <input
                 type="text"
@@ -425,7 +425,7 @@ const GoogleHubPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl py-2 ${
                   isRtl ? 'pr-10 pl-8 text-right' : 'pl-10 pr-8 text-left'
-                } text-xs font-bold outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 transition-theme`}
+                } text-xs font-bold outline-none focus:border-accent/50 focus:ring-4 focus:ring-accent-500/5 transition-theme`}
                 dir={effectiveDir}
               />
               {searchQuery && (
@@ -443,14 +443,14 @@ const GoogleHubPage: React.FC = () => {
           <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={() => setShowSecurityModal(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme group relative cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-accent hover: transition-theme group relative cursor-pointer"
               title={isRtl ? 'إدارة أمان الحساب' : 'Account Security Management'}
             >
-              <Shield size={18} className="group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-              <div className="absolute -top-1 -end-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <Shield size={18} className="group-hover:" />
+              <div className="absolute -top-1 -end-1 w-2 h-2 bg-accent rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </button>
             <button 
-              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-accent hover: transition-theme cursor-pointer"
               title={isRtl ? 'الإعدادات' : 'Settings'}
             >
               <Settings2 size={18} />
@@ -471,7 +471,7 @@ const GoogleHubPage: React.FC = () => {
               {/* Hero Section */}
               <div className="relative overflow-hidden rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] p-6 sm:p-8">
                 <div className={`relative z-10 max-w-2xl text-start`}>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mb-4 uppercase tracking-widest">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold bg-accent/10 text-accent border border-accent/20 mb-4 uppercase tracking-widest">
                     {isRtl ? 'تكامل احترافي' : 'Professional Integration'}
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black mb-4 leading-tight text-[var(--text-main)]">
@@ -484,7 +484,7 @@ const GoogleHubPage: React.FC = () => {
                   </p>
                 </div>
                 {/* Decorative Elements */}
-                <div className={`absolute top-0 ${isRtl ? 'left-0 -ml-32' : 'right-0 -mr-32'} w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mt-32 pointer-events-none`} />
+                <div className={`absolute top-0 ${isRtl ? 'left-0 -ml-32' : 'right-0 -mr-32'} w-64 h-64 bg-accent/10 blur-[100px] rounded-full -mt-32 pointer-events-none`} />
                 <div className={`absolute bottom-0 ${isRtl ? 'right-0 -mr-24' : 'left-0 -ml-24'} w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full -mb-24 pointer-events-none`} />
               </div>
 
@@ -532,7 +532,7 @@ const GoogleHubPage: React.FC = () => {
                         tabIndex={tool.available ? 0 : -1}
                         className={`w-full relative p-5 rounded-[var(--radius)] border text-start transition-theme group cursor-pointer ${
                           tool.available 
-                            ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
+                            ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
                             : 'bg-gray-50/50 dark:bg-gray-900/20 border-dashed border-gray-200 dark:border-gray-800 opacity-60 grayscale cursor-not-allowed'
                         }`}
                       >
@@ -544,7 +544,7 @@ const GoogleHubPage: React.FC = () => {
                                   e.stopPropagation();
                                   setGuideTool(tool);
                                 }}
-                                className="p-1 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors cursor-pointer"
+                                className="p-1 rounded-md hover:bg-accent/10 hover:text-accent transition-colors cursor-pointer"
                                 title={isRtl ? 'دليل الأداة' : 'Tool Guide'}
                               >
                                 <HelpCircle size={14} />
@@ -557,13 +557,13 @@ const GoogleHubPage: React.FC = () => {
                         )}
 
                         <div className="flex items-start justify-between mb-4">
-                          <div className={`w-12 h-12 rounded-2xl bg-${tool.color}-500/10 flex items-center justify-center transition-theme group-hover:scale-110 group-hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)] relative`}>
+                          <div className={`w-12 h-12 rounded-2xl bg-${tool.color}-500/10 flex items-center justify-center transition-theme group-hover:scale-110 group-hover: relative`}>
                             {tool.icon}
                             {tool.unreadCount > 0 && (
                               <motion.div 
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 bg-accent text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                               >
                                 {tool.unreadCount}
                               </motion.div>
@@ -616,7 +616,7 @@ const GoogleHubPage: React.FC = () => {
                   </p>
                   <button 
                     onClick={() => setSearchQuery('')}
-                    className="text-emerald-500 font-bold hover:underline cursor-pointer"
+                    className="text-accent font-bold hover:underline cursor-pointer"
                   >
                     {isRtl ? 'عرض جميع الأدوات' : 'View all tools'}
                   </button>
@@ -626,36 +626,36 @@ const GoogleHubPage: React.FC = () => {
               {/* Recent Activity / Integration Status */}
               <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-main)] p-6 transition-theme hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
                 <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-start">
-                  <Info size={16} className="text-emerald-500 animate-pulse shrink-0" />
+                  <Info size={16} className="text-accent animate-pulse shrink-0" />
                   <span>{isRtl ? 'حالة التكامل والاتصال' : 'Integration & Connection Status'}</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-start">
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
-                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
+                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-accent/20"
                   >
                     <p className="text-[10px] text-gray-500 mb-1">{isRtl ? 'المساحة المستخدمة' : 'Storage Used'}</p>
                     <div className="flex items-end justify-between">
                       <span className="text-lg font-black tracking-tight">1.2 GB</span>
-                      <span className="text-[10px] text-emerald-500 font-bold">8%</span>
+                      <span className="text-[10px] text-accent font-bold">8%</span>
                     </div>
                     <div className="mt-2 h-1.5 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: '8%' }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="h-full bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                        className="h-full bg-accent rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
                       />
                     </div>
                   </motion.div>
 
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
-                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
+                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-accent/20"
                   >
                     <p className="text-[10px] text-gray-500 mb-1">{isRtl ? 'أمان الواجهة' : 'API Security'}</p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                      <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                       <span className="text-sm font-bold">{isRtl ? 'مؤمن بالكامل' : 'Fully Secured'}</span>
                     </div>
                     <p className="text-[10px] text-gray-400 mt-2">SSL v3 / OAuth 2.0</p>
@@ -663,11 +663,11 @@ const GoogleHubPage: React.FC = () => {
 
                   <motion.div 
                     whileHover={{ scale: 1.01 }}
-                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-emerald-500/20"
+                    className="p-4 rounded-xl border border-[var(--border-main)] bg-[var(--bg-main)] transition-colors hover:border-accent/20"
                   >
                     <p className="text-[10px] text-gray-500 mb-1">{isRtl ? 'المزامنة الأخيرة' : 'Last Sync'}</p>
                     <span className="text-sm font-bold">{isRtl ? 'منذ دقيقتين' : '2 minutes ago'}</span>
-                    <button className="mt-2 flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors font-bold group cursor-pointer">
+                    <button className="mt-2 flex items-center gap-1 text-[10px] text-accent hover:text-accent transition-colors font-bold group cursor-pointer">
                       <ExternalLink size={10} className="group-hover:rotate-12 transition-transform" />
                       <span>{isRtl ? 'تحديث الآن' : 'Refresh Now'}</span>
                     </button>
@@ -686,12 +686,12 @@ const GoogleHubPage: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-black flex items-center gap-3">
-                  <MessageSquare className="text-emerald-500" />
+                  <MessageSquare className="text-accent" />
                   <span>{isRtl ? 'مساعد قوقل شات' : 'Google Chat Assistant'}</span>
                 </h2>
                 <button 
                   onClick={() => setActiveTab('overview')}
-                  className="text-xs font-bold text-emerald-500 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   {isRtl ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                   <span>{isRtl ? 'العودة للمركز' : 'Back to Hub'}</span>
@@ -715,7 +715,7 @@ const GoogleHubPage: React.FC = () => {
                 </h2>
                 <button 
                   onClick={() => setActiveTab('overview')}
-                  className="text-xs font-bold text-emerald-500 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   {isRtl ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                   <span>{isRtl ? 'العودة للمركز' : 'Back to Hub'}</span>
@@ -747,7 +747,7 @@ const GoogleHubPage: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-lg bg-[var(--bg-main)] rounded-3xl border border-[var(--border-main)] shadow-2xl overflow-hidden"
             >
-              <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-emerald-500/5 to-transparent">
+              <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-gray-500/10 to-transparent">
                 <div className="flex items-center gap-4 text-start">
                   <div className={`w-12 h-12 rounded-2xl bg-${selectedTool.color}-500/10 flex items-center justify-center shrink-0`}>
                     {selectedTool.icon}
@@ -767,9 +767,9 @@ const GoogleHubPage: React.FC = () => {
               <div className="p-6 space-y-6 text-start">
                 {selectedTool.status === 'connected' ? (
                   <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                    <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
                       <div className="flex items-center gap-3 mb-2">
-                        <Shield size={16} className="text-emerald-500" />
+                        <Shield size={16} className="text-accent" />
                         <h4 className="text-xs font-black">{isRtl ? 'الحالة نشطة' : 'Status: Active'}</h4>
                       </div>
                       <p className="text-[11px] text-gray-500">
@@ -779,9 +779,9 @@ const GoogleHubPage: React.FC = () => {
                     
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-gray-400 px-1">{isRtl ? 'الإعدادات' : 'Settings'}</label>
-                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-emerald-500/30 transition-theme group cursor-pointer">
+                      <button className="w-full p-4 rounded-xl border border-[var(--border-main)] flex items-center justify-between hover:border-accent/30 transition-theme group cursor-pointer">
                         <div className="flex items-center gap-3">
-                          <Settings size={18} className="text-gray-400 group-hover:text-emerald-500" />
+                          <Settings size={18} className="text-gray-400 group-hover:text-accent" />
                           <span className="text-xs font-bold">{isRtl ? 'تخصيص المزامنة' : 'Sync Preferences'}</span>
                         </div>
                         {isRtl ? <ChevronLeft size={16} className="text-gray-300" /> : <ChevronRight size={16} className="text-gray-300" />}
@@ -815,7 +815,7 @@ const GoogleHubPage: React.FC = () => {
                       <h5 className="text-[10px] font-black uppercase text-gray-400 px-1">{isRtl ? 'المطلوب' : 'Requirements'}</h5>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-main)]">
-                          <Shield size={14} className="text-emerald-500 mb-2" />
+                          <Shield size={14} className="text-accent mb-2" />
                           <p className="text-[10px] font-bold">{isRtl ? 'صلاحية الوصول' : 'OAuth Access'}</p>
                         </div>
                         <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-main)]">
@@ -833,7 +833,7 @@ const GoogleHubPage: React.FC = () => {
                 {selectedTool.status !== 'connected' && (
                   <button 
                     onClick={() => handleConnectTool(selectedTool.id)}
-                    className="px-6 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95 cursor-pointer"
+                    className="px-6 py-2 text-xs font-black bg-accent text-white rounded-xl shadow-lg shadow-none hover:bg-accent transition-theme active:scale-95 cursor-pointer"
                   >
                     {isRtl ? 'تفعيل الاتصال' : 'Activate Connection'}
                   </button>
@@ -865,7 +865,7 @@ const GoogleHubPage: React.FC = () => {
               className="relative w-full max-w-lg bg-[var(--bg-main)] rounded-3xl border border-[var(--border-main)] shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-emerald-500/5 to-transparent">
+              <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between bg-gradient-to-r from-gray-500/10 to-transparent">
                 <div className="flex items-center gap-4 text-start">
                   <div className={`w-12 h-12 rounded-2xl bg-${guideTool.color}-500/10 flex items-center justify-center shrink-0`}>
                     {guideTool.icon}
@@ -886,9 +886,9 @@ const GoogleHubPage: React.FC = () => {
               {/* Modal Content */}
               <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto text-start">
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                  <div className="p-4 rounded-2xl bg-accent/5 border border-accent/10">
                     <h4 className="text-xs font-black mb-3 flex items-center gap-2">
-                      <Key size={14} className="text-emerald-500 shrink-0" />
+                      <Key size={14} className="text-accent shrink-0" />
                       <span>{isRtl ? 'متطلبات الوصول' : 'Access Requirements'}</span>
                     </h4>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -906,7 +906,7 @@ const GoogleHubPage: React.FC = () => {
                     <div className="space-y-2">
                       {guideTool.guide.steps.map((step: string, idx: number) => (
                         <div key={idx} className="flex items-start gap-3 group text-start">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center text-[10px] font-black group-hover:border-emerald-500/50 transition-colors mt-0.5">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center text-[10px] font-black group-hover:border-accent/50 transition-colors mt-0.5">
                             {idx + 1}
                           </span>
                           <p className="text-[11px] text-gray-500 leading-relaxed py-0.5">{step}</p>
@@ -933,12 +933,12 @@ const GoogleHubPage: React.FC = () => {
               <div className="p-4 bg-[var(--bg-secondary)] flex items-center justify-end gap-3 border-t border-[var(--border-main)]">
                 <button 
                   onClick={() => setGuideTool(null)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-emerald-500 transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-accent transition-colors cursor-pointer"
                 >
                   {isRtl ? 'إغلاق' : 'Close'}
                 </button>
                 <button 
-                  className="px-5 py-2 text-xs font-black bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-theme active:scale-95 cursor-pointer"
+                  className="px-5 py-2 text-xs font-black bg-accent text-white rounded-xl shadow-lg shadow-none hover:bg-accent transition-theme active:scale-95 cursor-pointer"
                   onClick={() => {
                     if (guideTool.available) {
                       setActiveTab(guideTool.id as 'overview' | 'chat' | 'contacts' | 'drive' | 'gmail');

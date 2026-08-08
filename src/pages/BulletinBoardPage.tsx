@@ -1719,7 +1719,7 @@ export const BulletinBoardPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isRtl ? 'ابحث عن منتج، صفحة، أو إعلان...' : 'Search ad, product, page...'}
                 autoFocus
-                className="w-full ps-9 pe-8 py-2 text-xs font-bold rounded-[10px] bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-emerald-500"
+                className="w-full ps-9 pe-8 py-2 text-xs font-bold rounded-[10px] bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
               />
               <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
               {searchQuery && (
@@ -1744,15 +1744,15 @@ export const BulletinBoardPage: React.FC = () => {
               onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="flex items-center gap-2 shrink-0 cursor-pointer transition-theme h-full"
             >
-              <div className="w-10 h-10 rounded-[10px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold border border-emerald-500/20">
+              <div className="w-10 h-10 rounded-[10px] bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20">
                 <Megaphone size={16} />
               </div>
               <div className="flex flex-col justify-center">
                 <h2 className="text-[13px] font-black tracking-tight flex items-center gap-1 leading-none text-gray-900 dark:text-gray-100">
                   <span>{isRtl ? 'بيربليكستا' : 'Perplexta'}</span>
-                  <ShieldCheck size={12} className="text-emerald-500 shrink-0" />
+                  <ShieldCheck size={12} className="text-accent shrink-0" />
                 </h2>
-                <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-extrabold pt-0.5">{isRtl ? 'سوشيال' : 'Social'}</p>
+                <p className="text-[9px] text-accent dark:text-accent font-extrabold pt-0.5">{isRtl ? 'سوشيال' : 'Social'}</p>
               </div>
             </div>
 
@@ -1762,7 +1762,7 @@ export const BulletinBoardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(true)}
-                className="w-10 h-10 rounded-[10px] bg-transparent hover:bg-gray-100 dark:hover:bg-[var(--bg-secondary)] flex items-center justify-center text-gray-400 hover:text-emerald-500 transition-theme border border-[var(--border-main)]"
+                className="w-10 h-10 rounded-[10px] bg-transparent hover:bg-gray-100 dark:hover:bg-[var(--bg-secondary)] flex items-center justify-center text-gray-400 hover:text-accent transition-theme border border-[var(--border-main)]"
                 title={isRtl ? 'البحث بالمنصة' : 'Search Platform'}
               >
                 <Search size={16} />
@@ -1774,10 +1774,10 @@ export const BulletinBoardPage: React.FC = () => {
 
       {/* Top Banner / Hero Header Section - Hidden on Mobile and in Analytics/Pages full view */}
       {activeTab !== 'analytics' && activeTab !== 'pages' && !selectedPageDetail && (
-        <div className="hidden lg:block relative border-b border-gray-200/80 dark:border-gray-800/80 bg-gradient-to-b from-emerald-500/10 via-transparent to-transparent py-8 px-6 lg:px-8">
+        <div className="hidden lg:block relative border-b border-gray-200/80 dark:border-gray-800/80 bg-gradient-to-b from-gray-500/10 via-transparent to-transparent py-8 px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-start max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold">
                 <Sparkles size={14} className="animate-spin-slow" />
                 <span>{isRtl ? 'منصة الترويج والشبكة التجارية المتكاملة في فلسطين' : 'Palestine Premier Merchant Network'}</span>
               </div>
@@ -1816,10 +1816,10 @@ export const BulletinBoardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsLocationFlyoutOpen(!isLocationFlyoutOpen)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/30 transition-theme shadow-sm shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent font-extrabold text-xs border border-accent/30 transition-theme shadow-sm shrink-0"
                   title={isRtl ? 'تحديد نطاق تغطية الموقع' : 'Location radius filter'}
                 >
-                  <MapPin size={14} className="text-emerald-500 animate-pulse shrink-0" />
+                  <MapPin size={14} className="text-accent animate-pulse shrink-0" />
                   <span className="max-w-[150px] truncate">
                     {selectedCity === 'all' 
                       ? (isRtl ? '📍 كافة المحافظات' : '📍 All Regions') 
@@ -1835,7 +1835,7 @@ export const BulletinBoardPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRtl ? 'ابحث عن منتج، صفحة، أو هاشتاق...' : 'Search product, page, hashtag...'}
-                  className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-emerald-500 focus:outline-none transition-theme"
+                  className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme"
                 />
                 <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </form>
@@ -1844,7 +1844,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                  className="px-2.5 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-emerald-500 focus:outline-none transition-theme shrink-0"
+                  className="px-2.5 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme shrink-0"
                 >
                   <option value="latest">{isRtl ? 'الأحدث' : 'Latest'}</option>
                   <option value="popular">{isRtl ? 'الأكثر تفاعلاً' : 'Popular'}</option>
@@ -1874,7 +1874,7 @@ export const BulletinBoardPage: React.FC = () => {
               >
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold">
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">
                       <SlidersHorizontal size={16} />
                     </div>
                     <h3 className="text-xs font-extrabold">{isRtl ? 'قائمة الإعلانات والتحكم' : 'Ads Menu & Controls'}</h3>
@@ -1895,11 +1895,11 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'board' && !selectedPageDetail
-                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-500/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
-                      <Megaphone size={16} className={`transition-theme ${activeTab === 'board' && !selectedPageDetail ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
+                      <Megaphone size={16} className={`transition-theme ${activeTab === 'board' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                       <span>{isRtl ? 'الرئيسية والإعلانات العامة' : 'Global Feed'}</span>
                     </button>
 
@@ -1908,7 +1908,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { navigate('/marketplace'); setIsMobileSidebarOpen(false); }}
                       className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
                     >
-                      <ShoppingBag size={16} className="text-gray-400 group-hover:text-emerald-400" />
+                      <ShoppingBag size={16} className="text-gray-400 group-hover:text-accent" />
                       <span>{isRtl ? 'السوق (Marketplace)' : 'Marketplace'}</span>
                     </button>
 
@@ -1916,7 +1916,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { navigate('/blog'); setIsMobileSidebarOpen(false); }}
                       className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
                     >
-                      <Edit2 size={16} className="text-gray-400 group-hover:text-emerald-400" />
+                      <Edit2 size={16} className="text-gray-400 group-hover:text-accent" />
                       <span>{isRtl ? 'المقالات والمدونة' : 'Insights & Blog'}</span>
                     </button>
 
@@ -1924,11 +1924,11 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'pages' && !selectedPageDetail
-                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-500/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
-                      <Building2 size={16} className={`transition-theme ${activeTab === 'pages' && !selectedPageDetail ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
+                      <Building2 size={16} className={`transition-theme ${activeTab === 'pages' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                       <span>{isRtl ? 'الصفحات التجارية' : 'Merchant Pages'}</span>
                     </button>
 
@@ -1937,16 +1937,16 @@ export const BulletinBoardPage: React.FC = () => {
                         onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); setIsMobileSidebarOpen(false); }}
                         className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-theme ${
                           activeTab === 'inquiries' && !selectedPageDetail
-                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-500/20'
+                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
                             : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <Inbox size={16} className={`transition-theme ${activeTab === 'inquiries' && !selectedPageDetail ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
+                          <Inbox size={16} className={`transition-theme ${activeTab === 'inquiries' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                           <span>{isRtl ? 'الرسائل والاستفسارات' : 'Inquiries & Messages'}</span>
                         </div>
                         {inquiriesList.length > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black">
+                          <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-black">
                             {inquiriesList.length}
                           </span>
                         )}
@@ -1958,11 +1958,11 @@ export const BulletinBoardPage: React.FC = () => {
                         onClick={() => { setSelectedPageDetail(null); setActiveTab('my_ads'); setIsMobileSidebarOpen(false); }}
                         className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                           activeTab === 'my_ads' && !selectedPageDetail
-                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-500/20'
+                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
                             : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                         }`}
                       >
-                        <Tag size={16} className={`transition-theme ${activeTab === 'my_ads' && !selectedPageDetail ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
+                        <Tag size={16} className={`transition-theme ${activeTab === 'my_ads' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                         <span>{isRtl ? 'إعلاناتي وإدارتها' : 'My Advertisements'}</span>
                       </button>
                     )}
@@ -1971,11 +1971,11 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('analytics'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'analytics' && !selectedPageDetail
-                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-500/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
-                      <BarChart2 size={16} className={`transition-theme ${activeTab === 'analytics' && !selectedPageDetail ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 group-hover:text-emerald-400'}`} />
+                      <BarChart2 size={16} className={`transition-theme ${activeTab === 'analytics' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                       <span>{isRtl ? 'تحليلات الأداء' : 'Performance Analytics'}</span>
                     </button>
                   </div>
@@ -1990,7 +1990,7 @@ export const BulletinBoardPage: React.FC = () => {
                       }}
                       className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
                     >
-                      <Building2 size={14} className="text-emerald-500" />
+                      <Building2 size={14} className="text-accent" />
                       <span>{isRtl ? 'إنشاء صفحة' : 'Create Page'}</span>
                     </button>
                     <button
@@ -1999,7 +1999,7 @@ export const BulletinBoardPage: React.FC = () => {
                         setIsAdModalOpen(true);
                         setIsMobileSidebarOpen(false);
                       }}
-                      className="p-2.5 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
+                      className="p-2.5 rounded-xl bg-accent text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-none"
                     >
                       <Plus size={14} />
                       <span>{isRtl ? 'نشر إعلان' : 'Publish Ad'}</span>
@@ -2015,7 +2015,7 @@ export const BulletinBoardPage: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={isRtl ? 'ابحث عن منتج، صفحة...' : 'Search product...'}
-                        className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-emerald-500 focus:outline-none"
+                        className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none"
                       />
                       <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     </form>
@@ -2024,7 +2024,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-emerald-500 focus:outline-none"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none"
                       >
                         <option value="latest">{isRtl ? 'ترتيب حسب: الأحدث' : 'Sort: Latest'}</option>
                         <option value="popular">{isRtl ? 'ترتيب حسب: الأكثر تفاعلاً' : 'Sort: Popular'}</option>
@@ -2055,14 +2055,14 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setActiveTab('board')}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 shadow transition-theme active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs flex items-center gap-2 shadow transition-theme active:scale-95"
                 >
                   {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
                   <span>{isRtl ? 'رجوع إلى خلاصة الإعلانات' : 'Back to Feed'}</span>
                 </button>
                 <div>
                   <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2">
-                    <BarChart2 size={18} className="text-emerald-500" />
+                    <BarChart2 size={18} className="text-accent" />
                     <span>{isRtl ? 'تحليلات نتائج الإعلانات وأداء الحملات' : 'Ad Performance Analytics'}</span>
                   </h2>
                   <p className="text-[11px] text-gray-400">
@@ -2082,14 +2082,14 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveTab('board')}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 shadow transition-theme active:scale-95 shrink-0"
+                  className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs flex items-center gap-2 shadow transition-theme active:scale-95 shrink-0"
                 >
                   {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
                   <span>{isRtl ? 'رجوع إلى خلاصة الإعلانات' : 'Back to Feed'}</span>
                 </button>
                 <div>
                   <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2">
-                    <Building2 size={18} className="text-emerald-500" />
+                    <Building2 size={18} className="text-accent" />
                     <span>{isRtl ? 'دليل كافة الصفحات التجارية الموثوقة' : 'All Verified Merchant Pages'}</span>
                   </h2>
                   <p className="text-[11px] text-gray-400">
@@ -2122,11 +2122,11 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
             ) : pagesList.length === 0 ? (
               <div className="text-center py-16 bg-white dark:bg-[#1a1a1c] rounded-3xl border border-gray-200 dark:border-gray-800 space-y-4">
-                <Building2 size={40} className="text-emerald-500 mx-auto" />
+                <Building2 size={40} className="text-accent mx-auto" />
                 <h3 className="text-base font-bold">{isRtl ? 'لا توجد صفحات تجارية مطابقة' : 'No Merchant Pages Found'}</h3>
                 <button
                   onClick={() => setIsPageModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-xs"
+                  className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs"
                 >
                   {isRtl ? 'أنشئ أول صفحة تجارية لك' : 'Create Merchant Page'}
                 </button>
@@ -2160,11 +2160,11 @@ export const BulletinBoardPage: React.FC = () => {
                           />
                           <div className="mb-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <h3 className="text-base sm:text-lg font-extrabold truncate hover:text-emerald-500 transition-colors">{page.name}</h3>
+                              <h3 className="text-base sm:text-lg font-extrabold truncate hover:text-accent transition-colors">{page.name}</h3>
                               <CheckCircle2 size={16} className="text-blue-500 shrink-0" />
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-400">
-                              <span className="flex items-center gap-1"><MapPin size={12} className="text-emerald-500" /> {page.city}</span>
+                              <span className="flex items-center gap-1"><MapPin size={12} className="text-accent" /> {page.city}</span>
                               <span>•</span>
                               <span>{page.followers_count} {isRtl ? 'متابع' : 'Followers'}</span>
                             </div>
@@ -2178,7 +2178,7 @@ export const BulletinBoardPage: React.FC = () => {
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-theme flex items-center gap-1.5 shadow ${
                               page.user_is_following
                                 ? 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                                : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                : 'bg-accent text-white hover:bg-accent'
                             }`}
                           >
                             {page.user_is_following ? <UserCheck size={15} /> : <UserPlus size={15} />}
@@ -2198,7 +2198,7 @@ export const BulletinBoardPage: React.FC = () => {
                               href={`https://wa.me/${page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 hover:bg-emerald-700 transition-theme shadow"
+                              className="p-2.5 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-1 hover:bg-accent transition-theme shadow"
                               title={isRtl ? 'تواصل واتساب' : 'WhatsApp'}
                             >
                               <Phone size={15} />
@@ -2214,13 +2214,13 @@ export const BulletinBoardPage: React.FC = () => {
 
                     <div className="px-6 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-xs text-gray-400">
                       <span className="flex items-center gap-1.5">
-                        <Tag size={13} className="text-emerald-500" />
+                        <Tag size={13} className="text-accent" />
                         <span>{page.ads_count || 0} {isRtl ? 'إعلان ومنشور نشط' : 'active ads'}</span>
                       </span>
 
                       <button
                         onClick={() => handleOpenPageDetail(page.id)}
-                        className="text-emerald-500 font-bold hover:underline flex items-center gap-1 text-xs"
+                        className="text-accent font-bold hover:underline flex items-center gap-1 text-xs"
                       >
                         <span>{isRtl ? 'استعراض المنشورات والمنتجات' : 'Browse Posts'}</span>
                         {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
@@ -2247,14 +2247,14 @@ export const BulletinBoardPage: React.FC = () => {
                       <img
                         src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                         alt={user.name}
-                        className="w-11 h-11 rounded-full object-cover border-2 border-emerald-500/40"
+                        className="w-11 h-11 rounded-full object-cover border-2 border-accent/40"
                       />
-                      <span className="absolute bottom-0 end-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#1a1a1c]" />
+                      <span className="absolute bottom-0 end-0 w-3.5 h-3.5 rounded-full bg-accent border-2 border-white dark:border-[#1a1a1c]" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <h3 className="text-xs font-extrabold truncate">{user.name}</h3>
-                        <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
+                        <ShieldCheck size={14} className="text-accent shrink-0" />
                       </div>
                       <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
                     </div>
@@ -2262,7 +2262,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                   <button
                     onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); }}
-                    className="relative p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 transition-theme shrink-0 group shadow-2xs cursor-pointer"
+                    className="relative p-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent transition-theme shrink-0 group shadow-2xs cursor-pointer"
                     title={isRtl ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
                   >
                     <MessageSquare size={18} className="transition-theme" />
@@ -2274,13 +2274,13 @@ export const BulletinBoardPage: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
-                  <p className="text-xs font-bold text-emerald-500">
+                <div className="p-3 rounded-xl bg-accent/10 border border-accent/20 text-center space-y-2">
+                  <p className="text-xs font-bold text-accent">
                     {isRtl ? 'سجل الدخول لنشر وتفاعل كامل مع الإعلانات!' : 'Sign in to publish and interact!'}
                   </p>
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="w-full py-2 rounded-xl bg-emerald-500 text-white font-bold text-xs shadow"
+                    className="w-full py-2 rounded-xl bg-accent text-white font-bold text-xs shadow"
                   >
                     {isRtl ? 'تسجيل الدخول / حساب جديد' : 'Sign In'}
                   </button>
@@ -2293,15 +2293,15 @@ export const BulletinBoardPage: React.FC = () => {
                   onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); }}
                   className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                     activeTab === 'board' && !selectedPageDetail
-                      ? 'bg-emerald-500/10 text-emerald-500'
+                      ? 'bg-accent/10 text-accent'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <Megaphone size={16} className="text-emerald-500" />
+                    <Megaphone size={16} className="text-accent" />
                     <span>{isRtl ? 'خلاصة الإعلانات والمنشورات' : 'Global Feed'}</span>
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                     {ads.length}
                   </span>
                 </button>
@@ -2311,7 +2311,7 @@ export const BulletinBoardPage: React.FC = () => {
                   onClick={() => navigate('/marketplace')}
                   className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
                 >
-                  <ShoppingBag size={16} className="text-emerald-500" />
+                  <ShoppingBag size={16} className="text-accent" />
                   <span>{isRtl ? 'السوق والتسوق' : 'Marketplace'}</span>
                 </button>
 
@@ -2319,7 +2319,7 @@ export const BulletinBoardPage: React.FC = () => {
                   onClick={() => navigate('/blog')}
                   className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
                 >
-                  <Edit2 size={16} className="text-emerald-500" />
+                  <Edit2 size={16} className="text-accent" />
                   <span>{isRtl ? 'المقالات والرؤى' : 'Insights & Blog'}</span>
                 </button>
 
@@ -2327,7 +2327,7 @@ export const BulletinBoardPage: React.FC = () => {
                   onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
                   className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                     activeTab === 'pages' && !selectedPageDetail
-                      ? 'bg-emerald-500/10 text-emerald-500'
+                      ? 'bg-accent/10 text-accent'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                   }`}
                 >
@@ -2345,7 +2345,7 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); }}
                     className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                       activeTab === 'inquiries' && !selectedPageDetail
-                        ? 'bg-emerald-500/10 text-emerald-500'
+                        ? 'bg-accent/10 text-accent'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                     }`}
                   >
@@ -2366,16 +2366,16 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => { setSelectedPageDetail(null); setActiveTab('saved'); fetchSavedAds(); }}
                     className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                       activeTab === 'saved' && !selectedPageDetail
-                        ? 'bg-emerald-500/10 text-emerald-500'
+                        ? 'bg-accent/10 text-accent'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <Bookmark size={16} className="text-emerald-500" />
+                      <Bookmark size={16} className="text-accent" />
                       <span>{isRtl ? 'المنشورات المحفوظة' : 'Saved Posts'}</span>
                     </span>
                     {savedAds.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                         {savedAds.length}
                       </span>
                     )}
@@ -2387,15 +2387,15 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => { setSelectedPageDetail(null); setActiveTab('my_ads'); }}
                     className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                       activeTab === 'my_ads' && !selectedPageDetail
-                        ? 'bg-emerald-500/10 text-emerald-500'
+                        ? 'bg-accent/10 text-accent'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <Tag size={16} className="text-emerald-600" />
+                      <Tag size={16} className="text-accent" />
                       <span>{isRtl ? 'حملاتي وإعلاناتي' : 'My Campaigns'}</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                       {myAds.length}
                     </span>
                   </button>
@@ -2406,7 +2406,7 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => { setSelectedPageDetail(null); setActiveTab('analytics'); }}
                     className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition-theme ${
                       activeTab === 'analytics' && !selectedPageDetail
-                        ? 'bg-emerald-500/10 text-emerald-500'
+                        ? 'bg-accent/10 text-accent'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300'
                     }`}
                   >
@@ -2434,12 +2434,12 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800/80">
                   <h3 className="text-xs font-extrabold flex items-center gap-1.5">
-                    <Building2 size={16} className="text-emerald-500" />
+                    <Building2 size={16} className="text-accent" />
                     <span>{isRtl ? 'الملف التجاري (إعدادات التاجر)' : 'Commercial Profile (Seller Settings)'}</span>
                   </h3>
                   <button
                     onClick={() => setIsPageModalOpen(true)}
-                    className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-theme text-[11px] font-bold flex items-center gap-1"
+                    className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-theme text-[11px] font-bold flex items-center gap-1"
                     title={isRtl ? 'إضافة ملف تجاري جديد' : 'Add New Commercial Profile'}
                   >
                     <Plus size={13} />
@@ -2452,7 +2452,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <p>{isRtl ? 'لم تقم بإعداد ملفك التجاري بعد. افصل هويتك الشخصية عن الإعلانات.' : 'No commercial profile setup yet. Separate your personal identity from your ads.'}</p>
                     <button
                       onClick={() => setIsPageModalOpen(true)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-[11px] shadow-sm hover:bg-emerald-600 transition-theme"
+                      className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-[11px] shadow-sm hover:bg-accent transition-theme"
                     >
                       {isRtl ? 'إعداد الملف التجاري الآن' : 'Setup Commercial Profile'}
                     </button>
@@ -2463,9 +2463,9 @@ export const BulletinBoardPage: React.FC = () => {
                       <div
                         key={page.id}
                         onClick={() => handleOpenPageDetail(page.id)}
-                        className={`p-2.5 rounded-xl border transition-theme cursor-pointer flex items-center justify-between gap-2.5 hover:border-emerald-500/50 ${
+                        className={`p-2.5 rounded-xl border transition-theme cursor-pointer flex items-center justify-between gap-2.5 hover:border-accent/50 ${
                           selectedPageDetail?.page.id === page.id
-                            ? 'bg-emerald-500/10 border-emerald-500'
+                            ? 'bg-accent/10 border-accent'
                             : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
                         }`}
                       >
@@ -2481,7 +2481,7 @@ export const BulletinBoardPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <span className="text-[10px] font-bold text-emerald-500 px-2 py-1 rounded-lg bg-emerald-500/10 shrink-0">
+                        <span className="text-[10px] font-bold text-accent px-2 py-1 rounded-lg bg-accent/10 shrink-0">
                           {isRtl ? 'إدارة' : 'Manage'}
                         </span>
                       </div>
@@ -2495,12 +2495,12 @@ export const BulletinBoardPage: React.FC = () => {
             <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800/80">
                 <h3 className="text-xs font-extrabold flex items-center gap-1.5">
-                  <UserPlus size={16} className="text-emerald-500" />
+                  <UserPlus size={16} className="text-accent" />
                   <span>{isRtl ? 'أبرز الصفحات الموصى بها' : 'Featured Pages'}</span>
                 </h3>
                 <button
                   onClick={() => setActiveTab('pages')}
-                  className="text-[11px] font-bold text-emerald-500 hover:underline"
+                  className="text-[11px] font-bold text-accent hover:underline"
                 >
                   {isRtl ? 'عرض الكل' : 'See All'}
                 </button>
@@ -2519,7 +2519,7 @@ export const BulletinBoardPage: React.FC = () => {
                   {pagesList.slice(0, 5).map(page => (
                     <div
                       key={page.id}
-                      className="p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 hover:border-emerald-500/40 transition-theme"
+                      className="p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 hover:border-accent/40 transition-theme"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <img
@@ -2538,7 +2538,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                       <button
                         onClick={() => handleOpenPageDetail(page.id)}
-                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] shrink-0 transition-theme shadow-sm"
+                        className="px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent text-white font-bold text-[10px] shrink-0 transition-theme shadow-sm"
                       >
                         {isRtl ? 'زيارة' : 'Visit'}
                       </button>
@@ -2607,7 +2607,7 @@ export const BulletinBoardPage: React.FC = () => {
                       navigator.clipboard.writeText(window.location.href);
                       setContextMenu(prev => ({ ...prev, isOpen: false }));
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-start"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-accent/10 hover:text-accent transition-colors text-start"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -2619,7 +2619,7 @@ export const BulletinBoardPage: React.FC = () => {
                       triggerFeedRefresh();
                       setContextMenu(prev => ({ ...prev, isOpen: false }));
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors text-start"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-accent/10 hover:text-accent transition-colors text-start"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -2645,7 +2645,7 @@ export const BulletinBoardPage: React.FC = () => {
             {/* Subtle Motion-Blurred Pointer Trail Indicator */}
             {mousePos.isInside && (
               <div 
-                className="absolute pointer-events-none z-30 transition-theme ease-out rounded-full bg-emerald-500/20 blur-[2px]"
+                className="absolute pointer-events-none z-30 transition-theme ease-out rounded-full bg-accent/20 blur-[2px]"
                 style={{
                   left: `${mousePos.x}px`,
                   top: `${mousePos.y}px`,
@@ -2655,8 +2655,8 @@ export const BulletinBoardPage: React.FC = () => {
                   boxShadow: '0 0 16px rgba(16,185,129,0.4)',
                 }}
               >
-                <div className="absolute inset-1 rounded-full bg-emerald-500/40 animate-ping opacity-75" />
-                <div className="absolute inset-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
+                <div className="absolute inset-1 rounded-full bg-accent/40 animate-ping opacity-75" />
+                <div className="absolute inset-2 rounded-full bg-accent shadow-[0_0_8px_#10b981]" />
               </div>
             )}
 
@@ -2674,14 +2674,14 @@ export const BulletinBoardPage: React.FC = () => {
                   transition={{ type: 'spring', damping: 22, stiffness: 350 }}
                   className={`absolute -top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-xl backdrop-blur-md transition-theme pointer-events-none ${
                     isRefreshing || pullDistance >= 55
-                      ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 text-emerald-500 shadow-emerald-500/10'
+                      ? 'bg-accent/10 dark:bg-accent-950/40 border-accent/40 text-accent shadow-none'
                       : 'bg-white/90 dark:bg-[#1a1a1c]/90 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'
                   }`}
                 >
                   {isRefreshing ? (
-                    <RefreshCw size={15} className="animate-spin text-emerald-500 shrink-0" />
+                    <RefreshCw size={15} className="animate-spin text-accent shrink-0" />
                   ) : pullDistance >= 55 ? (
-                    <ArrowUp size={15} className="text-emerald-500 shrink-0 transition-transform duration-200" />
+                    <ArrowUp size={15} className="text-accent shrink-0 transition-transform duration-200" />
                   ) : (
                     <ArrowDown 
                       size={15} 
@@ -2713,7 +2713,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <div className="p-3 bg-gray-50 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <button
                     onClick={handleBackToBoard}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 hover:bg-emerald-600 transition-theme shadow"
+                    className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-2 hover:bg-accent transition-theme shadow"
                   >
                     {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
                     <span>{isRtl ? 'العودة إلى لوحة الإعلانات والمنشورات' : 'Back to Main Ad Feed'}</span>
@@ -2752,7 +2752,7 @@ export const BulletinBoardPage: React.FC = () => {
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-theme flex items-center gap-1.5 shadow ${
                           selectedPageDetail.page.user_is_following
                             ? 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                            : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                            : 'bg-accent text-white hover:bg-accent'
                         }`}
                       >
                         {selectedPageDetail.page.user_is_following ? <UserCheck size={16} /> : <UserPlus size={16} />}
@@ -2764,7 +2764,7 @@ export const BulletinBoardPage: React.FC = () => {
                           href={`https://wa.me/${selectedPageDetail.page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-700 transition-theme shadow"
+                          className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-1.5 hover:bg-accent transition-theme shadow"
                         >
                           <Phone size={15} />
                           <span>واتساب</span>
@@ -2784,7 +2784,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
-                      <span className="flex items-center gap-1"><MapPin size={14} className="text-emerald-500" /> {selectedPageDetail.page.city}</span>
+                      <span className="flex items-center gap-1"><MapPin size={14} className="text-accent" /> {selectedPageDetail.page.city}</span>
                       <span>•</span>
                       <span>{selectedPageDetail.page.followers_count} {isRtl ? 'متابع' : 'Followers'}</span>
                       <span>•</span>
@@ -2798,7 +2798,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => setPageDetailTab('ads')}
                       className={`px-4 py-2 text-xs font-bold border-b-2 transition-theme ${
                         pageDetailTab === 'ads'
-                          ? 'border-emerald-500 text-emerald-500'
+                          ? 'border-accent text-accent'
                           : 'border-transparent text-gray-400 hover:text-gray-600'
                       }`}
                     >
@@ -2808,7 +2808,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => setPageDetailTab('about')}
                       className={`px-4 py-2 text-xs font-bold border-b-2 transition-theme ${
                         pageDetailTab === 'about'
-                          ? 'border-emerald-500 text-emerald-500'
+                          ? 'border-accent text-accent'
                           : 'border-transparent text-gray-400 hover:text-gray-600'
                       }`}
                     >
@@ -2818,7 +2818,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => setPageDetailTab('media')}
                       className={`px-4 py-2 text-xs font-bold border-b-2 transition-theme ${
                         pageDetailTab === 'media'
-                          ? 'border-emerald-500 text-emerald-500'
+                          ? 'border-accent text-accent'
                           : 'border-transparent text-gray-400 hover:text-gray-600'
                       }`}
                     >
@@ -2830,8 +2830,8 @@ export const BulletinBoardPage: React.FC = () => {
                   {pageDetailTab === 'ads' && (
                     <div className="pt-2 space-y-4">
                       {user && myPagesList.some(p => p.id === selectedPageDetail.page.id) && (
-                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
-                          <span className="text-xs font-bold text-emerald-500">
+                        <div className="p-3.5 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-between">
+                          <span className="text-xs font-bold text-accent">
                             {isRtl ? 'أنت مالك هذه الصفحة التجارية! يمكنك إضافة منشور إعلاني جديد باسمها.' : 'You own this page! Add a new ad post.'}
                           </span>
                           <button
@@ -2839,7 +2839,7 @@ export const BulletinBoardPage: React.FC = () => {
                               setAdFormData(prev => ({ ...prev, page_id: selectedPageDetail.page.id }));
                               setIsAdModalOpen(true);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-xs"
+                            className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-xs"
                           >
                             + {isRtl ? 'نشر إعلان باسم الصفحة' : 'Post as Page'}
                           </button>
@@ -2878,7 +2878,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 <button
                                   onClick={() => handleMessageAdvertiser(ad)}
                                   disabled={messagingAdId === ad.id}
-                                  className="flex-1 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm shadow-emerald-500/20 disabled:opacity-50"
+                                  className="flex-1 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm shadow-none disabled:opacity-50"
                                   title={isRtl ? 'مراسلة المعلن في محادثة خاصة' : 'Message Advertiser'}
                                 >
                                   {messagingAdId === ad.id ? (
@@ -2892,7 +2892,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 {ad.whatsapp_number && (
                                   <button
                                     onClick={(e) => handleWhatsAppClick(ad, e)}
-                                    className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-emerald-700 transition-theme"
+                                    className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-accent transition-theme"
                                   >
                                     <Phone size={13} />
                                     <span>واتساب</span>
@@ -2930,7 +2930,7 @@ export const BulletinBoardPage: React.FC = () => {
                         {selectedPageDetail.page.whatsapp_number && (
                           <div className="p-3 rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-100 dark:border-gray-800">
                             <span className="text-gray-400 text-[10px] block">{isRtl ? 'الواتساب الرسمي:' : 'WhatsApp:'}</span>
-                            <strong className="font-bold text-xs text-emerald-500">{selectedPageDetail.page.whatsapp_number}</strong>
+                            <strong className="font-bold text-xs text-accent">{selectedPageDetail.page.whatsapp_number}</strong>
                           </div>
                         )}
 
@@ -2993,9 +2993,9 @@ export const BulletinBoardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsLocationFlyoutOpen(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-emerald-500/10 text-gray-800 dark:text-gray-200 hover:text-emerald-500 text-[11px] font-extrabold border border-gray-200 dark:border-gray-800 transition-theme shadow-2xs truncate"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-800 dark:text-gray-200 hover:text-accent text-[11px] font-extrabold border border-gray-200 dark:border-gray-800 transition-theme shadow-2xs truncate"
                         >
-                          <MapPin size={12} className="text-emerald-500 shrink-0" />
+                          <MapPin size={12} className="text-accent shrink-0" />
                           <span className="truncate">
                             {selectedCity === 'all' 
                               ? (isRtl ? '📍 كافة المدن والمحافظات' : '📍 All Cities') 
@@ -3009,10 +3009,10 @@ export const BulletinBoardPage: React.FC = () => {
                             type="button"
                             onClick={handleDetectGpsLocation}
                             disabled={isDetectingGps}
-                            className="px-2.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-bold flex items-center gap-1 border border-emerald-500/20 transition-theme disabled:opacity-50 shrink-0"
+                            className="px-2.5 py-1.5 rounded-full bg-accent/10 text-accent dark:text-accent hover:bg-accent/20 text-[11px] font-bold flex items-center gap-1 border border-accent/20 transition-theme disabled:opacity-50 shrink-0"
                             title={isRtl ? 'استخدام موقعي الحالي (GPS)' : 'GPS Location'}
                           >
-                            {isDetectingGps ? <Loader2 size={12} className="animate-spin text-emerald-500" /> : <Compass size={12} />}
+                            {isDetectingGps ? <Loader2 size={12} className="animate-spin text-accent" /> : <Compass size={12} />}
                             <span className="text-[10px] font-extrabold">{isRtl ? 'موقعي' : 'GPS'}</span>
                           </button>
 
@@ -3020,10 +3020,10 @@ export const BulletinBoardPage: React.FC = () => {
                             type="button"
                             onClick={triggerFeedRefresh}
                             disabled={isRefreshing}
-                            className="px-2.5 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 hover:text-emerald-500 text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 transition-theme disabled:opacity-50 shrink-0 shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-700 dark:text-gray-300 hover:text-accent text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 transition-theme disabled:opacity-50 shrink-0 shadow-2xs"
                             title={isRtl ? 'تحديث خلاصة الإعلانات' : 'Refresh Feed'}
                           >
-                            <RefreshCw size={12} className={isRefreshing ? "animate-spin text-emerald-500" : ""} />
+                            <RefreshCw size={12} className={isRefreshing ? "animate-spin text-accent" : ""} />
                             <span className="text-[10px] font-extrabold">{isRtl ? 'تحديث' : 'Refresh'}</span>
                           </button>
                         </div>
@@ -3034,12 +3034,12 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-2">
                       <div className="flex items-center justify-between px-1">
                         <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <Sparkles size={14} className="text-emerald-500 animate-pulse" />
+                          <Sparkles size={14} className="text-accent animate-pulse" />
                           <span>{isRtl ? 'قصص وأبرز ريلز الصفحات التجارية' : 'Page Stories & Highlights'}</span>
                         </h3>
                         <button
                           onClick={() => setActiveTab('pages')}
-                          className="text-[11px] font-bold text-emerald-500 hover:underline"
+                          className="text-[11px] font-bold text-accent hover:underline"
                         >
                           {isRtl ? 'استعراض الكل' : 'View All'}
                         </button>
@@ -3068,7 +3068,7 @@ export const BulletinBoardPage: React.FC = () => {
                           </div>
 
                           {/* Center Floating (+) Button */}
-                          <div className="absolute top-[65%] start-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-emerald-500 text-white border-2 border-white dark:border-[#1f1f23] flex items-center justify-center shadow-md transition-theme">
+                          <div className="absolute top-[65%] start-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-accent text-white border-2 border-white dark:border-[#1f1f23] flex items-center justify-center shadow-md transition-theme">
                             <Plus size={18} className="stroke-[3]" />
                           </div>
 
@@ -3095,7 +3095,7 @@ export const BulletinBoardPage: React.FC = () => {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/30" />
                             
                             {/* Story Ring Avatar */}
-                            <div className="relative z-10 w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-emerald-500 via-teal-400 to-blue-500 shadow-md">
+                            <div className="relative z-10 w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-gray-500/10 via-teal-400 to-blue-500 shadow-md">
                               <img
                                 src={getMediaUrl(page.avatar_url)}
                                 alt={page.name}
@@ -3194,8 +3194,8 @@ export const BulletinBoardPage: React.FC = () => {
                           />
                         </label>
 
-                        <label className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-theme text-emerald-500 whitespace-nowrap cursor-pointer">
-                          <Camera size={15} className="text-emerald-500 shrink-0" />
+                        <label className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-accent/10 hover:text-accent font-bold transition-theme text-accent whitespace-nowrap cursor-pointer">
+                          <Camera size={15} className="text-accent shrink-0" />
                           <span>{isRtl ? 'قصة' : 'Story'}</span>
                           <input 
                             type="file" 
@@ -3288,7 +3288,7 @@ export const BulletinBoardPage: React.FC = () => {
                   <div className="space-y-4">
                     <div className="bg-white dark:bg-[#1a1a1c] p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
                            <Bookmark size={20} />
                          </div>
                          <div>
@@ -3302,7 +3302,7 @@ export const BulletinBoardPage: React.FC = () => {
                       </div>
                       <button 
                          onClick={() => setActiveTab('board')}
-                         className="text-xs font-bold text-emerald-500 hover:underline"
+                         className="text-xs font-bold text-accent hover:underline"
                       >
                          {isRtl ? 'استعراض المزيد' : 'Browse More'}
                       </button>
@@ -3379,13 +3379,13 @@ export const BulletinBoardPage: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <button
                             onClick={() => setActiveTab('board')}
-                            className="w-9 h-9 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-theme"
+                            className="w-9 h-9 shrink-0 rounded-xl bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 transition-theme"
                             title={isRtl ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
                           >
                             {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
                           </button>
                           <h2 className="text-base font-extrabold flex items-center gap-2 truncate">
-                            <MessageSquare size={18} className="text-emerald-500 shrink-0" />
+                            <MessageSquare size={18} className="text-accent shrink-0" />
                             <span className="truncate">{isRtl ? 'صندوق الرسائل' : 'Messenger'}</span>
                           </h2>
                         </div>
@@ -3396,7 +3396,7 @@ export const BulletinBoardPage: React.FC = () => {
                               value={inquiriesSearchTerm}
                               onChange={e => setInquiriesSearchTerm(e.target.value)}
                               placeholder={isRtl ? 'ابحث عن محادثة أو مرسل...' : 'Search messages, senders...'}
-                              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-theme dark:text-white`}
+                              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-theme dark:text-white`}
                             />
                             <Search size={14} className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`} />
                           </div>
@@ -3415,7 +3415,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                     {inquiriesLoading ? (
                       <div className="text-center py-16 bg-white dark:bg-[#1a1a1c] rounded-[24px] border border-gray-100 dark:border-gray-800/60 shadow-sm flex items-center justify-center gap-3">
-                        <Loader2 size={20} className="animate-spin text-emerald-500" />
+                        <Loader2 size={20} className="animate-spin text-accent" />
                         <span className="text-sm font-bold text-gray-500">{isRtl ? 'جاري تحميل صندوق الرسائل...' : 'Loading messenger...'}</span>
                       </div>
                     ) : inquiriesList.length === 0 ? (
@@ -3435,7 +3435,7 @@ export const BulletinBoardPage: React.FC = () => {
                         </div>
                         <button
                           onClick={() => setActiveTab('board')}
-                          className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-500/20 text-xs font-bold transition-theme flex items-center gap-2"
+                          className="mt-4 px-6 py-2.5 rounded-xl bg-accent text-white hover:bg-accent shadow-sm shadow-none text-xs font-bold transition-theme flex items-center gap-2"
                         >
                           {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
                           <span>{isRtl ? 'العودة للصفحة الرئيسية' : 'Back to Main Feed'}</span>
@@ -3500,7 +3500,7 @@ export const BulletinBoardPage: React.FC = () => {
                       {streamTitleInput || streamFeed[currentFeedIndex]?.title || (isRtl ? 'بث مباشر غير معنون' : 'Untitled Live Stream')}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-black rounded-[2px] animate-pulse">
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-accent text-white text-[8px] font-black rounded-[2px] animate-pulse">
                         <Radio size={8} />
                         {isRtl ? 'مباشر' : 'LIVE'}
                       </span>
@@ -3513,7 +3513,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                 <div className="flex items-center gap-2.5 shrink-0">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-[4px] border border-white/10 shadow-xl">
-                    <Eye size={14} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                    <Eye size={14} className="text-accent " />
                     <span className="tabular-nums">{liveViewers + (streamFeed[currentFeedIndex]?.viewers || 0)}</span>
                   </div>
 
@@ -3522,7 +3522,7 @@ export const BulletinBoardPage: React.FC = () => {
                     className="w-9 h-9 rounded-[4px] bg-black/60 hover:bg-black/80 backdrop-blur-md flex items-center justify-center text-white transition-theme border border-white/10 shadow-xl"
                     title={isMuted ? (isRtl ? 'تفعيل الصوت' : 'Unmute') : (isRtl ? 'كتم الصوت' : 'Mute')}
                   >
-                    {isMuted ? <VolumeX size={18} className="text-red-400" /> : <Volume2 size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
+                    {isMuted ? <VolumeX size={18} className="text-red-400" /> : <Volume2 size={18} className="text-accent " />}
                   </button>
 
                   <div className="hidden sm:flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-[4px] border border-white/10 shadow-xl">
@@ -3592,8 +3592,8 @@ export const BulletinBoardPage: React.FC = () => {
                     {/* Host & Title Info */}
                     <div className="space-y-1.5 mb-6">
                       <div className="flex items-center gap-2">
-                        <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-[4px]">
-                          <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                        <div className="px-2 py-0.5 bg-accent/10 border border-accent/20 rounded-[4px]">
+                          <span className="text-[9px] font-black text-accent uppercase tracking-widest">
                             {streamFeed[currentFeedIndex]?.type === 'live' ? (isRtl ? 'بث مباشر' : 'LIVE') : (isRtl ? 'ريلز' : 'REEL')}
                           </span>
                         </div>
@@ -3615,10 +3615,10 @@ export const BulletinBoardPage: React.FC = () => {
                           className="bg-black/60 backdrop-blur-md rounded-[4px] p-2.5 inline-block max-w-fit border border-white/10 shadow-2xl"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-[4px] bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                              <span className="text-[9px] font-black text-emerald-500">{comment.user.charAt(0).toUpperCase()}</span>
+                            <div className="w-4 h-4 rounded-[4px] bg-accent/20 flex items-center justify-center border border-accent/30">
+                              <span className="text-[9px] font-black text-accent">{comment.user.charAt(0).toUpperCase()}</span>
                             </div>
-                            <span className="text-emerald-500 font-black text-[10px] uppercase tracking-tighter drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">{comment.user}</span>
+                            <span className="text-accent font-black text-[10px] uppercase tracking-tighter ">{comment.user}</span>
                           </div>
                           <p className="text-white text-[12px] mt-1 leading-relaxed drop-shadow-sm font-bold">{comment.text}</p>
                         </motion.div>
@@ -3633,7 +3633,7 @@ export const BulletinBoardPage: React.FC = () => {
                           value={newLiveComment}
                           onChange={e => setNewLiveComment(e.target.value)}
                           placeholder={isRtl ? 'قل شيئاً جميلاً...' : 'Say something nice...'}
-                          className="w-full bg-black/40 border border-white/10 rounded-[4px] pl-4 pr-10 py-3 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 backdrop-blur-xl transition-theme group-hover:bg-black/60 shadow-inner"
+                          className="w-full bg-black/40 border border-white/10 rounded-[4px] pl-4 pr-10 py-3 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-accent-500/50 backdrop-blur-xl transition-theme group-hover:bg-black/60 shadow-inner"
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
                           <MessageCircle size={16} />
@@ -3642,7 +3642,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <button 
                         type="submit"
                         disabled={!newLiveComment.trim()}
-                        className="w-10 h-10 rounded-[4px] bg-emerald-500 flex items-center justify-center text-white hover:bg-emerald-400 disabled:opacity-20 disabled:bg-gray-800 transition-theme shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                        className="w-10 h-10 rounded-[4px] bg-accent flex items-center justify-center text-white hover:bg-accent disabled:opacity-20 disabled:bg-gray-800 transition-theme shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                       >
                         <Send size={16} className={isRtl ? 'rotate-180 -ml-0.5' : 'ml-0.5'} />
                       </button>
@@ -3666,13 +3666,13 @@ export const BulletinBoardPage: React.FC = () => {
                     </button>
 
                     <button className="group flex flex-col items-center gap-1 transition-theme">
-                      <div className="w-10 h-10 rounded-[4px] bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-emerald-500 hover:text-white transition-theme shadow-xl group-hover:border-emerald-500/50">
+                      <div className="w-10 h-10 rounded-[4px] bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-accent hover:text-white transition-theme shadow-xl group-hover:border-accent/50">
                         <Share2 size={20} />
                       </div>
                       <span className="text-[9px] text-white font-black uppercase tracking-widest drop-shadow-2xl">{isRtl ? 'مشاركة' : 'Share'}</span>
                     </button>
 
-                    <div className="w-9 h-9 rounded-[4px] border-2 border-emerald-500 p-0.5 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)] bg-black/20">
+                    <div className="w-9 h-9 rounded-[4px] border-2 border-accent p-0.5 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)] bg-black/20">
                       <img 
                         src={user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"} 
                         alt="host" 
@@ -3707,7 +3707,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <button
                             key={gift.id}
                             onClick={() => handleSendGift(gift)}
-                            className="flex flex-col items-center justify-center p-3 bg-gray-800 rounded-2xl border border-gray-700 hover:border-emerald-500 hover:bg-gray-700 transition-theme group"
+                            className="flex flex-col items-center justify-center p-3 bg-gray-800 rounded-2xl border border-gray-700 hover:border-accent hover:bg-gray-700 transition-theme group"
                           >
                             <span className="text-3xl mb-2 transition-theme">{gift.icon}</span>
                             <span className="text-[10px] text-white font-bold mb-1 truncate w-full text-center">
@@ -3726,10 +3726,10 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-700">
                       <div className="flex items-center gap-2 text-gray-300">
-                        <Wallet size={18} className="text-emerald-500" />
+                        <Wallet size={18} className="text-accent" />
                         <span className="text-sm">{isRtl ? 'رصيدك الحالي:' : 'Your Balance:'}</span>
                       </div>
-                      <span className="text-emerald-500 font-extrabold text-lg">{walletBalance}</span>
+                      <span className="text-accent font-extrabold text-lg">{walletBalance}</span>
                     </div>
                   </motion.div>
                 )}
@@ -3741,7 +3741,7 @@ export const BulletinBoardPage: React.FC = () => {
                   <motion.div 
                     animate={{ y: [-32, 32] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="w-full h-1/2 bg-emerald-500"
+                    className="w-full h-1/2 bg-accent"
                   />
                 </div>
                 <span className="text-[8px] text-white font-black mt-1 tracking-tighter uppercase">{isRtl ? 'اسحب للأعلى للتمرير' : 'SWIPE UP'}</span>
@@ -3791,7 +3791,7 @@ export const BulletinBoardPage: React.FC = () => {
                   <form onSubmit={handleCreateCampaign} className="space-y-2.5 sm:space-y-4">
                     {/* User Info Header */}
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden ring-2 ring-emerald-500/20 shrink-0">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden ring-2 ring-accent-500/20 shrink-0">
                         {adFormData.page_id ? (
                           <img src={myPagesList.find(p => p.id === Number(adFormData.page_id))?.avatar_url} className="w-full h-full object-cover" />
                         ) : (
@@ -3821,7 +3821,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setIsAudienceModalOpen(true)}
-                            className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-theme border cursor-pointer active:scale-95 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                            className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-theme border cursor-pointer active:scale-95 bg-accent dark:bg-accent-950/40 border-accent/30 text-accent dark:text-accent hover:bg-accent dark:hover:bg-accent/60"
                             title={isRtl ? 'تحديد جمهور رؤية المنشور' : 'Change post audience'}
                           >
                             {adFormData.audience === 'friends' ? (
@@ -3836,11 +3836,11 @@ export const BulletinBoardPage: React.FC = () => {
                               </>
                             ) : (
                               <>
-                                <Globe size={10} className="text-emerald-500 shrink-0" />
+                                <Globe size={10} className="text-accent shrink-0" />
                                 <span>{isRtl ? 'العامة' : 'Public'}</span>
                               </>
                             )}
-                            <ChevronDown size={10} className="text-emerald-500/70" />
+                            <ChevronDown size={10} className="text-accent/70" />
                           </button>
 
                           {/* Ad Format Selector (New: Global Measurement Support) */}
@@ -3860,7 +3860,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* Unified Post Creation Input Container */}
-                    <div className="rounded-xl sm:rounded-2xl bg-gray-50/70 dark:bg-zinc-800/40 p-2.5 sm:p-3.5 border border-gray-200/60 dark:border-gray-800/70 focus-within:border-emerald-500/50 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-theme space-y-2 sm:space-y-3 shadow-inner">
+                    <div className="rounded-xl sm:rounded-2xl bg-gray-50/70 dark:bg-zinc-800/40 p-2.5 sm:p-3.5 border border-gray-200/60 dark:border-gray-800/70 focus-within:border-accent/50 focus-within:ring-2 focus-within:ring-accent-500/10 transition-theme space-y-2 sm:space-y-3 shadow-inner">
                       {/* Main Textarea */}
                       <textarea
                         value={adFormData.description}
@@ -3873,12 +3873,12 @@ export const BulletinBoardPage: React.FC = () => {
                       {/* Professional Media Upload Zone (Facebook Style) */}
                       {(!adFormData.image_url && !adFormData.video_url) ? (
                         <div 
-                          className="relative rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white/50 dark:bg-black/20 transition-theme p-8 flex flex-col items-center justify-center gap-3 cursor-pointer group"
-                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-emerald-500', 'bg-emerald-500/5'); }}
-                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-500/5'); }}
+                          className="relative rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-accent dark:hover:border-accent bg-white/50 dark:bg-black/20 transition-theme p-8 flex flex-col items-center justify-center gap-3 cursor-pointer group"
+                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent', 'bg-accent/5'); }}
+                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-accent', 'bg-accent/5'); }}
                           onDrop={(e) => {
                             e.preventDefault();
-                            e.currentTarget.classList.remove('border-emerald-500', 'bg-emerald-500/5');
+                            e.currentTarget.classList.remove('border-accent', 'bg-accent/5');
                             const file = e.dataTransfer.files?.[0];
                             if (file) {
                               const syntheticEvent = { target: { files: [file] } } as any;
@@ -3901,7 +3901,7 @@ export const BulletinBoardPage: React.FC = () => {
                               }} 
                             />
                           </label>
-                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-theme">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:text-accent group-hover:bg-accent/10 transition-theme">
                             <Plus size={24} />
                           </div>
                           <div className="text-center">
@@ -3983,8 +3983,8 @@ export const BulletinBoardPage: React.FC = () => {
                           </div>
 
                           {/* Aspect Ratio & Format Guidance Selector Bar */}
-                          <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                          <div className="p-2.5 rounded-xl bg-accent/5 border border-accent/15 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-accent dark:text-accent font-bold">
                               <Sparkles size={14} />
                               <span className="text-[11px]">{getRecommendedDimensions(adFormData.ad_format, isRtl)}</span>
                             </div>
@@ -3996,7 +3996,7 @@ export const BulletinBoardPage: React.FC = () => {
                                   onClick={() => setAdFormData({ ...adFormData, ad_format: fmt as any })}
                                   className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition-theme ${
                                     adFormData.ad_format === fmt
-                                      ? 'bg-emerald-500 text-white shadow-sm'
+                                      ? 'bg-accent text-white shadow-sm'
                                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                   }`}
                                 >
@@ -4017,14 +4017,14 @@ export const BulletinBoardPage: React.FC = () => {
                             value={adFormData.hashtags}
                             onChange={(e) => setAdFormData({...adFormData, hashtags: e.target.value})}
                             placeholder={isRtl ? '#هاشتاق' : '#hashtags'}
-                            className="w-full text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 placeholder-emerald-500/50"
+                            className="w-full text-xs font-bold text-accent dark:text-accent bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 placeholder-accent-500/50"
                           />
                         </div>
 
                         {/* Integrated Location Selector / Tag */}
                         {adFormData.location_city ? (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shrink-0">
-                            <MapPin size={11} className="text-emerald-500 shrink-0" />
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-accent/10 border border-accent/25 text-accent dark:text-accent text-[11px] font-bold shrink-0">
+                            <MapPin size={11} className="text-accent shrink-0" />
                             <span className="truncate max-w-[130px] sm:max-w-[160px]">{adFormData.location_city}</span>
                             <button
                               type="button"
@@ -4039,7 +4039,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setComposerView('location')}
-                            className="flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-emerald-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-emerald-500/10 shrink-0"
+                            className="flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-accent transition-colors px-1.5 py-0.5 rounded-lg hover:bg-accent/10 shrink-0"
                           >
                             <MapPin size={12} className="text-red-500/80" />
                             <span>{isRtl ? 'إضافة موقع' : 'Add location'}</span>
@@ -4055,7 +4055,7 @@ export const BulletinBoardPage: React.FC = () => {
                     >
                       <span className="text-[11px] sm:text-xs font-extrabold text-gray-500 shrink-0">{isRtl ? 'إضافة إلى منشورك' : 'Add to post'}</span>
                       <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
-                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-emerald-500 cursor-pointer transition-colors shrink-0" title={isRtl ? 'صور' : 'Photos'} onClick={(e) => e.stopPropagation()}>
+                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-accent cursor-pointer transition-colors shrink-0" title={isRtl ? 'صور' : 'Photos'} onClick={(e) => e.stopPropagation()}>
                           <ImageIcon size={18} className="sm:w-5 sm:h-5" />
                           <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" className="hidden" onChange={handleImageFileUpload} />
                         </label>
@@ -4086,7 +4086,7 @@ export const BulletinBoardPage: React.FC = () => {
                           value={adFormData.whatsapp_number}
                           onChange={(e) => setAdFormData({ ...adFormData, whatsapp_number: e.target.value })}
                           placeholder="+970599000000"
-                          className="w-full px-3 py-1.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:outline-none focus:border-emerald-500"
+                          className="w-full px-3 py-1.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:outline-none focus:border-accent"
                         />
                       </motion.div>
                     )}
@@ -4110,15 +4110,15 @@ export const BulletinBoardPage: React.FC = () => {
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                      <div className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-accent/5 border border-accent/10">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <MessageCircle size={14} className="text-emerald-500 shrink-0" />
+                          <MessageCircle size={14} className="text-accent shrink-0" />
                           <span className="text-[11px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 truncate">{isRtl ? 'زر مراسلة واتساب' : 'WhatsApp Button'}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setAdFormData({...adFormData, has_whatsapp_button: !adFormData.has_whatsapp_button})}
-                          className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${adFormData.has_whatsapp_button ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`}
+                          className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${adFormData.has_whatsapp_button ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'}`}
                         >
                           <motion.div 
                             animate={{ x: adFormData.has_whatsapp_button ? 18 : 2 }}
@@ -4129,9 +4129,9 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* Quick / Trending Chat Questions Config */}
-                    <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10 space-y-2">
+                    <div className="p-3 rounded-xl bg-accent/5 border border-accent/10 space-y-2">
                       <div className="flex items-center gap-1.5">
-                        <MessageSquare size={14} className="text-emerald-500 shrink-0" />
+                        <MessageSquare size={14} className="text-accent shrink-0" />
                         <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                           {isRtl ? 'الأسئلة السائبة / الرائجة للدردشة المباشرة (اختياري)' : 'Quick / Trending Chat Questions (Optional)'}
                         </span>
@@ -4151,7 +4151,7 @@ export const BulletinBoardPage: React.FC = () => {
                               setAdFormData({ ...adFormData, quick_questions: qq });
                             }}
                             placeholder={isRtl ? `السؤال السريع رقم ${idx + 1} (مثال: هل السعر قابل للتفاوض؟)` : `Quick Question #${idx + 1} (e.g., Is price negotiable?)`}
-                            className="w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-emerald-500 text-gray-800 dark:text-gray-100"
+                            className="w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-accent text-gray-800 dark:text-gray-100"
                           />
                         ))}
                       </div>
@@ -4160,7 +4160,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isSubmittingAd || !adFormData.description}
-                      className="w-full py-2.5 sm:py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-theme active:scale-[0.99]"
+                      className="w-full py-2.5 sm:py-3 rounded-xl bg-accent hover:bg-accent disabled:opacity-50 disabled:hover:bg-accent text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-none transition-theme active:scale-[0.99]"
                     >
                       {isSubmittingAd ? (isRtl ? 'جاري الحفظ...' : 'Saving...') : (isEditMode ? (isRtl ? 'حفظ التعديلات' : 'Save Changes') : (isRtl ? 'نشر الإعلان' : 'Publish Ad'))}
                     </button>
@@ -4176,7 +4176,7 @@ export const BulletinBoardPage: React.FC = () => {
                           setAdFormData({...adFormData, feeling: f.id});
                           setComposerView('main');
                         }}
-                        className={`p-3 rounded-xl border flex items-center gap-3 transition-theme ${adFormData.feeling === f.id ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600' : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-400'}`}
+                        className={`p-3 rounded-xl border flex items-center gap-3 transition-theme ${adFormData.feeling === f.id ? 'border-accent bg-accent/5 text-accent' : 'border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-400'}`}
                       >
                         <span className="text-xl">{f.icon}</span>
                         <span className="text-xs font-bold">{isRtl ? f.labelAr : f.labelEn}</span>
@@ -4202,13 +4202,13 @@ export const BulletinBoardPage: React.FC = () => {
                     {/* Instant Flyout Header */}
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-accent/10 text-accent flex items-center justify-center border border-accent/20 shrink-0">
                           <MapPin size={16} className="animate-bounce" />
                         </div>
                         <div>
                           <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                             <span>{isRtl ? 'قائمة تحديد موقع المنشور والتغطية' : 'Post Location & Radius Flyout'}</span>
-                            <span className="text-[9px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
+                            <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-full font-bold">
                               {isRtl ? 'مباشر' : 'Live'}
                             </span>
                           </h3>
@@ -4229,14 +4229,14 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* Active Location Selection Preview Banner */}
-                    <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/15 to-emerald-500/10 border border-emerald-500/25 flex items-center justify-between shadow-2xs">
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-500/10 to-gray-500/5 border border-accent/25 flex items-center justify-between shadow-2xs">
                       <div className="flex items-center gap-2">
-                        <Navigation size={14} className="text-emerald-500 shrink-0" />
+                        <Navigation size={14} className="text-accent shrink-0" />
                         <div>
                           <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
                             {isRtl ? 'الموقع ونطاق الرؤية المحدد:' : 'Targeted Location & Coverage:'}
                           </p>
-                          <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 truncate max-w-[220px] sm:max-w-[320px]">
+                          <p className="text-xs font-black text-accent dark:text-accent truncate max-w-[220px] sm:max-w-[320px]">
                             {adFormData.location_city 
                               ? `📍 ${adFormData.location_city} (${adFormData.location_radius === 'all' ? (isRtl ? 'بلا حدود' : 'Unlimited') : `+${adFormData.location_radius || '10'} ${isRtl ? 'كم' : 'km'}`})`
                               : (isRtl ? '🌐 غير محدد (تغطية عامة)' : '🌐 Not set (Global Feed)')}
@@ -4259,11 +4259,11 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-extrabold text-gray-700 dark:text-gray-300 flex items-center justify-between">
                         <span className="flex items-center gap-1">
-                          <Search size={12} className="text-emerald-500" />
+                          <Search size={12} className="text-accent" />
                           <span>{isRtl ? 'البحث عن مدينة أو معالم بالوقت الفعلي:' : 'Real-Time Location Autocomplete:'}</span>
                         </span>
                         {isSearchingLocation && (
-                          <span className="text-[10px] text-emerald-500 font-bold animate-pulse flex items-center gap-1">
+                          <span className="text-[10px] text-accent font-bold animate-pulse flex items-center gap-1">
                             <Loader2 size={11} className="animate-spin" />
                             <span>{isRtl ? 'جاري البحث...' : 'Searching...'}</span>
                           </span>
@@ -4276,7 +4276,7 @@ export const BulletinBoardPage: React.FC = () => {
                           value={customLocationSearch}
                           onChange={(e) => setCustomLocationSearch(e.target.value)}
                           placeholder={isRtl ? 'اكتب اسم المدينة، الحي، الدولة أو المعلم...' : 'Type city, landmark, or country...'}
-                          className="w-full ps-8 pe-8 py-2 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-500 font-bold transition-theme shadow-inner"
+                          className="w-full ps-8 pe-8 py-2 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-accent font-bold transition-theme shadow-inner"
                         />
                         <Search size={14} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         {customLocationSearch && (
@@ -4292,8 +4292,8 @@ export const BulletinBoardPage: React.FC = () => {
 
                       {/* Autocomplete Dropdown */}
                       {locationSuggestions.length > 0 && (
-                        <div className="mt-1 max-h-44 overflow-y-auto custom-scrollbar border border-emerald-500/30 rounded-xl bg-white dark:bg-zinc-900 p-1.5 shadow-xl space-y-1">
-                          <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
+                        <div className="mt-1 max-h-44 overflow-y-auto custom-scrollbar border border-accent/30 rounded-xl bg-white dark:bg-zinc-900 p-1.5 shadow-xl space-y-1">
+                          <div className="text-[10px] font-bold text-accent dark:text-accent px-2 py-0.5 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
                             <span>{isRtl ? 'النتائج المباشرة:' : 'Live Matches:'}</span>
                             <span>{locationSuggestions.length}</span>
                           </div>
@@ -4306,9 +4306,9 @@ export const BulletinBoardPage: React.FC = () => {
                                 setLocationSuggestions([]);
                                 setCustomLocationSearch('');
                               }}
-                              className="w-full text-right rtl:text-right ltr:text-left px-3 py-2 text-xs text-gray-800 dark:text-gray-200 hover:bg-emerald-500/10 rounded-lg transition-colors flex items-center gap-2 font-medium"
+                              className="w-full text-right rtl:text-right ltr:text-left px-3 py-2 text-xs text-gray-800 dark:text-gray-200 hover:bg-accent/10 rounded-lg transition-colors flex items-center gap-2 font-medium"
                             >
-                              <MapPin size={12} className="text-emerald-500 shrink-0" />
+                              <MapPin size={12} className="text-accent shrink-0" />
                               <span className="truncate">{item.display_name}</span>
                             </button>
                           ))}
@@ -4319,7 +4319,7 @@ export const BulletinBoardPage: React.FC = () => {
                     {/* 2. DYNAMIC COUNTRY & CITY DROPDOWN */}
                     <div className="space-y-1.5 p-3 rounded-2xl bg-gray-50 dark:bg-zinc-800/50 border border-gray-200/80 dark:border-gray-800">
                       <label className="block text-[11px] font-extrabold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                        <Building2 size={13} className="text-emerald-500" />
+                        <Building2 size={13} className="text-accent" />
                         <span>{isRtl ? 'اختيار سريع حسب القوائم الجاهزة:' : 'Quick Country & City Selection:'}</span>
                       </label>
 
@@ -4338,7 +4338,7 @@ export const BulletinBoardPage: React.FC = () => {
                               const firstCity = cities[0] || country;
                               setAdFormData(prev => ({ ...prev, location_city: `${country} - ${firstCity}` }));
                             }}
-                            className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:border-emerald-500 transition-theme cursor-pointer shadow-2xs"
+                            className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:border-accent transition-theme cursor-pointer shadow-2xs"
                           >
                             {Object.keys(COUNTRIES_CITIES_DATA).map((c) => (
                               <option key={c} value={c}>
@@ -4366,7 +4366,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 location_city: `${selectedComposerCountry} - ${cityName}`
                               }));
                             }}
-                            className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:border-emerald-500 transition-theme cursor-pointer shadow-2xs"
+                            className="w-full px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-800 dark:text-gray-200 focus:outline-none focus:border-accent transition-theme cursor-pointer shadow-2xs"
                           >
                             {(COUNTRIES_CITIES_DATA[selectedComposerCountry] || []).map((cityName) => (
                               <option key={cityName} value={cityName}>
@@ -4379,13 +4379,13 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* 3. REACH VISIBILITY RADIUS SLIDER (5-100 KM) */}
-                    <div className="space-y-2 p-3 rounded-2xl bg-gradient-to-br from-emerald-500/5 via-gray-50 to-emerald-500/10 dark:from-emerald-500/10 dark:via-zinc-800/60 dark:to-emerald-500/5 border border-emerald-500/20">
+                    <div className="space-y-2 p-3 rounded-2xl bg-gradient-to-br from-gray-500/10 via-gray-50 to-gray-500/5 dark:from-gray-500/10 dark:via-zinc-800/60 dark:to-gray-500/5 border border-accent/20">
                       <div className="flex items-center justify-between text-xs font-extrabold">
                         <span className="text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                          <SlidersHorizontal size={13} className="text-emerald-500" />
+                          <SlidersHorizontal size={13} className="text-accent" />
                           <span>{isRtl ? 'شعاع مسافة التغطية برؤية المنشور:' : 'Post Visibility Distance Radius:'}</span>
                         </span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs bg-emerald-500/15 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                        <span className="text-accent dark:text-accent font-black text-xs bg-accent/15 px-2 py-0.5 rounded-lg border border-accent/20">
                           {adFormData.location_radius === 'all' 
                             ? (isRtl ? '🌐 بلا حدود' : '🌐 Unlimited') 
                             : `🎯 +${adFormData.location_radius || '10'} ${isRtl ? 'كم' : 'km'}`}
@@ -4401,7 +4401,7 @@ export const BulletinBoardPage: React.FC = () => {
                           step="5"
                           value={adFormData.location_radius === 'all' ? '100' : (adFormData.location_radius || '10')}
                           onChange={(e) => setAdFormData(prev => ({ ...prev, location_radius: e.target.value }))}
-                          className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-theme"
+                          className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent hover:accent-accent-400 transition-theme"
                         />
                         <div className="flex justify-between text-[9px] font-bold text-gray-400 px-0.5">
                           <span>5 {isRtl ? 'كم' : 'km'}</span>
@@ -4420,8 +4420,8 @@ export const BulletinBoardPage: React.FC = () => {
                             onClick={() => setAdFormData(prev => ({ ...prev, location_radius: r }))}
                             className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-theme border ${
                               (adFormData.location_radius || '10') === r
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                                : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-emerald-500/50'
+                                ? 'bg-accent text-white border-accent shadow-2xs'
+                                : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-accent/50'
                             }`}
                           >
                             {r === 'all' ? (isRtl ? 'الكل' : 'All') : `${r} ${isRtl ? 'كم' : 'km'}`}
@@ -4462,9 +4462,9 @@ export const BulletinBoardPage: React.FC = () => {
                           { timeout: 8000 }
                         );
                       }}
-                      className="w-full py-2 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-theme active:scale-95"
+                      className="w-full py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent dark:text-accent font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-theme active:scale-95"
                     >
-                      <Compass size={14} className="text-emerald-500 shrink-0" />
+                      <Compass size={14} className="text-accent shrink-0" />
                       <span>{isRtl ? '🎯 تحديد موقعي الجغرافي تلقائياً (GPS)' : '🎯 Auto-Detect GPS Location'}</span>
                     </button>
 
@@ -4480,7 +4480,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setComposerView('main')}
-                        className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-extrabold transition-theme shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                        className="flex-1 py-2.5 bg-accent hover:bg-accent text-white rounded-xl text-xs font-extrabold transition-theme shadow-md shadow-none flex items-center justify-center gap-1.5 active:scale-95"
                       >
                         <Check size={15} />
                         <span>{isRtl ? 'تأكيد وحفظ الموقع' : 'Apply Location'}</span>
@@ -4552,7 +4552,7 @@ export const BulletinBoardPage: React.FC = () => {
               {/* Modal Header */}
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center">
                     <Globe size={18} />
                   </div>
                   <h3 className="text-base font-black text-gray-900 dark:text-gray-100">
@@ -4585,18 +4585,18 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className={`w-full p-3.5 rounded-2xl border text-start transition-theme flex items-center justify-between ${
                     adFormData.audience === 'public'
-                      ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 ring-1 ring-emerald-500/50'
+                      ? 'border-accent bg-accent/60 dark:bg-accent-950/30 ring-1 ring-accent-500/50'
                       : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-2xl bg-accent/10 text-accent flex items-center justify-center shrink-0">
                       <Globe size={20} />
                     </div>
                     <div>
                       <h4 className="text-sm font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <span>{isRtl ? 'العامة' : 'Public'}</span>
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] bg-accent/10 text-accent dark:text-accent px-2 py-0.5 rounded-full font-bold">
                           {isRtl ? 'موصى به' : 'Recommended'}
                         </span>
                       </h4>
@@ -4606,7 +4606,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                   </div>
                   {adFormData.audience === 'public' && (
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center shadow-xs">
                       <Check size={14} />
                     </div>
                   )}
@@ -4687,7 +4687,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAudienceModalOpen(false)}
-                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black transition-theme shadow-md shadow-emerald-500/20"
+                  className="px-5 py-2 rounded-xl bg-accent hover:bg-accent text-white text-xs font-black transition-theme shadow-md shadow-none"
                 >
                   {isRtl ? 'تم التحديد' : 'Done'}
                 </button>
@@ -4724,7 +4724,7 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 py-2">
                 {/* 1. Photo/Video */}
                 <label className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 cursor-pointer transition-theme group">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 transition-theme">
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent transition-theme">
                     <ImageIcon size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -4823,7 +4823,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-emerald-600/10 flex items-center justify-center text-emerald-400 font-extrabold text-xs transition-theme">
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-extrabold text-xs transition-theme">
                     GIF
                   </div>
                   <div className="flex flex-col">
@@ -4897,7 +4897,7 @@ export const BulletinBoardPage: React.FC = () => {
             >
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Building2 size={20} className="text-emerald-500" />
+                  <Building2 size={20} className="text-accent" />
                   <h3 className="text-sm font-extrabold">{isRtl ? 'إنشاء صفحة تجارية جديدة' : 'Create Merchant Page'}</h3>
                 </div>
                 <button onClick={() => setIsPageModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -4997,7 +4997,7 @@ export const BulletinBoardPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmittingPage}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-theme"
+                    className="px-6 py-2.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs shadow-lg shadow-none transition-theme"
                   >
                     {isSubmittingPage ? (isRtl ? 'جاري الإنشاء...' : 'Creating...') : (isRtl ? 'تفعيل الصفحة التجارية' : 'Create Page')}
                   </button>
@@ -5022,7 +5022,7 @@ export const BulletinBoardPage: React.FC = () => {
             >
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <MessageCircle size={18} className="text-emerald-500" />
+                  <MessageCircle size={18} className="text-accent" />
                   <h3 className="text-xs font-extrabold">{isRtl ? 'إرسال استفسار مباشر للتاجر' : 'Direct Merchant Inquiry'}</h3>
                 </div>
                 <button onClick={() => setInquireAd(null)} className="text-gray-400 hover:text-gray-600">
@@ -5067,7 +5067,7 @@ export const BulletinBoardPage: React.FC = () => {
                     type="button"
                     onClick={() => handleMessageAdvertiser(inquireAd, inquiryText)}
                     disabled={messagingAdId === inquireAd.id}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-theme disabled:opacity-50"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-gray-500/10 to-teal-600 hover:from-gray-500/10 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-none transition-theme disabled:opacity-50"
                   >
                     {messagingAdId === inquireAd.id ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -5220,13 +5220,13 @@ export const BulletinBoardPage: React.FC = () => {
               {/* Instant Flyout Header */}
               <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                  <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
                     <MapPin size={16} className="animate-bounce shrink-0" />
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-gray-100 flex items-center gap-1">
                       <span>{isRtl ? 'قائمة التغطية والموقع السريعة' : 'Instant Location & Radius Flyout'}</span>
-                      <span className="text-[9px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
+                      <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-full font-bold">
                         {isRtl ? 'مباشر' : 'Live'}
                       </span>
                     </h3>
@@ -5246,12 +5246,12 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
 
               {/* Active Location & Radius Badge */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/15 to-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 shadow-2xs">
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-500/10 to-gray-500/5 border border-accent/25 text-accent dark:text-accent-200 shadow-2xs">
                 <div className="flex items-center gap-2 text-[11px] font-bold truncate">
-                  <Navigation size={13} className="text-emerald-500 shrink-0" />
+                  <Navigation size={13} className="text-accent shrink-0" />
                   <span className="truncate">
                     {isRtl ? 'النطاق الحالي:' : 'Current Feed:'}{' '}
-                    <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                    <strong className="text-accent dark:text-accent font-extrabold">
                       {selectedCity === 'all' 
                         ? (isRtl ? '🌐 جميع الدول والمحافظات' : '🌐 All Global Regions') 
                         : `📍 ${selectedCountry ? `${selectedCountry} - ` : ''}${selectedCity} (${selectedRadius === 'all' ? (isRtl ? 'الكل' : 'All') : `+${selectedRadius}كم`})`}
@@ -5275,7 +5275,7 @@ export const BulletinBoardPage: React.FC = () => {
               {/* 1. Country Selection Dropdown */}
               <div className="space-y-1">
                 <label className="text-[11px] font-extrabold text-gray-700 dark:text-gray-300 flex items-center gap-1">
-                  <Globe size={13} className="text-emerald-500" />
+                  <Globe size={13} className="text-accent" />
                   <span>{isRtl ? 'اختر الدولة:' : 'Select Country:'}</span>
                 </label>
                 <select
@@ -5286,7 +5286,7 @@ export const BulletinBoardPage: React.FC = () => {
                     localStorage.setItem('perplexta_user_country', c);
                     handleSelectCity('all');
                   }}
-                  className="w-full px-3 py-2 text-xs font-bold rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-500 transition-theme cursor-pointer shadow-2xs"
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-accent transition-theme cursor-pointer shadow-2xs"
                 >
                   <option value="all">🌐 {isRtl ? 'كافة الدول (تغطية عالمية)' : 'All Countries (Global)'}</option>
                   <option value="فلسطين">🇵🇸 فلسطين</option>
@@ -5316,11 +5316,11 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="text-[11px] font-extrabold text-gray-700 dark:text-gray-300 flex items-center justify-between">
                   <span className="flex items-center gap-1">
-                    <Building2 size={13} className="text-emerald-500" />
+                    <Building2 size={13} className="text-accent" />
                     <span>{isRtl ? 'البحث التفاعلي المباشر (بالوقت الفعلي):' : 'Real-Time Autocomplete Search:'}</span>
                   </span>
                   {isSearchingGeoLocation && (
-                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
+                    <span className="text-[10px] text-accent font-bold flex items-center gap-1">
                       <Loader2 size={11} className="animate-spin" />
                       {isRtl ? 'جاري البحث...' : 'Searching...'}
                     </span>
@@ -5334,11 +5334,11 @@ export const BulletinBoardPage: React.FC = () => {
                     value={locationSearchQuery}
                     onChange={(e) => setLocationSearchQuery(e.target.value)}
                     placeholder={isRtl ? 'ابحث عن أي مدينة أو دولة أو منطقة بالوقت الفعلي...' : 'Search any city, country or landmark in real time...'}
-                    className="w-full ps-8 pe-8 py-2 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-emerald-500 transition-theme shadow-inner font-medium"
+                    className="w-full ps-8 pe-8 py-2 text-xs rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-accent transition-theme shadow-inner font-medium"
                   />
                   <Search size={14} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   {isSearchingGeoLocation ? (
-                    <Loader2 size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-emerald-500 animate-spin" />
+                    <Loader2 size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-accent animate-spin" />
                   ) : locationSearchQuery ? (
                     <button
                       type="button"
@@ -5355,13 +5355,13 @@ export const BulletinBoardPage: React.FC = () => {
 
                 {/* Real-time Autocomplete API Results Dropdown */}
                 {autocompleteResults.length > 0 && (
-                  <div className="space-y-1 mt-1 max-h-48 overflow-y-auto custom-scrollbar border border-emerald-500/30 rounded-xl bg-white dark:bg-zinc-900 p-1.5 shadow-xl">
-                    <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 px-2 py-1 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
+                  <div className="space-y-1 mt-1 max-h-48 overflow-y-auto custom-scrollbar border border-accent/30 rounded-xl bg-white dark:bg-zinc-900 p-1.5 shadow-xl">
+                    <div className="text-[10px] font-bold text-accent dark:text-accent px-2 py-1 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
                       <span className="flex items-center gap-1">
                         <Sparkles size={11} />
                         {isRtl ? 'نتائج الخريطة المباشرة (موثّقة):' : 'Verified Live Location Results:'}
                       </span>
-                      <span className="text-[9px] bg-emerald-500/10 px-1.5 py-0.5 rounded text-emerald-500 font-extrabold">
+                      <span className="text-[9px] bg-accent/10 px-1.5 py-0.5 rounded text-accent font-extrabold">
                         {autocompleteResults.length} {isRtl ? 'نتيجة' : 'results'}
                       </span>
                     </div>
@@ -5372,12 +5372,12 @@ export const BulletinBoardPage: React.FC = () => {
                           key={`${item.city}-${item.lat}-${idx}`}
                           type="button"
                           onClick={() => handleSelectAutocompleteResult(item)}
-                          className="w-full text-start p-2 rounded-lg hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 transition-theme flex items-center justify-between group border border-transparent hover:border-emerald-500/20"
+                          className="w-full text-start p-2 rounded-lg hover:bg-accent/10 dark:hover:bg-accent/20 transition-theme flex items-center justify-between group border border-transparent hover:border-accent/20"
                         >
                           <div className="flex items-center gap-2 truncate me-2">
                             <span className="text-sm shrink-0">{flag}</span>
                             <div className="truncate">
-                              <div className="text-xs font-black text-gray-900 dark:text-gray-100 group-hover:text-emerald-500 transition-colors flex items-center gap-1">
+                              <div className="text-xs font-black text-gray-900 dark:text-gray-100 group-hover:text-accent transition-colors flex items-center gap-1">
                                 <span>{item.city}</span>
                                 {item.country && <span className="text-[10px] text-gray-400 font-normal">({item.country})</span>}
                               </div>
@@ -5386,7 +5386,7 @@ export const BulletinBoardPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <span className="text-[9px] font-extrabold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
+                          <span className="text-[9px] font-extrabold text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5">
                             <CheckCircle2 size={10} />
                             {isRtl ? 'اختيار' : 'Select'}
                           </span>
@@ -5403,11 +5403,11 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => handleSelectCity('all')}
                     className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-theme border ${
                       selectedCity === 'all'
-                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                        : 'bg-gray-50 dark:bg-zinc-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-500/10'
+                        ? 'bg-accent text-white border-accent shadow-2xs'
+                        : 'bg-gray-50 dark:bg-zinc-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-accent/10'
                     }`}
                   >
-                    <Globe size={12} className={selectedCity === 'all' ? 'text-white' : 'text-emerald-500 shrink-0'} />
+                    <Globe size={12} className={selectedCity === 'all' ? 'text-white' : 'text-accent shrink-0'} />
                     <span className="truncate">{isRtl ? 'كل مدن الدولة' : 'All Cities'}</span>
                   </button>
 
@@ -5418,11 +5418,11 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => handleSelectCity(c)}
                       className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-theme border ${
                         selectedCity === c
-                          ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                          : 'bg-gray-50 dark:bg-zinc-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-emerald-500/10'
+                          ? 'bg-accent text-white border-accent shadow-2xs'
+                          : 'bg-gray-50 dark:bg-zinc-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-accent/10'
                       }`}
                     >
-                      <MapPin size={12} className={selectedCity === c ? 'text-white' : 'text-emerald-500 shrink-0'} />
+                      <MapPin size={12} className={selectedCity === c ? 'text-white' : 'text-accent shrink-0'} />
                       <span className="truncate">{c}</span>
                     </button>
                   ))}
@@ -5435,20 +5435,20 @@ export const BulletinBoardPage: React.FC = () => {
                   type="button"
                   onClick={handleDetectGpsLocation}
                   disabled={isDetectingGps}
-                  className="w-full py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-theme active:scale-95 disabled:opacity-50"
+                  className="w-full py-1.5 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent dark:text-accent font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-theme active:scale-95 disabled:opacity-50"
                 >
-                  {isDetectingGps ? <Loader2 size={13} className="animate-spin text-emerald-500" /> : <Compass size={13} />}
+                  {isDetectingGps ? <Loader2 size={13} className="animate-spin text-accent" /> : <Compass size={13} />}
                   <span>{isRtl ? '🎯 تحديد موقعي الآن تلقائياً (GPS)' : '🎯 Auto-Detect My Location (GPS)'}</span>
                 </button>
 
                 {/* Reach Visibility Interactive Radius Slider (5-100km) */}
-                <div className="space-y-2 bg-gradient-to-br from-emerald-500/5 via-gray-50 to-emerald-500/10 dark:from-emerald-500/10 dark:via-zinc-800/60 dark:to-emerald-500/5 p-3 rounded-2xl border border-emerald-500/20">
+                <div className="space-y-2 bg-gradient-to-br from-gray-500/10 via-gray-50 to-gray-500/5 dark:from-gray-500/10 dark:via-zinc-800/60 dark:to-gray-500/5 p-3 rounded-2xl border border-accent/20">
                   <div className="flex items-center justify-between text-xs font-extrabold">
                     <span className="text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                      <SlidersHorizontal size={13} className="text-emerald-500" />
+                      <SlidersHorizontal size={13} className="text-accent" />
                       <span>{isRtl ? 'نطاق الوصول والشعاع:' : 'Reach Visibility Radius:'}</span>
                     </span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs bg-emerald-500/15 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                    <span className="text-accent dark:text-accent font-black text-xs bg-accent/15 px-2 py-0.5 rounded-lg border border-accent/20">
                       {selectedRadius === 'all' ? (isRtl ? '🌐 بلا حدود (الكل)' : '🌐 Unlimited (Global)') : `🎯 +${selectedRadius} ${isRtl ? 'كم' : 'km'}`}
                     </span>
                   </div>
@@ -5466,7 +5466,7 @@ export const BulletinBoardPage: React.FC = () => {
                         setSelectedRadius(val);
                         localStorage.setItem('perplexta_user_radius', val);
                       }}
-                      className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:accent-emerald-400 transition-theme"
+                      className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent hover:accent-accent-400 transition-theme"
                     />
                     <div className="flex justify-between text-[9px] font-bold text-gray-400 px-0.5">
                       <span>5 {isRtl ? 'كم' : 'km'}</span>
@@ -5488,8 +5488,8 @@ export const BulletinBoardPage: React.FC = () => {
                         }}
                         className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-theme border ${
                           selectedRadius === r
-                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-2xs'
-                            : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-emerald-500/50'
+                            ? 'bg-accent text-white border-accent shadow-2xs'
+                            : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-accent/50'
                         }`}
                       >
                         {r === 'all' ? (isRtl ? 'الكل' : 'All') : `${r} ${isRtl ? 'كم' : 'km'}`}
@@ -5498,8 +5498,8 @@ export const BulletinBoardPage: React.FC = () => {
                   </div>
 
                   {/* Reach Visibility Live Feedback */}
-                  <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5">
-                    <Radio size={12} className="text-emerald-500 animate-pulse shrink-0" />
+                  <div className="text-[10px] font-bold text-accent dark:text-accent bg-accent/10 px-2.5 py-1.5 rounded-xl border border-accent/20 flex items-center gap-1.5">
+                    <Radio size={12} className="text-accent animate-pulse shrink-0" />
                     <span>
                       {isRtl
                         ? `تغطية الإعلانات نشطة في نطاق ${selectedRadius === 'all' ? 'جميع المناطق بلا قيود' : `${selectedRadius} كم حول ${selectedCity === 'all' ? 'جميع المدن' : selectedCity}`}`
@@ -5513,7 +5513,7 @@ export const BulletinBoardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsLocationFlyoutOpen(false)}
-                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 active:scale-95 transition-theme flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent text-white font-extrabold text-xs shadow-md shadow-none active:scale-95 transition-theme flex items-center justify-center gap-1.5"
               >
                 <Check size={15} />
                 <span>{isRtl ? 'تأكيد وتطبيق التغطية' : 'Apply Proximity'}</span>
@@ -5538,7 +5538,7 @@ export const BulletinBoardPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="fixed bottom-20 lg:bottom-6 end-6 z-50 px-4 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 transition-theme flex items-center gap-2 text-xs font-black cursor-pointer"
+            className="fixed bottom-20 lg:bottom-6 end-6 z-50 px-4 py-3 rounded-full bg-accent hover:bg-accent text-white shadow-xl shadow-none transition-theme flex items-center gap-2 text-xs font-black cursor-pointer"
             title={isRtl ? 'العودة لأعلى الصفحة' : 'Scroll to top'}
           >
             <ArrowUp size={16} />
@@ -5555,11 +5555,11 @@ export const BulletinBoardPage: React.FC = () => {
           onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
             activeTab === 'board' && !selectedPageDetail
-              ? 'text-emerald-500 font-extrabold'
+              ? 'text-accent font-extrabold'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
           }`}
         >
-          <Megaphone size={19} className={activeTab === 'board' && !selectedPageDetail ? 'fill-emerald-500/20' : ''} />
+          <Megaphone size={19} className={activeTab === 'board' && !selectedPageDetail ? 'fill-accent' : ''} />
           <span className="text-[10px]">{isRtl ? 'الرئيسية' : 'Feed'}</span>
         </button>
 
@@ -5569,11 +5569,11 @@ export const BulletinBoardPage: React.FC = () => {
           onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
             activeTab === 'pages'
-              ? 'text-emerald-500 font-extrabold'
+              ? 'text-accent font-extrabold'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
           }`}
         >
-          <Building2 size={19} className={activeTab === 'pages' ? 'fill-emerald-500/20' : ''} />
+          <Building2 size={19} className={activeTab === 'pages' ? 'fill-accent' : ''} />
           <span className="text-[10px]">{isRtl ? 'الصفحات' : 'Pages'}</span>
         </button>
 
@@ -5584,7 +5584,7 @@ export const BulletinBoardPage: React.FC = () => {
             if (!token) { setIsAuthModalOpen(true); return; }
             setIsAdModalOpen(true);
           }}
-          className="relative flex flex-col items-center justify-center w-12 h-12 -mt-6 rounded-full bg-emerald-500 text-white shadow-xl shadow-emerald-500/40 drop-shadow-[0_0_12px_rgba(16,185,129,0.6)] transition-theme border-3 border-white dark:border-[#18181b] z-50 hover:bg-emerald-600"
+          className="relative flex flex-col items-center justify-center w-12 h-12 -mt-6 rounded-full bg-accent text-white shadow-xl shadow-none  transition-theme border-3 border-white dark:border-[#18181b] z-50 hover:bg-accent"
           title={isRtl ? 'إضافة منشور جديد' : 'Create Post'}
         >
           <Plus size={24} className="stroke-[3]" />
@@ -5600,12 +5600,12 @@ export const BulletinBoardPage: React.FC = () => {
           }}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative transition-theme ${
             activeTab === 'inquiries'
-              ? 'text-emerald-500 font-extrabold'
+              ? 'text-accent font-extrabold'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
           }`}
         >
           <div className="relative">
-            <MessageSquare size={19} className={activeTab === 'inquiries' ? 'fill-emerald-500/20' : ''} />
+            <MessageSquare size={19} className={activeTab === 'inquiries' ? 'fill-accent' : ''} />
             {inquiriesList.length > 0 && (
               <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#18181b]">
                 {inquiriesList.length}
@@ -5626,11 +5626,11 @@ export const BulletinBoardPage: React.FC = () => {
           }}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
             activeTab === 'saved'
-              ? 'text-emerald-500 font-extrabold'
+              ? 'text-accent font-extrabold'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
           }`}
         >
-          <Bookmark size={19} className={activeTab === 'saved' ? 'fill-emerald-500/20' : ''} />
+          <Bookmark size={19} className={activeTab === 'saved' ? 'fill-accent' : ''} />
           <span className="text-[10px]">{isRtl ? 'المحفوظات' : 'Saved'}</span>
         </button>
 

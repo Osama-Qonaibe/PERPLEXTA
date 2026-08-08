@@ -61,7 +61,7 @@ const getHighlightDetails = (tag: string, className?: string) => {
       return {
         labelAr: 'مجاني',
         labelEn: 'Free / OSS',
-        colorClass: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+        colorClass: 'bg-accent/10 border-accent/20 text-accent dark:text-accent',
         icon: <Gift className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'best_seller':
@@ -525,7 +525,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
           <div className="text-xs font-medium text-gray-500 mb-1">
             {language === 'ar' ? 'المعروضات النشطة' : 'Active Offerings'}
           </div>
-          <div className="text-2xl font-black text-emerald-500 font-mono">
+          <div className="text-2xl font-black text-accent font-mono">
             {items.filter(i => i.status === 'approved').length}
           </div>
         </div>
@@ -559,7 +559,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
               onClick={() => setStatusFilter(status)}
               className={`h-8 px-3 rounded-sm text-[11px] font-bold whitespace-nowrap transition-theme ${
                 statusFilter === status
-                  ? 'text-emerald-500 bg-emerald-500/5 border border-emerald-500/20'
+                  ? 'text-accent bg-accent/5 border border-accent/20'
                   : 'text-gray-400 hover:text-[var(--text-primary)] bg-[var(--bg-surface)] border border-[var(--border)]'
               }`}
             >
@@ -572,7 +572,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       {/* Listings Table */}
       {loading ? (
         <div className="py-12 flex flex-col items-center justify-center space-y-2">
-          <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-gray-400">{language === 'ar' ? 'جاري تحميل المعروضات...' : 'Loading listings...'}</span>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -625,7 +625,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                               </span>
                             );
                           })()}
-                          <span className="px-1.5 py-0.5 rounded-[3px] border text-[8px] font-black flex items-center gap-0.5 shrink-0 bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                          <span className="px-1.5 py-0.5 rounded-[3px] border text-[8px] font-black flex items-center gap-0.5 shrink-0 bg-accent/10 border-accent/20 text-accent dark:text-accent">
                             <Scale size={8} strokeWidth={3} />
                             <span>{getLicenseName(item.license_type || 'commercial_standard', language === 'ar')}</span>
                           </span>
@@ -640,14 +640,14 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       {item.seller_avatar ? (
                         <img src={resolveImageUrl(item.seller_avatar, 'avatar')} className="w-6 h-6 rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-[10px]">
+                        <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-[10px]">
                           {item.seller_name.charAt(0)}
                         </div>
                       )}
                       <div className="space-y-0.5">
                         <span className="font-bold text-[var(--text-primary)] ">{item.seller_name}</span>
                         {item.seller_role && (
-                          <span className="block text-[8px] uppercase tracking-wider font-extrabold text-emerald-500">{item.seller_role}</span>
+                          <span className="block text-[8px] uppercase tracking-wider font-extrabold text-accent">{item.seller_role}</span>
                         )}
                       </div>
                     </div>
@@ -655,7 +655,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
                   {/* Price and Category */}
                   <td className="px-5 py-4 font-mono">
-                    <div className="font-extrabold text-emerald-500">${parseFloat(item.price.toString()).toLocaleString()}</div>
+                    <div className="font-extrabold text-accent">${parseFloat(item.price.toString()).toLocaleString()}</div>
                     <div className="text-[10px] text-gray-500 font-sans mt-0.5">
                       {language === 'ar' ? item.category_ar : item.category_en}
                     </div>
@@ -664,7 +664,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   {/* Rich Status badge */}
                   <td className="px-5 py-4">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-[4px] text-[10px] font-bold ${
-                      item.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                      item.status === 'approved' ? 'bg-accent/10 text-accent border border-accent/20' :
                       item.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
                       item.status === 'rejected' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
                       'bg-blue-500/10 text-blue-500 border border-blue-500/20'
@@ -689,7 +689,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           <button
                             onClick={() => handleUpdateStatus(item.id, 'approved')}
                             disabled={actioningId === item.id}
-                            className="p-1.5 h-8 w-8 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-theme"
+                            className="p-1.5 h-8 w-8 rounded-[4px] bg-accent/10 text-accent border border-accent/20 hover:bg-accent hover:text-black transition-theme"
                             title={language === 'ar' ? 'موافقة ونشر' : 'Approve & List'}
                           >
                             <Check size={14} className="mx-auto" />
@@ -719,7 +719,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         <button
                           onClick={() => handleUpdateStatus(item.id, 'approved')}
                           disabled={actioningId === item.id}
-                          className="h-8 px-2.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black text-[10px] font-bold transition-theme"
+                          className="h-8 px-2.5 rounded-[4px] bg-accent/10 text-accent border border-accent/20 hover:bg-accent hover:text-black text-[10px] font-bold transition-theme"
                         >
                           {language === 'ar' ? 'إعادة عرض' : 'Re-List'}
                         </button>
@@ -728,7 +728,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       <button
                         onClick={() => handleStartEdit(item)}
                         disabled={actioningId === item.id}
-                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-500 transition-theme border border-transparent"
+                        className="p-1.5 h-8 w-8 rounded-[4px] bg-transparent hover:bg-accent/10 text-gray-400 hover:text-accent transition-theme border border-transparent"
                         title={language === 'ar' ? 'تعديل المعروض' : 'Edit listing'}
                       >
                         <Edit size={14} className="mx-auto" />
@@ -772,7 +772,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
               {/* Header */}
               <div className="flex items-center justify-between border-b pb-4 mb-5 border-gray-800">
                 <div className="flex items-center gap-2">
-                  <Edit size={16} className="text-emerald-500 font-black glow-icon" />
+                  <Edit size={16} className="text-accent font-black glow-icon" />
                   <h3 className="text-sm font-black tracking-wider uppercase">
                     {language === 'ar' ? 'تعديل بيانات المعروض' : 'Edit Marketplace Asset'}
                   </h3>
@@ -801,7 +801,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditTitleAr(e.target.value)}
                       placeholder="الأكواد والربط البرمجي ERPv4"
                       className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-right ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
                   </div>
@@ -816,7 +816,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditTitleEn(e.target.value)}
                       placeholder="ERP Integration Suite v4"
                       className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
                   </div>
@@ -832,7 +832,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       value={editCategorySelect}
                       onChange={(e) => setEditCategorySelect(e.target.value)}
                       className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     >
                       {parents.map(p => (
@@ -860,7 +860,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         onChange={(e) => setEditPrice(e.target.value)}
                         placeholder="99"
                         className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/30 text-white' : 'bg-white border-gray-250 focus:border-accent/30 text-gray-900'
                         }`}
                       />
                     </div>
@@ -876,7 +876,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         onChange={(e) => setEditDiscount(e.target.value)}
                         placeholder="0"
                         className={`w-full h-10 px-2 border rounded-[4px] outline-none text-xs text-center ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/30 text-white' : 'bg-white border-gray-250 focus:border-accent/30 text-gray-900'
                         }`}
                       />
                     </div>
@@ -884,8 +884,8 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
                         {language === 'ar' ? 'النهائي' : 'Final'}
                       </label>
-                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
-                        theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/20 border-emerald-500/10'
+                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-accent select-none ${
+                        theme === 'dark' ? 'bg-accent/5 border-accent/10' : 'bg-accent/20 border-accent/10'
                       }`}>
                         ${Math.round((Number(editPrice) || 0) * (1 - (Number(editDiscount) || 0) / 100))}
                       </div>
@@ -895,10 +895,10 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
                 {/* Affiliate & Referral Configuration */}
                 <div className={`p-4 border rounded-[4px] space-y-3 ${
-                  theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                  theme === 'dark' ? 'bg-accent/5 border-accent/10' : 'bg-accent/10 border-accent/10'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                    <h4 className="text-xs font-black text-accent select-none flex items-center gap-1.5 ">
                       <Share2 size={13} />
                       <span>{language === 'ar' ? 'نظام التسويق بالعمولة (الإحالة)' : 'Affiliate & Referral Settings'}</span>
                     </h4>
@@ -921,7 +921,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           onChange={(e) => setEditReferralPercent(e.target.value)}
                           placeholder="20"
                           className={`w-full h-10 pl-3 pr-8 border rounded-[4px] outline-none text-xs text-left ${
-                            theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                            theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                           }`}
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400 select-none">%</span>
@@ -932,7 +932,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
                         {language === 'ar' ? 'قيمة عمولة المنتج لكل عملية بيع' : 'Referral Commission Value'}
                       </label>
-                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-emerald-400 select-none ${
+                      <div className={`w-full h-10 border rounded-[4px] text-xs font-black flex items-center justify-center text-accent select-none ${
                         theme === 'dark' ? 'bg-black/60 border-white/5' : 'bg-gray-50 border-gray-200'
                       }`}>
                         ${Math.round((Number(editPrice) || 0) * (1 - (Number(editDiscount) || 0) / 100) * (Number(editReferralPercent) || 0) / 100 * 100) / 100}
@@ -943,10 +943,10 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
 
                 {/* Highlights and Licensing Setup */}
                 <div className={`p-4 border rounded-[4px] space-y-3 ${
-                  theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50/10 border-emerald-500/10'
+                  theme === 'dark' ? 'bg-accent/5 border-accent/10' : 'bg-accent/10 border-accent/10'
                 }`}>
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black text-emerald-400 select-none flex items-center gap-1.5 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]">
+                    <h4 className="text-xs font-black text-accent select-none flex items-center gap-1.5 ">
                       <Award size={13} />
                       <span>{language === 'ar' ? 'التمييز وتراخيص الاستخدام' : 'Highlight Tag & License Type'}</span>
                     </h4>
@@ -962,7 +962,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         value={editHighlightTag}
                         onChange={(e) => setEditHighlightTag(e.target.value)}
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                         }`}
                       >
                         <option value="">{language === 'ar' ? 'بدون تمييز' : 'No Highlight'}</option>
@@ -983,7 +983,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         value={editLicenseType}
                         onChange={(e) => setEditLicenseType(e.target.value)}
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                         }`}
                       >
                         <option value="mit">MIT License</option>
@@ -1011,12 +1011,12 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditImage(e.target.value)}
                       placeholder="https://images.unsplash.com/photo-..."
                       className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs mb-1.5 ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
 
                     <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer transition-colors relative ${
-                      theme === 'dark' ? 'border-white/10 hover:border-emerald-500/30 hover:bg-white/5' : 'border-gray-200 hover:border-emerald-500/35 hover:bg-gray-50'
+                      theme === 'dark' ? 'border-white/10 hover:border-accent/30 hover:bg-white/5' : 'border-gray-200 hover:border-accent/35 hover:bg-gray-50'
                     }`}>
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                       
@@ -1025,7 +1025,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           <img src={editImage ? editImage.split(',')[0].trim() : ''} className="w-full h-full object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
                         </div>
                       ) : uploadingImage ? (
-                        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <div className="text-center select-none text-gray-500 animate-pulse">
                           <Upload className="w-4 h-4 mx-auto mb-1 opacity-50" />
@@ -1047,7 +1047,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         onChange={(e) => setEditLinkPreview(e.target.value)}
                         placeholder="https://demo.example.com"
                         className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/30 text-white' : 'bg-white border-gray-250 focus:border-accent/30 text-gray-900'
                         }`}
                       />
                     </div>
@@ -1061,7 +1061,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                         onChange={(e) => setEditLinkVideo(e.target.value)}
                         placeholder="https://youtube.com/watch?v=..."
                         className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                          theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/30 text-white' : 'bg-white border-gray-250 focus:border-accent/30 text-gray-900'
                         }`}
                       />
                     </div>
@@ -1079,7 +1079,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                     onChange={(e) => setEditLinkDownload(e.target.value)}
                     placeholder="https://..."
                     className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs text-left ${
-                      theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                      theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                     }`}
                   />
                 </div>
@@ -1096,7 +1096,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditFeatures(e.target.value)}
                       placeholder="High Speed&#10;Open-source"
                       className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
                   </div>
@@ -1110,7 +1110,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditTools(e.target.value)}
                       placeholder="React, Django, Express"
                       className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/30 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/30 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/30 text-white' : 'bg-white border-gray-250 focus:border-accent/30 text-gray-900'
                       }`}
                     />
                   </div>
@@ -1129,7 +1129,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditDescAr(e.target.value)}
                       placeholder="شرح موجز لخصائص برمجيتك أو منصتك وما تقدمه..."
                       className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
                   </div>
@@ -1144,7 +1144,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       onChange={(e) => setEditDescEn(e.target.value)}
                       placeholder="A concise summary detailing the core architecture and value preposition..."
                       className={`w-full p-3 border rounded-[4px] outline-none text-xs leading-relaxed resize-none text-left ${
-                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-emerald-500/35 text-white' : 'bg-white border-gray-250 focus:border-emerald-500/35 text-gray-900'
+                        theme === 'dark' ? 'bg-black/40 border-white/5 focus:border-accent/35 text-white' : 'bg-white border-gray-250 focus:border-accent/35 text-gray-900'
                       }`}
                     />
                   </div>
@@ -1162,7 +1162,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   <button
                     type="submit"
                     disabled={updating || uploadingImage}
-                    className="px-5 h-10 bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+                    className="px-5 h-10 bg-accent text-black hover:bg-accent disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                   >
                     {updating ? (
                       <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />

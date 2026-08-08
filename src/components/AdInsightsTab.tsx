@@ -135,7 +135,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
   if (loading) {
     return (
       <div className="p-6 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-2 bg-gray-50/80 dark:bg-[#141417] rounded-2xl border border-gray-200 dark:border-gray-800 my-2">
-        <RefreshCw size={22} className="animate-spin text-emerald-500" />
+        <RefreshCw size={22} className="animate-spin text-accent" />
         <span className="font-bold text-gray-700 dark:text-gray-300">
           {isRtl ? 'جاري تحليل إحصائيات وصول الإعلان ومعدلات التفاعل...' : 'Analyzing ad reach & interaction rate data...'}
         </span>
@@ -163,17 +163,17 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
-      className="p-3.5 sm:p-4 bg-gray-900 text-white rounded-2xl border border-emerald-500/30 space-y-4 my-2 shadow-xl overflow-hidden transition-theme [will-change:background-color,border-color,color]"
+      className="p-3.5 sm:p-4 bg-gray-900 text-white rounded-2xl border border-accent/30 space-y-4 my-2 shadow-xl overflow-hidden transition-theme [will-change:background-color,border-color,color]"
     >
       <div className="flex items-center justify-between border-b border-gray-800 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <div className="p-1.5 rounded-lg bg-accent/20 text-accent border border-accent/30">
             <BarChart2 size={16} />
           </div>
           <div>
             <h4 className="text-xs font-black text-white flex items-center gap-1.5">
               <span>{isRtl ? 'لوحة تحليلات ورؤى الإعلان' : 'Creator Ad Insights Panel'}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-black font-extrabold">
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent text-black font-extrabold">
                 Live Analytics
               </span>
             </h4>
@@ -213,7 +213,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
           </div>
           <div className="text-base sm:text-lg font-black text-white flex items-baseline gap-1">
             <span>{data.impressions_count.toLocaleString()}</span>
-            <span className="text-[9px] text-emerald-400 font-bold">
+            <span className="text-[9px] text-accent font-bold">
               +{data.reach_stats.daily_avg_views}/y
             </span>
           </div>
@@ -226,15 +226,15 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
         <div className="p-2.5 rounded-xl bg-gray-800/80 border border-gray-700/80 space-y-1">
           <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold">
             <span>{isRtl ? 'معدل التفاعل (CTR)' : 'Interaction Rate'}</span>
-            <TrendingUp size={13} className="text-emerald-400" />
+            <TrendingUp size={13} className="text-accent" />
           </div>
-          <div className="text-base sm:text-lg font-black text-emerald-400 flex items-baseline gap-1">
+          <div className="text-base sm:text-lg font-black text-accent flex items-baseline gap-1">
             <span>{data.ctr}%</span>
             <span className="text-[9px] text-gray-300 font-bold">
               ({data.engagement_rate}% Eng)
             </span>
           </div>
-          <p className="text-[9px] text-emerald-400 font-bold truncate">
+          <p className="text-[9px] text-accent font-bold truncate">
             {data.ctr >= 2.5 ? (isRtl ? '🔥 أداء ممتااااز' : '🔥 Excellent CTR') : (isRtl ? 'أداء مستقر' : 'Normal CTR')}
           </p>
         </div>
@@ -264,7 +264,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
           </div>
           <div className="text-base sm:text-lg font-black text-purple-300 flex items-baseline gap-1">
             <span>{data.reach_stats.estimated_unique_reach.toLocaleString()}</span>
-            <span className="text-[9px] text-emerald-400 font-bold">
+            <span className="text-[9px] text-accent font-bold">
               ({data.reach_stats.reach_multiplier})
             </span>
           </div>
@@ -292,7 +292,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
         </div>
         <div className="space-y-0.5">
           <span className="text-gray-400 flex items-center justify-center gap-1">
-            <Share2 size={10} className="text-emerald-400" />
+            <Share2 size={10} className="text-accent" />
             <span>{isRtl ? 'المشاركات' : 'Shares'}</span>
           </span>
           <span className="font-extrabold text-white text-xs">{data.shares_count}</span>
@@ -302,7 +302,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
             <DollarSign size={10} className="text-amber-400" />
             <span>{isRtl ? 'تكلفة النقرة' : 'CPC'}</span>
           </span>
-          <span className="font-extrabold text-emerald-400 text-xs">${data.cost_per_click}</span>
+          <span className="font-extrabold text-accent text-xs">${data.cost_per_click}</span>
         </div>
       </div>
 
@@ -310,7 +310,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
       <div className="p-3 rounded-xl bg-gray-950/90 border border-gray-800 space-y-2">
         <div className="flex items-center justify-between text-[11px] font-extrabold text-gray-300">
           <span className="flex items-center gap-1.5">
-            <Zap size={13} className="text-emerald-400 animate-pulse" />
+            <Zap size={13} className="text-accent animate-pulse" />
             <span>{isRtl ? 'منحنى الوصول والتفاعل اليومي' : 'Daily Reach & Interaction Trend'}</span>
           </span>
           <span className="text-[9px] text-gray-400 font-normal">
@@ -355,10 +355,10 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
         <div className="p-2.5 rounded-xl bg-gray-800/60 border border-gray-700/60 space-y-2 text-[10px]">
           <div className="flex items-center justify-between font-bold text-gray-300">
             <span className="flex items-center gap-1">
-              <MapPin size={12} className="text-emerald-400" />
+              <MapPin size={12} className="text-accent" />
               <span>{isRtl ? 'أعلى المدن والوصول الجغرافي' : 'Top Geographic Cities'}</span>
             </span>
-            <span className="text-[9px] text-emerald-400 font-extrabold">% Reach</span>
+            <span className="text-[9px] text-accent font-extrabold">% Reach</span>
           </div>
 
           <div className="space-y-1.5">
@@ -366,11 +366,11 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
               <div key={idx} className="space-y-0.5">
                 <div className="flex justify-between text-gray-300 font-medium text-[9.5px]">
                   <span>{isRtl ? loc.city : loc.cityEn}</span>
-                  <span className="font-bold text-emerald-400">{loc.percentage}% ({loc.count})</span>
+                  <span className="font-bold text-accent">{loc.percentage}% ({loc.count})</span>
                 </div>
                 <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-theme"
+                    className="bg-gradient-to-r from-gray-500/10 to-teal-400 h-full rounded-full transition-theme"
                     style={{ width: `${loc.percentage}%` }}
                   />
                 </div>
@@ -393,14 +393,14 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
             {data.devices.map((dev, idx) => (
               <div key={idx} className="flex items-center justify-between p-1.5 rounded-lg bg-gray-900/80 border border-gray-800">
                 <span className="text-gray-300 font-medium">{dev.device}</span>
-                <span className="font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                <span className="font-extrabold text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
                   {dev.percentage}%
                 </span>
               </div>
             ))}
 
-            <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-[9.5px] text-emerald-300 flex items-center gap-1.5 mt-2">
-              <Sparkles size={13} className="shrink-0 text-emerald-400" />
+            <div className="p-2 rounded-lg bg-accent-950/40 border border-accent/30 text-[9.5px] text-accent flex items-center gap-1.5 mt-2">
+              <Sparkles size={13} className="shrink-0 text-accent" />
               <span>
                 {isRtl
                   ? '78% من الجمهور يفضل تصفح الإعلانات عبر الجوال، تأكد من وضوح الصورة.'
@@ -417,10 +417,10 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
           {data.recommendations.map((rec, idx) => (
             <div
               key={idx}
-              className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-950/60 via-gray-900 to-gray-950 border border-emerald-500/30 flex items-start justify-between gap-2"
+              className="p-2.5 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-900 to-gray-950 border border-accent/30 flex items-start justify-between gap-2"
             >
               <div className="space-y-0.5 text-start">
-                <h5 className="text-[11px] font-extrabold text-emerald-300 flex items-center gap-1">
+                <h5 className="text-[11px] font-extrabold text-accent flex items-center gap-1">
                   <Sparkles size={11} className="text-amber-400" />
                   <span>{isRtl ? rec.title_ar : rec.title_en}</span>
                 </h5>
@@ -432,7 +432,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
               {onBoostClick && !data.is_boosted && (
                 <button
                   onClick={onBoostClick}
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-black text-[10px] flex items-center gap-1 shrink-0 shadow-sm transition-theme"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-gray-500/5 hover:from-amber-600 hover:to-gray-500/5 text-white font-black text-[10px] flex items-center gap-1 shrink-0 shadow-sm transition-theme"
                 >
                   <Rocket size={11} />
                   <span>{isRtl ? 'ترقية التمويل' : 'Boost Now'}</span>

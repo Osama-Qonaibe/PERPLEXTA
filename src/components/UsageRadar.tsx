@@ -124,7 +124,7 @@ export const UsageRadar: React.FC = () => {
         {/* Fixed Header Row */}
         <div className="flex justify-between items-start mb-12">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-[var(--radius)] flex items-center justify-center bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+            <div className="w-12 h-12 rounded-[var(--radius)] flex items-center justify-center bg-accent/10 text-accent ">
                <Activity size={24} className="animate-pulse" />
             </div>
             <div>
@@ -137,10 +137,10 @@ export const UsageRadar: React.FC = () => {
         </div>
 
         {/* Plan Info Card - Centered as per image */}
-        <div className={`p-10 rounded-[var(--radius)] border border-emerald-500/10 bg-emerald-500/[0.02] flex flex-col items-center relative group`}>
+        <div className={`p-10 rounded-[var(--radius)] border border-accent/10 bg-accent/[0.02] flex flex-col items-center relative group`}>
            {/* Chart Box - Left Aligned */}
-           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[var(--radius)] border border-emerald-500/20 flex items-center justify-center bg-black/20 text-emerald-500 group-hover:scale-105 transition-transform duration-300">
-              <BarChart3 size={48} className="drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
+           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[var(--radius)] border border-accent/20 flex items-center justify-center bg-black/20 text-accent group-hover:scale-105 transition-transform duration-300">
+              <BarChart3 size={48} className="" />
            </div>
 
            <div className="flex flex-col items-center text-center space-y-6">
@@ -156,8 +156,8 @@ export const UsageRadar: React.FC = () => {
               {/* Status Badges Row */}
               <div className="flex flex-wrap items-center justify-center gap-3">
                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/60 border border-white/5 backdrop-blur-md">
-                    <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"} />
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500" : "text-emerald-500"}`}>
+                    <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-accent "} />
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500" : "text-accent"}`}>
                       {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
                     </span>
                  </div>
@@ -168,7 +168,7 @@ export const UsageRadar: React.FC = () => {
                     </span>
                  </div>
                  {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
-                   <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md text-emerald-500">
+                   <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-accent/10 border border-accent/20 backdrop-blur-md text-accent">
                       <Calendar size={12} />
                       <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
                    </div>

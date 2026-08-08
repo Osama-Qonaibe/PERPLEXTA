@@ -290,7 +290,7 @@ export const AdminCommunityPage: React.FC = () => {
             ? 'تم تعطيل لوحة إدارة الأقسام الخارجية على أجهزة الهاتف لتخفيف حجم التطبيق وتحسين الأداء. يرجى المتابعة من شاشة حاسوبك الشخصي.' 
             : 'To maintain lightweight performance and high operational stability, external category admin panels are restricted to desktop sessions. Please open this view on a PC.'}
         </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">
+        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
           {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
         </a>
       </div>
@@ -305,7 +305,7 @@ export const AdminCommunityPage: React.FC = () => {
         </div>
         <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">{isRtl ? 'صلاحيات غير كافية' : 'Access Restricted'}</h2>
         <p className="text-xs text-gray-400 max-w-sm">{isRtl ? 'هذه اللوحة مخصصة لإدارة العمليات ومحميّة بالكامل ببروتوكولات التشفير الرقابية.' : 'This secure community administrative console requires verified staff credentials.'}</p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">{isRtl ? 'الرئيسية' : 'Go Home'}</a>
+        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">{isRtl ? 'الرئيسية' : 'Go Home'}</a>
       </div>
     );
   }
@@ -338,8 +338,8 @@ export const AdminCommunityPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start md:self-auto text-[10px] uppercase font-mono tracking-wider text-emerald-500 font-bold select-none bg-emerald-500/10 border border-emerald-500/10 px-3 py-1.5 rounded-[4px]">
-          <ShieldCheck size={12} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+        <div className="flex items-center gap-2 self-start md:self-auto text-[10px] uppercase font-mono tracking-wider text-accent font-bold select-none bg-accent/10 border border-accent/10 px-3 py-1.5 rounded-[4px]">
+          <ShieldCheck size={12} className="text-accent " />
           <span>{isRtl ? 'مشرف معتمد' : 'Staff Moderation Mode'}</span>
         </div>
       </div>
@@ -349,24 +349,24 @@ export const AdminCommunityPage: React.FC = () => {
         <div className="lg:col-span-3 space-y-3 select-none">
           <button
             onClick={() => setActiveTab('blog')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'blog' ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <BookOpen size={16} className={`transition-theme ${activeTab === 'blog' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+              <BookOpen size={16} className={`transition-theme ${activeTab === 'blog' ? 'text-accent ' : ''}`} />
               {isRtl ? 'المقالات والأخبار' : 'Publish Articles'}
             </span>
-            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-emerald-500' : 'text-gray-400'}`} />
+            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'blog' ? 'text-accent' : 'text-gray-400'}`} />
           </button>
 
           <button
             onClick={() => setActiveTab('marketplace')}
-            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'marketplace' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
+            className={`w-full text-right sm:text-left flex items-center justify-between px-4 h-11 rounded-[4px] border transition-theme font-sans text-xs sm:text-sm font-bold ${activeTab === 'marketplace' ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-transparent border-transparent hover:bg-[var(--bg-secondary)] text-gray-400'}`}
           >
             <span className="flex items-center gap-2">
-              <ShoppingBag size={16} className={`transition-theme ${activeTab === 'marketplace' ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : ''}`} />
+              <ShoppingBag size={16} className={`transition-theme ${activeTab === 'marketplace' ? 'text-accent ' : ''}`} />
               {isRtl ? 'إدارة الماركت بليس' : 'Marketplace Admin'}
             </span>
-            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'marketplace' ? 'text-emerald-500' : 'text-gray-400'}`} />
+            <ChevronRight size={14} className={`transition-theme ${isRtl ? 'rotate-180' : ''} ${activeTab === 'marketplace' ? 'text-accent' : 'text-gray-400'}`} />
           </button>
         </div>
 
@@ -378,7 +378,7 @@ export const AdminCommunityPage: React.FC = () => {
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg p-6 sm:p-8">
                 <h2 className="text-sm font-black text-[var(--text-primary)] mb-6 flex items-center gap-4 border-b border-gray-100/5 pb-3">
                   <div className="flex items-center gap-2">
-                    <FileText className="text-emerald-500" size={18} />
+                    <FileText className="text-accent" size={18} />
                     {editingArticleId !== null 
                       ? (isRtl ? 'تعديل التقرير أو المقال الاستخباراتي الحالي' : 'Edit Intelligence Report / Editorial Article')
                       : (isRtl ? 'نشر تقرير استخباراتي أو مقال جديد' : 'Publish New Editorial Article')
@@ -401,7 +401,7 @@ export const AdminCommunityPage: React.FC = () => {
                         value={blogTitleEn}
                         onChange={(e) => setBlogTitleEn(e.target.value)}
                         placeholder="e.g. US Fed Rates Hiked Again..."
-                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-4 text-xs font-sans font-medium"
+                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm px-4 text-xs font-sans font-medium"
                       />
                     </div>
                     <div>
@@ -412,7 +412,7 @@ export const AdminCommunityPage: React.FC = () => {
                         value={blogTitleAr}
                         onChange={(e) => setBlogTitleAr(e.target.value)}
                         placeholder="مثال: الفيدرالي الأمريكي يثبت أسعار الفائدة..."
-                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-4 text-xs font-sans font-medium"
+                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm px-4 text-xs font-sans font-medium"
                       />
                     </div>
                   </div>
@@ -426,7 +426,7 @@ export const AdminCommunityPage: React.FC = () => {
                         value={blogCategoryEn}
                         onChange={(e) => setBlogCategoryEn(e.target.value)}
                         placeholder="e.g. Market Research, Forex, Trends"
-                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-4 text-xs font-sans font-medium"
+                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm px-4 text-xs font-sans font-medium"
                       />
                     </div>
                     <div>
@@ -437,7 +437,7 @@ export const AdminCommunityPage: React.FC = () => {
                         value={blogCategoryAr}
                         onChange={(e) => setBlogCategoryAr(e.target.value)}
                         placeholder="مثال: تحليل مالي، أسواق، فوركس"
-                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-4 text-xs font-sans font-medium"
+                        className="w-full h-11 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm px-4 text-xs font-sans font-medium"
                       />
                     </div>
                   </div>
@@ -448,7 +448,7 @@ export const AdminCommunityPage: React.FC = () => {
                         {isRtl ? 'صورة غلاف المقال (مربعة 1080x1080)' : 'Article Cover Image (Square 1080x1080)'}
                       </label>
                       {blogImageUrl && (
-                        <span className="text-[9px] font-mono text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-[3px] border border-emerald-500/15">
+                        <span className="text-[9px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded-[3px] border border-accent/15">
                           1080x1080 HD Crop Loaded
                         </span>
                       )}
@@ -457,7 +457,7 @@ export const AdminCommunityPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                       {/* Image Upload Area */}
                       <div className="md:col-span-5">
-                        <label className="relative flex flex-col items-center justify-center h-28 border border-dashed border-gray-200/10 dark:border-gray-800/20 rounded-[4px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] cursor-pointer hover:border-emerald-500/40 hover:drop-shadow-[0_0_10px_rgba(16,185,129,0.05)] transition-theme group overflow-hidden">
+                        <label className="relative flex flex-col items-center justify-center h-28 border border-dashed border-gray-200/10 dark:border-gray-800/20 rounded-[4px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-base)] cursor-pointer hover:border-accent/40 hover: transition-theme group overflow-hidden">
                           <input 
                             type="file" 
                             accept="image/*" 
@@ -467,12 +467,12 @@ export const AdminCommunityPage: React.FC = () => {
                           />
                           {uploadingImage ? (
                             <div className="flex flex-col items-center gap-1.5 text-center">
-                              <div className="w-6 h-6 border-2 border-emerald-500/45 border-t-emerald-500 rounded-full animate-spin" />
-                              <span className="text-[10px] text-emerald-550 font-mono">{isRtl ? 'جاري معالجة الصورة...' : 'Processing, cropping...'}</span>
+                              <div className="w-6 h-6 border-2 border-accent/45 border-t-accent-500 rounded-full animate-spin" />
+                              <span className="text-[10px] text-accent-550 font-mono">{isRtl ? 'جاري معالجة الصورة...' : 'Processing, cropping...'}</span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-1.5 text-center p-3 select-none">
-                              <Upload size={20} className="text-gray-400 group-hover:text-emerald-500 group-hover:scale-105 transition-theme" />
+                              <Upload size={20} className="text-gray-400 group-hover:text-accent group-hover:scale-105 transition-theme" />
                               <span className="text-[10px] font-black font-sans text-gray-500 group-hover:text-gray-250 transition-colors">{isRtl ? 'رفع من الجهاز (كروب مربع)' : 'Upload from device (Auto crop)'}</span>
                               <span className="text-[8px] font-mono text-gray-550">{isRtl ? 'الحد الأقصى: 15 ميجابايت' : 'Max selection: 15MB'}</span>
                             </div>
@@ -493,7 +493,7 @@ export const AdminCommunityPage: React.FC = () => {
                           value={blogImageUrl}
                           onChange={(e) => setBlogImageUrl(e.target.value)}
                           placeholder="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f"
-                          className="w-full h-10 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm px-3 text-xs font-sans font-medium"
+                          className="w-full h-10 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm px-3 text-xs font-sans font-medium"
                         />
                       </div>
                     </div>
@@ -504,11 +504,11 @@ export const AdminCommunityPage: React.FC = () => {
 
                     {blogImageUrl && (
                       <div className="mt-4 flex items-center gap-3 p-2 bg-[var(--bg-secondary)] rounded-sm border border-[var(--border-main)] select-none">
-                        <div className="w-12 h-12 rounded-[4px] overflow-hidden border border-emerald-500/30">
+                        <div className="w-12 h-12 rounded-[4px] overflow-hidden border border-accent/30">
                           <img referrerPolicy="no-referrer" src={blogImageUrl} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <span className="block text-[9px] font-mono text-emerald-500">{isRtl ? 'تم تحميل الصورة بنجاح' : 'Cover fully optimized'}</span>
+                          <span className="block text-[9px] font-mono text-accent">{isRtl ? 'تم تحميل الصورة بنجاح' : 'Cover fully optimized'}</span>
                           <span className="block text-[9px] text-gray-400 truncate max-w-sm">{blogImageUrl}</span>
                         </div>
                         <button 
@@ -530,7 +530,7 @@ export const AdminCommunityPage: React.FC = () => {
                       value={blogContentEn}
                       onChange={(e) => setBlogContentEn(e.target.value)}
                       placeholder="Full Markdown/HTML layout support for premium reports..."
-                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
                     />
                   </div>
 
@@ -542,7 +542,7 @@ export const AdminCommunityPage: React.FC = () => {
                       value={blogContentAr}
                       onChange={(e) => setBlogContentAr(e.target.value)}
                       placeholder="دعم نصي متناسق مع اتجاه كتابة RTL للأبحاث والتحاليل..."
-                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-emerald-500 rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
                     />
                   </div>
 
@@ -562,7 +562,7 @@ export const AdminCommunityPage: React.FC = () => {
                       className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-sm font-bold text-white text-xs transition-theme cursor-pointer ${
                         editingArticleId !== null 
                           ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:scale-[1.01] active:scale-[0.99]' 
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-[1.01] active:scale-[0.99]'
+                          : 'bg-gradient-to-r from-gray-500/10 to-teal-600 hover:scale-[1.01] active:scale-[0.99]'
                       }`}
                     >
                       {publishingArticle ? (
@@ -599,7 +599,7 @@ export const AdminCommunityPage: React.FC = () => {
                           className={`flex items-center justify-between gap-4 p-3 border rounded-sm transition-theme select-none font-sans ${
                             isCurrentlyEditing 
                               ? 'bg-amber-500/5 border-amber-500/30' 
-                              : 'bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-emerald-500/20'
+                              : 'bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-accent/20'
                           }`}
                         >
                           <div className="min-w-0">
@@ -623,7 +623,7 @@ export const AdminCommunityPage: React.FC = () => {
                               className={`p-1.5 transition-theme rounded-[4px] cursor-pointer ${
                                 isCurrentlyEditing 
                                   ? 'text-amber-550 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
-                                  : 'text-gray-400 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                  : 'text-gray-400 hover:text-accent hover:'
                               }`}
                               title={isRtl ? 'تعديل المقال' : 'Edit Article'}
                             >

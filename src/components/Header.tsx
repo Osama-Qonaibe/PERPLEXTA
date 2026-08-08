@@ -165,7 +165,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const getNotifIcon = (type: string) => {
     switch (type) {
       case 'finance': return <Landmark size={14} className="text-amber-500" />;
-      case 'support': return <MessageSquare size={14} className="text-emerald-500" />;
+      case 'support': return <MessageSquare size={14} className="text-accent" />;
       case 'kyc': return <ShieldCheck size={14} className="text-blue-500" />;
       default: return <Bell size={14} className="text-pink-500" />;
     }
@@ -193,7 +193,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
                     <motion.div 
-                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-emerald-500/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
+                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
                         scale: [1, 1.03, 1],
                         borderColor: ["var(--border-main)", "rgba(16,185,129,0.4)", "var(--border-main)"]
@@ -254,7 +254,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
                   title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
                 >
-                  <Menu size={18} className="text-gray-400 group-hover:text-emerald-500 transition-theme" />
+                  <Menu size={18} className="text-gray-400 group-hover:text-accent transition-theme" />
                 </button>
               )}
           </div>
@@ -269,7 +269,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-theme max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
+                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-accent/30 dark:hover:border-accent/30 transition-theme max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
                   onClick={() => {
                     if (!isEditingTitle) {
                       setIsEditingTitle(true);
@@ -293,7 +293,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <div className="flex items-center gap-0.5">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleRename(); }}
-                          className="p-1 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-theme"
+                          className="p-1 text-accent hover:text-accent hover:bg-accent/10 rounded transition-theme"
                           title={language === 'ar' ? 'حفظ' : 'Save'}
                         >
                            <Check size={13} />
@@ -312,7 +312,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
                         {chatTitle}
                       </h2>
-                      <Edit2 size={10} className="text-gray-400 group-hover:text-emerald-500 transition-theme flex-shrink-0" />
+                      <Edit2 size={10} className="text-gray-400 group-hover:text-accent transition-theme flex-shrink-0" />
                     </div>
                   )}
                 </motion.div>
@@ -341,7 +341,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               to="/bulletin"
               className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
                 isBulletinActive 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500' 
+                  ? 'bg-accent/[0.04] border-accent/30 text-accent' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
               title={language === 'ar' ? 'لوحة الإعلانات التفاعلية' : 'Interactive Bulletin Board'}
@@ -350,12 +350,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   isBulletinActive 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                    ? 'text-accent ' 
+                    : 'text-gray-400 group-hover:text-accent group-hover:'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                isBulletinActive ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
+                isBulletinActive ? 'text-accent font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
               }`}>{language === 'ar' ? 'لوحة الإعلانات' : 'Bulletin Board'}</span>
             </NavLink>
 
@@ -365,7 +365,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               to="/Studio"
               className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
                 location.pathname === '/Studio' 
-                  ? 'bg-emerald-500/[0.04] border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  ? 'bg-accent/[0.04] border-accent/30 text-accent shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
               title={language === 'ar' ? 'استوديو بيربليكستا للمطورين' : 'Perplexta Developer Studio'}
@@ -374,12 +374,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 size={15} 
                 className={`transition-theme ${
                   location.pathname === '/Studio' 
-                    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                    : 'text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                    ? 'text-accent ' 
+                    : 'text-gray-400 group-hover:text-accent group-hover:'
                 }`} 
               />
               <span className={`hidden sm:inline text-[13px] transition-theme ${
-                location.pathname === '/Studio' ? 'text-emerald-500 font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
+                location.pathname === '/Studio' ? 'text-accent font-bold font-sans' : 'group-hover:text-gray-900 dark:group-hover:text-white'
               }`}>{language === 'ar' ? 'الاستوديو' : 'Studio'}</span>
             </NavLink>
           <AnimatePresence>
@@ -408,7 +408,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 onClick={toggleLanguage}
                 className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
-            <Languages size={15} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+            <Languages size={15} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
             <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
           </button>
 
@@ -424,15 +424,15 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               className="hidden md:flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
               title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
             >
-              <MessageSquare size={16} className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+              <MessageSquare size={16} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
             </button>
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
               <button 
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className={`flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-emerald-500/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
+                className={`flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-accent/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
               >
-                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"}`} />
+                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-accent " : "text-gray-400 group-hover:text-accent group-hover:"}`} />
                 {unreadCount > 0 && (
                   <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
                 )}
@@ -454,7 +454,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         disabled={unreadCount === 0}
                         className={`text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition-theme ${
                           unreadCount > 0 
-                            ? 'text-emerald-500 hover:text-emerald-400 cursor-pointer' 
+                            ? 'text-accent hover:text-accent cursor-pointer' 
                             : 'text-[var(--text-muted)] opacity-40 cursor-not-allowed'
                         }`}
                       >
@@ -483,21 +483,21 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           key={notif.id}
                           onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
                           className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-theme border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
-                            !notif.is_read ? 'bg-emerald-500/[0.03] border-r-2 border-r-emerald-500' : ''
+                            !notif.is_read ? 'bg-accent/[0.03] border-r-2 border-r-accent-500' : ''
                           }`}
                           dir={dir}
                         >
                           <div className={`mt-0.5 h-7 w-7 sm:h-8 sm:w-8 rounded-sm flex items-center justify-center shrink-0 transition-theme ${
-                            !notif.is_read ? 'bg-emerald-500/20 text-emerald-500 font-bold' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
+                            !notif.is_read ? 'bg-accent/20 text-accent font-bold' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
                           }`}>
                             {getNotifIcon(notif.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1.5 flex-row-reverse">
                               {!notif.is_read && (
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                                <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                               )}
-                              <h4 className={`text-[11px] sm:text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-emerald-500' : 'text-[var(--text-primary)]'}`}>
+                              <h4 className={`text-[11px] sm:text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-accent' : 'text-[var(--text-primary)]'}`}>
                                 {language === 'ar' ? notif.title_ar : notif.title_en}
                               </h4>
                             </div>
@@ -513,7 +513,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                                 {!notif.is_read && (
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                    className="p-0.5 sm:p-1 text-emerald-500/60 hover:text-emerald-500 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-theme cursor-pointer"
+                                    className="p-0.5 sm:p-1 text-accent/60 hover:text-accent opacity-100 sm:opacity-0 group-hover:opacity-100 transition-theme cursor-pointer"
                                     title={language === 'ar' ? 'تحديد كمقروء' : 'Mark as read'}
                                   >
                                     <Check size={11} className="stroke-[3px]" />
@@ -561,12 +561,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           animate={{ opacity: 1, scaleX: 1 }}
           exit={{ opacity: 0, scaleX: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent z-[90] origin-left overflow-hidden pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-gray-500/10 to-transparent z-[90] origin-left overflow-hidden pointer-events-none"
         >
           <motion.div
             animate={{ x: ['-100%', '100%'] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-            className="w-full h-full bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_rgba(16,185,129,0.9)]"
+            className="w-full h-full bg-gradient-to-r from-transparent via-gray-500/10 to-transparent shadow-[0_0_12px_rgba(16,185,129,0.9)]"
           />
         </motion.div>
       )}

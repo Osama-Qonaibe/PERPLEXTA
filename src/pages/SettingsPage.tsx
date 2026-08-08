@@ -273,7 +273,7 @@ export const SettingsPage: React.FC = () => {
            <div className="flex items-center gap-3">
               <button 
                 onClick={() => navigate('/')} 
-                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-emerald-500/10 text-[var(--text-muted)] hover:text-emerald-500 transition-theme group"
+                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-accent/10 text-[var(--text-muted)] hover:text-accent transition-theme group"
               >
                 {dir === 'rtl' ? <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> : <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}
               </button>
@@ -289,7 +289,7 @@ export const SettingsPage: React.FC = () => {
               onClick={() => handleTabChange(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-theme group relative overflow-hidden ${
                 activeTab === tab.id 
-                  ? 'text-emerald-500'
+                  ? 'text-accent'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
@@ -297,7 +297,7 @@ export const SettingsPage: React.FC = () => {
                 {activeTab === tab.id && (
                   <motion.div 
                     layoutId="activeTabGlow"
-                    className="absolute inset-0 bg-emerald-500/[0.03]"
+                    className="absolute inset-0 bg-accent/[0.03]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -307,7 +307,7 @@ export const SettingsPage: React.FC = () => {
               </AnimatePresence>
 
               <span className={`shrink-0 transition-theme relative z-10 ${
-                activeTab === tab.id ? 'scale-110 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'group-hover:text-emerald-500'
+                activeTab === tab.id ? 'scale-110 text-accent ' : 'group-hover:text-accent'
               }`}>
                  {tab.icon}
               </span>
@@ -335,7 +335,7 @@ export const SettingsPage: React.FC = () => {
         {/* Sticky Page Header */}
         <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-[var(--radius)] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            <div className="w-12 h-12 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(16,185,129,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}
             </div>
             <div className="flex flex-col">
@@ -419,12 +419,12 @@ export const SettingsPage: React.FC = () => {
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             className={`fixed bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
               toast.type === 'success' 
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                ? 'bg-accent/10 border-accent/20 text-accent' 
                 : 'bg-red-500/10 border-red-500/20 text-red-500'
             }`}
             style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(16,185,129,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
           >
-            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
             <span className="font-bold text-sm tracking-tight">
               {typeof toast.message === 'string' ? toast.message.replace(/[<>]/g, '') : toast.message}
             </span>

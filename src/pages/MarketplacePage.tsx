@@ -3271,7 +3271,7 @@ export const MarketplacePage: React.FC = () => {
                           onChange={(e) => setItemLinkPreview(e.target.value)}
                           placeholder="https://demo.example.com"
                           className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-accent/30' : 'bg-white border-gray-250 focus:border-accent/30'
                           }`}
                         />
                       </div>
@@ -3283,7 +3283,7 @@ export const MarketplacePage: React.FC = () => {
                           onChange={(e) => setItemLinkVideo(e.target.value)}
                           placeholder="https://youtube.com/watch?v=..."
                           className={`w-full h-9 px-3 border rounded-[4px] outline-none text-xs ${
-                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                            isThemeDark ? 'bg-black/40 border-white/5 focus:border-accent/30' : 'bg-white border-gray-250 focus:border-accent/30'
                           }`}
                         />
                       </div>
@@ -3299,7 +3299,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemLang(e.target.value)}
                         placeholder="Python, JS, Pine Script"
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-accent/30' : 'bg-white border-gray-250 focus:border-accent/30'
                         }`}
                       />
                     </div>
@@ -3311,7 +3311,7 @@ export const MarketplacePage: React.FC = () => {
                         onChange={(e) => setItemTools(e.target.value)}
                         placeholder="React, Django, Express"
                         className={`w-full h-10 px-3 border rounded-[4px] outline-none text-xs ${
-                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-emerald-500/30' : 'bg-white border-gray-250 focus:border-emerald-500/30'
+                          isThemeDark ? 'bg-black/40 border-white/5 focus:border-accent/30' : 'bg-white border-gray-250 focus:border-accent/30'
                         }`}
                       />
                     </div>

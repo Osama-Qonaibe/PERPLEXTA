@@ -2452,7 +2452,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         is_popular BOOLEAN DEFAULT false,
         monthly_price NUMERIC(10, 2) NOT NULL,
         annual_price NUMERIC(10, 2) NOT NULL,
-        color VARCHAR(50) DEFAULT 'emerald',
+        color VARCHAR(50) DEFAULT 'accent',
         features JSONB DEFAULT '[]',
         limits JSONB DEFAULT '{}',
         plan_type VARCHAR(100) DEFAULT 'user',

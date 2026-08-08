@@ -82,7 +82,7 @@ export const UserAdAnalyticsView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl min-h-[400px]">
-        <RefreshCw size={28} className="animate-spin text-emerald-500" />
+        <RefreshCw size={28} className="animate-spin text-accent" />
         <span className="font-bold text-sm text-[var(--text-primary)]">
           {isRtl ? 'جاري تحليل نتائج الحملات والإعلانات الخاصة بك...' : 'Analyzing your ad campaigns & audience data...'}
         </span>
@@ -107,12 +107,12 @@ export const UserAdAnalyticsView: React.FC = () => {
 
   return (
     <div className="space-y-6 transition-theme [will-change:background-color,border-color,color]">
-      <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-[var(--bg-secondary)] border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-        <div className="absolute -top-12 -end-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-r from-gray-500/10 via-teal-950/30 to-[var(--bg-secondary)] border border-accent/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+        <div className="absolute -top-12 -end-12 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-emerald-500 text-xs font-black uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-accent text-xs font-black uppercase tracking-wider mb-1">
               <Sparkles size={16} />
               <span>{isRtl ? 'محلل نتائج الحملات والجمهور المستهدف' : 'Ad Performance & Demographic Intelligence'}</span>
             </div>
@@ -128,7 +128,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
           <button
             onClick={fetchAnalytics}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-theme shadow-sm shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/30 text-accent font-bold text-xs hover:bg-accent hover:text-white transition-theme shadow-sm shrink-0"
           >
             <RefreshCw size={15} />
             <span>{isRtl ? 'تحديث البيانات' : 'Refresh Data'}</span>
@@ -161,13 +161,13 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
 
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between text-emerald-500">
+          <div className="flex items-center justify-between text-accent">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'نسبة النقر CTR' : 'Click Rate (CTR)'}</span>
             <TrendingUp size={16} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-emerald-500">{summary.ctr}%</div>
-            <div className="text-[10px] text-emerald-400 font-bold mt-0.5">
+            <div className="text-xl font-black text-accent">{summary.ctr}%</div>
+            <div className="text-[10px] text-accent font-bold mt-0.5">
               {summary.ctr >= 2.5 ? (isRtl ? '🔥 ممتاز (أعلى من المتوسط)' : '🔥 High Performance') : (isRtl ? 'متوسط' : 'Average')}
             </div>
           </div>
@@ -214,7 +214,7 @@ export const UserAdAnalyticsView: React.FC = () => {
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)]">
             <div>
               <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
-                <BarChart2 size={18} className="text-emerald-500" />
+                <BarChart2 size={18} className="text-accent" />
                 <span>{isRtl ? 'مسار المشاهدات والنقرات اليومية (آخر 14 يوم)' : 'Daily Impressions vs Clicks Timeline'}</span>
               </h3>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -392,7 +392,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
-              <Smartphone size={18} className="text-emerald-500" />
+              <Smartphone size={18} className="text-accent" />
               <span>{isRtl ? 'نوع الأجهزة والشرائح' : 'Device & Buyer Types'}</span>
             </h3>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -408,7 +408,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-[var(--text-primary)]">
                       <span>{dev.device}</span>
-                      <span className="text-emerald-500 font-mono">{dev.percentage}%</span>
+                      <span className="text-accent font-mono">{dev.percentage}%</span>
                     </div>
                     <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden">
                       <div
@@ -452,9 +452,9 @@ export const UserAdAnalyticsView: React.FC = () => {
           {insights.map((item: any, idx: number) => (
             <div
               key={idx}
-              className="p-4 rounded-xl border bg-gradient-to-br from-[var(--bg-base)] to-[var(--bg-secondary)] space-y-2 border-emerald-500/20 shadow-sm"
+              className="p-4 rounded-xl border bg-gradient-to-br from-[var(--bg-base)] to-[var(--bg-secondary)] space-y-2 border-accent/20 shadow-sm"
             >
-              <div className="font-extrabold text-xs text-emerald-400 flex items-center gap-1.5">
+              <div className="font-extrabold text-xs text-accent flex items-center gap-1.5">
                 <CheckCircle2 size={15} />
                 <span>{isRtl ? item.title_ar : item.title_en}</span>
               </div>
@@ -471,7 +471,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         <div className="pb-3 border-b border-[var(--border-main)] flex items-center justify-between">
           <div>
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
-              <Award size={18} className="text-emerald-500" />
+              <Award size={18} className="text-accent" />
               <span>{isRtl ? 'جدول نتائج إعلاناتك الفردية' : 'Individual Ad Performance Breakdown'}</span>
             </h3>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -517,7 +517,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
                     <td className="p-3 text-center">
                       <div className="font-bold text-[var(--text-primary)]">{ad.category || 'عام'}</div>
-                      <div className="text-[10px] text-emerald-500 font-medium">{ad.location_city || 'فلسطين'}</div>
+                      <div className="text-[10px] text-accent font-medium">{ad.location_city || 'فلسطين'}</div>
                     </td>
 
                     <td className="p-3 text-center font-bold text-blue-500 font-mono">
@@ -528,7 +528,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                       {(ad.clicks_count || 0).toLocaleString()}
                     </td>
 
-                    <td className="p-3 text-center font-black text-emerald-500 font-mono">
+                    <td className="p-3 text-center font-black text-accent font-mono">
                       {ad.ctr}%
                     </td>
 
@@ -539,7 +539,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                     <td className="p-3 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
                         ad.status === 'approved'
-                          ? 'bg-emerald-500/10 text-emerald-500'
+                          ? 'bg-accent/10 text-accent'
                           : ad.status === 'pending'
                           ? 'bg-amber-500/10 text-amber-500 animate-pulse'
                           : 'bg-red-500/10 text-red-500'

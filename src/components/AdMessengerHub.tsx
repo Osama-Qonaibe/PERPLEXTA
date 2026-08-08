@@ -235,10 +235,10 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <MessageSquare size={18} className="text-emerald-500" />
+              <MessageSquare size={18} className="text-accent" />
               <span>{isRtl ? 'رسائل المعلنين' : 'Advertiser Messenger'}</span>
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black border border-emerald-500/20">
+            <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent dark:text-accent text-xs font-black border border-accent/20">
               {inquiries.length}
             </span>
           </div>
@@ -249,7 +249,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={isRtl ? 'بحث في المحادثات...' : 'Search messenger inbox...'}
-              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-white dark:bg-[#1a1a1e] border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none transition-theme dark:text-white`}
+              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-white dark:bg-[#1a1a1e] border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:ring-2 focus:ring-accent-500 outline-none transition-theme dark:text-white`}
             />
             <Search size={14} className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`} />
           </div>
@@ -271,19 +271,19 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                   onClick={() => setSelectedThread(inq)}
                   className={`p-3.5 flex items-start gap-3 cursor-pointer transition-theme relative ${
                     isSelected
-                      ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-e-4 border-emerald-500'
+                      ? 'bg-accent/10 dark:bg-accent/15 border-e-4 border-accent'
                       : 'hover:bg-gray-100/70 dark:hover:bg-[#1a1a1e]/60'
                   }`}
                 >
                   <div className="relative shrink-0">
                     {inq.sender_avatar ? (
-                      <img src={getMediaUrl(inq.sender_avatar)} alt={inq.sender_name} className="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20" />
+                      <img src={getMediaUrl(inq.sender_avatar)} alt={inq.sender_name} className="w-11 h-11 rounded-full object-cover ring-2 ring-accent-500/20" />
                     ) : (
-                      <div className="w-11 h-11 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-extrabold text-sm ring-2 ring-emerald-500/20">
+                      <div className="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center font-extrabold text-sm ring-2 ring-accent-500/20">
                         {(inq.sender_name || 'U')[0].toUpperCase()}
                       </div>
                     )}
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-[#121215]" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full ring-2 ring-white dark:ring-[#121215]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
@@ -326,24 +326,24 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 </button>
                 <div className="relative">
                   {selectedThread.sender_avatar ? (
-                    <img src={getMediaUrl(selectedThread.sender_avatar)} alt={selectedThread.sender_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30" />
+                    <img src={getMediaUrl(selectedThread.sender_avatar)} alt={selectedThread.sender_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-accent-500/30" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-sm ring-2 ring-emerald-500/30">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent-500/30">
                       <User size={18} />
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-extrabold text-sm text-gray-900 dark:text-gray-100">{selectedThread.sender_name}</h4>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
                       <Lock size={10} />
                       <span>E2EE</span>
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                    <ShieldCheck size={12} className="text-emerald-500 shrink-0" />
+                    <ShieldCheck size={12} className="text-accent shrink-0" />
                     <span>{isRtl ? 'محادثة مشفرة بالكامل (AES-256)' : 'End-to-End Encrypted Messenger'}</span>
                   </p>
                 </div>
@@ -367,12 +367,12 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
             <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50/50 dark:bg-[#121215]">
               {loadingMessages ? (
                 <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-400">
-                  <Loader2 size={24} className="animate-spin text-emerald-500" />
+                  <Loader2 size={24} className="animate-spin text-accent" />
                   <span className="text-xs font-semibold">{isRtl ? 'جاري فك التشفير وجلب الرسائل...' : 'Loading secure messages...'}</span>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <MessageSquare size={32} className="text-emerald-500/40 mb-3" />
+                  <MessageSquare size={32} className="text-accent/40 mb-3" />
                   <p className="text-xs font-bold text-gray-600 dark:text-gray-300">
                     {isRtl ? 'ابدأ إرسال الرسائل المشفرة الآن' : 'Start your secure conversation'}
                   </p>
@@ -385,7 +385,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                       <div
                         className={`max-w-[80%] sm:max-w-[70%] px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-xs relative ${
                           isMe
-                            ? 'bg-emerald-500 text-white rounded-br-xs font-medium'
+                            ? 'bg-accent text-white rounded-br-xs font-medium'
                             : 'bg-white dark:bg-[#202025] text-gray-900 dark:text-gray-100 rounded-bl-xs border border-gray-200/80 dark:border-gray-800'
                         }`}
                       >
@@ -397,7 +397,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                         <p className="whitespace-pre-wrap break-words">{msg.message}</p>
                         <div
                           className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                            isMe ? 'text-emerald-100' : 'text-gray-400 dark:text-gray-500'
+                            isMe ? 'text-accent-100' : 'text-gray-400 dark:text-gray-500'
                           }`}
                         >
                           <span className="font-mono text-[9px]">
@@ -420,9 +420,9 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               {recipientTyping && (
                 <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#202025] px-3 py-1.5 rounded-full w-fit border border-gray-200 dark:border-gray-800">
                   <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.4s]" />
                   </span>
                   <span>{isRtl ? 'المعلن يكتب الآن...' : 'Typing...'}</span>
                 </div>
@@ -436,7 +436,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(q)}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-gray-700 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200 dark:border-gray-700"
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-accent hover:text-white dark:hover:bg-accent text-gray-700 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200 dark:border-gray-700"
                 >
                   {q}
                 </button>
@@ -461,7 +461,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               <input type="file" ref={fileInputRef} accept="image/*" onChange={handleImageSelect} className="hidden" />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2.5 rounded-xl text-gray-400 hover:text-emerald-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2.5 rounded-xl text-gray-400 hover:text-accent hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title={isRtl ? 'إرفاق صورة' : 'Attach image'}
               >
                 <Paperclip size={18} />
@@ -477,12 +477,12 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                   }
                 }}
                 placeholder={isRtl ? 'اكتب رسالتك المشفرة هنا...' : 'Type encrypted message...'}
-                className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-4 py-3 rounded-xl border border-transparent focus:border-emerald-500 focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
+                className="flex-1 bg-gray-100 dark:bg-[#202025] text-gray-900 dark:text-gray-100 text-xs px-4 py-3 rounded-xl border border-transparent focus:border-accent focus:bg-white dark:focus:bg-[#151518] focus:outline-none transition-theme"
               />
               <button
                 onClick={() => handleSendMessage()}
                 disabled={(!inputMessage.trim() && !attachedImage) || sending}
-                className="p-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-emerald-500/20 flex items-center justify-center shrink-0"
+                className="p-3 rounded-xl bg-accent hover:bg-accent disabled:opacity-40 text-white font-bold transition-theme shadow-md shadow-none flex items-center justify-center shrink-0"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>
@@ -490,7 +490,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 text-gray-400">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-4">
               <MessageSquare size={28} />
             </div>
             <h4 className="font-extrabold text-base text-gray-800 dark:text-gray-200 mb-1">

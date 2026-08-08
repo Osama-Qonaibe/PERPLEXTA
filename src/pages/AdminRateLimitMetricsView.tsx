@@ -71,7 +71,7 @@ export const AdminRateLimitMetricsView = ({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <RefreshCw size={40} className="text-emerald-500 animate-spin" />
+        <RefreshCw size={40} className="text-accent animate-spin" />
         <p className="text-[var(--text-secondary)] font-medium">
           {language === "ar" ? "جاري تحميل مقاييس الحماية..." : "Loading Security Metrics..."}
         </p>
@@ -151,7 +151,7 @@ export const AdminRateLimitMetricsView = ({
 
         <div className="p-5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-500">
+            <div className="p-2 rounded-md bg-accent/10 text-accent">
               <ShieldAlert size={20} />
             </div>
             <span className="text-sm font-medium text-[var(--text-secondary)]">
@@ -202,7 +202,7 @@ export const AdminRateLimitMetricsView = ({
         <div className="p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Clock className="text-emerald-500" size={20} />
+              <Clock className="text-accent" size={20} />
               <h2 className="text-lg font-bold">
                 {language === "ar" ? "اتجاه الحجب (24 ساعة)" : "Block Trend (Last 24h)"}
               </h2>
@@ -236,7 +236,7 @@ export const AdminRateLimitMetricsView = ({
         <div className="p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <ShieldAlert className="text-emerald-500" size={20} />
+              <ShieldAlert className="text-accent" size={20} />
               <h2 className="text-lg font-bold">
                 {language === "ar" ? "توزيع أنواع الحجب" : "Blocks by Category"}
               </h2>
@@ -277,7 +277,7 @@ export const AdminRateLimitMetricsView = ({
         {/* Top IPs */}
         <div className="lg:col-span-1 p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <Filter className="text-emerald-500" size={20} />
+            <Filter className="text-accent" size={20} />
             <h2 className="text-lg font-bold">
               {language === "ar" ? "أعلى العناوين المحجوبة" : "Top Blocked IPs"}
             </h2>
@@ -316,14 +316,14 @@ export const AdminRateLimitMetricsView = ({
         <div className="lg:col-span-2 p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Activity className="text-emerald-500" size={20} />
+              <Activity className="text-accent" size={20} />
               <h2 className="text-lg font-bold">
                 {language === "ar" ? "آخر عمليات الحجب المباشرة" : "Recent Live Blocks"}
               </h2>
             </div>
             <button 
               onClick={fetchMetrics}
-              className="p-2 rounded-md hover:bg-[var(--bg-primary)] text-emerald-500 transition-theme active:scale-95"
+              className="p-2 rounded-md hover:bg-[var(--bg-primary)] text-accent transition-theme active:scale-95"
             >
               <RefreshCw size={18} />
             </button>
@@ -348,7 +348,7 @@ export const AdminRateLimitMetricsView = ({
                       {block.ip_address}
                     </td>
                     <td className="py-3 px-2">
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                         {block.limit_type}
                       </span>
                     </td>

@@ -159,14 +159,14 @@ export const MarketplacePortfolio: React.FC = () => {
       case 'extended': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
       case 'gpl': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
       case 'plr': return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
-      default: return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+      default: return 'text-accent bg-accent/10 border-accent/20';
     }
   };
 
   if (loading) {
     return (
       <div className="h-64 flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded-full border-t-2 border-emerald-500 animate-spin" />
+        <div className="w-8 h-8 rounded-full border-t-2 border-accent animate-spin" />
         <span className="text-xs text-[var(--text-muted)]">
           {isRtl ? 'جاري تحميل المعاملات والمنتجات...' : 'Loading portfolio and affiliate assets...'}
         </span>
@@ -182,7 +182,7 @@ export const MarketplacePortfolio: React.FC = () => {
           onClick={() => setActiveSubTab('downloads')}
           className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-theme border-b-2 cursor-pointer ${
             activeSubTab === 'downloads'
-              ? 'border-emerald-500 text-emerald-500'
+              ? 'border-accent text-accent'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
@@ -192,7 +192,7 @@ export const MarketplacePortfolio: React.FC = () => {
           onClick={() => setActiveSubTab('affiliate')}
           className={`px-6 py-3 text-xs font-black tracking-wider uppercase transition-theme border-b-2 cursor-pointer ${
             activeSubTab === 'affiliate'
-              ? 'border-emerald-500 text-emerald-500'
+              ? 'border-accent text-accent'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
@@ -225,7 +225,7 @@ export const MarketplacePortfolio: React.FC = () => {
                 {purchased.map((item) => (
                   <div 
                     key={item.purchase_id} 
-                    className="flex flex-col border border-[var(--border)]/50 bg-[var(--bg-secondary)]/40 rounded-xl overflow-hidden shadow-xl hover:border-emerald-500/20 transition-theme group"
+                    className="flex flex-col border border-[var(--border)]/50 bg-[var(--bg-secondary)]/40 rounded-xl overflow-hidden shadow-xl hover:border-accent/20 transition-theme group"
                   >
                     {/* Media Block */}
                     <div className="relative h-40 bg-[#0c0c0e] flex items-center justify-center overflow-hidden">
@@ -239,7 +239,7 @@ export const MarketplacePortfolio: React.FC = () => {
                           {item.license_type}
                         </span>
                       </div>
-                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-[10px] text-emerald-400 font-bold px-2 py-1 rounded">
+                      <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-[10px] text-accent font-bold px-2 py-1 rounded">
                         {isRtl ? 'التنزيل متاح دائمًا' : 'Lifetime Download'}
                       </div>
                     </div>
@@ -247,7 +247,7 @@ export const MarketplacePortfolio: React.FC = () => {
                     {/* Meta Fields */}
                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4 bg-black/10">
                       <div>
-                        <h4 className="font-bold text-lg group-hover:text-emerald-400 transition-colors leading-snug">
+                        <h4 className="font-bold text-lg group-hover:text-accent transition-colors leading-snug">
                           {isRtl ? item.title_ar : item.title_en}
                         </h4>
                         <p className="text-[11px] text-[var(--text-muted)] mt-1 line-clamp-2 leading-relaxed">
@@ -261,7 +261,7 @@ export const MarketplacePortfolio: React.FC = () => {
                             <Calendar size={13} />
                             {new Date(item.purchased_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
                           </span>
-                          <span className="font-bold text-emerald-400">
+                          <span className="font-bold text-accent">
                             {formatCurrency(item.price_paid)}
                           </span>
                         </div>
@@ -273,7 +273,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.download_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 h-9 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                              className="flex-1 h-9 rounded-lg bg-accent text-black hover:bg-accent transition-theme font-black text-[10px] flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-sm"
                             >
                               <Download size={13} />
                               <span>{isRtl ? 'تحميل الملف' : 'Download Package'}</span>
@@ -293,7 +293,7 @@ export const MarketplacePortfolio: React.FC = () => {
                               href={item.preview_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-10 h-9 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 flex items-center justify-center transition-theme cursor-pointer active:scale-95"
+                              className="w-10 h-9 rounded-lg border border-accent/20 bg-accent/5 hover:bg-accent/15 text-accent flex items-center justify-center transition-theme cursor-pointer active:scale-95"
                               title={isRtl ? 'المعاينة المباشرة' : 'Live Preview'}
                             >
                               <Eye size={13} />
@@ -331,10 +331,10 @@ export const MarketplacePortfolio: React.FC = () => {
             className="space-y-6"
           >
             {/* Share Global Code Header */}
-            <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="border border-accent/20 bg-accent/5 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-emerald-500 animate-bounce" />
+                  <Gift className="w-5 h-5 text-accent animate-bounce" />
                   <h4 className="font-black text-base">{isRtl ? 'برنامج الإحالات الفرعي للمنتجات' : 'Product Affiliate Hub'}</h4>
                 </div>
                 <p className="text-xs text-[var(--text-muted)] max-w-xl leading-relaxed">
@@ -346,7 +346,7 @@ export const MarketplacePortfolio: React.FC = () => {
 
               <button
                 onClick={handleCopyGlobalRefLink}
-                className="h-10 px-6 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-theme font-black text-[11px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-md shadow-emerald-500/10 hover:scale-102"
+                className="h-10 px-6 rounded-lg bg-accent text-black hover:bg-accent transition-theme font-black text-[11px] flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-md shadow-none hover:scale-102"
               >
                 <Award size={14} />
                 <span>{isRtl ? 'نسخ رابط المتجر العام' : 'Copy General Store Link'}</span>
@@ -360,11 +360,11 @@ export const MarketplacePortfolio: React.FC = () => {
                   <span className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-wider">
                     {isRtl ? 'إجمالي الأرباح المكتسبة' : 'Total Revenue Earned'}
                   </span>
-                  <p className="text-3xl font-black text-emerald-400">
+                  <p className="text-3xl font-black text-accent">
                     {formatCurrency(affStats.total_earned)}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 shadow-md">
+                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center text-accent shadow-md">
                   <DollarSign size={22} />
                 </div>
               </div>
@@ -427,7 +427,7 @@ export const MarketplacePortfolio: React.FC = () => {
                         <span className="text-[10.5px] text-[var(--text-muted)]">
                           {isRtl ? 'العمولة المكتسبة:' : 'Commission Earned:'}
                         </span>
-                        <span className="font-black text-emerald-400 text-base">
+                        <span className="font-black text-accent text-base">
                           +{formatCurrency(sale.commission_paid)}
                         </span>
                       </div>

@@ -254,7 +254,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     });
 
     navItems.push({
-      icon: <Sparkles size={18} className="text-emerald-500" />,
+      icon: <Sparkles size={18} className="text-accent" />,
       label: language === 'ar' ? 'اكتشف' : 'Discover',
       path: '/discover'
     });
@@ -327,7 +327,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           `}
           title={isSidebarOpen ? (language === 'ar' ? 'تصغير' : 'Collapse') : (language === 'ar' ? 'توسيع' : 'Expand')}
         >
-          <div className="text-[var(--text-secondary)] transition-theme group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]">
+          <div className="text-[var(--text-secondary)] transition-theme group-hover:text-accent group-hover:">
             {isSidebarOpen ? (
               dir === 'rtl' ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />
             ) : (
@@ -357,12 +357,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`${(item as any).className || 'flex'} items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}>
                           <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
                             <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme ${
-                              active ? 'bg-emerald-500/10 border-emerald-500/20' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'
+                              active ? 'bg-accent/10 border-accent/20' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'
                             }`} />
                             <div className={`relative z-10 transition-theme ${
                               active 
-                                ? 'text-emerald-500' 
-                                : 'text-gray-400 group-hover:text-emerald-500'
+                                ? 'text-accent' 
+                                : 'text-gray-400 group-hover:text-accent'
                             }`}>
                               {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 18 : 18 } as any)}
                             </div>
@@ -375,7 +375,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                                 transition={sidebarTransition}
                                 className={`font-bold text-sm whitespace-nowrap transition-theme ${
-                                  active ? 'text-emerald-500 font-bold' : 'text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+                                  active ? 'text-accent font-bold' : 'text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                                 } ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
                               >
                                 {item.label}
@@ -396,8 +396,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       className={`flex items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}
                     >
                       <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
-                        <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme bg-emerald-500/5 border-emerald-500/10 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/20`} />
-                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-theme text-emerald-500`} />
+                        <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme bg-accent/5 border-accent/10 group-hover:bg-accent/15 group-hover:border-accent/20`} />
+                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-theme text-accent`} />
                       </div>
                       <AnimatePresence mode="wait" initial={false}>
                         {isSidebarOpen && (
@@ -406,7 +406,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
                             transition={sidebarTransition}
-                            className={`font-black ${isMobile ? 'text-sm' : 'text-sm'} text-emerald-500 whitespace-nowrap ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                            className={`font-black ${isMobile ? 'text-sm' : 'text-sm'} text-accent whitespace-nowrap ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
                           >
                             {t('newChat')}
                           </motion.span>
@@ -460,8 +460,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               }}
                               className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-theme group relative border rounded-[4px] ${
                                 isActive 
-                                  ? 'text-emerald-500 bg-transparent border-transparent' 
-                                  : 'text-gray-400 hover:text-emerald-500 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 border-transparent'
+                                  ? 'text-accent bg-transparent border-transparent' 
+                                  : 'text-gray-400 hover:text-accent hover:bg-gray-50/50 dark:hover:bg-gray-800/20 border-transparent'
                               }`}
                             >
                               <div

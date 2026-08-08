@@ -267,7 +267,7 @@ export const UpgradePromptModal: React.FC = () => {
             {/* Target Diagnostic Details */}
             <div className="p-4 rounded-sm bg-gray-900/40 border border-gray-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent">
                   {language === 'ar' ? 'أداة الاستهداف' : 'TARGET MODULE ACTIVATION'}
                 </span>
                 <h4 className="text-sm font-bold text-white">
@@ -300,7 +300,7 @@ export const UpgradePromptModal: React.FC = () => {
                   onClick={() => setBillingCycle('monthly')}
                   className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-theme ${
                     billingCycle === 'monthly'
-                      ? 'bg-emerald-500 shadow-sm text-black'
+                      ? 'bg-accent shadow-sm text-black'
                       : 'text-gray-400 hover:text-white bg-transparent'
                   }`}
                 >
@@ -310,7 +310,7 @@ export const UpgradePromptModal: React.FC = () => {
                   onClick={() => setBillingCycle('annual')}
                   className={`px-3 py-1 rounded-[4px] text-[10px] font-black uppercase tracking-wider transition-theme flex items-center gap-1 ${
                     billingCycle === 'annual'
-                      ? 'bg-emerald-500 shadow-sm text-black'
+                      ? 'bg-accent shadow-sm text-black'
                       : 'text-gray-400 hover:text-white bg-transparent'
                   }`}
                 >
@@ -407,7 +407,7 @@ export const UpgradePromptModal: React.FC = () => {
                   <div className="space-y-2 border-t border-gray-850 pt-4">
                     <div className="flex items-center justify-between text-xs font-bold">
                       <span className="text-gray-300">{language === 'ar' ? 'حصة الأداة الجديدة:' : 'Upgraded Quota:'}</span>
-                      <span className="text-emerald-400 font-mono drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1">
+                      <span className="text-accent font-mono  flex items-center gap-1">
                         <Coins size={12} />
                         {getPlanLimitText(nextRequiredPlan, toolId)}
                       </span>
@@ -416,7 +416,7 @@ export const UpgradePromptModal: React.FC = () => {
                     <div className="space-y-1.5 mt-3">
                       {nextRequiredPlan?.features?.slice(0, 3).map((feat: string, fIdx: number) => (
                         <div key={fIdx} className="flex items-center gap-2 text-[11px] text-gray-300">
-                          <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+                          <CheckCircle2 size={11} className="text-accent shrink-0" />
                           <span className="truncate">{feat}</span>
                         </div>
                       ))}
@@ -431,7 +431,7 @@ export const UpgradePromptModal: React.FC = () => {
                       <Wallet size={10} />
                       {language === 'ar' ? 'رصيد محفظتك:' : 'Your Wallet Balance:'}
                     </span>
-                    <span className={`text-[11px] font-black font-mono ${hasEnoughBalance ? 'text-emerald-400' : 'text-gray-400'}`}>
+                    <span className={`text-[11px] font-black font-mono ${hasEnoughBalance ? 'text-accent' : 'text-gray-400'}`}>
                       ${balanceUSD.toFixed(2)}
                     </span>
                   </div>
@@ -449,7 +449,7 @@ export const UpgradePromptModal: React.FC = () => {
                 closeUpgradePrompt();
                 navigate('/subscription');
               }}
-              className="w-full sm:w-auto text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-theme flex items-center justify-center gap-1.5 py-2.5 px-4 bg-transparent hover:bg-emerald-500/5 rounded-sm border border-emerald-500/10 hover:border-emerald-500/30"
+              className="w-full sm:w-auto text-[10px] font-black uppercase tracking-widest text-accent hover:text-white transition-theme flex items-center justify-center gap-1.5 py-2.5 px-4 bg-transparent hover:bg-accent/5 rounded-sm border border-accent/10 hover:border-accent/30"
             >
               <ExternalLink size={12} />
               <span>{language === 'ar' ? 'تصفح جميع الخطط المتاحة' : 'EXPLORE ALL TIERS & ADD-ONS'}</span>
@@ -460,7 +460,7 @@ export const UpgradePromptModal: React.FC = () => {
                 <button
                   disabled={loadingType !== null}
                   onClick={handleUpgradeWithBalance}
-                  className="w-full sm:w-auto text-[11px] font-black uppercase tracking-wider text-black bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 py-3 px-6 rounded-sm shadow-xl shadow-emerald-500/10 hover:-translate-y-0.5 active:translate-y-0 transition-transform duration-300 shrink-0 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto text-[11px] font-black uppercase tracking-wider text-black bg-accent hover:bg-accent disabled:opacity-50 py-3 px-6 rounded-sm shadow-xl shadow-none hover:-translate-y-0.5 active:translate-y-0 transition-transform duration-300 shrink-0 flex items-center justify-center gap-2"
                 >
                   {loadingType === 'balance' ? (
                     <span className="w-4 h-4 rounded-full border-2 border-dashed border-black animate-spin" />
@@ -492,7 +492,7 @@ export const UpgradePromptModal: React.FC = () => {
 
           {/* Secure protocol footer message in gray */}
           <div className="px-6 pb-4 pt-1 bg-[#161619]/40 border-t border-gray-900 flex items-center justify-center gap-1.5 text-[8px] text-gray-500/70 font-bold uppercase tracking-[0.2em] relative z-10 selection:bg-transparent">
-            <ShieldCheck size={11} className="text-emerald-500/50" />
+            <ShieldCheck size={11} className="text-accent/50" />
             <span>{language === 'ar' ? 'عملية مشفرة بالكامل ومعالجة فورية' : 'STABLE SECURE ENCRYPTED LICENSE PROVISIONING'}</span>
           </div>
 

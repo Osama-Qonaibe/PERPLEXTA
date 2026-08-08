@@ -196,7 +196,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
           className="relative w-full max-w-lg my-8 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100"
         >
           {/* Top Banner Header */}
-          <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-5 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-500/10 via-teal-600 to-gray-500/5 p-5 text-white relative overflow-hidden">
             <div className="absolute -end-6 -bottom-6 opacity-20 pointer-events-none">
               <Rocket size={140} />
             </div>
@@ -213,7 +213,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                       VIP
                     </span>
                   </h3>
-                  <p className="text-xs text-emerald-100 font-medium pt-0.5">
+                  <p className="text-xs text-accent-100 font-medium pt-0.5">
                     {isRtl ? 'احصل على ضعف المشاهدات وضاعف مبيعاتك واستفساراتك' : 'Multiply views, inquiries & sales instantly'}
                   </p>
                 </div>
@@ -235,10 +235,10 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                 <img
                   src={getMediaUrl(ad.image_url)}
                   alt={ad.title}
-                  className="w-14 h-14 rounded-xl object-cover border border-emerald-500/30 shrink-0"
+                  className="w-14 h-14 rounded-xl object-cover border border-accent/30 shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 font-black text-xs">
+                <div className="w-14 h-14 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 font-black text-xs">
                   AD
                 </div>
               )}
@@ -250,7 +250,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 pt-0.5">
                   {ad.description}
                 </p>
-                <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-extrabold pt-1">
+                <div className="flex items-center gap-2 text-[10px] text-accent font-extrabold pt-1">
                   <span className="flex items-center gap-1">
                     <TrendingUp size={12} />
                     {isRtl ? 'الحالة الحالية:' : 'Current:'} {ad.is_boosted ? (isRtl ? 'مُموَّل مفعل 🚀' : 'Active Boost') : (isRtl ? 'عادي' : 'Standard')}
@@ -263,7 +263,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
             <div className="space-y-2.5">
               <label className="text-xs font-extrabold text-gray-700 dark:text-gray-300 flex items-center justify-between">
                 <span>{isRtl ? 'اختر باقة التمويل والتنشيط:' : 'Select Boost Package:'}</span>
-                <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1">
+                <span className="text-[11px] text-accent font-bold flex items-center gap-1">
                   <Sparkles size={13} />
                   {isRtl ? 'أولوية الظهور بقمة اللوحة' : 'Top Feed Priority'}
                 </span>
@@ -278,8 +278,8 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                       onClick={() => setSelectedDays(tier.days)}
                       className={`relative p-3.5 rounded-2xl border-2 transition-theme cursor-pointer flex items-center justify-between gap-3 ${
                         isSelected
-                          ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-md ring-1 ring-emerald-500/30'
-                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1c] hover:border-emerald-500/40'
+                          ? 'border-accent bg-accent/5 dark:bg-accent/10 shadow-md ring-1 ring-accent-500/30'
+                          : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1c] hover:border-accent/40'
                       }`}
                     >
                       <div className="space-y-1 min-w-0">
@@ -293,7 +293,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <p className="text-[11px] text-accent dark:text-accent font-bold flex items-center gap-1">
                           <Zap size={12} />
                           <span>{isRtl ? tier.viewsAr : tier.viewsEn}</span>
                         </p>
@@ -303,7 +303,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                       </div>
 
                       <div className="text-end shrink-0">
-                        <span className="text-base font-black text-emerald-500">
+                        <span className="text-base font-black text-accent">
                           ${tier.price.toFixed(2)}
                         </span>
                         <span className="text-[10px] text-gray-400 block">USD</span>
@@ -327,7 +327,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                   onClick={() => setPaymentMethod('wallet')}
                   className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-theme ${
                     paymentMethod === 'wallet'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 font-extrabold shadow-sm'
+                      ? 'border-accent bg-accent/10 text-accent font-extrabold shadow-sm'
                       : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
@@ -341,7 +341,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                   onClick={() => setPaymentMethod('stripe')}
                   className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-theme ${
                     paymentMethod === 'stripe'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 font-extrabold shadow-sm'
+                      ? 'border-accent bg-accent/10 text-accent font-extrabold shadow-sm'
                       : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
@@ -355,7 +355,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                   onClick={() => setPaymentMethod('x402')}
                   className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-theme ${
                     paymentMethod === 'x402'
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500 font-extrabold shadow-sm'
+                      ? 'border-accent bg-accent/10 text-accent font-extrabold shadow-sm'
                       : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
@@ -368,7 +368,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
               {paymentMethod === 'wallet' && (
                 <div className={`p-3 rounded-2xl border text-xs flex items-center justify-between gap-2 ${
                   hasSufficientBalance
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                    ? 'bg-accent/10 border-accent/30 text-accent dark:text-accent'
                     : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
                 }`}>
                   <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
               type="button"
               onClick={handleConfirmBoost}
               disabled={loading || (paymentMethod === 'wallet' && !hasSufficientBalance)}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-extrabold text-xs shadow-md shadow-emerald-500/20 flex items-center gap-2 transition-theme"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gray-500/10 to-teal-600 hover:from-gray-500/10 hover:to-teal-700 disabled:opacity-50 text-white font-extrabold text-xs shadow-md shadow-none flex items-center gap-2 transition-theme"
             >
               {loading ? (
                 <>

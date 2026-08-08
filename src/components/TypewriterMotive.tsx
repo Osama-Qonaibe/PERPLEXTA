@@ -102,7 +102,7 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
 
     if (!matchedHighlight) {
       return (
-        <span className={`transition-colors duration-500 ${fullyTyped ? 'text-gray-950 dark:text-white dark:drop-shadow-[0_0_12px_rgba(255,255,255,0.8)]' : 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`}>
+        <span className={`transition-colors duration-500 ${fullyTyped ? 'text-gray-950 dark:text-white dark:drop-shadow-[0_0_12px_rgba(255,255,255,0.8)]' : 'text-accent '}`}>
           {text}
         </span>
       );
@@ -122,13 +122,13 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
     // Emerald Green state while actively typing or deleting
     return (
       <>
-        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme font-bold">
+        <span className="text-accent/85  transition-theme font-bold">
           {parts[0]}
         </span>
-        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.7)] transition-theme font-black">
+        <span className="text-accent drop-shadow-[0_0_12px_rgba(52,211,153,0.7)] transition-theme font-black">
           {matchedHighlight}
         </span>
-        <span className="text-emerald-500/85 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme font-bold">
+        <span className="text-accent/85  transition-theme font-bold">
           {parts.slice(1).join(matchedHighlight)}
         </span>
       </>
@@ -154,7 +154,7 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
             <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-theme ${
               isFullyTyped 
                 ? 'bg-gray-950 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_12px_rgba(255,255,255,0.9)]' 
-                : 'bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                : 'bg-accent dark:bg-accent shadow-[0_0_8px_rgba(16,185,129,0.7)]'
             }`} />
           </div>
         </motion.div>

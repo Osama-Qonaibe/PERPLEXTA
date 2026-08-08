@@ -26,7 +26,7 @@
   --border: var(--border-subtle);
   --border-accent: #000000;
   
-  --accent-emerald: #000000;
+  --accent-accent: #000000;
   --accent-primary: #000000;
   --accent-glow: transparent;
   --danger: #000000;
@@ -72,7 +72,7 @@
   --border: var(--border-main);
   --border-accent: #FFFFFF;
 
-  --accent-emerald: #FFFFFF;
+  --accent-accent: #FFFFFF;
   --accent-primary: #FFFFFF;
   --accent-glow: transparent;
   --danger: #FFFFFF;
@@ -103,7 +103,7 @@
     --border: var(--border-main);
     --border-accent: #FFFFFF;
 
-    --accent-emerald: #FFFFFF;
+    --accent-accent: #FFFFFF;
     --accent-primary: #FFFFFF;
     --accent-glow: transparent;
     --danger: #FFFFFF;
@@ -299,7 +299,7 @@ html, body, #root {
   50% { opacity: 1; }
 }
 
-.typing-cursor-emerald {
+.typing-cursor-accent {
   display: inline-block;
   width: 2px;
   height: 1.1em;

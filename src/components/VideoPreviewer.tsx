@@ -123,12 +123,12 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
   const isProcessing = processingStage !== 'done' && processingStage !== 'idle';
 
   return (
-    <div className="relative group bg-gradient-to-br from-[#141416]/90 to-[#1e1e24]/90 border border-emerald-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 transition-theme hover:border-emerald-500/60">
+    <div className="relative group bg-gradient-to-br from-[#141416]/90 to-[#1e1e24]/90 border border-accent/30 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-4 transition-theme hover:border-accent/60">
       <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
         {/* Main Thumbnail or Video Preview */}
         <div className="relative w-full sm:w-36 h-24 bg-black rounded-xl overflow-hidden border border-gray-800 flex items-center justify-center shrink-0 shadow-inner">
           {isProcessing ? (
-            <div className="flex flex-col items-center justify-center text-emerald-500/70 gap-2">
+            <div className="flex flex-col items-center justify-center text-accent/70 gap-2">
               <Loader2 size={24} className="animate-spin" />
               <span className="text-[10px] font-mono">{Math.round(uploadProgress)}%</span>
             </div>
@@ -149,7 +149,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
               />
             )
           ) : (
-            <div className="flex flex-col items-center justify-center text-emerald-400 gap-1">
+            <div className="flex flex-col items-center justify-center text-accent gap-1">
               <Film size={24} />
               <span className="text-[10px] font-mono">VIDEO</span>
             </div>
@@ -159,7 +159,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
 
           {duration && !isProcessing && (
             <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white flex items-center gap-1 backdrop-blur-sm">
-              <Clock size={10} className="text-emerald-400" />
+              <Clock size={10} className="text-accent" />
               <span>{formatDuration(duration)}</span>
             </div>
           )}
@@ -170,13 +170,13 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-white text-xs font-bold truncate flex items-center gap-1.5">
               {isProcessing ? (
-                <Loader2 size={14} className="text-emerald-400 shrink-0 animate-spin" />
+                <Loader2 size={14} className="text-accent shrink-0 animate-spin" />
               ) : (
-                <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
+                <CheckCircle2 size={14} className="text-accent shrink-0" />
               )}
               <span className="truncate">{fileName || (isRtl ? 'مقطع الفيديو' : 'Video Asset')}</span>
             </h4>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono border shrink-0 ${isProcessing ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono border shrink-0 ${isProcessing ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse' : 'bg-accent/10 text-accent border-accent/20'}`}>
               {isProcessing 
                 ? (isRtl ? 'جاري المعالجة...' : 'Processing...') 
                 : (isRtl ? 'جاهز للمعالجة' : 'Ready')}
@@ -187,7 +187,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
             <div className="w-full flex flex-col gap-2 mt-1">
               <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                 <div 
-                  className={`h-full transition-theme ${processingStage === 'uploading' ? 'bg-blue-500' : processingStage === 'transcoding' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                  className={`h-full transition-theme ${processingStage === 'uploading' ? 'bg-blue-500' : processingStage === 'transcoding' ? 'bg-amber-500' : 'bg-accent'}`}
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -195,7 +195,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
                 <div className="flex items-center gap-1.5">
                   {processingStage === 'uploading' && <UploadCloud size={12} className="text-blue-400" />}
                   {processingStage === 'transcoding' && <Cpu size={12} className="text-amber-400 animate-pulse" />}
-                  {processingStage === 'extracting' && <FileSearch size={12} className="text-emerald-400 animate-pulse" />}
+                  {processingStage === 'extracting' && <FileSearch size={12} className="text-accent animate-pulse" />}
                   <span>
                     {processingStage === 'uploading' && (isRtl ? 'جاري الرفع للشبكة...' : 'Uploading to network...')}
                     {processingStage === 'transcoding' && (isRtl ? 'جاري معالجة الفيديو (FFmpeg)...' : 'Transcoding video (FFmpeg)...')}
@@ -234,7 +234,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
                   <button
                     type="button"
                     onClick={onTrim}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors border border-emerald-500/30 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-accent/20 hover:bg-accent text-accent hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors border border-accent/30 cursor-pointer"
                   >
                     <Scissors size={12} />
                     <span>{isRtl ? 'قص المقطع' : 'Trim'}</span>
@@ -271,11 +271,11 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
         <div className="border-t border-gray-800/80 pt-3 flex flex-col gap-2">
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span className="flex items-center gap-1.5 font-medium">
-              <ImageIcon size={13} className="text-emerald-400" />
+              <ImageIcon size={13} className="text-accent" />
               {isRtl ? 'اختر صورة مصغرة (Thumbnail Keyframes):' : 'Select Keyframe Thumbnail:'}
             </span>
             {isGeneratingThumbs && (
-              <span className="text-[10px] text-emerald-400 animate-pulse">
+              <span className="text-[10px] text-accent animate-pulse">
                 {isRtl ? 'جاري توليد الإطارات...' : 'Generating frames...'}
               </span>
             )}
@@ -293,14 +293,14 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
                   }}
                   className={`relative rounded-xl overflow-hidden border transition-theme aspect-video group/thumb cursor-pointer ${
                     selectedThumb === thumb
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/20'
+                      ? 'border-accent ring-2 ring-accent-500/30 shadow-lg shadow-none'
                       : 'border-gray-800 hover:border-gray-600 opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img src={thumb} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-transparent transition-colors" />
                   {selectedThumb === thumb && (
-                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold">
+                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-accent text-white flex items-center justify-center text-[9px] font-bold">
                       ✓
                     </div>
                   )}

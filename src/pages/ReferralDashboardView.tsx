@@ -284,7 +284,7 @@ export const ReferralDashboardView = ({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <RefreshCw size={40} className="text-emerald-500 animate-spin" />
+        <RefreshCw size={40} className="text-accent animate-spin" />
         <p className="text-xs text-[var(--text-muted)] mt-4 font-bold uppercase tracking-widest animate-pulse">
           {isRtl ? "جاري تحميل إحصائيات الإحالات..." : "INGESTING REFERRAL DATA..."}
         </p>
@@ -356,12 +356,12 @@ export const ReferralDashboardView = ({
         <div 
           className={`p-3 rounded-[4px] border flex items-center justify-between animate-fade-in text-xs font-semibold ${
             notification.type === 'success'
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+              ? 'bg-accent/10 border-accent/20 text-accent'
               : 'bg-red-500/10 border-red-500/20 text-red-500'
           }`}
         >
           <div className="flex items-center gap-2">
-            <CheckCircle size={14} className={notification.type === 'success' ? 'text-emerald-500' : 'text-red-500'} />
+            <CheckCircle size={14} className={notification.type === 'success' ? 'text-accent' : 'text-red-500'} />
             <span>{notification.message}</span>
           </div>
           <button 
@@ -383,7 +383,7 @@ export const ReferralDashboardView = ({
       >
         <div>
           <h1 className="text-xl font-black uppercase text-[var(--text-primary)] flex items-center gap-2 tracking-tight">
-            <Users size={22} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <Users size={22} className="text-accent " />
             {isRtl ? "إدارة الإحالة والتبشير" : "REFERRAL ADOCACY MANAGEMENT"}
           </h1>
           <p className="text-xs text-[var(--text-muted)] mt-1.5 font-medium max-w-2xl leading-relaxed">
@@ -396,7 +396,7 @@ export const ReferralDashboardView = ({
           <button
             disabled={downloading}
             onClick={handleDownloadCSV}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-theme cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.05)]`}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-accent/20 transition-theme cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.05)]`}
           >
             <Download size={14} className={downloading ? "animate-pulse" : ""} />
             <span>
@@ -448,12 +448,12 @@ export const ReferralDashboardView = ({
             <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">
               {isRtl ? "الدعوات المقبولة" : "ACCEPTED CONVERSIONS"}
             </span>
-            <div className={`p-1.5 rounded-sm bg-emerald-500/10 text-emerald-500`}>
+            <div className={`p-1.5 rounded-sm bg-accent/10 text-accent`}>
               <CheckCircle size={15} />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-emerald-500 font-sans">
+            <span className="text-2xl font-black text-accent font-sans">
               {summary.accepted.toLocaleString()}
             </span>
           </div>
@@ -556,7 +556,7 @@ export const ReferralDashboardView = ({
       >
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
-            <TrendingUp size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <TrendingUp size={18} className="text-accent " />
             <h2 className="text-sm font-black uppercase text-[var(--text-primary)]">
               {isRtl ? "منحنى الإحالات اليومي (آخر 30 يوم)" : "REFERRAL DISPATCH & CONVERSION TREND (LAST 30 DAYS)"}
             </h2>
@@ -567,7 +567,7 @@ export const ReferralDashboardView = ({
               <span className="text-[var(--text-muted)] uppercase">{isRtl ? "مُرسل" : "SENT"}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-accent" />
               <span className="text-[var(--text-muted)] uppercase">{isRtl ? "مقبول" : "ACCEPTED"}</span>
             </div>
           </div>
@@ -661,11 +661,11 @@ export const ReferralDashboardView = ({
                 onClick={() => setRankingTab("active")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-theme rounded-[4px] cursor-pointer ${
                   rankingTab === "active"
-                    ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] bg-emerald-500/5 border border-emerald-500/10"
+                    ? "text-accent  bg-accent/5 border border-accent/10"
                     : "text-gray-400 hover:text-[var(--text-primary)] border border-transparent bg-transparent"
                 }`}
               >
-                <Award size={14} className={rankingTab === "active" ? "text-emerald-500" : "text-gray-400"} />
+                <Award size={14} className={rankingTab === "active" ? "text-accent" : "text-gray-400"} />
                 <span>{isRtl ? "الأكثر نشاطاً" : "Most Active"}</span>
               </button>
 
@@ -675,11 +675,11 @@ export const ReferralDashboardView = ({
                 onClick={() => setRankingTab("top_conversions")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-theme rounded-[4px] cursor-pointer ${
                   rankingTab === "top_conversions"
-                    ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] bg-emerald-500/5 border border-emerald-500/10"
+                    ? "text-accent  bg-accent/5 border border-accent/10"
                     : "text-gray-400 hover:text-[var(--text-primary)] border border-transparent bg-transparent"
                 }`}
               >
-                <TrendingUp size={14} className={rankingTab === "top_conversions" ? "text-emerald-500" : "text-gray-400"} />
+                <TrendingUp size={14} className={rankingTab === "top_conversions" ? "text-accent" : "text-gray-400"} />
                 <span>{isRtl ? "كبار المنجزين" : "Top Performers"}</span>
               </button>
             </div>
@@ -697,12 +697,12 @@ export const ReferralDashboardView = ({
                   onChange={(e) => setReferrerSearch(e.target.value)}
                   className={`w-full text-xs pl-8 pr-3 py-1.5 rounded-[4px] border focus:outline-none transition-theme ${
                     theme === "dark"
-                      ? "bg-[#252528] border-gray-700/60 text-[var(--text-primary)] focus:border-emerald-500"
-                      : "bg-gray-50 border-gray-200 text-[var(--text-primary)] focus:border-emerald-500 focus:bg-white"
+                      ? "bg-[#252528] border-gray-700/60 text-[var(--text-primary)] focus:border-accent"
+                      : "bg-gray-50 border-gray-200 text-[var(--text-primary)] focus:border-accent focus:bg-white"
                   }`}
                 />
               </div>
-              <span className="text-[10px] whitespace-nowrap font-mono font-bold bg-emerald-500/10 text-emerald-500 px-2.5 py-1.5 rounded-[4px]">
+              <span className="text-[10px] whitespace-nowrap font-mono font-bold bg-accent/10 text-accent px-2.5 py-1.5 rounded-[4px]">
                 {isRtl 
                   ? `العدد: ${(rankingTab === "active" ? filteredReferrers : filteredTopPerformers).length}` 
                   : `TOTAL: ${(rankingTab === "active" ? filteredReferrers : filteredTopPerformers).length}`}
@@ -732,11 +732,11 @@ export const ReferralDashboardView = ({
                     {rankingTab === "active" ? (
                       <>
                         <th className="py-2.5 px-3 text-center">{isRtl ? "الدعوات" : "INVITES"}</th>
-                        <th className="py-2.5 px-3 text-center text-emerald-500">{isRtl ? "المقبولة" : "ACCEPTED"}</th>
+                        <th className="py-2.5 px-3 text-center text-accent">{isRtl ? "المقبولة" : "ACCEPTED"}</th>
                       </>
                     ) : (
                       <>
-                        <th className="py-2.5 px-3 text-center text-emerald-500 font-extrabold">{isRtl ? "تحويلات ناجحة 🏆" : "CONVERSIONS 🏆"}</th>
+                        <th className="py-2.5 px-3 text-center text-accent font-extrabold">{isRtl ? "تحويلات ناجحة 🏆" : "CONVERSIONS 🏆"}</th>
                         <th className="py-2.5 px-3 text-center">{isRtl ? "إجمالي المحاولات" : "TOTAL ATTEMPTS"}</th>
                       </>
                     )}
@@ -767,7 +767,7 @@ export const ReferralDashboardView = ({
                         </td>
                         <td className="py-3 px-3">
                           <div className="flex flex-col">
-                            <span className="font-bold text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors duration-200">
+                            <span className="font-bold text-[var(--text-primary)] group-hover:text-accent transition-colors duration-200">
                               {ref.referrer_name}
                             </span>
                             <span className="text-[10px] text-[var(--text-muted)] font-mono">
@@ -780,13 +780,13 @@ export const ReferralDashboardView = ({
                             <td className="py-3 px-3 text-center font-bold font-sans">
                               {ref.total_sent}
                             </td>
-                            <td className="py-3 px-3 text-center font-black text-emerald-500 font-sans">
+                            <td className="py-3 px-3 text-center font-black text-accent font-sans">
                               {ref.total_accepted}
                             </td>
                           </>
                         ) : (
                           <>
-                            <td className="py-3 px-3 text-center font-black text-emerald-500 bg-emerald-500/5 font-sans border-x border-emerald-500/10">
+                            <td className="py-3 px-3 text-center font-black text-accent bg-accent/5 font-sans border-x border-accent/10">
                               {ref.total_accepted}
                             </td>
                             <td className="py-3 px-3 text-center font-bold text-[var(--text-secondary)] font-sans">
@@ -804,7 +804,7 @@ export const ReferralDashboardView = ({
                             </span>
                             <div className="w-20 bg-gray-200 dark:bg-gray-800 rounded-full h-1 mt-1 overflow-hidden">
                               <div 
-                                className="bg-emerald-500 h-1 rounded-full transition-theme" 
+                                className="bg-accent h-1 rounded-full transition-theme" 
                                 style={{ width: `${Math.min(ref.conversion_rate, 100)}%` }}
                               />
                             </div>
@@ -839,8 +839,8 @@ export const ReferralDashboardView = ({
               onChange={(e) => setInviteStatusFilter(e.target.value as "all" | "accepted" | "pending")}
               className={`text-[10px] uppercase font-bold px-2 py-1.5 rounded-[4px] border focus:outline-none cursor-pointer transition-theme ${
                 theme === "dark" 
-                  ? "bg-[#252528] border-gray-700/60 text-gray-300 focus:border-emerald-500" 
-                  : "bg-gray-50 border-gray-200 text-gray-700 focus:border-emerald-500"
+                  ? "bg-[#252528] border-gray-700/60 text-gray-300 focus:border-accent" 
+                  : "bg-gray-50 border-gray-200 text-gray-700 focus:border-accent"
               }`}
             >
               <option value="all">{isRtl ? "الكل" : "ALL STATUSES"}</option>
@@ -871,7 +871,7 @@ export const ReferralDashboardView = ({
                       setSelectedIds(newSelected);
                     }
                   }}
-                  className="rounded-[4px] border-gray-300 dark:border-gray-800 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer accent-emerald-500"
+                  className="rounded-[4px] border-gray-300 dark:border-gray-800 text-accent focus:ring-accent-500 w-3.5 h-3.5 cursor-pointer accent-accent"
                 />
                 <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">
                   {isRtl ? `تحديد الكل معلق (${remindableInvitationsInView.length})` : `Select All Pending (${remindableInvitationsInView.length})`}
@@ -882,9 +882,9 @@ export const ReferralDashboardView = ({
                 <button
                   disabled={sendingBulkReminder}
                   onClick={handleSendBulkReminder}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/30 transition-theme cursor-pointer animate-fade-in"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-accent bg-accent/10 hover:bg-accent/15 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-accent/30 transition-theme cursor-pointer animate-fade-in"
                 >
-                  <Send size={10} className={sendingBulkReminder ? "animate-spin text-emerald-500" : "text-emerald-500"} />
+                  <Send size={10} className={sendingBulkReminder ? "animate-spin text-accent" : "text-accent"} />
                   <span>
                     {sendingBulkReminder
                       ? (isRtl ? "جاري الإرسال..." : "SENDING CHECKED...")
@@ -912,7 +912,7 @@ export const ReferralDashboardView = ({
               {filteredInvitations.map((invite) => {
                 const badgeStyle = 
                   invite.status === "accepted" 
-                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                    ? "bg-accent/10 text-accent border-accent/20" 
                     : invite.status === "reminded" 
                     ? "bg-amber-500/10 text-amber-500 border-amber-500/20" 
                     : "bg-blue-500/10 text-blue-500 border-blue-500/20";
@@ -934,8 +934,8 @@ export const ReferralDashboardView = ({
                     key={invite.id}
                     className={`p-3 rounded-sm bg-gray-50/5 border transition-theme flex flex-col gap-2 animate-fade-in ${
                       selectedIds[invite.id] 
-                        ? "border-emerald-500/50 bg-emerald-500/[0.01]" 
-                        : "border-[var(--border)] hover:border-emerald-500/30"
+                        ? "border-accent/50 bg-accent/[0.01]" 
+                        : "border-[var(--border)] hover:border-accent/30"
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -955,7 +955,7 @@ export const ReferralDashboardView = ({
                                 return copy;
                               });
                             }}
-                            className="rounded-[4px] border-gray-300 dark:border-gray-800 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer accent-emerald-500"
+                            className="rounded-[4px] border-gray-300 dark:border-gray-800 text-accent focus:ring-accent-500 w-3.5 h-3.5 cursor-pointer accent-accent"
                           />
                         )}
                         <span className="text-[11px] font-bold text-[var(--text-primary)] font-mono break-all truncate">
@@ -982,9 +982,9 @@ export const ReferralDashboardView = ({
                         <button
                           disabled={sendingReminder[invite.id]}
                           onClick={() => handleSendReminder(invite.id)}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-emerald-500/20 transition-theme cursor-pointer"
+                          className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-accent/20 transition-theme cursor-pointer"
                         >
-                          <Send size={10} className={sendingReminder[invite.id] ? "animate-spin text-emerald-500" : "text-emerald-500"} />
+                          <Send size={10} className={sendingReminder[invite.id] ? "animate-spin text-accent" : "text-accent"} />
                           <span>
                             {sendingReminder[invite.id] 
                               ? (isRtl ? "جاري الإرسال..." : "SENDING...") 

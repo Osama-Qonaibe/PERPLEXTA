@@ -11,10 +11,10 @@ import { useSwipeToClose } from '../utils/swipe';
 const getTxTypeBadgeClass = (type: string, points: number, amount: number) => {
   const isPositive = points > 0 || (points === 0 && amount > 0);
   if (type === 'welcome_bonus' || type === 'referral_bonus') {
-    return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+    return 'bg-accent/10 text-accent border border-accent/20';
   }
   if (type === 'deposit') {
-    return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+    return 'bg-accent/10 text-accent border border-accent/20';
   }
   if (type === 'withdrawal') {
     return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
@@ -24,7 +24,7 @@ const getTxTypeBadgeClass = (type: string, points: number, amount: number) => {
   }
   if (type === 'tool_usage_reconcile') {
     return isPositive 
-      ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+      ? 'bg-accent/10 text-accent border border-accent/20'
       : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
   }
   if (type === 'admin_adjustment') {
@@ -33,7 +33,7 @@ const getTxTypeBadgeClass = (type: string, points: number, amount: number) => {
       : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
   }
   return isPositive 
-    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+    ? 'bg-accent/10 text-accent border border-accent/20' 
     : 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
 };
 
@@ -736,7 +736,7 @@ export const RewardsPage: React.FC = () => {
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('rewards')}</h1>
               {contextUser?.kyc_status === 'verified' && (
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-                  <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 text-emerald-500" />
+                  <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 text-accent" />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{t('verified')}</span>
                 </div>
               )}
@@ -748,13 +748,13 @@ export const RewardsPage: React.FC = () => {
               onClick={() => navigate('/settings?tab=wallet')}
               className="flex items-center gap-2 px-3.5 md:px-4 py-2 rounded-[4px] border border-gray-300 dark:border-gray-800 bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1c] dark:hover:bg-[#222225] text-gray-900 dark:text-white transition-all duration-300 cursor-pointer group shadow-sm font-bold"
             >
-              <Landmark size={14} className="text-emerald-500 transition-all duration-300" />
+              <Landmark size={14} className="text-accent transition-all duration-300" />
               <span className="text-[10px] font-black uppercase tracking-tighter">
                 {dir === 'rtl' ? 'إيداع أموال / Deposit Funds' : 'Deposit Funds / إيداع أموال'}
               </span>
             </button>
             <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-[4px] border bg-[var(--bg-secondary)] border-[var(--border-main)]">
-               <Landmark size={14} className="text-emerald-500" />
+               <Landmark size={14} className="text-accent" />
                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tighter">PLATFORM LEDGER</span>
             </div>
           </div>
@@ -779,7 +779,7 @@ export const RewardsPage: React.FC = () => {
               onClick={() => navigate('/settings?tab=wallet')}
               className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
             >
-              <Wallet size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 transition-all duration-300" />
+              <Wallet size={16} className="md:w-[18px] md:h-[18px] text-accent transition-all duration-300" />
               <span>{t('requestWithdrawal')}</span>
             </button>
           </div>
@@ -803,7 +803,7 @@ export const RewardsPage: React.FC = () => {
               onClick={() => setIsConvertModalOpen(true)}
               className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
             >
-              <Zap size={16} className="md:w-[18px] md:h-[18px] text-emerald-500 transition-all duration-300" />
+              <Zap size={16} className="md:w-[18px] md:h-[18px] text-accent transition-all duration-300" />
               <span>{t('convertPointsToBalance')}</span>
             </button>
           </div>
@@ -817,7 +817,7 @@ export const RewardsPage: React.FC = () => {
         {/* How it works */}
         <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] transition-theme hover:border-gray-300 dark:hover:border-gray-700">
           <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-6 md:mb-8 text-center flex items-center justify-center gap-2">
-            <Zap size={20} className="text-emerald-500" />
+            <Zap size={20} className="text-accent" />
             <span>{t('howSystemWorks')}</span>
           </h3>
           
@@ -861,7 +861,7 @@ export const RewardsPage: React.FC = () => {
         <div className="rounded-[var(--radius)] p-5 md:p-8 border bg-[var(--bg-secondary)] border-[var(--border-main)] flex flex-col transition-theme hover:border-gray-300 dark:hover:border-gray-700">
           <div className="text-center mb-6 md:mb-8">
             <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
-              <Zap size={18} className="text-emerald-500" />
+              <Zap size={18} className="text-accent" />
               <span>{t('inviteFriendsAndEarn')}</span>
             </h3>
             <p className="text-[11px] md:text-sm text-gray-500 dark:text-gray-400 mt-1.5 md:mt-2 max-w-sm mx-auto font-medium leading-relaxed">
@@ -875,7 +875,7 @@ export const RewardsPage: React.FC = () => {
                 {!showActivationForm ? (
                   <>
                     <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 mx-auto border border-gray-200 dark:border-gray-700">
-                      <Zap size={18} className="text-emerald-500" />
+                      <Zap size={18} className="text-accent" />
                     </div>
                     <div className="space-y-1.5">
                       <h4 className="text-xs md:text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
@@ -900,7 +900,7 @@ export const RewardsPage: React.FC = () => {
                       }}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-[4px] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[11px] md:text-xs uppercase tracking-wider transition-all duration-300 border border-gray-800 dark:border-gray-200 cursor-pointer shadow-sm group"
                     >
-                      <Zap size={14} className="text-emerald-500 transition-all duration-300" />
+                      <Zap size={14} className="text-accent transition-all duration-300" />
                       <span>{dir === 'rtl' ? 'تفعيل نظام الأرباح الآن' : 'Activate Earnings Now'}</span>
                     </button>
                   </>
@@ -908,7 +908,7 @@ export const RewardsPage: React.FC = () => {
                   <form onSubmit={handleActivateWithDeposit} className="text-left space-y-4">
                     <div className="flex items-center justify-between border-b border-[var(--border-main)] pb-2 mb-2">
                       <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-1.5">
-                        <Zap size={14} className="text-emerald-500" />
+                        <Zap size={14} className="text-accent" />
                         {dir === 'rtl' ? 'تفعيل حساب الإحالات والعمولات' : 'Referral Activation Hub'}
                       </span>
                       <button
@@ -1009,9 +1009,9 @@ export const RewardsPage: React.FC = () => {
                               className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                             >
                               {isActivating ? (
-                                <RefreshCw size={12} className="animate-spin text-emerald-500" />
+                                <RefreshCw size={12} className="animate-spin text-accent" />
                               ) : (
-                                <ShieldCheck size={12} className="text-emerald-500" />
+                                <ShieldCheck size={12} className="text-accent" />
                               )}
                               <span>{dir === 'rtl' ? 'تفعيل فوري وخصم من الرصيد' : 'Deduct Balance & Activate Now'}</span>
                             </button>
@@ -1041,9 +1041,9 @@ export const RewardsPage: React.FC = () => {
                             className="w-full py-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-extrabold text-[10px] uppercase tracking-wider rounded-[4px] flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer group"
                           >
                             {isActivating ? (
-                              <RefreshCw size={12} className="animate-spin text-emerald-500" />
+                              <RefreshCw size={12} className="animate-spin text-accent" />
                             ) : (
-                              <CreditCard size={12} className="text-emerald-500" />
+                              <CreditCard size={12} className="text-accent" />
                             )}
                             <span>{dir === 'rtl' ? 'الدفع الآمن بالبطاقة والتفعيل الفوري' : 'Pay Safely & Activate Instantly'}</span>
                           </button>
@@ -1120,12 +1120,12 @@ export const RewardsPage: React.FC = () => {
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
+                                <RefreshCw size={11} className="animate-spin text-accent" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} className="text-emerald-500" />
+                                <Send size={11} className="text-accent" />
                                 <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
@@ -1203,12 +1203,12 @@ export const RewardsPage: React.FC = () => {
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
+                                <RefreshCw size={11} className="animate-spin text-accent" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} className="text-emerald-500" />
+                                <Send size={11} className="text-accent" />
                                 <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
@@ -1289,12 +1289,12 @@ export const RewardsPage: React.FC = () => {
                           >
                             {isActivating ? (
                               <span className="flex items-center gap-1.5 text-[9px]">
-                                <RefreshCw size={11} className="animate-spin text-emerald-500" />
+                                <RefreshCw size={11} className="animate-spin text-accent" />
                                 {activationStep === 1 ? (dir === 'rtl' ? 'جاري رفع الملف...' : 'Uploading proof...') : (dir === 'rtl' ? 'جاري التقييد والمزامنة...' : 'Validating request...')}
                               </span>
                             ) : (
                               <>
-                                <Send size={11} className="text-emerald-500" />
+                                <Send size={11} className="text-accent" />
                                 <span>{dir === 'rtl' ? 'إرسال الإثبات وتفعيل الحساب' : 'Submit Proof & Request Activation'}</span>
                               </>
                             )}
@@ -1320,7 +1320,7 @@ export const RewardsPage: React.FC = () => {
                         : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white font-extrabold'
                     }`}
                   >
-                    {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} className="text-emerald-500" />}
+                    {copied ? <Check size={16} className="text-accent" /> : <Copy size={16} className="text-accent" />}
                     <span className="hidden sm:inline text-xs md:text-sm font-bold">{copied ? t('copied') : t('copy')}</span>
                   </button>
                 </div>
@@ -1332,7 +1332,7 @@ export const RewardsPage: React.FC = () => {
               <div className="pt-6 border-t border-[var(--border-main)] space-y-4">
                 <div className="space-y-1.5" style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
                   <label className={`text-xs md:text-sm text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
-                    <Mail size={14} className="text-emerald-500" />
+                    <Mail size={14} className="text-accent" />
                     <span>{dir === 'rtl' ? 'دعوة صديق عبر البريد الإلكتروني' : 'Invite Friend via Email'}</span>
                   </label>
                   <p className="text-[10px] md:text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -1360,9 +1360,9 @@ export const RewardsPage: React.FC = () => {
                     }`}
                   >
                     {isInviting ? (
-                      <RefreshCw size={14} className="animate-spin text-emerald-500" />
+                      <RefreshCw size={14} className="animate-spin text-accent" />
                     ) : (
-                      <Send size={14} className="text-emerald-500" />
+                      <Send size={14} className="text-accent" />
                     )}
                     <span>{isInviting ? (dir === 'rtl' ? 'جاري الإرسال...' : 'Sending...') : (dir === 'rtl' ? 'إرسال الدعوة' : 'Send Invite')}</span>
                   </button>
@@ -1396,9 +1396,9 @@ export const RewardsPage: React.FC = () => {
                               className="px-2 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-[10px] font-bold rounded-[4px] transition-all duration-300 cursor-pointer flex items-center gap-1"
                             >
                               {remindingEmails[inv.email] ? (
-                                <RefreshCw size={10} className="animate-spin text-emerald-500" />
+                                <RefreshCw size={10} className="animate-spin text-accent" />
                               ) : (
-                                <Zap size={10} className="text-emerald-500" />
+                                <Zap size={10} className="text-accent" />
                               )}
                               <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
                             </button>
@@ -1414,7 +1414,7 @@ export const RewardsPage: React.FC = () => {
             <div className="group flex items-center justify-between p-4 md:p-6 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="w-10 h-10 md:w-12 md:h-12 rounded-[4px] bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 transition-all duration-300">
-                  <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300 text-emerald-500" />
+                  <Gift size={20} className="md:w-6 md:h-6 group-hover:scale-110 transition-transform duration-300 text-accent" />
                 </div>
                 <span className="font-black text-xs md:text-base text-gray-900 dark:text-white uppercase tracking-tight">
                   {t('totalSuccessfulReferralsUser')}
@@ -1434,7 +1434,7 @@ export const RewardsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-[var(--border-main)] pb-6">
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Users size={20} className="text-emerald-500" />
+              <Users size={20} className="text-accent" />
               <span>{dir === 'rtl' ? 'سجل الأصدقاء والعمولات' : 'Invited Friends & Verification Status'}</span>
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium select-none">
@@ -1497,7 +1497,7 @@ export const RewardsPage: React.FC = () => {
         {/* Loading Spinner */}
         {isLoadingReferredFriends ? (
           <div className="py-12 flex flex-col items-center justify-center gap-3 text-[var(--text-secondary)]">
-            <RefreshCw className="animate-spin text-emerald-500" size={24} />
+            <RefreshCw className="animate-spin text-accent" size={24} />
             <span className="text-xs font-bold uppercase tracking-wider">
               {dir === 'rtl' ? 'جاري تحميل سجل الأرباح...' : 'Loading referral ledger...'}
             </span>
@@ -1658,16 +1658,16 @@ export const RewardsPage: React.FC = () => {
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-theme cursor-pointer"
                                 >
                                   {remindingEmails[friend.email] ? (
-                                    <RefreshCw size={10} className="animate-spin text-emerald-500" />
+                                    <RefreshCw size={10} className="animate-spin text-accent" />
                                   ) : (
-                                    <Zap size={10} className="text-emerald-500" />
+                                    <Zap size={10} className="text-accent" />
                                   )}
                                   <span>{dir === 'rtl' ? 'تذكير' : 'Remind'}</span>
                                 </button>
                               )}
                             </div>
                             {friend.referral_status === 'active' && (
-                              <span className="block text-[10px] text-emerald-500 font-extrabold tracking-tight">
+                              <span className="block text-[10px] text-accent font-extrabold tracking-tight">
                                 +{Number(friend.bonus_points || 0).toLocaleString()} PTS
                               </span>
                             )}
@@ -1694,7 +1694,7 @@ export const RewardsPage: React.FC = () => {
             <div className="flex flex-col items-center text-center py-6 md:py-10 space-y-4 md:space-y-6">
               <div className="relative">
                 <div className="w-20 h-20 md:w-24 md:h-24 rounded-[var(--radius)] bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                  <ShieldCheck size={40} className="md:w-[48px] md:h-[48px] text-emerald-500" />
+                  <ShieldCheck size={40} className="md:w-[48px] md:h-[48px] text-accent" />
                 </div>
                 <div className="absolute -bottom-1.5 -right-1.5 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] bg-[var(--bg-surface)] border-[3px] md:border-4 border-[var(--bg-base)] flex items-center justify-center">
                   <Clock size={16} className="text-amber-500" />
@@ -1762,7 +1762,7 @@ export const RewardsPage: React.FC = () => {
                   }}
                   className="mt-4 px-8 py-3 rounded-[var(--radius)] bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-bold text-sm md:text-base transition-all duration-300 shadow-md flex items-center gap-2 mx-auto cursor-pointer"
                 >
-                  <RefreshCw size={18} className="text-emerald-500" />
+                  <RefreshCw size={18} className="text-accent" />
                   {dir === 'rtl' ? 'إعادة المحاولة' : 'Try Again'}
                 </button>
               </div>
@@ -1773,7 +1773,7 @@ export const RewardsPage: React.FC = () => {
               <div className="flex-1 space-y-4 md:space-y-6">
                 <div className="flex items-center gap-3 md:gap-4">
                   <div className="w-10 h-10 md:w-12 md:h-12 rounded-[var(--radius)] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 flex-shrink-0">
-                    <ShieldCheck size={20} className="md:w-6 md:h-6 text-emerald-500" />
+                    <ShieldCheck size={20} className="md:w-6 md:h-6 text-accent" />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -1843,7 +1843,7 @@ export const RewardsPage: React.FC = () => {
                     >
                       {selfieCaptured ? (
                         <>
-                          <CheckCircle2 size={16} className="md:w-5 md:h-5 text-emerald-500" />
+                          <CheckCircle2 size={16} className="md:w-5 md:h-5 text-accent" />
                           <span className="font-bold text-xs md:text-base">{t('selfieCaptured')}</span>
                         </>
                       ) : (
@@ -1868,9 +1868,9 @@ export const RewardsPage: React.FC = () => {
                   }`}
                 >
                   {isSubmitting ? (
-                    <RefreshCw className="animate-spin text-emerald-500" size={16} />
+                    <RefreshCw className="animate-spin text-accent" size={16} />
                   ) : (
-                    <ShieldCheck size={16} className="text-emerald-500" />
+                    <ShieldCheck size={16} className="text-accent" />
                   )}
                   <span>
                     {isSubmitting 
@@ -1891,7 +1891,7 @@ export const RewardsPage: React.FC = () => {
         <div className="md:col-span-2">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-2">
-              <History className="text-emerald-500 md:w-5 md:h-5" size={18} />
+              <History className="text-accent md:w-5 md:h-5" size={18} />
               <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">{t('transactionHistory')}</h3>
             </div>
             {transactions.length > 0 && (
@@ -1982,7 +1982,7 @@ export const RewardsPage: React.FC = () => {
                               onClick={() => setTxOffset(prev => prev + TX_LIMIT)}
                               className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold flex items-center gap-2 mx-auto transition-theme cursor-pointer"
                             >
-                              <RefreshCw size={14} className={`text-emerald-500 ${isSubmitting ? "animate-spin" : ""}`} />
+                              <RefreshCw size={14} className={`text-accent ${isSubmitting ? "animate-spin" : ""}`} />
                               {t('loadMore')}
                             </button>
                           </td>
@@ -2017,7 +2017,7 @@ export const RewardsPage: React.FC = () => {
             
             {/* Header */}
             <div className="flex items-center justify-center gap-2 md:gap-3 mb-6 md:mb-8">
-              <Zap className="text-emerald-500 md:w-7 md:h-7" size={24} />
+              <Zap className="text-accent md:w-7 md:h-7" size={24} />
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                 {t('convertPoints')}
               </h2>
@@ -2055,7 +2055,7 @@ export const RewardsPage: React.FC = () => {
                 disabled={isSubmitting}
                 className="flex-[2] py-3 md:py-4 rounded-[4px] font-bold text-sm md:text-base transition-all duration-300 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 cursor-pointer disabled:opacity-50 shadow-md"
               >
-                {isSubmitting ? <RefreshCw className="animate-spin text-emerald-500" size={16} /> : t('confirmConversion')}
+                {isSubmitting ? <RefreshCw className="animate-spin text-accent" size={16} /> : t('confirmConversion')}
               </button>
             </div>
 

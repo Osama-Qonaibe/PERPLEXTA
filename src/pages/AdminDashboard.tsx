@@ -409,7 +409,7 @@ const CommandCenterView = ({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <RefreshCw size={40} className="text-emerald-500 animate-spin" />
+        <RefreshCw size={40} className="text-accent animate-spin" />
         <p className="text-[var(--text-secondary)] font-medium">
           {t("loadingCommandCenter")}
         </p>
@@ -472,12 +472,12 @@ const CommandCenterView = ({
           >
             <div className="flex justify-between items-start mb-4">
               <div
-                className={`p-2.5 rounded-md bg-[var(--bg-primary)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                className={`p-2.5 rounded-md bg-[var(--bg-primary)] text-accent `}
               >
                 {kpi.icon}
               </div>
               <span
-                className={`text-sm font-medium px-2 py-1 rounded-sm ${kpi.isPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}
+                className={`text-sm font-medium px-2 py-1 rounded-sm ${kpi.isPositive ? "bg-accent/10 text-accent" : "bg-red-500/10 text-red-500"}`}
               >
                 {kpi.trend}
               </span>
@@ -496,11 +496,11 @@ const CommandCenterView = ({
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Cpu className="text-emerald-500" size={20} />
+              <Cpu className="text-accent" size={20} />
               <h2 className="text-lg font-bold">{t("resourceUtilization")}</h2>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500/50 uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-2 text-[10px] font-black text-accent/50 uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               Live Diagnostics
             </div>
           </div>
@@ -508,7 +508,7 @@ const CommandCenterView = ({
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("cpuLoad")}</span>
-                <span className="text-emerald-500">
+                <span className="text-accent">
                   {serverHealth?.cpu || 0}%
                 </span>
               </div>
@@ -516,14 +516,14 @@ const CommandCenterView = ({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.cpu || 0}%` }}
-                  className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("memoryAllocation")}</span>
-                <span className="text-emerald-500">
+                <span className="text-accent">
                   {serverHealth?.memory?.used || 0}MB
                 </span>
               </div>
@@ -531,14 +531,14 @@ const CommandCenterView = ({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.memory?.percent || 0}%` }}
-                  className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("systemLoad")}</span>
-                <span className="text-emerald-500">
+                <span className="text-accent">
                   {serverHealth?.load
                     ? serverHealth.load[0].toFixed(2)
                     : "0.00"}
@@ -550,7 +550,7 @@ const CommandCenterView = ({
                   animate={{
                     width: `${Math.min(100, (serverHealth?.load?.[0] || 0) * 10)}%`,
                   }}
-                  className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                 />
               </div>
             </div>
@@ -563,17 +563,17 @@ const CommandCenterView = ({
         </div>
 
         <div
-          className={`p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5 flex flex-col`}
+          className={`p-6 rounded-lg border border-accent/20 bg-accent/5 flex flex-col`}
         >
           <div className="flex items-center gap-3 mb-6">
-            <Activity className="text-emerald-500" size={20} />
-            <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            <Activity className="text-accent" size={20} />
+            <h2 className="text-lg font-bold text-accent dark:text-accent">
               {t("systemUptime")}
             </h2>
           </div>
           <div className="flex-1 flex flex-col justify-center items-center py-10">
-            <p className="text-4xl font-black text-emerald-500">100%</p>
-            <p className="text-xs text-emerald-600/60 dark:text-emerald-400/60 mt-2 font-medium">
+            <p className="text-4xl font-black text-accent">100%</p>
+            <p className="text-xs text-accent/60 dark:text-accent/60 mt-2 font-medium">
               {t("stableOperationalProtocol")}
             </p>
           </div>
@@ -584,15 +584,15 @@ const CommandCenterView = ({
       <div className="p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col gap-6 shadow-sm transition-theme">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Database className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={20} />
+            <Database className="text-accent " size={20} />
             <h2 className="text-lg font-bold">
               {language === "ar" ? "مراقب اتصال قواعد البيانات النشطة" : "Database Pool Connectivity Monitor"}
             </h2>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500/50 uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-[10px] font-black text-accent/50 uppercase tracking-widest">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
             </span>
             {language === "ar" ? "التحقق المباشر من البث المباشر" : "Active Pool Polling"}
           </div>
@@ -607,11 +607,11 @@ const CommandCenterView = ({
             return (
               <div 
                 key={dbId}
-                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-theme hover:border-emerald-500/30"
+                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-theme hover:border-accent/30"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Database size={16} className={`${isConnected ? 'text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]' : isLoading ? 'text-gray-400 animate-pulse' : 'text-red-500 animate-pulse'}`} />
+                    <Database size={16} className={`${isConnected ? 'text-accent ' : isLoading ? 'text-gray-400 animate-pulse' : 'text-red-500 animate-pulse'}`} />
                     <span className="font-bold text-xs uppercase tracking-tight">
                       {dbId === 'core' && (language === "ar" ? "قاعدة البيانات الأساسية" : "Core DB")}
                       {dbId === 'ledger' && (language === "ar" ? "دفتر الأرباح المالي" : "Ledger DB")}
@@ -619,7 +619,7 @@ const CommandCenterView = ({
                       {dbId === 'security' && (language === "ar" ? "قاعدة الأمان والحماية" : "Security DB")}
                     </span>
                   </div>
-                  <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${isConnected ? 'bg-emerald-500/10 text-emerald-500' : isLoading ? 'bg-gray-500/10 text-gray-500' : 'bg-red-500/10 text-red-500'}`}>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${isConnected ? 'bg-accent/10 text-accent' : isLoading ? 'bg-gray-500/10 text-gray-500' : 'bg-red-500/10 text-red-500'}`}>
                     {isLoading ? (language === "ar" ? "جاري الاستعلام" : "Loading") : isConnected ? (language === "ar" ? "متصل" : "Connected") : (language === "ar" ? "غير متصل" : "Offline")}
                   </span>
                 </div>
@@ -632,7 +632,7 @@ const CommandCenterView = ({
                   {isConnected && (
                     <div className="flex justify-between">
                       <span>Latency:</span>
-                      <span className="text-emerald-500 font-semibold">{dbInfo.latencyMs}ms</span>
+                      <span className="text-accent font-semibold">{dbInfo.latencyMs}ms</span>
                     </div>
                   )}
                   {!isConnected && !isLoading && (
@@ -642,7 +642,7 @@ const CommandCenterView = ({
                   )}
                 </div>
 
-                <div className={`absolute bottom-0 left-0 right-0 h-1 ${isConnected ? 'bg-emerald-500' : isLoading ? 'bg-gray-500/40 animate-pulse' : 'bg-red-500'}`} />
+                <div className={`absolute bottom-0 left-0 right-0 h-1 ${isConnected ? 'bg-accent' : isLoading ? 'bg-gray-500/40 animate-pulse' : 'bg-red-500'}`} />
               </div>
             );
           })}
@@ -655,17 +655,17 @@ const CommandCenterView = ({
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Clock className="text-emerald-500" size={20} />
+              <Clock className="text-accent" size={20} />
               <h2 className="text-lg font-bold">
                 {t("activityStream")}
-                <span className="ml-2 text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded-full font-bold">
+                <span className="ml-2 text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full font-bold">
                   {activity.length}
                 </span>
               </h2>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
                 </span>
                 {activity.length > 0 && (
                   <div className="ml-2 flex items-center gap-2 bg-[var(--bg-overlay)] px-2 py-1 rounded-sm border border-[var(--border-main)] transition-theme">
@@ -676,7 +676,7 @@ const CommandCenterView = ({
                         selectedActivityIds.length === activity.length
                       }
                       onChange={() => handleSelectAll("activity")}
-                      className="w-3.5 h-3.5 rounded-sm border-[var(--border)] text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                      className="w-3.5 h-3.5 rounded-sm border-[var(--border)] text-accent focus:ring-accent-500 cursor-pointer accent-accent"
                     />
                     <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
                       {language === "ar" ? "تحديد الكل" : (t("selectAll") || "Select All")}
@@ -756,7 +756,7 @@ const CommandCenterView = ({
                       <select
                         value={logStatusFilter}
                         onChange={(e) => setLogStatusFilter(e.target.value)}
-                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-accent-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
                       >
                         {statusOptions.map(opt => (
                           <option key={opt.id} value={opt.id}>
@@ -780,7 +780,7 @@ const CommandCenterView = ({
                       <select
                         value={logToolFilter}
                         onChange={(e) => setLogToolFilter(e.target.value)}
-                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
+                        className={`w-full ${dir === "rtl" ? "pr-3 pl-10" : "pl-3 pr-10"} py-2 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-accent-500/30 text-xs font-bold ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 pointer-events-auto" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 pointer-events-auto"}`}
                       >
                         <option value="all">
                           {dir === "rtl" ? "جميع الأدوات والخدمات" : "All Tools & Services"}
@@ -809,7 +809,7 @@ const CommandCenterView = ({
                       type="date"
                       value={logStartDate}
                       onChange={(e) => setLogStartDate(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
+                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-accent-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
                     />
                   </div>
 
@@ -822,7 +822,7 @@ const CommandCenterView = ({
                       type="date"
                       value={logEndDate}
                       onChange={(e) => setLogEndDate(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
+                      className={`w-full px-3 py-1.5 rounded-md border focus:outline-none focus:ring-1 focus:ring-accent-500/30 text-xs font-bold transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300 [color-scheme:dark]" : "bg-white border-[var(--border-main)] shadow-sm text-gray-700 [color-scheme:light]"}`}
                     />
                   </div>
                 </div>
@@ -832,7 +832,7 @@ const CommandCenterView = ({
 
           <div className="mb-4 relative group">
             <Search
-              className={`absolute ${dir === "rtl" ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 transition-theme ${search ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "text-gray-400 group-focus-within:text-emerald-500"}`}
+              className={`absolute ${dir === "rtl" ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 transition-theme ${search ? "text-accent " : "text-gray-400 group-focus-within:text-accent"}`}
               size={16}
             />
             <input
@@ -840,7 +840,7 @@ const CommandCenterView = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("searchActivityPlaceholder") || (language === "ar" ? "بحث في السجلات..." : "Search activity logs...")}
-              className={`w-full ${dir === "rtl" ? "pr-10 pl-10" : "pl-10 pr-10"} py-2.5 rounded-md border text-xs font-medium transition-theme focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-[var(--bg-overlay)] border-[var(--border)] focus:border-emerald-500/50 text-[var(--text-primary)] placeholder:text-[var(--text-muted)]`}
+              className={`w-full ${dir === "rtl" ? "pr-10 pl-10" : "pl-10 pr-10"} py-2.5 rounded-md border text-xs font-medium transition-theme focus:outline-none focus:ring-2 focus:ring-accent-500/20 bg-[var(--bg-overlay)] border-[var(--border)] focus:border-accent/50 text-[var(--text-primary)] placeholder:text-[var(--text-muted)]`}
             />
             {search && (
               <button 
@@ -931,7 +931,7 @@ const CommandCenterView = ({
                           setLogEndDate("");
                           setSearch("");
                         }}
-                        className="mt-4 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold hover:bg-emerald-500/20 transition-theme"
+                        className="mt-4 px-3 py-1.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-bold hover:bg-accent/20 transition-theme"
                       >
                         {language === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
                       </button>
@@ -971,7 +971,7 @@ const CommandCenterView = ({
                 return (
                   <div
                     key={idx}
-                    className={`flex items-start gap-3 group p-2 rounded-md transition-theme border border-transparent ${isSelected ? "bg-emerald-500/5 border-emerald-500/20" : "hover:bg-[var(--bg-secondary)]0/5"}`}
+                    className={`flex items-start gap-3 group p-2 rounded-md transition-theme border border-transparent ${isSelected ? "bg-accent/5 border-accent/20" : "hover:bg-[var(--bg-secondary)]0/5"}`}
                   >
                     <div className="pt-1 select-none">
                       <input
@@ -984,14 +984,14 @@ const CommandCenterView = ({
                               : [...prev, log.id],
                           );
                         }}
-                        className="w-4 h-4 rounded-sm border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500 cursor-pointer accent-emerald-500"
+                        className="w-4 h-4 rounded-sm border-[var(--border-main)] text-accent focus:ring-accent-500 cursor-pointer accent-accent"
                       />
                     </div>
                     <div
                       className={`mt-0.5 p-1.5 rounded-md shrink-0 ${
                         log.type === "ai_generation"
                           ? "bg-blue-500/20 text-blue-500"
-                          : "bg-emerald-500/20 text-emerald-500"
+                          : "bg-accent/20 text-accent"
                       }`}
                     >
                       {log.type === "ai_generation" ? (
@@ -1002,7 +1002,7 @@ const CommandCenterView = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] leading-snug truncate">
-                        <span className="text-emerald-500 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded-[4px] border border-emerald-500/10">
+                        <span className="text-accent font-bold bg-accent/5 px-1.5 py-0.5 rounded-[4px] border border-accent/10">
                           <HighlightText text={log.user_name || t("systemUser")} query={search} />
                         </span>{" "}
                         <span className="ml-1 opacity-90"><HighlightText text={translateAction(log.action)} query={search} /></span>
@@ -1026,7 +1026,7 @@ const CommandCenterView = ({
                           ? (
                             <>
                               <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
-                              <span className="text-emerald-500 font-bold">{log.points} {language === "ar" ? "نقطة" : "pts"}</span>
+                              <span className="text-accent font-bold">{log.points} {language === "ar" ? "نقطة" : "pts"}</span>
                             </>
                           )
                           : ""}
@@ -1230,13 +1230,13 @@ const CommandCenterView = ({
                   }
                 });
               }}
-              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-md bg-emerald-500/5 border border-emerald-500/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-theme"
+              className="group flex flex-col items-center justify-center gap-1.5 p-2 rounded-md bg-accent/5 border border-accent/10 hover:bg-accent/10 hover:border-accent/30 transition-theme"
             >
               <BellRing
                 size={15}
-                className="text-emerald-500 group-hover:scale-110 transition-transform"
+                className="text-accent group-hover:scale-110 transition-transform"
               />
-              <span className="text-[8px] font-bold text-emerald-600 uppercase text-center leading-tight">
+              <span className="text-[8px] font-bold text-accent uppercase text-center leading-tight">
                 {t("maintenancePruneLegacy")}
               </span>
             </button>
@@ -2039,7 +2039,7 @@ const ApiKeysVaultView = ({
                   <div className="flex flex-col items-center justify-center py-8 space-y-4">
                     <RefreshCw
                       size={32}
-                      className="text-emerald-500 animate-spin"
+                      className="text-accent animate-spin"
                     />
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {t("syncingData")}
@@ -2049,8 +2049,8 @@ const ApiKeysVaultView = ({
 
                 {syncModal.status === "success" && (
                   <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2">
-                      <CheckCircle size={32} className="text-emerald-500" />
+                    <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-2">
+                      <CheckCircle size={32} className="text-accent" />
                     </div>
                     <h4
                       className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
@@ -2108,7 +2108,7 @@ const ApiKeysVaultView = ({
                       showToast(t("toastDbSaveSuccess"), "success");
                       setSyncModal(null);
                     }}
-                    className="px-5 py-2 rounded-sm text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-theme shadow-lg shadow-emerald-500/20"
+                    className="px-5 py-2 rounded-sm text-sm font-bold bg-accent text-white hover:bg-accent transition-theme shadow-lg shadow-none"
                   >
                     {t("saveData")}
                   </button>
@@ -2177,7 +2177,7 @@ const ApiKeysVaultView = ({
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-md bg-[var(--bg-primary)] flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]`}
+                  className={`w-10 h-10 rounded-md bg-[var(--bg-primary)] flex items-center justify-center text-accent `}
                 >
                   <Key size={20} />
                 </div>
@@ -2188,7 +2188,7 @@ const ApiKeysVaultView = ({
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="px-1.5 py-0.5 rounded-xs bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-widest border border-emerald-500/20"
+                        className="px-1.5 py-0.5 rounded-xs bg-accent/10 text-accent text-[8px] font-black uppercase tracking-widest border border-accent/20"
                       >
                         Trusted
                       </motion.div>
@@ -2196,7 +2196,7 @@ const ApiKeysVaultView = ({
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div
-                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,1)] animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]") : "bg-gray-400"}`}
+                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-accent shadow-[0_0_5px_rgba(16,185,129,1)] animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]") : "bg-gray-400"}`}
                     ></div>
                     <span
                       className={`text-[9px] font-black uppercase tracking-widest ${provider.status === "active" ? (provider.isActive ? t("statusActive") : language === "ar" ? "غير صالح" : "Invalid") : t("statusMissing")}`}
@@ -2218,7 +2218,7 @@ const ApiKeysVaultView = ({
                   href={provider.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-2 rounded-sm border transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30`}
+                  className={`p-2 rounded-sm border transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-accent hover:border-accent/30`}
                   title={`Go to ${provider.name} Dashboard`}
                 >
                   <ExternalLink size={16} />
@@ -2241,7 +2241,7 @@ const ApiKeysVaultView = ({
                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                   <span className="text-gray-500">{t("utilizationRate")}</span>
                   <span
-                    className={`${provider.budget > 0 && provider.usedToday / provider.budget > 0.9 ? "text-red-500" : "text-emerald-500"}`}
+                    className={`${provider.budget > 0 && provider.usedToday / provider.budget > 0.9 ? "text-red-500" : "text-accent"}`}
                   >
                     {Number(provider.budget || 0) > 0
                       ? `${((Number(provider.usedToday || 0) / Number(provider.budget || 0)) * 100).toFixed(1)}%`
@@ -2254,7 +2254,7 @@ const ApiKeysVaultView = ({
                     animate={{
                       width: `${Number(provider.budget || 0) > 0 ? Math.min(100, (Number(provider.usedToday || 0) / Number(provider.budget || 0)) * 100) : 0}%`,
                     }}
-                    className={`h-full rounded-full ${Number(provider.budget || 0) > 0 && Number(provider.usedToday || 0) / Number(provider.budget || 0) > 0.9 ? "bg-red-500" : "bg-emerald-500"} shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme`}
+                    className={`h-full rounded-full ${Number(provider.budget || 0) > 0 && Number(provider.usedToday || 0) / Number(provider.budget || 0) > 0.9 ? "bg-red-500" : "bg-accent"} shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme`}
                   />
                 </div>
                 <div className="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase tracking-tighter">
@@ -2273,7 +2273,7 @@ const ApiKeysVaultView = ({
                     type="number"
                     placeholder="0.00"
                     defaultValue={provider.budget || ""}
-                    className={`w-full h-9 pl-8 pr-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                    className={`w-full h-9 pl-8 pr-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                     onBlur={async (e) => {
                       const newBudget = parseFloat(e.target.value);
                       if (!isNaN(newBudget) && newBudget !== provider.budget) {
@@ -2317,7 +2317,7 @@ const ApiKeysVaultView = ({
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-main)]/30 mb-4">
               <button
                 onClick={() => handleSyncUsage(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
                 title={t("syncUsageLimits")}
               >
                 <RefreshCw
@@ -2328,7 +2328,7 @@ const ApiKeysVaultView = ({
               </button>
               <button
                 onClick={() => handleSyncModels(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-emerald-500 hover:border-emerald-500/30 hover:shadow-[0_0_10_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
                 title={t("syncModels")}
               >
                 <Cpu
@@ -2345,7 +2345,7 @@ const ApiKeysVaultView = ({
                   {t("apiKeyLabel")}
                 </label>
                 {provider.updatedAt && (
-                  <span className="text-[9px] font-bold text-emerald-500/60 uppercase">
+                  <span className="text-[9px] font-bold text-accent/60 uppercase">
                     {t("lastSync")}:{" "}
                     {new Date(provider.updatedAt).toLocaleDateString(
                       language === "ar" ? "ar-EG" : "en-US",
@@ -2355,7 +2355,7 @@ const ApiKeysVaultView = ({
               </div>
 
               <div
-                className={`flex items-center h-11 px-4 rounded-sm border group-focus-within:border-emerald-500/50 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] shadow-inner`}
+                className={`flex items-center h-11 px-4 rounded-sm border group-focus-within:border-accent/50 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] shadow-inner`}
               >
                 <input
                   type="password"
@@ -2380,7 +2380,7 @@ const ApiKeysVaultView = ({
                       : (language === "ar" ? "رابط نقطة النهاية (Endpoint Base URL)" : "API Endpoint Base URL")}
                   </label>
                   <div
-                    className={`flex items-center h-11 px-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-emerald-500/50 transition-theme shadow-sm`}
+                    className={`flex items-center h-11 px-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] focus-within:border-accent/50 transition-theme shadow-sm`}
                   >
                     <input
                       type="text"
@@ -2407,7 +2407,7 @@ const ApiKeysVaultView = ({
                             (provider as any).urlKey,
                           )
                         }
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-xs bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-theme group/save"
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-xs bg-accent/10 text-accent hover:bg-accent/20 transition-theme group/save"
                         title={t("saveKeyBtn")}
                       >
                         <Save
@@ -2451,7 +2451,7 @@ const ApiKeysVaultView = ({
                 className={`h-11 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-theme ${
                   !provider.key
                     ? "bg-[var(--bg-secondary)] text-gray-500 cursor-not-allowed border border-transparent"
-                    : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95"
+                    : "bg-accent text-white hover:bg-accent shadow-lg shadow-none active:scale-95"
                 }`}
               >
                 <Save size={14} /> {t("saveKeyBtn")}
@@ -2466,7 +2466,7 @@ const ApiKeysVaultView = ({
                       : undefined,
                   )
                 }
-                className="h-11 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--bg-primary)] text-emerald-500 border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme active:scale-95"
+                className="h-11 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[var(--bg-primary)] text-accent border border-accent/20 hover:border-accent/40 hover:bg-accent/5 hover: transition-theme active:scale-95"
               >
                 <FastForward size={14} />{" "}
                 {language === "ar" ? "فحص سريع" : "Quick Scan"}
@@ -2475,7 +2475,7 @@ const ApiKeysVaultView = ({
 
             <button
               onClick={() => handleSyncUsage(provider.id, provider.name)}
-              className={`w-full py-2.5 mt-2 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] transition-theme bg-[var(--bg-primary)] border border-[var(--border-main)] text-gray-500 hover:text-emerald-500 hover:border-emerald-500/30 hover:bg-emerald-500/5`}
+              className={`w-full py-2.5 mt-2 rounded-sm flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] transition-theme bg-[var(--bg-primary)] border border-[var(--border-main)] text-gray-500 hover:text-accent hover:border-accent/30 hover:bg-accent/5`}
             >
               <Activity size={14} /> {t("syncUsageLimits")}
             </button>
@@ -2493,9 +2493,9 @@ const ApiKeysVaultView = ({
               setNewCustomKey("");
               setNewCustomBudget("");
             }}
-            className="p-6 rounded-lg border border-dashed border-[var(--border-main)] hover:border-emerald-500/50 hover:shadow-lg transition-theme flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] min-h-[440px] text-gray-400 hover:text-emerald-500 group cursor-pointer"
+            className="p-6 rounded-lg border border-dashed border-[var(--border-main)] hover:border-accent/50 hover:shadow-lg transition-theme flex flex-col items-center justify-center gap-4 bg-[var(--bg-secondary)] min-h-[440px] text-gray-400 hover:text-accent group cursor-pointer"
           >
-            <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 dark:border-gray-800 flex items-center justify-center group-hover:border-emerald-500/30 group-hover:bg-emerald-500/5 transition-theme">
+            <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 dark:border-gray-800 flex items-center justify-center group-hover:border-accent/30 group-hover:bg-accent/5 transition-theme">
               <Plus size={24} className="group-hover:scale-110 transition-transform" />
             </div>
             <div className="text-center">
@@ -2508,10 +2508,10 @@ const ApiKeysVaultView = ({
             </div>
           </button>
         ) : (
-          <form onSubmit={(e) => e.preventDefault()} className="p-6 rounded-lg border border-emerald-500/20 bg-[var(--bg-secondary)] shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[440px]">
+          <form onSubmit={(e) => e.preventDefault()} className="p-6 rounded-lg border border-accent/20 bg-[var(--bg-secondary)] shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[440px]">
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-2 border-b border-[var(--border-main)]/30">
-                <span className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
+                <span className="text-xs font-black uppercase tracking-widest text-accent flex items-center gap-1.5">
                   <Cpu size={14} />
                   {language === "ar" ? "مزود مخصص جديد" : "New Custom Provider"}
                 </span>
@@ -2543,7 +2543,7 @@ const ApiKeysVaultView = ({
                       .replace(/_+/g, "_");
                     setNewCustomId(slug);
                   }}
-                  className="w-full h-10 px-3 text-xs rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full h-10 px-3 text-xs rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                 />
               </div>
 
@@ -2559,7 +2559,7 @@ const ApiKeysVaultView = ({
                   placeholder="e.g. hostllama"
                   value={newCustomId}
                   onChange={(e) => setNewCustomId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "_"))}
-                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                 />
               </div>
 
@@ -2574,7 +2574,7 @@ const ApiKeysVaultView = ({
                   placeholder="https://api.yourprovider.com/v1"
                   value={newCustomUrl}
                   onChange={(e) => setNewCustomUrl(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                   dir="ltr"
                 />
               </div>
@@ -2589,7 +2589,7 @@ const ApiKeysVaultView = ({
                   placeholder="sk-••••••••••••••••"
                   value={newCustomKey}
                   onChange={(e) => setNewCustomKey(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                   dir="ltr"
                 />
               </div>
@@ -2604,7 +2604,7 @@ const ApiKeysVaultView = ({
                   placeholder="0.00"
                   value={newCustomBudget}
                   onChange={(e) => setNewCustomBudget(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
+                  className="w-full h-10 px-3 text-xs font-mono rounded-sm border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]"
                 />
               </div>
             </div>
@@ -2708,7 +2708,7 @@ const ApiKeysVaultView = ({
                 className={`h-11 text-[10px] uppercase tracking-widest font-black rounded-sm text-white transition-theme flex items-center justify-center gap-1.5 ${
                   isCreatingCustom || !newCustomId || !newCustomName || !newCustomUrl
                     ? "bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
-                    : "bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                    : "bg-accent hover:bg-accent shadow-md shadow-none active:scale-95 cursor-pointer"
                 }`}
               >
                 {isCreatingCustom ? (
@@ -2783,7 +2783,7 @@ const DatabaseOrchestrationView = ({
               color = "amber";
             } else if (db.id === 'external') {
               icon = Globe;
-              color = "emerald";
+              color = "accent";
             } else if (db.id === 'security') {
               icon = Shield;
               color = "rose";
@@ -3237,7 +3237,7 @@ const DatabaseOrchestrationView = ({
         <div
           className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
-              ? "bg-[var(--bg-surface)] border border-emerald-500/30 text-emerald-500"
+              ? "bg-[var(--bg-surface)] border border-accent/30 text-accent"
               : "bg-[var(--bg-surface)] border border-red-500/30 text-red-500"
           } border`}
         >
@@ -3256,12 +3256,12 @@ const DatabaseOrchestrationView = ({
           return (
             <div
               key={db.id}
-              className={`p-5 rounded-lg border flex flex-col gap-4 transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 shadow-sm`}
+              className={`p-5 rounded-lg border flex flex-col gap-4 transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/20 shadow-sm`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-md border transition-theme ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-white border-emerald-100 text-emerald-600"}`}
+                    className={`p-2.5 rounded-md border transition-theme ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] text-accent " : "bg-white border-accent-100 text-accent"}`}
                   >
                     <Icon size={20} />
                   </div>
@@ -3282,8 +3282,8 @@ const DatabaseOrchestrationView = ({
                 </div>
                 <div className="flex items-center gap-2">
                   {db.is_active ? (
-                    <span className="text-[11px] font-medium text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <Zap size={12} className="fill-emerald-500/30" />{" "}
+                    <span className="text-[11px] font-medium text-accent bg-accent/10 border border-accent/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Zap size={12} className="fill-accent" />{" "}
                       {t("active") || "Active"}
                     </span>
                   ) : (
@@ -3292,7 +3292,7 @@ const DatabaseOrchestrationView = ({
                     </span>
                   )}
                   {db.status === "healthy" ? (
-                    <span className="text-[11px] font-medium text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[11px] font-medium text-accent bg-accent/10 border border-accent/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                       <CheckCircle2 size={12} /> {t("statusConnected")}
                     </span>
                   ) : (
@@ -3304,10 +3304,10 @@ const DatabaseOrchestrationView = ({
               </div>
 
               <div className="flex p-1.5 bg-[var(--bg-primary)] border border-[var(--border-main)] rounded-md mb-6 shadow-inner overflow-hidden relative">
-                <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
+                <div className="absolute inset-0 bg-accent/5 pointer-events-none" />
                 <button
                   onClick={() => handleChange(db.id, "type", "cloud")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-sm transition-theme ease-out relative z-10 ${db.type === "cloud" ? "bg-emerald-500 text-white shadow-[0_4px_15px_rgba(16,185,129,0.4)]" : "text-gray-500 hover:bg-[var(--bg-secondary)]/50 dark:hover:bg-[var(--bg-secondary)]/30"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-sm transition-theme ease-out relative z-10 ${db.type === "cloud" ? "bg-accent text-white shadow-[0_4px_15px_rgba(16,185,129,0.4)]" : "text-gray-500 hover:bg-[var(--bg-secondary)]/50 dark:hover:bg-[var(--bg-secondary)]/30"}`}
                 >
                   <Cloud
                     size={14}
@@ -3330,15 +3330,15 @@ const DatabaseOrchestrationView = ({
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.02 }}
-                    className="space-y-4 p-5 rounded-md bg-emerald-500/[0.02] border border-emerald-500/10 shadow-inner relative overflow-hidden"
+                    className="space-y-4 p-5 rounded-md bg-accent/[0.02] border border-accent/10 shadow-inner relative overflow-hidden"
                   >
                     {db.isTesting && (
                       <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center space-y-3 animate-in fade-in">
                         <RefreshCw
                           size={24}
-                          className="text-emerald-500 animate-spin"
+                          className="text-accent animate-spin"
                         />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 animate-pulse">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-accent animate-pulse">
                           {language === "ar"
                             ? "جاري فحص الاتصال (Pre-flight)..."
                             : "Running Pre-flight Check..."}
@@ -3346,12 +3346,12 @@ const DatabaseOrchestrationView = ({
                       </div>
                     )}
                     <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
-                      <Cloud size={40} className="text-emerald-500" />
+                      <Cloud size={40} className="text-accent" />
                     </div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></div>
-                        <label className="text-[10px] uppercase text-emerald-500 font-black tracking-[0.2em]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></div>
+                        <label className="text-[10px] uppercase text-accent font-black tracking-[0.2em]">
                           {t("connectionString")}
                         </label>
                       </div>
@@ -3363,7 +3363,7 @@ const DatabaseOrchestrationView = ({
                             !db.showConnectionString,
                           )
                         }
-                        className="text-emerald-500/60 hover:text-emerald-500 transition-theme p-1"
+                        className="text-accent/60 hover:text-accent transition-theme p-1"
                       >
                         {db.showConnectionString ? (
                           <EyeOff size={14} />
@@ -3375,14 +3375,14 @@ const DatabaseOrchestrationView = ({
                     <textarea
                       rows={3}
                       placeholder="postgresql://user:pass@host:port/db"
-                      className={`w-full p-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:ring-1 focus:ring-emerald-500/30 outline-none transition-theme shadow-sm leading-relaxed ${db.showConnectionString ? "" : "blur-[3px] select-none"}`}
+                      className={`w-full p-4 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:ring-1 focus:ring-accent-500/30 outline-none transition-theme shadow-sm leading-relaxed ${db.showConnectionString ? "" : "blur-[3px] select-none"}`}
                       value={db.connection_string || ""}
                       onChange={(e) =>
                         handleChange(db.id, "connection_string", e.target.value)
                       }
                     />
                     <div className="flex items-center gap-2 pt-1">
-                      <ShieldCheck size={12} className="text-emerald-500/60" />
+                      <ShieldCheck size={12} className="text-accent/60" />
                       <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
                         Perplexta Encryption Active
                       </p>
@@ -3489,7 +3489,7 @@ const DatabaseOrchestrationView = ({
                 )}
               </AnimatePresence>
 
-              <div className="col-span-3 h-[52px] flex items-center justify-center border border-dashed border-[var(--border-main)] rounded-sm bg-emerald-500/5">
+              <div className="col-span-3 h-[52px] flex items-center justify-center border border-dashed border-[var(--border-main)] rounded-sm bg-accent/5">
                 <span className="text-[10px] text-[var(--text-secondary)] font-mono">
                   {t("cloudAutoScalingEnabled")}
                 </span>
@@ -3499,7 +3499,7 @@ const DatabaseOrchestrationView = ({
                   <button
                     onClick={() => handleTestConnection(db.id)}
                     disabled={db.isTesting}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-emerald-500 hover:border-emerald-500/30 group`}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-accent hover:border-accent/30 group`}
                   >
                     {db.isTesting ? (
                       <>
@@ -3510,7 +3510,7 @@ const DatabaseOrchestrationView = ({
                       <>
                         <Activity
                           size={14}
-                          className={`transition-theme ${!db.isTesting ? "group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : ""}`}
+                          className={`transition-theme ${!db.isTesting ? "group-hover:text-accent group-hover:" : ""}`}
                         />
                         {t("testDbConnection")}
                       </>
@@ -3560,20 +3560,20 @@ const DatabaseOrchestrationView = ({
                     title={t("migrateAdditiveDesc")}
                     className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
                       theme === "dark"
-                        ? "border-emerald-900/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                        : "border-emerald-100 bg-emerald-50 hover:bg-emerald-100/50 text-emerald-600 shadow-sm"
+                        ? "border-accent-900/40 bg-accent-950/20 hover:bg-accent/30 text-accent hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        : "border-accent-100 bg-accent hover:bg-accent/50 text-accent shadow-sm"
                     } ${isMigrating?.id === db.id && isMigrating?.type === "additive" ? "opacity-70 grayscale" : ""}`}
                   >
                     {isMigrating?.id === db.id &&
                     isMigrating?.type === "additive" ? (
                       <RefreshCw
                         size={16}
-                        className="animate-spin text-emerald-500"
+                        className="animate-spin text-accent"
                       />
                     ) : (
                       <ShieldCheck
                         size={16}
-                        className={`transition-theme group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`}
+                        className={`transition-theme group-hover:text-accent group-hover:`}
                       />
                     )}
                     <span className="text-center px-1">
@@ -3620,7 +3620,7 @@ const DatabaseOrchestrationView = ({
                                   : `Export Backup (${currentDbName})`}
                               </button>
                               <div className="h-px bg-[var(--border-main)] my-1" />
-                              <label className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-emerald-500/10 text-emerald-500 transition-theme text-xs font-bold cursor-pointer">
+                              <label className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-accent/10 text-accent transition-theme text-xs font-bold cursor-pointer">
                                 <Upload size={16} />
                                 {dir === "rtl"
                                   ? `استيراد نسخة إلى (${currentDbName})`
@@ -3650,8 +3650,8 @@ const DatabaseOrchestrationView = ({
                         ? "bg-red-500/10 border-red-500/40 text-red-500 hover:bg-red-500/20"
                         : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
                       : theme === "dark"
-                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/20 shadow-[0_4px_20px_rgba(16,185,129,0.1)]"
-                        : "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/30"
+                        ? "bg-accent/10 border-accent/40 text-accent hover:bg-accent/20 shadow-[0_4px_20px_rgba(16,185,129,0.1)]"
+                        : "bg-accent border-accent text-white hover:bg-accent shadow-lg shadow-none"
                   }`}
                 >
                   {db.is_active && (
@@ -3966,7 +3966,7 @@ const OrchestratorView = ({
     <div className="space-y-6 max-w-7xl mx-auto relative">
       {loadingTools ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <RefreshCw size={40} className="text-emerald-500 animate-spin" />
+          <RefreshCw size={40} className="text-accent animate-spin" />
           <p className="text-gray-500 font-mono text-sm uppercase tracking-[0.3em]">
             Synchronizing Orchestrator...
           </p>
@@ -3979,7 +3979,7 @@ const OrchestratorView = ({
             return (
               <div
                 key={tool.id}
-                className={`p-6 rounded-lg border transition-theme relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-emerald-500/20 hover:shadow-lg group/tool`}
+                className={`p-6 rounded-lg border transition-theme relative overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/20 hover:shadow-lg group/tool`}
               >
                 <div className="absolute -top-6 -right-6 opacity-[0.03] dark:opacity-[0.02] pointer-events-none group-hover/tool:scale-110 transition-theme">
                   <Icon size={140} />
@@ -3988,7 +3988,7 @@ const OrchestratorView = ({
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-1.5 rounded-md bg-emerald-500 text-white shadow-[0_4px_10px_rgba(16,185,129,0.3)]`}
+                      className={`p-1.5 rounded-md bg-accent text-white shadow-[0_4px_10px_rgba(16,185,129,0.3)]`}
                     >
                       <Icon size={20} />
                     </div>
@@ -3998,10 +3998,10 @@ const OrchestratorView = ({
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div
-                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,1)]" : "bg-gray-400"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-accent shadow-[0_0_5px_rgba(16,185,129,1)]" : "bg-gray-400"}`}
                         ></div>
                         <span
-                          className={`text-[9px] font-black uppercase tracking-widest ${tool.isActive ? "text-emerald-500" : "text-gray-400"}`}
+                          className={`text-[9px] font-black uppercase tracking-widest ${tool.isActive ? "text-accent" : "text-gray-400"}`}
                         >
                           {tool.isActive
                             ? language === "ar"
@@ -4025,19 +4025,19 @@ const OrchestratorView = ({
                           );
                           await handleSave(tool.id, { ...tool, isActive: newState });
                         }}
-                        className={`w-11 h-6 rounded-full p-1 transition-theme ${tool.isActive ? "bg-emerald-500/20 border border-emerald-500/30" : "bg-[var(--bg-secondary)]/50 border border-[var(--border-main)]"}`}
+                        className={`w-11 h-6 rounded-full p-1 transition-theme ${tool.isActive ? "bg-accent/20 border border-accent/30" : "bg-[var(--bg-secondary)]/50 border border-[var(--border-main)]"}`}
                       >
                       <motion.div
                         animate={{
                           x: tool.isActive ? (dir === "rtl" ? -20 : 20) : 0,
                         }}
-                        className={`w-4 h-4 rounded-full shadow-md ${tool.isActive ? "bg-emerald-500" : "bg-[var(--bg-secondary)]0"}`}
+                        className={`w-4 h-4 rounded-full shadow-md ${tool.isActive ? "bg-accent" : "bg-[var(--bg-secondary)]0"}`}
                       />
                     </button>
                       <button
                         onClick={() => handleSave(tool.id)}
                         disabled={tool.isSaving}
-                        className={`p-2 rounded-sm transition-theme ${tool.isSaving ? "text-emerald-500" : "text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10"}`}
+                        className={`p-2 rounded-sm transition-theme ${tool.isSaving ? "text-accent" : "text-gray-400 hover:text-accent hover:bg-accent/10"}`}
                       >
                       {tool.isSaving ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -4060,14 +4060,14 @@ const OrchestratorView = ({
                         onChange={(e) =>
                           handleChange(tool.id, "costPerUsage", e.target.value)
                         }
-                        className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-emerald-500 focus:ring-1 focus:ring-emerald-500/30`}
+                        className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-accent focus:ring-1 focus:ring-accent-500/30`}
                       />
                       <div
-                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-emerald-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-accent/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
                       >
                         <Coins
                           size={16}
-                          className="drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]"
+                          className=""
                         />
                       </div>
                       <div
@@ -4141,7 +4141,7 @@ const OrchestratorView = ({
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 px-1">
-                        <Zap size={14} className="text-emerald-500" />
+                        <Zap size={14} className="text-accent" />
                         <span className="text-[10px] font-black text-[var(--text-primary)] uppercase tracking-[0.2em]">
                           {t("primaryEngine")}
                         </span>
@@ -4886,14 +4886,14 @@ const FinanceVaultView = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-theme border-b-2 whitespace-nowrap ${
                 isActive
-                  ? "border-emerald-500 text-emerald-500"
+                  ? "border-accent text-accent"
                   : `border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ${theme === "dark" ? "hover:border-[var(--border-main)]" : "hover:border-[var(--border-main)]"}`
               }`}
             >
               <Icon
                 size={16}
                 className={
-                  isActive ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" : ""
+                  isActive ? "text-accent " : ""
                 }
               />
               {tab.label}
@@ -4907,7 +4907,7 @@ const FinanceVaultView = ({
           <div className="space-y-8">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
-                <Star className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
+                <Star className="text-accent " size={24} />
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   {t("economySettings")}
                 </h3>
@@ -4917,8 +4917,8 @@ const FinanceVaultView = ({
                 disabled={isSaving}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-theme ${
                   theme === "dark"
-                    ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-400 hover:text-emerald-500 hover:border-emerald-500/30"
-                    : "bg-white border-[var(--border-main)] text-gray-500 hover:text-emerald-600 hover:border-emerald-200"
+                    ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-400 hover:text-accent hover:border-accent/30"
+                    : "bg-white border-[var(--border-main)] text-gray-500 hover:text-accent hover:border-accent"
                 } disabled:opacity-50 group`}
               >
                 {isSaving ? (
@@ -4926,7 +4926,7 @@ const FinanceVaultView = ({
                 ) : (
                   <Save
                     size={18}
-                    className="group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                    className="group-hover:"
                   />
                 )}
                 <span className="text-sm font-bold">{t("saveSettings")}</span>
@@ -4947,7 +4947,7 @@ const FinanceVaultView = ({
                       welcome_bonus_points: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {t("welcomeBonusDesc")}
@@ -4967,7 +4967,7 @@ const FinanceVaultView = ({
                       referral_bonus_points: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {t("referralBonusDesc")}
@@ -4989,7 +4989,7 @@ const FinanceVaultView = ({
                       min_payout_usd: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {language === "ar"
@@ -5013,7 +5013,7 @@ const FinanceVaultView = ({
                       min_deposit_usd: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {language === "ar"
@@ -5037,7 +5037,7 @@ const FinanceVaultView = ({
                       referral_activation_min_deposit: Number(e.target.value),
                     })
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <p className="text-xs text-gray-500 mt-3 text-center max-w-xs">
                   {language === "ar"
@@ -5058,13 +5058,13 @@ const FinanceVaultView = ({
                   onChange={(e) =>
                     updatePointsPerDollar(Number(e.target.value))
                   }
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <div className="mt-3 flex flex-col items-center gap-1">
                   <p className="text-xs text-gray-500 text-center max-w-xs">
                     {t("pointsPerDollarDesc")}
                   </p>
-                  <div className="px-3 py-1 rounded-full bg-emerald-500/5 border border-emerald-500/10 text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                  <div className="px-3 py-1 rounded-full bg-accent/5 border border-accent/10 text-[10px] font-bold text-accent uppercase tracking-wider">
                     1 {t("point")} = $
                     {Number(economySettings.conversion_rate || 0).toFixed(4)}
                   </div>
@@ -5080,13 +5080,13 @@ const FinanceVaultView = ({
                   step="0.0001"
                   value={economySettings.conversion_rate || 0}
                   onChange={(e) => updateConversionRate(Number(e.target.value))}
-                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-theme`}
+                  className={`w-full max-w-xs h-12 px-4 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} text-center text-lg font-medium focus:border-accent/50 focus:ring-2 focus:ring-accent-500/20 focus:outline-none transition-theme`}
                 />
                 <div className="mt-3 flex flex-col items-center gap-1">
                   <p className="text-xs text-gray-500 text-center max-w-xs">
                     {t("conversionRateDesc")}
                   </p>
-                  <div className="px-3 py-1 rounded-full bg-emerald-500/5 border border-emerald-500/10 text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                  <div className="px-3 py-1 rounded-full bg-accent/5 border border-accent/10 text-[10px] font-bold text-accent uppercase tracking-wider">
                     {economySettings.points_per_dollar} {t("points")} = $1.00
                   </div>
                 </div>
@@ -5098,7 +5098,7 @@ const FinanceVaultView = ({
         {activeTab === "ledger" && (
           <div className="space-y-6 font-sans">
             <div className="flex items-center gap-2 mb-6">
-              <Landmark className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
+              <Landmark className="text-accent " size={24} />
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                   {language === "ar" ? "دفتر الحسابات وجميع المعاملات المالية" : "System Registry & General Ledger"}
@@ -5111,7 +5111,7 @@ const FinanceVaultView = ({
 
             {isLoadingRequests ? (
               <div className="flex items-center justify-center p-12">
-                <RefreshCw className="animate-spin text-emerald-500" size={24} />
+                <RefreshCw className="animate-spin text-accent" size={24} />
               </div>
             ) : (
               <div className={`overflow-x-auto rounded-[var(--radius)] border ${theme === "dark" ? "bg-[#1a1a1c] border-gray-800/60" : "bg-white border-gray-150"}`}>
@@ -5157,17 +5157,17 @@ const FinanceVaultView = ({
                               <div className="text-[10px] text-gray-400 font-normal">{log.user?.email}</div>
                             </td>
                             <td className="p-4">
-                              <span className={`px-2 py-0.5 rounded-[4px] text-[10px] uppercase font-black tracking-wider ${isDep ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                              <span className={`px-2 py-0.5 rounded-[4px] text-[10px] uppercase font-black tracking-wider ${isDep ? 'bg-accent/10 text-accent' : 'bg-amber-500/10 text-amber-500'}`}>
                                 {isDep ? (language === "ar" ? "إيداع" : "DEPOSIT") : (language === "ar" ? "سحب" : "WITHDRAWAL")}
                               </span>
                             </td>
-                            <td className={`p-4 font-black font-mono text-xs ${isDep ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            <td className={`p-4 font-black font-mono text-xs ${isDep ? 'text-accent' : 'text-rose-500'}`}>
                               {isDep ? '+' : '-'}${Number(log.realAmount).toFixed(2)}
                             </td>
                             <td className="p-4 text-gray-400 font-mono text-[10px] uppercase">{log.method}</td>
                             <td className="p-4">
                               <span className={`px-2.5 py-1 rounded-[4px] text-[9px] font-black uppercase tracking-widest ${
-                                log.status === 'approved' || log.status === 'success' ? 'bg-emerald-500/10 text-emerald-500' :
+                                log.status === 'approved' || log.status === 'success' ? 'bg-accent/10 text-accent' :
                                 log.status === 'rejected' || log.status === 'failed' ? 'bg-rose-500/10 text-rose-500' :
                                 'bg-amber-500/10 text-amber-500 animate-pulse'
                               }`}>
@@ -5208,7 +5208,7 @@ const FinanceVaultView = ({
           <div className="space-y-8 font-sans">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ArrowRightLeft className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
+                <ArrowRightLeft className="text-accent " size={24} />
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {language === "ar" ? "معالجة طلبات الإيداع والسحب اليدوية" : "Manual Financial Verification Terminal"}
@@ -5221,16 +5221,16 @@ const FinanceVaultView = ({
               <button
                 onClick={fetchFinancialRequests}
                 disabled={isLoadingRequests}
-                className="p-2 text-gray-400 hover:text-emerald-500 transition-colors"
+                className="p-2 text-gray-400 hover:text-accent transition-colors"
                 title="Refresh requests list"
               >
-                <RefreshCw size={18} className={isLoadingRequests ? "animate-spin text-emerald-500" : ""} />
+                <RefreshCw size={18} className={isLoadingRequests ? "animate-spin text-accent" : ""} />
               </button>
             </div>
 
             {isLoadingRequests ? (
               <div className="flex items-center justify-center p-12">
-                <RefreshCw className="animate-spin text-emerald-500" size={24} />
+                <RefreshCw className="animate-spin text-accent" size={24} />
               </div>
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -5261,7 +5261,7 @@ const FinanceVaultView = ({
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-[#10b981] bg-emerald-500/5 px-2 py-0.5 rounded-[4px]">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#10b981] bg-accent/5 px-2 py-0.5 rounded-[4px]">
                               {request.method}
                             </span>
                             <div className="font-bold text-xs text-gray-900 dark:text-white mt-1 font-sans">
@@ -5306,7 +5306,7 @@ const FinanceVaultView = ({
                             <button
                               onClick={() => handleDepositAction(request.id, 'approve')}
                               disabled={actioningId !== null}
-                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="flex-1 h-9 bg-accent hover:bg-accent font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
                             >
                               {actioningId === request.id.toString() ? (
                                 <RefreshCw className="animate-spin text-white mx-auto" size={12} />
@@ -5397,7 +5397,7 @@ const FinanceVaultView = ({
                             <button
                               onClick={() => handleWithdrawalAction(request.id, 'approve')}
                               disabled={actioningId !== null}
-                              className="flex-1 h-9 bg-emerald-500 hover:bg-emerald-600 font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
+                              className="flex-1 h-9 bg-accent hover:bg-accent font-bold active:scale-[0.99] text-white rounded-[4px] text-[10px] uppercase tracking-wider transition-theme"
                             >
                               {actioningId === request.id.toString() ? (
                                 <RefreshCw className="animate-spin text-white mx-auto" size={12} />
@@ -5449,7 +5449,7 @@ const FinanceVaultView = ({
             {/* OFFICIAL AUTOMATED API PORTALS */}
             <div>
               <div className="mb-6">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] mb-1">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-accent  mb-1">
                   {dir === "rtl" ? "بوابات الدفع الرسمية المؤتمتة (APIs)" : "Official Automated Payment Gateways"}
                 </h4>
                 <p className="text-xs text-gray-500">
@@ -5462,8 +5462,8 @@ const FinanceVaultView = ({
                 <div
                   className={`p-6 md:p-8 rounded-[4px] border flex flex-col justify-between ${
                     theme === "dark"
-                      ? "bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/20"
-                      : "bg-white border-gray-150/80 hover:border-emerald-500/20"
+                      ? "bg-[#1a1a1c] border-gray-800/60 hover:border-accent/20"
+                      : "bg-white border-gray-150/80 hover:border-accent/20"
                   } transition-theme shadow-sm`}
                 >
                   <div>
@@ -5482,13 +5482,13 @@ const FinanceVaultView = ({
                         <span
                           className={`px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold flex items-center gap-1.5 ${
                             stripeConfig.stripe_status === "active"
-                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                              ? "bg-accent/10 text-accent border border-accent/30"
                               : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
                           }`}
                         >
                           {stripeConfig.stripe_status === "active" ? (
                             <>
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                               {dir === "rtl" ? "نشط / معتمد" : "Active / Verified"}
                             </>
                           ) : (
@@ -5539,13 +5539,13 @@ const FinanceVaultView = ({
                           }
                           className={`relative w-11 h-5.5 rounded-full transition-colors border ${
                             stripeConfig.isLiveMode
-                              ? "bg-emerald-500/20 border-emerald-500/40"
+                              ? "bg-accent/20 border-accent/40"
                               : "bg-gray-200 dark:bg-gray-800 border-transparent"
                           }`}
                         >
                           <div
                             className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-theme ${
-                              stripeConfig.isLiveMode ? "bg-emerald-500" : "bg-gray-400 dark:bg-gray-500"
+                              stripeConfig.isLiveMode ? "bg-accent" : "bg-gray-400 dark:bg-gray-500"
                             } ${
                               dir === "rtl"
                                 ? stripeConfig.isLiveMode ? "right-5.5" : "right-0.5"
@@ -5555,7 +5555,7 @@ const FinanceVaultView = ({
                         </button>
                         <span
                           className={`text-[9.5px] font-bold tracking-wider ${
-                            stripeConfig.isLiveMode ? "text-emerald-500" : "text-gray-400"
+                            stripeConfig.isLiveMode ? "text-accent" : "text-gray-400"
                           }`}
                         >
                           LIVE
@@ -5578,7 +5578,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="pk_test_..."
-                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/40 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-accent-500/10 focus:border-accent/40 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#0f0f11] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-gray-50/50 border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -5600,7 +5600,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="sk_test_..."
-                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/40 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-accent-500/10 focus:border-accent/40 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#0f0f11] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-gray-50/50 border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -5622,7 +5622,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="whsec_..."
-                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500/40 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-accent-500/10 focus:border-accent/40 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#0f0f11] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-gray-50/50 border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -5658,14 +5658,14 @@ const FinanceVaultView = ({
                       disabled={isSaving || isVerifyingStripe}
                       className={`px-5 py-2.5 rounded-[4px] font-bold transition-theme flex items-center justify-center gap-2 ${
                         theme === "dark"
-                          ? "bg-transparent text-gray-400 border border-gray-800 hover:text-emerald-500 hover:border-emerald-500/30 font-medium"
-                          : "bg-transparent text-gray-500 border border-gray-200 hover:text-emerald-600 hover:border-emerald-200 font-medium"
+                          ? "bg-transparent text-gray-400 border border-gray-800 hover:text-accent hover:border-accent/30 font-medium"
+                          : "bg-transparent text-gray-500 border border-gray-200 hover:text-accent hover:border-accent font-medium"
                       } disabled:opacity-50 group`}
                     >
                       {isVerifyingStripe ? (
                         <RefreshCw size={16} className="animate-spin" />
                       ) : (
-                        <Zap size={16} className="group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400" />
+                        <Zap size={16} className="group-hover:text-accent group-hover: text-gray-400" />
                       )}
                       {dir === "rtl" ? "تحقق المزامنة" : "Verify Sync"}
                     </button>
@@ -5676,8 +5676,8 @@ const FinanceVaultView = ({
                 <div
                   className={`p-6 md:p-8 rounded-[4px] border flex flex-col justify-between ${
                     theme === "dark"
-                      ? "bg-[#1a1a1c] border-gray-800/60 hover:border-emerald-500/20"
-                      : "bg-white border-gray-150/80 hover:border-emerald-500/20"
+                      ? "bg-[#1a1a1c] border-gray-800/60 hover:border-accent/20"
+                      : "bg-white border-gray-150/80 hover:border-accent/20"
                   } transition-theme shadow-sm`}
                 >
                   <div>
@@ -5700,13 +5700,13 @@ const FinanceVaultView = ({
                         <span
                           className={`px-2.5 py-0.5 rounded-[4px] text-[10px] font-bold flex items-center gap-1.5 ${
                             paypalConfig.paypal_status === "verified"
-                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                              ? "bg-accent/10 text-accent border border-accent/30"
                               : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
                           }`}
                         >
                           {paypalConfig.paypal_status === "verified" ? (
                             <>
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                               {dir === "rtl" ? "نشط / معتمد" : "Active / Verified"}
                             </>
                           ) : (
@@ -5757,13 +5757,13 @@ const FinanceVaultView = ({
                           }
                           className={`relative w-11 h-5.5 rounded-full transition-colors border ${
                             paypalConfig.mode === "live"
-                              ? "bg-emerald-500/20 border-emerald-500/40"
+                              ? "bg-accent/20 border-accent/40"
                               : "bg-gray-200 dark:bg-gray-800 border-transparent"
                           }`}
                         >
                           <div
                             className={`absolute top-0.5 w-4.2 h-4.2 rounded-full shadow-md transition-theme ${
-                              paypalConfig.mode === "live" ? "bg-emerald-500" : "bg-gray-400 dark:bg-gray-500"
+                              paypalConfig.mode === "live" ? "bg-accent" : "bg-gray-400 dark:bg-gray-500"
                             } ${
                               dir === "rtl"
                                 ? paypalConfig.mode === "live" ? "right-5.5" : "right-0.5"
@@ -5773,7 +5773,7 @@ const FinanceVaultView = ({
                         </button>
                         <span
                           className={`text-[9.5px] font-bold tracking-wider ${
-                            paypalConfig.mode === "live" ? "text-emerald-500" : "text-gray-400"
+                            paypalConfig.mode === "live" ? "text-accent" : "text-gray-400"
                           }`}
                         >
                           LIVE
@@ -5818,7 +5818,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="EK_..."
-                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-emerald-500/40 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-[4px] border focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-accent/40 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#0f0f11] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-gray-50/50 border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -5859,14 +5859,14 @@ const FinanceVaultView = ({
                       disabled={isSaving || isVerifyingPaypal}
                       className={`px-5 py-2.5 rounded-[4px] font-bold transition-theme flex items-center justify-center gap-2 ${
                         theme === "dark"
-                          ? "bg-transparent text-gray-400 border border-gray-800 hover:text-emerald-500 hover:border-emerald-500/30 font-medium"
-                          : "bg-transparent text-gray-500 border border-gray-200 hover:text-emerald-600 hover:border-emerald-200 font-medium"
+                          ? "bg-transparent text-gray-400 border border-gray-800 hover:text-accent hover:border-accent/30 font-medium"
+                          : "bg-transparent text-gray-500 border border-gray-200 hover:text-accent hover:border-accent font-medium"
                       } disabled:opacity-50 group`}
                     >
                       {isVerifyingPaypal ? (
                         <RefreshCw size={16} className="animate-spin" />
                       ) : (
-                        <Zap size={16} className="group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] text-gray-400" />
+                        <Zap size={16} className="group-hover:text-accent group-hover: text-gray-400" />
                       )}
                       {dir === "rtl" ? "تحقق المزامنة" : "Verify Sync"}
                     </button>
@@ -5878,7 +5878,7 @@ const FinanceVaultView = ({
             {/* MANUAL & ALTERNATIVE WALLET GATEWAYS CONFIG */}
             <div>
               <div className="mb-6">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] mb-1">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-accent  mb-1">
                   {dir === "rtl" ? "قنوات الإيداع والتحصيل اليدوي للمحافظ" : "Alternative Manual Deposit Routes"}
                 </h4>
                 <p className="text-xs text-gray-500">
@@ -5892,8 +5892,8 @@ const FinanceVaultView = ({
                 } transition-theme shadow-sm`}
               >
                 <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100 dark:border-gray-800/60">
-                  <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500">
-                    <Landmark size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  <div className="p-3 rounded-md bg-accent/10 text-accent">
+                    <Landmark size={24} className="text-accent " />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold">
@@ -5910,9 +5910,9 @@ const FinanceVaultView = ({
                 {/* 3-Column horizontal grid for perfect utilization of space */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                   {/* Column 1: Crypto Wallet Setup */}
-                  <div className="border border-emerald-500/10 rounded-xl p-5 bg-emerald-500/[0.015] flex flex-col justify-between space-y-4">
+                  <div className="border border-accent/10 rounded-xl p-5 bg-accent/[0.015] flex flex-col justify-between space-y-4">
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-500 flex items-center gap-2 mb-2">
+                      <h4 className="text-sm font-bold text-accent flex items-center gap-2 mb-2">
                         <Smartphone size={16} />
                         {dir === "rtl" ? "عملة USDT المستقرة (TRC-20)" : "USDT Stablecoin (TRC-20)"}
                       </h4>
@@ -5938,7 +5938,7 @@ const FinanceVaultView = ({
                             })
                           }
                           placeholder="TPh7eWpY..."
-                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-emerald-500/35 font-mono text-xs transition-theme ${
+                          className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-1.5 focus:ring-accent-500/35 font-mono text-xs transition-theme ${
                             theme === "dark"
                               ? "bg-[#1e1e21] border-gray-800 text-white placeholder:text-gray-700"
                               : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-300"
@@ -6084,7 +6084,7 @@ const FinanceVaultView = ({
                   <button
                     onClick={handleSaveWalletGateways}
                     disabled={isSaving}
-                    className="w-full sm:w-auto px-8 bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold transition-theme hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-emerald-500/10"
+                    className="w-full sm:w-auto px-8 bg-accent hover:bg-accent text-white py-3 rounded-lg font-bold transition-theme hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 shadow-md shadow-none"
                   >
                     {isSaving ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -6418,8 +6418,8 @@ const PlansSubscriptionsView = ({
             className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                  : "bg-white border border-emerald-200 text-emerald-600"
+                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                  : "bg-white border border-accent text-accent"
                 : theme === "dark"
                   ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
                   : "bg-white border border-red-200 text-red-600"
@@ -6441,7 +6441,7 @@ const PlansSubscriptionsView = ({
           onClick={() => setPlanFilter("all")}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             planFilter === "all"
-              ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
+              ? "bg-accent text-black shadow-lg shadow-none"
               : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
           }`}
         >
@@ -6452,7 +6452,7 @@ const PlansSubscriptionsView = ({
           onClick={() => setPlanFilter("user")}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             planFilter === "user"
-              ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
+              ? "bg-accent text-black shadow-lg shadow-none"
               : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
           }`}
         >
@@ -6477,15 +6477,15 @@ const PlansSubscriptionsView = ({
         {/* User Plans Section */}
         {(planFilter === "all" || planFilter === "user") && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+            <div className="flex items-center justify-between border-b border-accent/20 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                   <Users size={18} />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     {dir === "rtl" ? "خطط المستخدمين العاديين" : "Standard User Plans"}
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono font-bold">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent font-mono font-bold">
                       {plans.filter(p => (p.planType || "user") === "user").length}
                     </span>
                   </h3>
@@ -6504,8 +6504,8 @@ const PlansSubscriptionsView = ({
                     key={plan.id}
                     className={`p-6 rounded-xl border transition-all relative overflow-hidden flex flex-col ${
                       theme === "dark"
-                        ? "bg-[#111113] border-gray-800 hover:border-emerald-500/40"
-                        : "bg-white border-gray-200 hover:border-emerald-400 shadow-sm"
+                        ? "bg-[#111113] border-gray-800 hover:border-accent/40"
+                        : "bg-white border-gray-200 hover:border-accent shadow-sm"
                     }`}
                   >
                     {/* Top Color Accent */}
@@ -6516,11 +6516,11 @@ const PlansSubscriptionsView = ({
 
                     {/* Badge */}
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5 uppercase tracking-wider bg-accent/10 text-accent border border-accent/20">
                         <Users size={12} />
                         {dir === "rtl" ? "مستخدم عام" : "Standard User"}
                       </span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${plan.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-gray-500/10 text-gray-500"}`}>
+                      <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${plan.isActive ? "bg-accent/10 text-accent" : "bg-gray-500/10 text-gray-500"}`}>
                         {plan.isActive ? (dir === "rtl" ? "نشط" : "Active") : (dir === "rtl" ? "متوقف" : "Inactive")}
                       </span>
                     </div>
@@ -6539,7 +6539,7 @@ const PlansSubscriptionsView = ({
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-emerald-500">
+                        <p className="text-2xl font-bold text-accent">
                           ${plan.monthlyPrice}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -6556,7 +6556,7 @@ const PlansSubscriptionsView = ({
                         >
                           <CheckCircle2
                             size={16}
-                            className="text-emerald-500 shrink-0 mt-0.5"
+                            className="text-accent shrink-0 mt-0.5"
                           />
                           <span>{dir === "rtl" ? feature.textAr : feature.textEn}</span>
                         </div>
@@ -6584,13 +6584,13 @@ const PlansSubscriptionsView = ({
                               key={key}
                               className="text-[9px] font-bold px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800/60 bg-gray-50 dark:bg-gray-800/30 flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
                             >
-                              <span className="text-emerald-500 font-extrabold">{t(key)}</span>
+                              <span className="text-accent font-extrabold">{t(key)}</span>
                               <span className="font-mono text-[8px]">
                                 {daily !== undefined && daily !== null && (
                                   <>D: <strong className="text-gray-900 dark:text-white">{formatLimit(daily)}</strong></>
                                 )}
                                 {monthly !== null && monthly !== 0 && monthly !== undefined && (
-                                  <>; M: <strong className="text-emerald-500">{formatLimit(monthly)}</strong></>
+                                  <>; M: <strong className="text-accent">{formatLimit(monthly)}</strong></>
                                 )}
                               </span>
                             </div>
@@ -6819,7 +6819,7 @@ const PlansSubscriptionsView = ({
                   <button
                     onClick={handleSavePlan}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
+                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
                   >
                     {isSaving ? (
                       <RefreshCw className="animate-spin" size={18} />
@@ -6853,7 +6853,7 @@ const PlansSubscriptionsView = ({
                             badge: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme appearance-none`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme appearance-none`}
                         dir={dir}
                       >
                         <option value="none">{t("none")}</option>
@@ -6879,7 +6879,7 @@ const PlansSubscriptionsView = ({
                             annualPrice: Number(a.toFixed(2)),
                           });
                         }}
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme text-center`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme text-center`}
                         dir="ltr"
                       />
                     </div>
@@ -6898,7 +6898,7 @@ const PlansSubscriptionsView = ({
                             planType: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme appearance-none`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme appearance-none`}
                         dir={dir}
                       >
                         <option value="user">
@@ -6945,11 +6945,11 @@ const PlansSubscriptionsView = ({
                               isActive: e.target.checked,
                             })
                           }
-                          className="w-4 h-4 rounded border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500 bg-[var(--bg-input)] dark:bg-[var(--bg-secondary)] dark:border-[var(--border-main)]"
+                          className="w-4 h-4 rounded border-[var(--border-main)] text-accent focus:ring-accent-500 bg-[var(--bg-input)] dark:bg-[var(--bg-secondary)] dark:border-[var(--border-main)]"
                         />
                         <label
                           htmlFor="isActive"
-                          className="text-xs font-bold text-emerald-500 cursor-pointer uppercase tracking-tighter"
+                          className="text-xs font-bold text-accent cursor-pointer uppercase tracking-tighter"
                         >
                           {language === "ar" ? "نشط" : "Active"}
                         </label>
@@ -6965,7 +6965,7 @@ const PlansSubscriptionsView = ({
                               isVisible: e.target.checked,
                             })
                           }
-                          className="w-4 h-4 rounded border-[var(--border-main)] text-emerald-500 focus:ring-emerald-500 bg-[var(--bg-input)] dark:bg-[var(--bg-secondary)] dark:border-[var(--border-main)]"
+                          className="w-4 h-4 rounded border-[var(--border-main)] text-accent focus:ring-accent-500 bg-[var(--bg-input)] dark:bg-[var(--bg-secondary)] dark:border-[var(--border-main)]"
                         />
                         <label
                           htmlFor="isVisible"
@@ -6982,7 +6982,7 @@ const PlansSubscriptionsView = ({
                       <h3 className="text-sm font-bold text-gray-900 dark:text-white">
                         {t("limits")}
                       </h3>
-                      <div className="flex gap-4 text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/10">
+                      <div className="flex gap-4 text-[10px] font-bold text-accent/80 uppercase tracking-widest bg-accent/5 px-2 py-0.5 rounded-full border border-accent/10">
                         <span className="flex items-center gap-1">
                           <Clock size={10} /> {t("daily")}
                         </span>
@@ -7009,18 +7009,18 @@ const PlansSubscriptionsView = ({
                         return (
                           <div
                             key={key}
-                            className={`p-3 rounded-lg border ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"} transition-theme hover:border-emerald-500/40 group relative overflow-hidden`}
+                            className={`p-3 rounded-lg border ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"} transition-theme hover:border-accent/40 group relative overflow-hidden`}
                           >
                             <div className="flex justify-between items-center mb-2 px-1">
                               <span
-                                className="text-[10px] font-bold text-gray-500 dark:text-gray-400 truncate group-hover:text-emerald-500 transition-theme uppercase tracking-widest"
+                                className="text-[10px] font-bold text-gray-500 dark:text-gray-400 truncate group-hover:text-accent transition-theme uppercase tracking-widest"
                                 title={key}
                               >
                                 {t(key)}
                               </span>
                               <div className="flex gap-1">
                                 <div
-                                  className={`w-1.5 h-1.5 rounded-full ${isUnlimitedDaily || isUnlimitedMonthly ? "bg-emerald-500 animate-pulse" : "bg-gray-700"}`}
+                                  className={`w-1.5 h-1.5 rounded-full ${isUnlimitedDaily || isUnlimitedMonthly ? "bg-accent animate-pulse" : "bg-gray-700"}`}
                                 />
                               </div>
                             </div>
@@ -7063,11 +7063,11 @@ const PlansSubscriptionsView = ({
                                       }
                                       className={`w-full h-10 px-2 rounded-md border text-center text-sm font-mono focus:outline-none transition-theme ${
                                         isUnlimitedDaily
-                                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold text-xl"
+                                          ? "bg-accent/10 border-accent/30 text-accent font-bold text-xl"
                                           : theme === "dark"
                                             ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300"
                                             : "bg-white border-[var(--border-main)] text-gray-900"
-                                      } focus:border-emerald-500/50 cursor-pointer shadow-inner`}
+                                      } focus:border-accent/50 cursor-pointer shadow-inner`}
                                       title={
                                         isUnlimitedDaily
                                           ? "Unlimited (Double click to set number)"
@@ -7113,11 +7113,11 @@ const PlansSubscriptionsView = ({
                                     }
                                     className={`w-full h-10 px-2 rounded-md border text-center text-sm font-mono focus:outline-none transition-theme ${
                                       isUnlimitedMonthly
-                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold text-xl"
+                                        ? "bg-accent/10 border-accent/30 text-accent font-bold text-xl"
                                         : theme === "dark"
                                           ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300"
                                           : "bg-white border-[var(--border-main)] text-gray-900"
-                                    } focus:border-emerald-500/50 cursor-pointer shadow-inner`}
+                                    } focus:border-accent/50 cursor-pointer shadow-inner`}
                                     title={
                                       isUnlimitedMonthly
                                         ? "Unlimited (Double click to set number)"
@@ -7156,7 +7156,7 @@ const PlansSubscriptionsView = ({
                               annualPrice: Number(a.toFixed(2)),
                             });
                           }}
-                          className={`w-full h-11 pl-8 pr-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                          className={`w-full h-11 pl-8 pr-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                           dir="ltr"
                         />
                       </div>
@@ -7185,7 +7185,7 @@ const PlansSubscriptionsView = ({
                               discount: d,
                             });
                           }}
-                          className={`w-full h-11 pl-8 pr-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                          className={`w-full h-11 pl-8 pr-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                           dir="ltr"
                         />
                       </div>
@@ -7215,7 +7215,7 @@ const PlansSubscriptionsView = ({
                             nameEn: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                         dir="ltr"
                       />
                     </div>
@@ -7232,7 +7232,7 @@ const PlansSubscriptionsView = ({
                             nameAr: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                         dir="rtl"
                       />
                     </div>
@@ -7252,7 +7252,7 @@ const PlansSubscriptionsView = ({
                             descEn: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                         dir="ltr"
                       />
                     </div>
@@ -7269,7 +7269,7 @@ const PlansSubscriptionsView = ({
                             descAr: e.target.value,
                           })
                         }
-                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                        className={`w-full h-11 px-3 rounded-md border ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-900"} focus:outline-none focus:border-accent/50 transition-theme`}
                         dir="rtl"
                       />
                     </div>
@@ -7290,7 +7290,7 @@ const PlansSubscriptionsView = ({
                           }`}
                         >
                           <div className="flex justify-between items-center px-1">
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
+                            <span className="text-[10px] font-black text-accent uppercase tracking-wider">
                               {dir === "rtl" ? `ميزة #${index + 1}` : `Feature #${index + 1}`}
                             </span>
                             <button
@@ -7313,7 +7313,7 @@ const PlansSubscriptionsView = ({
                                 theme === "dark"
                                   ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300"
                                   : "bg-white border-[var(--border-main)] text-gray-900"
-                              } focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                              } focus:outline-none focus:border-accent/50 transition-theme`}
                               dir="ltr"
                             />
                             <input
@@ -7327,7 +7327,7 @@ const PlansSubscriptionsView = ({
                                 theme === "dark"
                                   ? "bg-[#0f0f11] border-[var(--border-main)]/80 text-gray-300"
                                   : "bg-white border-[var(--border-main)] text-gray-900"
-                              } focus:outline-none focus:border-emerald-500/50 transition-theme`}
+                              } focus:outline-none focus:border-accent/50 transition-theme`}
                               dir="rtl"
                             />
                           </div>
@@ -7336,7 +7336,7 @@ const PlansSubscriptionsView = ({
                     </div>
                     <button
                       onClick={addFeature}
-                      className="w-full py-2.5 rounded-[var(--radius)] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-theme shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 rounded-[var(--radius)] bg-accent hover:bg-accent text-white font-bold text-sm transition-theme shadow-md shadow-none flex items-center justify-center gap-2"
                     >
                       <Plus size={16} /> {t("addFeature")}
                     </button>
@@ -8046,10 +8046,10 @@ const LegacyUserManagementView = ({
   return (
     <div className="space-y-6 relative">
       <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-lg border border-[var(--border-main)] shadow-sm relative overflow-hidden">
-        <div className="absolute inset-0 bg-emerald-500/[0.01] pointer-events-none" />
+        <div className="absolute inset-0 bg-accent/[0.01] pointer-events-none" />
         <div className={`relative w-full lg:w-[450px] flex items-center group`}>
           <div
-            className={`absolute inset-y-0 ${dir === "rtl" ? "right-0 pr-4" : "left-0 pl-4"} flex items-center pointer-events-none transition-theme group-focus-within:text-emerald-500`}
+            className={`absolute inset-y-0 ${dir === "rtl" ? "right-0 pr-4" : "left-0 pl-4"} flex items-center pointer-events-none transition-theme group-focus-within:text-accent`}
           >
             <Search size={18} className="text-gray-400" />
           </div>
@@ -8058,7 +8058,7 @@ const LegacyUserManagementView = ({
             placeholder={t("searchUsers")}
             value={searchQuery || ""}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full ${dir === "rtl" ? "pr-11 pl-4" : "pl-11 pr-4"} py-3 rounded-md border focus:outline-none focus:ring-1 focus:ring-emerald-500/30 transition-theme ${
+            className={`w-full ${dir === "rtl" ? "pr-11 pl-4" : "pl-11 pr-4"} py-3 rounded-md border focus:outline-none focus:ring-1 focus:ring-accent-500/30 transition-theme ${
               theme === "dark"
                 ? "bg-[#0f0f11] border-[var(--border-main)] text-white placeholder-gray-600"
                 : "bg-white border-[var(--border-main)] text-gray-900 placeholder-gray-400"
@@ -8068,7 +8068,7 @@ const LegacyUserManagementView = ({
         <div className="flex gap-3 w-full lg:w-auto">
           <button
             onClick={() => setIsCreateUserModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-3 rounded-md bg-emerald-500 text-white font-bold text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-theme"
+            className="flex items-center gap-2 px-4 py-3 rounded-md bg-accent text-white font-bold text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-theme"
           >
             <UserPlus size={16} />
             {t("addExplorer")}
@@ -8077,7 +8077,7 @@ const LegacyUserManagementView = ({
             <select
               value={statusFilter || "all"}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
+              className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-accent-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
             >
               <option value="all">{dir === "rtl" ? "جميع الحالات" : "All Status"}</option>
               <option value="active">{t("active")}</option>
@@ -8092,7 +8092,7 @@ const LegacyUserManagementView = ({
             <select
               value={planFilter || "all"}
               onChange={(e) => setPlanFilter(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-emerald-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
+              className={`w-full px-4 py-3 rounded-md border appearance-none focus:outline-none focus:ring-1 focus:ring-accent-500/30 font-bold text-xs ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-gray-300" : "bg-white border-[var(--border-main)] shadow-sm"}`}
             >
               <option value="all">{dir === "rtl" ? "جميع الباقات" : "All Plans"}</option>
               {plans.map((p) => (
@@ -8155,8 +8155,8 @@ const LegacyUserManagementView = ({
                   className="text-center py-24"
                 >
                     <div className="flex flex-col items-center gap-4">
-                      <div className="w-12 h-12 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                      <div className="w-12 h-12 border-2 border-accent/20 border-t-accent-500 rounded-full animate-spin"></div>
+                      <span className="text-[10px] font-black text-accent uppercase tracking-widest animate-pulse ">
                         Syncing Galaxy Users...
                       </span>
                     </div>
@@ -8176,7 +8176,7 @@ const LegacyUserManagementView = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
-                          <div className="w-11 h-11 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-emerald-500/50 transition-theme">
+                          <div className="w-11 h-11 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center shrink-0 overflow-hidden border border-[var(--border-main)] group-hover/avatar:border-accent/50 transition-theme">
                             {user.avatar ? (
                               <img
                                 src={user.avatar}
@@ -8189,11 +8189,11 @@ const LegacyUserManagementView = ({
                             )}
                           </div>
                           {user.subscription_status === "active" && (
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--bg-secondary)] shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[var(--bg-secondary)] shadow-[0_0_8px_rgba(16,185,129,1)]" />
                           )}
                         </div>
                         <div>
-                          <div className="font-black text-sm text-[var(--text-primary)] group-hover:text-emerald-500 transition-theme">
+                          <div className="font-black text-sm text-[var(--text-primary)] group-hover:text-accent transition-theme">
                             <HighlightText text={user.name} query={searchQuery} />
                           </div>
                           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
@@ -8216,7 +8216,7 @@ const LegacyUserManagementView = ({
                               : user.role === "elite"
                                 ? "text-amber-500 border-amber-500/30 bg-amber-500/5"
                                 : user.role === "support"
-                                  ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/5"
+                                  ? "text-accent border-accent/30 bg-accent/5"
                                   : "text-gray-500 border-[var(--border-main)] bg-[var(--bg-secondary)]/10"
                           }`}
                         >
@@ -8286,7 +8286,7 @@ const LegacyUserManagementView = ({
                       <div
                         className={`px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border ${
                           user.kyc_status === "verified"
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            ? "bg-accent/10 text-accent border-accent/20"
                             : user.kyc_status === "pending"
                               ? "bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
                               : user.kyc_status === "rejected"
@@ -8295,7 +8295,7 @@ const LegacyUserManagementView = ({
                         }`}
                       >
                         <div
-                          className={`w-1.5 h-1.5 rounded-full ${user.kyc_status === "verified" ? "bg-emerald-500" : user.kyc_status === "pending" ? "bg-amber-500 animate-pulse" : "bg-gray-400"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${user.kyc_status === "verified" ? "bg-accent" : user.kyc_status === "pending" ? "bg-amber-500 animate-pulse" : "bg-gray-400"}`}
                         />
                         {user.kyc_status === "verified"
                           ? t("kycVerified")
@@ -8317,7 +8317,7 @@ const LegacyUserManagementView = ({
                       >
                         <button
                           onClick={() => handleSendDirectEmail(user.id)}
-                          className="w-9 h-9 flex items-center justify-center rounded-md bg-[var(--bg-secondary)]/5 text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-theme border border-transparent hover:border-emerald-500/20"
+                          className="w-9 h-9 flex items-center justify-center rounded-md bg-[var(--bg-secondary)]/5 text-gray-400 hover:text-accent hover:bg-accent/10 transition-theme border border-transparent hover:border-accent/20"
                           title={t("sendEmail")}
                         >
                           <Mail size={16} />
@@ -8331,7 +8331,7 @@ const LegacyUserManagementView = ({
                         </button>
                         <button
                           onClick={() => handleViewProfile(user)}
-                          className="w-9 h-9 flex items-center justify-center rounded-md bg-emerald-500/10 text-emerald-500 transition-theme border border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] group/btn"
+                          className="w-9 h-9 flex items-center justify-center rounded-md bg-accent/10 text-accent transition-theme border border-accent/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] group/btn"
                           title={t("viewProfile")}
                         >
                           <Eye
@@ -8380,7 +8380,7 @@ const LegacyUserManagementView = ({
               className={`relative w-full max-w-md overflow-hidden rounded-lg shadow-2xl flex flex-col transition-theme bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
             >
               <div className="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
-                <div className="flex items-center gap-3 text-emerald-500">
+                <div className="flex items-center gap-3 text-accent">
                   <UserPlus size={24} />
                   <h3 className="text-xl font-black tracking-tight">
                     {dir === "rtl" ? "إضافة مستخدم جديد" : "New User Registry"}
@@ -8404,7 +8404,7 @@ const LegacyUserManagementView = ({
                     type="text"
                     value={newUser.name}
                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                   />
                 </div>
                 <div className="space-y-2">
@@ -8415,7 +8415,7 @@ const LegacyUserManagementView = ({
                     type="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                   />
                 </div>
                 <div className="space-y-2">
@@ -8426,7 +8426,7 @@ const LegacyUserManagementView = ({
                     type="password"
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -8437,7 +8437,7 @@ const LegacyUserManagementView = ({
                     <select
                       value={newUser.role}
                       onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                     >
                       <option value="user">{t("role_user")}</option>
                       <option value="support">{t("role_support")}</option>
@@ -8453,7 +8453,7 @@ const LegacyUserManagementView = ({
                       type="number"
                       value={newUser.initialPoints}
                       onChange={(e) => setNewUser({ ...newUser, initialPoints: e.target.value })}
-                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                      className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                     />
                   </div>
                 </div>
@@ -8463,7 +8463,7 @@ const LegacyUserManagementView = ({
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="w-full py-3 rounded-md bg-emerald-500 text-white font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
+                  className="w-full py-3 rounded-md bg-accent text-white font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
                   {isUpdating ? (
                     <RefreshCw size={18} className="animate-spin" />
@@ -8510,7 +8510,7 @@ const LegacyUserManagementView = ({
               <div className="flex-1 overflow-y-auto p-6">
                 {isLoadingLogs ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-accent/20 border-t-accent-500 rounded-full animate-spin"></div>
                     <p className="text-gray-500 animate-pulse font-mono text-sm uppercase tracking-widest">
                       Loading Logs...
                     </p>
@@ -8552,14 +8552,14 @@ const LegacyUserManagementView = ({
                             key={idx}
                             className="group hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]/30 transition-theme cursor-crosshair"
                           >
-                            <td className="px-6 py-4 font-mono text-xs uppercase text-emerald-500 tracking-tighter">
+                            <td className="px-6 py-4 font-mono text-xs uppercase text-accent tracking-tighter">
                               {log.tool_id}
                             </td>
                             <td className="px-6 py-4 font-mono text-sm font-bold text-gray-900 dark:text-white">
                               {parseFloat(log.amount).toFixed(2)}
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border bg-accent/10 text-accent border-accent/30">
                                 Completed
                               </span>
                             </td>
@@ -8568,7 +8568,7 @@ const LegacyUserManagementView = ({
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter border ${
                                   log.usage_type === "paid"
                                     ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                                    : "bg-accent/10 text-accent border-accent/30"
                                 }`}
                               >
                                 {log.usage_type}
@@ -8596,11 +8596,11 @@ const LegacyUserManagementView = ({
             <div
               className={`relative w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-lg shadow-2xl flex flex-col transition-theme bg-[var(--bg-base)] border border-[var(--border)] shadow-[var(--color-shadow)]`}
             >
-              <div className="p-8 border-b border-[var(--border-main)]/20 flex items-center justify-between bg-gradient-to-br from-[var(--bg-secondary)] via-[var(--bg-secondary)] to-emerald-500/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
+              <div className="p-8 border-b border-[var(--border-main)]/20 flex items-center justify-between bg-gradient-to-br from-[var(--bg-secondary)] via-[var(--bg-secondary)] to-gray-500/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full pointer-events-none" />
                 <div className="flex items-center gap-6 relative z-10">
                   <div
-                    className={`w-16 h-16 rounded-lg flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-theme group/avatar ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] hover:border-emerald-500/50" : "bg-[var(--bg-input)] border-white hover:border-emerald-500/50"}`}
+                    className={`w-16 h-16 rounded-lg flex items-center justify-center shadow-2xl border-2 overflow-hidden transition-theme group/avatar ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] hover:border-accent/50" : "bg-[var(--bg-input)] border-white hover:border-accent/50"}`}
                   >
                     {selectedUser.avatar ? (
                       <img
@@ -8617,7 +8617,7 @@ const LegacyUserManagementView = ({
                     <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                       {selectedUser.name}
                       {selectedUser.subscription_status === "active" && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                       )}
                     </h2>
                     <div className="flex flex-col gap-0.5 mt-1">
@@ -8628,7 +8628,7 @@ const LegacyUserManagementView = ({
                             : selectedUser.role === "elite"
                               ? "text-amber-500"
                               : selectedUser.role === "support"
-                                ? "text-emerald-500"
+                                ? "text-accent"
                                 : "text-gray-400"
                         }`}
                       >
@@ -8659,7 +8659,7 @@ const LegacyUserManagementView = ({
                     className={`p-8 rounded-lg border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                      <div className="p-2.5 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                         <Users size={20} />
                       </div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -8682,7 +8682,7 @@ const LegacyUserManagementView = ({
                                 role: e.target.value,
                               })
                             }
-                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-accent/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           >
                             <option value="user">{t("role_user")}</option>
                             <option value="support">{t("role_support")}</option>
@@ -8711,7 +8711,7 @@ const LegacyUserManagementView = ({
                                     : null,
                               });
                             }}
-                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                            className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-accent/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           >
                             <option value="none">{t("kycNone")}</option>
                             <option value="pending">{t("kycPending")}</option>
@@ -8754,7 +8754,7 @@ const LegacyUserManagementView = ({
                           </span>
                           <div className="flex items-center justify-between">
                             <span
-                              className={`text-sm font-bold ${(selectedUser.status || selectedUser.subscription_status) === "active" ? "text-emerald-500" : "text-red-500"}`}
+                              className={`text-sm font-bold ${(selectedUser.status || selectedUser.subscription_status) === "active" ? "text-accent" : "text-red-500"}`}
                             >
                               {(selectedUser.status ||
                                 selectedUser.subscription_status) === "active"
@@ -8775,7 +8775,7 @@ const LegacyUserManagementView = ({
                                   subscription_status: newStat,
                                 });
                               }}
-                              className={`w-8 h-4 rounded-full transition-theme relative ${(selectedUser.status || selectedUser.subscription_status) === "active" ? "bg-emerald-500" : "bg-gray-600"}`}
+                              className={`w-8 h-4 rounded-full transition-theme relative ${(selectedUser.status || selectedUser.subscription_status) === "active" ? "bg-accent" : "bg-gray-600"}`}
                             >
                               <div
                                 className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-theme ${(selectedUser.status || selectedUser.subscription_status) === "active" ? (dir === "rtl" ? "left-0.5" : "right-0.5") : dir === "rtl" ? "right-0.5" : "left-0.5"}`}
@@ -8947,7 +8947,7 @@ const LegacyUserManagementView = ({
                         })
                       }
                       disabled={isUpdating}
-                      className="w-full mt-6 py-3 rounded-md bg-emerald-500 text-white font-bold text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-6 py-3 rounded-md bg-accent text-white font-bold text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUpdating ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -8984,7 +8984,7 @@ const LegacyUserManagementView = ({
                         </button>
                         <button
                           onClick={() => setLedgerUnit("USD")}
-                          className={`px-4 py-1.5 rounded-xs text-[9px] font-black tracking-widest transition-theme ${ledgerUnit === "USD" ? "bg-emerald-500 text-white shadow-xl shadow-emerald-500/30" : "text-gray-500 hover:text-gray-300"}`}
+                          className={`px-4 py-1.5 rounded-xs text-[9px] font-black tracking-widest transition-theme ${ledgerUnit === "USD" ? "bg-accent text-white shadow-xl shadow-none" : "text-gray-500 hover:text-gray-300"}`}
                         >
                           USD
                         </button>
@@ -9012,7 +9012,7 @@ const LegacyUserManagementView = ({
                           <p className="text-[10px] font-bold text-gray-500 mb-1">
                             {dir === "rtl" ? "القيمة بالدولار" : "USD Value"}
                           </p>
-                          <p className="text-lg font-bold text-emerald-500">
+                          <p className="text-lg font-bold text-accent">
                             $
                             {parseFloat(selectedUser.balance || 0).toFixed(2)}
                           </p>
@@ -9028,7 +9028,7 @@ const LegacyUserManagementView = ({
                               value={ledgerAmount}
                               onChange={(e) => setLedgerAmount(e.target.value)}
                               placeholder={dir === "rtl" ? "المبلغ" : "Amount"}
-                              className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                              className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                             />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-500">
                               {ledgerUnit}
@@ -9041,7 +9041,7 @@ const LegacyUserManagementView = ({
                                   e.target.value as "add" | "deduct",
                                 )
                             }
-                            className={`w-32 h-11 px-3 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                            className={`w-32 h-11 px-3 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           >
                             <option value="add">
                               {dir === "rtl" ? "إيداع" : "Deposit"}
@@ -9060,7 +9060,7 @@ const LegacyUserManagementView = ({
                               ? "سبب العملية (إلزامي للتوثيق)"
                               : "Transaction Reason (Required)"
                           }
-                          className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-emerald-500 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full h-11 px-4 rounded-md border focus:outline-none focus:border-accent transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         />
                       </div>
                     </div>
@@ -9125,7 +9125,7 @@ const LegacyUserManagementView = ({
                       disabled={isUpdating}
                       className={`w-full mt-6 py-3 rounded-md font-bold text-sm transition-theme flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${
                         ledgerAction === "add"
-                          ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+                          ? "bg-accent text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
                           : "bg-amber-600 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_20px_rgba(217,119,6,0.5)]"
                       }`}
                     >
@@ -9211,7 +9211,7 @@ const LegacyUserManagementView = ({
                               plan_id: e.target.value,
                             })
                           }
-                          className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full h-11 px-4 rounded-[var(--radius)] border focus:outline-none focus:border-accent/50 transition-theme ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         >
                           {plans.map((p) => (
                             <option key={p.id} value={p.id}>
@@ -9290,9 +9290,9 @@ const LegacyUserManagementView = ({
                             handleSendManualNotification(selectedUser.id)
                           }
                           disabled={isUpdating}
-                          className={`flex items-center gap-2 p-3 rounded-sm border text-[10px] font-bold transition-theme disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] hover:border-emerald-500/30" : "bg-white border-[var(--border-main)] hover:border-emerald-500/30"}`}
+                          className={`flex items-center gap-2 p-3 rounded-sm border text-[10px] font-bold transition-theme disabled:opacity-50 ${theme === "dark" ? "bg-[#0f0f11] border-[var(--border-main)] hover:border-accent/30" : "bg-white border-[var(--border-main)] hover:border-accent/30"}`}
                         >
-                          <BellRing size={14} className="text-emerald-500" />
+                          <BellRing size={14} className="text-accent" />
                           {dir === "rtl" ? "إخطار داخلي" : "Manual Alert"}
                         </button>
                       </div>
@@ -9332,7 +9332,7 @@ const LegacyUserManagementView = ({
                 >
                   <X
                     size={20}
-                    className="transition-theme group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                    className="transition-theme group-hover:text-accent group-hover:"
                   />
                   <span>{t("close")}</span>
                 </button>
@@ -9663,7 +9663,7 @@ const SmartEmailHubView = ({
           onClick={() => setActiveTab("settings")}
           className={`px-6 py-2.5 rounded-[var(--radius)] font-medium transition-theme flex items-center gap-2 ${
             activeTab === "settings"
-              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              ? "bg-accent/10 text-accent "
               : "text-gray-500 hover:bg-[var(--bg-input)] dark:hover:bg-[var(--bg-secondary)]/50"
           }`}
         >
@@ -9677,7 +9677,7 @@ const SmartEmailHubView = ({
           }}
           className={`px-6 py-2.5 rounded-[var(--radius)] font-medium transition-theme flex items-center gap-2 ${
             activeTab === "templates"
-              ? "bg-emerald-500/10 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              ? "bg-accent/10 text-accent "
               : "text-gray-500 hover:bg-[var(--bg-input)] dark:hover:bg-[var(--bg-secondary)]/50"
           }`}
         >
@@ -9694,7 +9694,7 @@ const SmartEmailHubView = ({
             >
               <div className="flex items-center justify-between gap-3 mb-8">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-[var(--radius)] bg-emerald-500/10 text-emerald-500">
+                  <div className="p-3 rounded-[var(--radius)] bg-accent/10 text-accent">
                     <Server size={24} />
                   </div>
                   <div>
@@ -9706,13 +9706,13 @@ const SmartEmailHubView = ({
                   <span
                     className={`px-3 py-1 rounded-[var(--radius)] text-xs font-bold flex items-center gap-1.5 ${
                       settings.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                        ? "bg-accent/10 text-accent border border-accent/30"
                         : "bg-amber-500/10 text-amber-500 border border-amber-500/30"
                     }`}
                   >
                     {settings.status === "active" ? (
                       <>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                         {dir === "rtl"
                           ? "نشط / تم التحقق"
                           : "Active / Verified"}
@@ -9745,7 +9745,7 @@ const SmartEmailHubView = ({
                     onChange={(e) =>
                       setSettings({ ...settings, mailer_type: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                    className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                   >
                     <option value="smtp">{t("smtp")}</option>
                     <option value="php">{t("phpMail")}</option>
@@ -9769,7 +9769,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="smtp.sendgrid.net"
-                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           dir="ltr"
                         />
                       </div>
@@ -9787,7 +9787,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="587"
-                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           dir="ltr"
                         />
                       </div>
@@ -9806,7 +9806,7 @@ const SmartEmailHubView = ({
                                smtp_encryption: e.target.value,
                             })
                           }
-                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         >
                           <option value="tls">{t("tls")}</option>
                           <option value="ssl">{t("ssl") || "SSL"}</option>
@@ -9830,7 +9830,7 @@ const SmartEmailHubView = ({
                             })
                           }
                           placeholder="apikey"
-                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                          className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                           dir="ltr"
                         />
                       </div>
@@ -9851,7 +9851,7 @@ const SmartEmailHubView = ({
                           })
                         }
                         placeholder="••••••••••••••••"
-                        className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         dir="ltr"
                       />
                     </div>
@@ -9875,7 +9875,7 @@ const SmartEmailHubView = ({
                       placeholder={
                         dir === "rtl" ? "اسم المنصة" : "Platform Name"
                       }
-                      className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                      className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                       dir={dir}
                     />
                   </div>
@@ -9893,7 +9893,7 @@ const SmartEmailHubView = ({
                         })
                       }
                       placeholder="noreply@example.com"
-                      className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                      className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-left ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                       dir="ltr"
                     />
                   </div>
@@ -9903,7 +9903,7 @@ const SmartEmailHubView = ({
                   <button
                     onClick={handleSaveSettings}
                     disabled={isSavingSettings}
-                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 bg-accent hover:bg-accent text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-none disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isSavingSettings ? (
                       <RefreshCw size={18} className="animate-spin" />
@@ -9937,7 +9937,7 @@ const SmartEmailHubView = ({
                 }
               >
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <ShieldCheck className="text-emerald-500" size={20} />
+                  <ShieldCheck className="text-accent" size={20} />
                   {t("securityProtocol")}
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed mb-4">
@@ -9983,7 +9983,7 @@ const SmartEmailHubView = ({
                       body_ar: "",
                     })
                   }
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                  className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)]"
                 >
                   <Plus size={18} />
                   {t("createNewTemplate")}
@@ -9994,7 +9994,7 @@ const SmartEmailHubView = ({
             {isLoadingTemplates ? (
               <div className="flex justify-center py-12">
                 <RefreshCw
-                  className="animate-spin text-emerald-500"
+                  className="animate-spin text-accent"
                   size={32}
                 />
               </div>
@@ -10005,8 +10005,8 @@ const SmartEmailHubView = ({
                     key={template.id || template.name || index}
                     className={`group p-6 rounded-lg border transition-theme hover:-translate-y-1 hover:shadow-xl cursor-pointer relative ${
                       theme === "dark"
-                        ? "bg-[#111111] border-[var(--border-main)] hover:border-emerald-500/30"
-                        : "bg-white border-[var(--border-main)] hover:border-emerald-500/30"
+                        ? "bg-[#111111] border-[var(--border-main)] hover:border-accent/30"
+                        : "bg-white border-[var(--border-main)] hover:border-accent/30"
                     }`}
                     onClick={() => setSelectedTemplate(template)}
                   >
@@ -10051,7 +10051,7 @@ const SmartEmailHubView = ({
                         <Clock size={14} />
                         {new Date(template.updated_at).toLocaleDateString()}
                       </span>
-                      <span className="text-sm font-medium text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                      <span className="text-sm font-medium text-accent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                         {t("editTemplate")}{" "}
                         <ArrowRight
                           size={16}
@@ -10111,7 +10111,7 @@ const SmartEmailHubView = ({
                         })
                       }
                       disabled={selectedTemplate.type === "system"}
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white disabled:opacity-50" : "bg-[var(--bg-secondary)] border-[var(--border-main)] disabled:opacity-50"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white disabled:opacity-50" : "bg-[var(--bg-secondary)] border-[var(--border-main)] disabled:opacity-50"}`}
                     />
                   </div>
 
@@ -10129,7 +10129,7 @@ const SmartEmailHubView = ({
                             subject_en: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         dir="ltr"
                       />
                     </div>
@@ -10146,7 +10146,7 @@ const SmartEmailHubView = ({
                             subject_ar: e.target.value,
                           })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-white border-[var(--border-main)]"}`}
                         dir="rtl"
                       />
                     </div>
@@ -10165,7 +10165,7 @@ const SmartEmailHubView = ({
                           body_en: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                       dir="ltr"
                     />
                   </div>
@@ -10183,7 +10183,7 @@ const SmartEmailHubView = ({
                           body_ar: e.target.value,
                         })
                       }
-                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                      className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme font-mono text-sm ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                       dir="rtl"
                     />
                   </div>
@@ -10192,7 +10192,7 @@ const SmartEmailHubView = ({
                     <button
                       onClick={handleSaveTemplate}
                       disabled={isSavingTemplate}
-                      className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 bg-accent hover:bg-accent text-white py-3.5 rounded-md font-bold transition-theme shadow-lg shadow-none disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isSavingTemplate ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -10210,7 +10210,7 @@ const SmartEmailHubView = ({
                   className={`p-6 rounded-lg border ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 >
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Code2 className="text-emerald-500" size={20} />
+                    <Code2 className="text-accent" size={20} />
                     {t("variables")}
                   </h3>
                   <p className="text-sm text-gray-500 mb-4">
@@ -10228,9 +10228,9 @@ const SmartEmailHubView = ({
                       <button
                         key={v}
                         onClick={() => navigator.clipboard.writeText(v)}
-                        className={`w-full flex items-center justify-between p-3 rounded-md border transition-theme hover:border-emerald-500/50 ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+                        className={`w-full flex items-center justify-between p-3 rounded-md border transition-theme hover:border-accent/50 ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
                       >
-                        <span className="font-mono text-sm text-emerald-500">
+                        <span className="font-mono text-sm text-accent">
                           {v}
                         </span>
                         <Copy size={14} className="text-gray-400" />
@@ -10254,7 +10254,7 @@ const SmartEmailHubView = ({
                       className={`p-4 rounded-md text-xs ${theme === "dark" ? "bg-[#111111] text-gray-400" : "bg-white text-gray-500"}`}
                     >
                       <p>--</p>
-                      <p className="font-bold text-emerald-500">
+                      <p className="font-bold text-accent">
                         {(language === "ar"
                           ? siteSettings.siteNameAr
                           : siteSettings.siteName) || t("appName")}{" "}
@@ -10415,10 +10415,10 @@ const MassBroadcastView = ({
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"} group transition-theme hover:border-emerald-500/30`}
+          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"} group transition-theme hover:border-accent/30`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-theme">
+            <div className="p-3 rounded-md bg-accent/10 text-accent group-hover: transition-theme">
               <Send size={24} />
             </div>
             <div>
@@ -10449,18 +10449,18 @@ const MassBroadcastView = ({
           </div>
         </div>
         <div
-          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200 shadow-sm"} group transition-theme`}
+          className={`p-5 rounded-lg border ${theme === "dark" ? "bg-accent/5 border-accent/20" : "bg-accent/50 border-accent shadow-sm"} group transition-theme`}
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500">
+            <div className="p-3 rounded-md bg-accent/10 text-accent">
               <Megaphone size={24} className="animate-bounce" />
             </div>
             <div>
-              <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+              <p className="text-xs font-bold text-accent dark:text-accent uppercase tracking-widest">
                 {t("activeStatus") ||
                   (language === "ar" ? "حالة المحرك" : "Engine Status")}
               </p>
-              <p className="text-2xl font-black mt-1 text-emerald-500">READY</p>
+              <p className="text-2xl font-black mt-1 text-accent">READY</p>
             </div>
           </div>
         </div>
@@ -10472,8 +10472,8 @@ const MassBroadcastView = ({
           className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-md shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
             toast.type === "success"
               ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
+                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                : "bg-white border border-accent text-accent"
               : theme === "dark"
                 ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
                 : "bg-white border border-red-200 text-red-600"
@@ -10527,7 +10527,7 @@ const MassBroadcastView = ({
                       }
                       className={`flex flex-col items-center justify-center gap-2 p-4 rounded-md border transition-theme ${
                         form.broadcast_type === type.id
-                          ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/5"
+                          ? "bg-accent/10 border-accent text-accent shadow-lg shadow-none"
                           : `border-[var(--border-main)] dark:border-[var(--border-main)] text-gray-400 hover:border-[var(--border-main)] dark:hover:border-[var(--border-main)] ${theme === "dark" ? "bg-[#1a1a1c]" : "bg-[var(--bg-secondary)]"}`
                       }`}
                     >
@@ -10569,7 +10569,7 @@ const MassBroadcastView = ({
                         }
                         className={`flex flex-col items-center justify-center gap-2 p-4 rounded-md border transition-theme ${
                           form.target_group === group.id
-                            ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-lg shadow-emerald-500/5"
+                            ? "bg-accent/10 border-accent text-accent shadow-lg shadow-none"
                             : `border-[var(--border-main)] dark:border-[var(--border-main)] text-gray-400 hover:border-[var(--border-main)] dark:hover:border-[var(--border-main)] ${theme === "dark" ? "bg-[#1a1a1c]" : "bg-[var(--bg-secondary)]"}`
                         }`}
                       >
@@ -10584,7 +10584,7 @@ const MassBroadcastView = ({
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="mt-2 text-[10px] font-bold text-emerald-500 uppercase flex items-center gap-2"
+                      className="mt-2 text-[10px] font-bold text-accent uppercase flex items-center gap-2"
                     >
                       <Users size={12} />
                       {isCounting ? (
@@ -10610,7 +10610,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_en: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                         dir="ltr"
                       />
                     </div>
@@ -10624,7 +10624,7 @@ const MassBroadcastView = ({
                         onChange={(e) =>
                           setForm({ ...form, title_ar: e.target.value })
                         }
-                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                        className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                         dir="rtl"
                       />
                     </div>
@@ -10643,7 +10643,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_en: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                     dir="ltr"
                   />
                 </div>
@@ -10657,7 +10657,7 @@ const MassBroadcastView = ({
                     onChange={(e) =>
                       setForm({ ...form, content_ar: e.target.value })
                     }
-                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
+                    className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme text-sm font-sans ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-gray-300" : "bg-[var(--bg-secondary)] border-[var(--border-main)] text-gray-800"}`}
                     dir="rtl"
                   />
                 </div>
@@ -10668,7 +10668,7 @@ const MassBroadcastView = ({
               <button
                 onClick={handleSend}
                 disabled={isSending}
-                className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-md font-bold transition-theme shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full md:w-auto bg-accent hover:bg-accent text-white px-10 py-4 rounded-md font-bold transition-theme shadow-xl shadow-none flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {isSending ? (
                   <RefreshCw size={22} className="animate-spin" />
@@ -10682,7 +10682,7 @@ const MassBroadcastView = ({
         ) : (
           <div className="space-y-6">
             <h3 className="text-xl font-bold flex items-center gap-3">
-              <History className="text-emerald-500" size={24} />
+              <History className="text-accent" size={24} />
               {t("broadcastHistory")}
             </h3>
 
@@ -10690,7 +10690,7 @@ const MassBroadcastView = ({
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <RefreshCw
                   size={32}
-                  className="text-emerald-500 animate-spin"
+                  className="text-accent animate-spin"
                 />
                 <p className="text-gray-400">{t("loadingRecords")}</p>
               </div>
@@ -10705,7 +10705,7 @@ const MassBroadcastView = ({
                 <p className="text-gray-500 font-medium">{t("noBroadcasts")}</p>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="mt-4 text-emerald-500 font-bold hover:underline"
+                  className="mt-4 text-accent font-bold hover:underline"
                 >
                   {t("launchFirstBroadcast")}
                 </button>
@@ -10715,23 +10715,23 @@ const MassBroadcastView = ({
                 {broadcasts.map((b) => (
                   <div
                     key={b.id}
-                    className={`p-6 rounded-lg border transition-theme hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/5 ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"}`}
+                    className={`p-6 rounded-lg border transition-theme hover:border-accent/30 hover:shadow-xl hover:shadow-black/5 ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)]" : "bg-white border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`p-2 rounded-md ${theme === "dark" ? "bg-emerald-500/10" : "bg-emerald-50"}`}
+                          className={`p-2 rounded-md ${theme === "dark" ? "bg-accent/10" : "bg-accent"}`}
                         >
                           {b.broadcast_type === "email" ? (
-                            <Mail size={18} className="text-emerald-500" />
+                            <Mail size={18} className="text-accent" />
                           ) : b.broadcast_type === "notification" ? (
-                            <BellRing size={18} className="text-emerald-500" />
+                            <BellRing size={18} className="text-accent" />
                           ) : (
-                            <Send size={18} className="text-emerald-500" />
+                            <Send size={18} className="text-accent" />
                           )}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">
+                          <p className="text-xs font-bold text-accent uppercase tracking-widest">
                             {b.broadcast_type}
                           </p>
                           <p
@@ -10764,7 +10764,7 @@ const MassBroadcastView = ({
                           {b.sent_count} {t("sentCount")}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-500 text-xs font-bold">
+                      <div className="flex items-center gap-2 text-accent text-xs font-bold">
                         <CheckCircle size={14} />
                         <span className="uppercase tracking-widest">Sent</span>
                       </div>
@@ -10899,8 +10899,8 @@ const MemoryCenterView = ({
           className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
             isSuccessToast
               ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                : "bg-white border border-emerald-200 text-emerald-600"
+                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                : "bg-white border border-accent text-accent"
               : theme === "dark"
                 ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
                 : "bg-white border border-red-200 text-red-600"
@@ -10909,7 +10909,7 @@ const MemoryCenterView = ({
           {isSuccessToast ? (
             <CheckCircle2
               size={20}
-              className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              className="text-accent "
             />
           ) : (
             <AlertCircle size={20} className="text-red-500" />
@@ -10927,10 +10927,10 @@ const MemoryCenterView = ({
         } shadow-sm`}
       >
         <div className="flex items-start gap-4">
-          <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+          <div className="p-3 bg-accent/10 rounded-lg text-accent shadow-[0_0_15px_rgba(16,185,129,0.05)]">
             <Brain
               size={28}
-              className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              className="text-accent "
             />
           </div>
           <div className="flex-1 space-y-1">
@@ -10963,12 +10963,12 @@ const MemoryCenterView = ({
             </span>
             <Database
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
             />
           </div>
           <div className="mt-4 flex items-baseline">
             {loadingStats ? (
-              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
                 ...
               </span>
             ) : (
@@ -10977,7 +10977,7 @@ const MemoryCenterView = ({
               </span>
             )}
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
         </div>
 
         <div
@@ -10993,12 +10993,12 @@ const MemoryCenterView = ({
             </span>
             <Users
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
             />
           </div>
           <div className="mt-4 flex items-baseline">
             {loadingStats ? (
-              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
                 ...
               </span>
             ) : (
@@ -11007,7 +11007,7 @@ const MemoryCenterView = ({
               </span>
             )}
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
         </div>
 
         <div
@@ -11025,12 +11025,12 @@ const MemoryCenterView = ({
             </span>
             <Cpu
               size={18}
-              className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme"
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
             />
           </div>
           <div className="mt-4 flex items-baseline">
             {loadingStats ? (
-              <span className="text-3xl font-extrabold text-emerald-500/30 animate-pulse">
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
                 ...
               </span>
             ) : (
@@ -11042,7 +11042,7 @@ const MemoryCenterView = ({
               </span>
             )}
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
         </div>
       </div>
 
@@ -11073,7 +11073,7 @@ const MemoryCenterView = ({
               onChange={(e) =>
                 setThreshold(Math.max(2, parseInt(e.target.value) || 2))
               }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11100,7 +11100,7 @@ const MemoryCenterView = ({
               onChange={(e) =>
                 setTargetUserId(e.target.value.replace(/\D/g, ""))
               }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme font-mono text-sm ${
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11118,7 +11118,7 @@ const MemoryCenterView = ({
             <button
               onClick={handleRunConsolidation}
               disabled={isRunning}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent disabled:bg-accent/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
             >
               {isRunning ? (
                 <>
@@ -11131,7 +11131,7 @@ const MemoryCenterView = ({
                 <>
                   <Brain
                     size={16}
-                    className="text-white drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    className="text-white "
                   />
                   {language === "ar"
                     ? "بدء عملية التكثيف اليدوي"
@@ -11170,7 +11170,7 @@ const MemoryCenterView = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-theme text-xs ${
+              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme text-xs ${
                 theme === "dark"
                   ? "bg-[#0f0f11] border-gray-800 text-white"
                   : "bg-gray-50 border-gray-200 text-gray-900"
@@ -11224,8 +11224,8 @@ const MemoryCenterView = ({
                 className={`p-5 rounded-lg border transition-theme ${
                   report.success
                     ? theme === "dark"
-                      ? "bg-[#0f0f11]/60 border-emerald-500/15 shadow-[0_0_15px_rgba(16,185,129,0.02)]"
-                      : "bg-emerald-50/15 border-emerald-200/50"
+                      ? "bg-[#0f0f11]/60 border-accent/15 shadow-[0_0_15px_rgba(16,185,129,0.02)]"
+                      : "bg-accent/15 border-accent/50"
                     : theme === "dark"
                       ? "bg-[#0f0f11]/60 border-red-500/15"
                       : "bg-red-50/15 border-red-200/50"
@@ -11261,12 +11261,12 @@ const MemoryCenterView = ({
                             {report.oldCount}
                           </span>
                           {" ➔ "}
-                          <span className="text-emerald-400 font-bold">
+                          <span className="text-accent font-bold">
                             {report.newCount}
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs font-extrabold text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.7)] px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                      <span className="text-xs font-extrabold text-accent  px-2.5 py-1 rounded bg-accent/10 border border-accent/20">
                         {Math.round(
                           ((report.oldCount - report.newCount) /
                             report.oldCount) *
@@ -11278,8 +11278,8 @@ const MemoryCenterView = ({
 
                     {/* Status Badge */}
                     {report.success ? (
-                      <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
+                      <span className="flex items-center gap-1.5 text-xs text-accent font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse animate-duration-1000"></span>
                         {language === "ar" ? "ناجح" : "COMPLETED"}
                       </span>
                     ) : (
@@ -11301,7 +11301,7 @@ const MemoryCenterView = ({
                           : "SYNTHESIZED INTEL FACT STATEMENT (RESULTS)"}
                       </div>
                       <blockquote
-                        className={`p-4 rounded border-s-4 border-emerald-500 leading-relaxed text-sm font-medium ${
+                        className={`p-4 rounded border-s-4 border-accent leading-relaxed text-sm font-medium ${
                           theme === "dark"
                             ? "bg-[#131315] border-gray-800 text-gray-100"
                             : "bg-white border-gray-200 text-gray-800"
@@ -12020,8 +12020,8 @@ const SystemSettingsView = ({
             className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
               toast.type === "success"
                 ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-emerald-500/30 text-emerald-500"
-                  : "bg-white border border-emerald-200 text-emerald-600"
+                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                  : "bg-white border border-accent text-accent"
                 : theme === "dark"
                   ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
                   : "bg-white border border-red-200 text-red-600"
@@ -12042,7 +12042,7 @@ const SystemSettingsView = ({
         className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500">
+          <div className="p-3 rounded-md bg-accent/10 text-accent">
             <Globe size={24} />
           </div>
           <h2 className="text-xl font-bold">{t("generalSettings")}</h2>
@@ -12058,7 +12058,7 @@ const SystemSettingsView = ({
               value={siteName || ""}
               dir="ltr"
               onChange={(e) => setSiteName(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -12070,7 +12070,7 @@ const SystemSettingsView = ({
               value={siteNameAr || ""}
               dir="rtl"
               onChange={(e) => setSiteNameAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -12082,7 +12082,7 @@ const SystemSettingsView = ({
               value={siteDescription || ""}
               dir="ltr"
               onChange={(e) => setSiteDescription(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
           <div>
@@ -12094,7 +12094,7 @@ const SystemSettingsView = ({
               value={siteDescriptionAr || ""}
               dir="rtl"
               onChange={(e) => setSiteDescriptionAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
           </div>
         </div>
@@ -12102,7 +12102,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveGeneralSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12271,7 +12271,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveVisualSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12298,26 +12298,26 @@ const SystemSettingsView = ({
           {/* Site Identity Name Fields (SEO integrated) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "اسم الموقع والمنصة (بالإنجليزية)" : "Site Name (English)"}
               </label>
               <input
                 type="text"
                 value={siteName || ""}
                 onChange={(e) => setSiteName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="e.g. Perplexta Platform"
               />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "اسم الموقع والمنصة (بالعربية)" : "Site Name (Arabic)"}
               </label>
               <input
                 type="text"
                 value={siteNameAr || ""}
                 onChange={(e) => setSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="مثال: منصة بيربليكستا"
               />
             </div>
@@ -12326,14 +12326,14 @@ const SystemSettingsView = ({
           {/* SEO Site Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالإنجليزية)" : "SEO Site Title (English)"}
               </label>
               <input
                 type="text"
                 value={seoSiteNameEn || ""}
                 onChange={(e) => setSeoSiteNameEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="e.g. Perplexta | Premium Financial Analytics"
               />
               <p className="text-[10px] text-gray-400 mt-1">
@@ -12341,14 +12341,14 @@ const SystemSettingsView = ({
               </p>
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالعربية)" : "SEO Site Title (Arabic)"}
               </label>
               <input
                 type="text"
                 value={seoSiteNameAr || ""}
                 onChange={(e) => setSeoSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="مثال: منصة بيربليكستا | الاختيار الاحترافي للتحليل"
               />
               <p className="text-[10px] text-gray-400 mt-1">
@@ -12360,26 +12360,26 @@ const SystemSettingsView = ({
           {/* Site Identity Description Fields (SEO integrated) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "الوصف التعريفي العام (بالإنجليزية)" : "General Description (English)"}
               </label>
               <textarea
                 rows={2}
                 value={siteDescription || ""}
                 onChange={(e) => setSiteDescription(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="Enter general tagline description..."
               />
             </div>
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-emerald-500 mb-1.5">
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
                 {dir === "rtl" ? "الوصف التعريفي العام (بالعربية)" : "General Description (Arabic)"}
               </label>
               <textarea
                 rows={2}
                 value={siteDescriptionAr || ""}
                 onChange={(e) => setSiteDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
                 placeholder="اكتب نبذة تعريفية عامة هنا..."
               />
             </div>
@@ -12394,7 +12394,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionEn || ""}
                 onChange={(e) => setSeoDescriptionEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
             <div>
@@ -12405,7 +12405,7 @@ const SystemSettingsView = ({
                 rows={3}
                 value={seoDescriptionAr || ""}
                 onChange={(e) => setSeoDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
           </div>
@@ -12418,7 +12418,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsEn || ""}
                 onChange={(e) => setKeywordsEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
             <div>
@@ -12429,7 +12429,7 @@ const SystemSettingsView = ({
                 type="text"
                 value={keywordsAr || ""}
                 onChange={(e) => setKeywordsAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
               />
             </div>
           </div>
@@ -12442,7 +12442,7 @@ const SystemSettingsView = ({
               placeholder={t("googleAnalyticsDesc")}
               value={googleAnalyticsId || ""}
               onChange={(e) => setGoogleAnalyticsId(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5">
               {dir === "rtl" 
@@ -12460,7 +12460,7 @@ const SystemSettingsView = ({
               placeholder="e.g. google-site-verification=..."
               value={googleSiteVerification || ""}
               onChange={(e) => setGoogleSiteVerification(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5">
               {dir === "rtl" 
@@ -12478,7 +12478,7 @@ const SystemSettingsView = ({
               placeholder={dir === "rtl" ? "مثال: /api/auth, /confidential-page (مفصولة بفاصلة)" : "e.g. /api/auth, /confidential-page, /custom-dashboard (comma-separated)"}
               value={blockedPaths || ""}
               onChange={(e) => setBlockedPaths(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
             />
             <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
               {dir === "rtl"
@@ -12490,7 +12490,7 @@ const SystemSettingsView = ({
           {/* Real-time Google Search Results Preview (SERP Preview) */}
           <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-              <Globe size={16} className="text-emerald-500 animate-pulse" />
+              <Globe size={16} className="text-accent animate-pulse" />
               {dir === "rtl" ? "معاينة حية لنتائج بحث جوجل (SERP Preview)" : "Live Google Search Result Preview (SERP)"}
             </h3>
             
@@ -12536,7 +12536,7 @@ const SystemSettingsView = ({
                       <span>طول الوصف (مثالي: 120-160 حرفاً)</span>
                       <span className={
                         seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
-                          ? "text-emerald-500 font-bold"
+                          ? "text-accent font-bold"
                           : seoDescriptionAr.length > 160 
                           ? "text-red-500" 
                           : "text-amber-500"
@@ -12548,7 +12548,7 @@ const SystemSettingsView = ({
                       <div 
                         className={`h-full transition-theme ${
                           seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
-                            ? "bg-emerald-500"
+                            ? "bg-accent"
                             : seoDescriptionAr.length > 160
                             ? "bg-red-500"
                             : "bg-amber-500"
@@ -12599,7 +12599,7 @@ const SystemSettingsView = ({
                       <span>Description Length (Optimal: 120-160 chars)</span>
                       <span className={
                         seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
-                          ? "text-emerald-500 font-bold"
+                          ? "text-accent font-bold"
                           : seoDescriptionEn.length > 160 
                           ? "text-red-500" 
                           : "text-amber-500"
@@ -12611,7 +12611,7 @@ const SystemSettingsView = ({
                       <div 
                         className={`h-full transition-theme ${
                           seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
-                            ? "bg-emerald-500"
+                            ? "bg-accent"
                             : seoDescriptionEn.length > 160
                             ? "bg-red-500"
                             : "bg-amber-500"
@@ -12628,7 +12628,7 @@ const SystemSettingsView = ({
           {/* SEO Share Image Upload */}
           <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-              <ImageIcon size={16} className="text-emerald-500" />
+              <ImageIcon size={16} className="text-accent" />
               {t("seoPreviewImageTitle")}
             </h3>
 
@@ -12638,8 +12638,8 @@ const SystemSettingsView = ({
                 <div
                   className={`p-6 rounded-[var(--radius)] border border-dashed transition-theme ${
                     theme === "dark" 
-                      ? "border-gray-800 bg-[#161618] hover:border-emerald-500/50" 
-                      : "border-gray-200 bg-gray-50/50 hover:border-emerald-500/50"
+                      ? "border-gray-800 bg-[#161618] hover:border-accent/50" 
+                      : "border-gray-200 bg-gray-50/50 hover:border-accent/50"
                   } flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px] group`}
                 >
                   <input
@@ -12652,7 +12652,7 @@ const SystemSettingsView = ({
                   
                   {isSeoUploading ? (
                     <div className="flex flex-col items-center justify-center p-4">
-                      <RefreshCw className="animate-spin text-emerald-500 mb-3" size={28} />
+                      <RefreshCw className="animate-spin text-accent mb-3" size={28} />
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                         {dir === "rtl" ? "جاري رفع الصورة..." : "Uploading image..."}
                       </p>
@@ -12679,7 +12679,7 @@ const SystemSettingsView = ({
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-4">
-                      <div className="mb-3 p-3 rounded-full bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform duration-300">
+                      <div className="mb-3 p-3 rounded-full bg-accent/10 text-accent group-hover:scale-110 transition-transform duration-300">
                         <Upload size={24} />
                       </div>
                       <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -12696,7 +12696,7 @@ const SystemSettingsView = ({
                 <div className={`p-4 rounded-md border text-xs leading-relaxed space-y-2 ${
                   theme === "dark" ? "bg-[#141416]/50 border-gray-800/80 text-gray-400" : "bg-gray-50/50 border-gray-100 text-gray-500"
                 }`}>
-                  <p className="font-semibold text-emerald-500">
+                  <p className="font-semibold text-accent">
                     💡 {t("seoBestPracticesTitle")}
                   </p>
                   <ul className="list-disc leading-loose list-inside pr-1 space-y-1">
@@ -12773,7 +12773,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveSeoSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -12793,8 +12793,8 @@ const SystemSettingsView = ({
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-              <Globe size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <Globe size={24} className="text-accent " />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight">
@@ -12819,7 +12819,7 @@ const SystemSettingsView = ({
             </button>
             <button
               onClick={handleOpenAddRouteModal}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(16,185,129,0.3)]"
             >
               <Plus size={16} />
               {dir === "rtl" ? "إضافة مسار جديد" : "Add Route SEO"}
@@ -12838,12 +12838,12 @@ const SystemSettingsView = ({
               placeholder={dir === "rtl" ? "بحث عن مسار أو عنوان..." : "Filter routes or titles..."}
               className={`w-full text-xs pl-9 pr-3 py-2 rounded-md border ${
                 theme === "dark" ? "bg-[#111111] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-800"
-              } focus:outline-none focus:border-emerald-500`}
+              } focus:outline-none focus:border-accent`}
             />
           </div>
           <div className="text-xs text-gray-500 font-mono flex items-center gap-2">
             <span>{dir === "rtl" ? "إجمالي المسارات المسجلة:" : "Configured Routes:"}</span>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold">
+            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent font-bold">
               {routeSeoList.length}
             </span>
           </div>
@@ -12852,7 +12852,7 @@ const SystemSettingsView = ({
         {/* Routes List Table */}
         {loadingRouteSeo && routeSeoList.length === 0 ? (
           <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
-            <RefreshCw size={20} className="animate-spin text-emerald-500" />
+            <RefreshCw size={20} className="animate-spin text-accent" />
             <span>{dir === "rtl" ? "جاري تحميل إعدادات SEO للمسارات..." : "Loading route SEO configurations..."}</span>
           </div>
         ) : routeSeoList.length === 0 ? (
@@ -12863,7 +12863,7 @@ const SystemSettingsView = ({
             </p>
             <button
               onClick={handleOpenAddRouteModal}
-              className="mt-3 text-xs text-emerald-500 underline hover:text-emerald-400"
+              className="mt-3 text-xs text-accent underline hover:text-accent"
             >
               {dir === "rtl" ? "+ إضافة أول مسار الآن" : "+ Create your first route SEO entry"}
             </button>
@@ -12903,7 +12903,7 @@ const SystemSettingsView = ({
                         !item.is_active ? "opacity-50" : ""
                       }`}
                     >
-                      <td className="p-3 font-mono font-bold text-emerald-500">
+                      <td className="p-3 font-mono font-bold text-accent">
                         {item.route}
                       </td>
                       <td className="p-3 max-w-[200px]">
@@ -12935,7 +12935,7 @@ const SystemSettingsView = ({
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
                             item.is_active
-                              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                              ? "bg-accent/10 text-accent border border-accent/20"
                               : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
                           }`}
                         >
@@ -12982,7 +12982,7 @@ const SystemSettingsView = ({
             >
               <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-800 mb-5">
                 <div className="flex items-center gap-2 font-bold text-lg">
-                  <Globe className="text-emerald-500" size={20} />
+                  <Globe className="text-accent" size={20} />
                   <span>
                     {editingRouteItem.id
                       ? (dir === "rtl" ? "تعديل إعدادات SEO للمسار" : "Edit Route SEO Setting")
@@ -13000,7 +13000,7 @@ const SystemSettingsView = ({
               <form onSubmit={handleSaveRouteSeo} className="space-y-4">
                 {/* Route path */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-emerald-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1">
                     {dir === "rtl" ? "مسار الصفحة (Route Path)" : "Route Path (e.g. /marketplace)"} *
                   </label>
                   <input
@@ -13011,7 +13011,7 @@ const SystemSettingsView = ({
                     placeholder="/marketplace"
                     className={`w-full text-xs p-2.5 rounded-md border font-mono ${
                       theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                    } focus:outline-none focus:border-emerald-500`}
+                    } focus:outline-none focus:border-accent`}
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
                     {dir === "rtl" ? "المسار النسبي للصفحة، مثل: /blog أو /subscription أو /custom-page" : "Relative route path starting with /, e.g., /blog or /subscription"}
@@ -13031,7 +13031,7 @@ const SystemSettingsView = ({
                       placeholder="عنوان الصفحة بالعربية..."
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                   <div>
@@ -13045,7 +13045,7 @@ const SystemSettingsView = ({
                       placeholder="Page title in English..."
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                 </div>
@@ -13063,7 +13063,7 @@ const SystemSettingsView = ({
                       placeholder="وصف مختصر ومحسّن لمحركات البحث..."
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                   <div>
@@ -13077,7 +13077,7 @@ const SystemSettingsView = ({
                       placeholder="Search optimized page description..."
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                 </div>
@@ -13095,7 +13095,7 @@ const SystemSettingsView = ({
                       placeholder="كلمات, مفتاحية, مفصولة, بفاصلة"
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                   <div>
@@ -13109,7 +13109,7 @@ const SystemSettingsView = ({
                       placeholder="keywords, separated, by, comma"
                       className={`w-full text-xs p-2.5 rounded-md border ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                   </div>
                 </div>
@@ -13127,7 +13127,7 @@ const SystemSettingsView = ({
                       placeholder="https://... or /uploads/..."
                       className={`flex-1 text-xs p-2.5 rounded-md border font-mono ${
                         theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-emerald-500`}
+                      } focus:outline-none focus:border-accent`}
                     />
                     <label className="cursor-pointer flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700">
                       <Upload size={14} />
@@ -13160,7 +13160,7 @@ const SystemSettingsView = ({
                     id="route_is_active"
                     checked={editingRouteItem.is_active !== false}
                     onChange={(e) => setEditingRouteItem({ ...editingRouteItem, is_active: e.target.checked })}
-                    className="w-4 h-4 text-emerald-500 accent-emerald-500 rounded border-gray-300 focus:ring-emerald-500"
+                    className="w-4 h-4 text-accent accent-accent rounded border-gray-300 focus:ring-accent-500"
                   />
                   <label htmlFor="route_is_active" className="text-xs font-medium cursor-pointer">
                     {dir === "rtl" ? "تفعيل إعدادات SEO لهذا المسار" : "Enable dynamic SEO meta tags for this route"}
@@ -13178,7 +13178,7 @@ const SystemSettingsView = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)]"
                   >
                     <Save size={14} />
                     {dir === "rtl" ? "حفظ التغييرات" : "Save Settings"}
@@ -13198,8 +13198,8 @@ const SystemSettingsView = ({
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-              <ShieldCheck size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <ShieldCheck size={24} className="text-accent " />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight">
@@ -13217,7 +13217,7 @@ const SystemSettingsView = ({
             <button
               onClick={runCrawlAuditScan}
               disabled={crawlScanning}
-              className="flex items-center gap-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="flex items-center gap-2 text-xs bg-accent hover:bg-accent text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
             >
               <RefreshCw className={crawlScanning ? "animate-spin" : ""} size={14} />
               {language === "ar" ? "تشغيل تدقيق الفهرسة" : "Execute Crawl Audit"}
@@ -13244,9 +13244,9 @@ const SystemSettingsView = ({
 
           <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800/85" : "bg-gray-50 border-gray-200"}`}>
             <span className="text-xs text-gray-400">{language === "ar" ? "مسارات محمية (No-Index)" : "Shielded Secret Routes (No-Index)"}</span>
-            <div className="text-2xl font-bold mt-1 text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] flex items-center gap-1.5">
+            <div className="text-2xl font-bold mt-1 text-accent  flex items-center gap-1.5">
               {routesSchema.filter((r: any) => r.status === "noindex").length}
-              <ShieldCheck size={16} className="text-emerald-500" />
+              <ShieldCheck size={16} className="text-accent" />
             </div>
           </div>
 
@@ -13261,13 +13261,13 @@ const SystemSettingsView = ({
             <span className="text-xs text-gray-400">{language === "ar" ? "معدل سلامة الامتثال والأرشفة" : "Compliance & Indexing Rating"}</span>
             <div className={`text-xl font-bold mt-1.5 uppercase tracking-tight flex items-center gap-1.5 ${
               crawlComplianceRate.includes("SECURE") 
-                ? "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                ? "text-accent " 
                 : crawlComplianceRate === "PENDING" || crawlComplianceRate === "معلق"
                 ? "text-amber-500 animate-pulse"
                 : "text-rose-500"
             }`}>
               <span>{crawlComplianceRate}</span>
-              {crawlComplianceRate.includes("SECURE") && <CheckCircle size={14} className="text-emerald-500" />}
+              {crawlComplianceRate.includes("SECURE") && <CheckCircle size={14} className="text-accent" />}
             </div>
           </div>
         </div>
@@ -13276,10 +13276,10 @@ const SystemSettingsView = ({
         {(crawlScanning || crawlAuditLogs.length > 0) && (
           <div className="mb-6">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 font-mono flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               {language === "ar" ? "شاشة التدقيق الفوري والمطابقة" : "Real-time Verification Console"}
             </h3>
-            <div className="p-4 rounded-md bg-[#09090b] border border-zinc-800 text-xs font-mono text-emerald-400/90 leading-relaxed max-h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
+            <div className="p-4 rounded-md bg-[#09090b] border border-zinc-800 text-xs font-mono text-accent/90 leading-relaxed max-h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
               {crawlAuditLogs.map((log, index) => (
                 <div key={index} className="flex items-start gap-2 animate-in fade-in duration-300">
                   <span className="text-zinc-600">[{new Date().toLocaleTimeString()}]</span>
@@ -13287,7 +13287,7 @@ const SystemSettingsView = ({
                 </div>
               ))}
               {crawlScanning && (
-                <div className="flex items-center gap-1 text-emerald-500/80 italic font-medium animate-pulse ml-4">
+                <div className="flex items-center gap-1 text-accent/80 italic font-medium animate-pulse ml-4">
                   <span>●</span> <span>{language === "ar" ? "جاري تحليل الاستجابة..." : "Analyzing header packets..."}</span>
                 </div>
               )}
@@ -13312,7 +13312,7 @@ const SystemSettingsView = ({
                 type="button"
                 className={`text-[10px] uppercase font-bold px-3 py-1 transition-theme rounded-[3px] ${
                   crawlAuditFilter === f.id
-                    ? "bg-white dark:bg-[#27272a] text-emerald-500 dark:text-emerald-400 font-extrabold shadow-sm"
+                    ? "bg-white dark:bg-[#27272a] text-accent dark:text-accent font-extrabold shadow-sm"
                     : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 }`}
               >
@@ -13349,7 +13349,7 @@ const SystemSettingsView = ({
                         route.type === "admin" 
                           ? "bg-red-500/10 text-red-500" 
                           : route.type === "private" 
-                          ? "bg-emerald-500/10 text-emerald-500" 
+                          ? "bg-accent/10 text-accent" 
                           : route.type === "custom"
                           ? "bg-purple-500/10 text-purple-500"
                           : "bg-sky-500/10 text-sky-500"
@@ -13364,8 +13364,8 @@ const SystemSettingsView = ({
                           noindex, nofollow
                         </span>
                       ) : (
-                        <span className="text-emerald-500 font-bold flex items-center gap-1 drop-shadow-[0_0_4px_rgba(16,185,129,0.2)]">
-                          <Eye size={12} className="text-emerald-500 animate-pulse" />
+                        <span className="text-accent font-bold flex items-center gap-1 ">
+                          <Eye size={12} className="text-accent animate-pulse" />
                           index, follow
                         </span>
                       )}
@@ -13375,8 +13375,8 @@ const SystemSettingsView = ({
                         <div className="flex items-center gap-1.5">
                           {route.status === "noindex" ? (
                             <>
-                              <ShieldCheck size={14} className="text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]" />
-                              <span className="font-bold text-emerald-500 text-xs">
+                              <ShieldCheck size={14} className="text-accent " />
+                              <span className="font-bold text-accent text-xs">
                                 {language === "ar" ? "محجوب دستورياً" : "SECURED AND ISOLATED"}
                               </span>
                             </>
@@ -13408,8 +13408,8 @@ const SystemSettingsView = ({
         }`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-emerald-500/10 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-            <Cpu size={24} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <Cpu size={24} className="text-accent " />
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight">
@@ -13428,7 +13428,7 @@ const SystemSettingsView = ({
           <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-emerald-500">FILE PERMISSIONS</span>
+                <span className="text-xs font-semibold font-mono text-accent">FILE PERMISSIONS</span>
                 <ShieldCheck size={16} className="text-gray-400" />
               </div>
               <p className="text-xs font-bold mb-1">{dir === "rtl" ? "صلاحيات الملفات" : "File Permission Cache"}</p>
@@ -13439,7 +13439,7 @@ const SystemSettingsView = ({
             <button
               onClick={() => handleClearCache('file_permission')}
               disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {clearingCache === 'file_permission' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               {dir === "rtl" ? "مسح ذاكرة الملفات" : "Clear File Cache"}
@@ -13450,7 +13450,7 @@ const SystemSettingsView = ({
           <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-emerald-500">ROUTE SEO</span>
+                <span className="text-xs font-semibold font-mono text-accent">ROUTE SEO</span>
                 <Globe size={16} className="text-gray-400" />
               </div>
               <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسارات SEO" : "Route SEO Cache"}</p>
@@ -13461,7 +13461,7 @@ const SystemSettingsView = ({
             <button
               onClick={() => handleClearCache('route_seo')}
               disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {clearingCache === 'route_seo' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               {dir === "rtl" ? "مسح ذاكرة SEO" : "Clear SEO Cache"}
@@ -13472,7 +13472,7 @@ const SystemSettingsView = ({
           <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-emerald-500">SYSTEM CONFIG</span>
+                <span className="text-xs font-semibold font-mono text-accent">SYSTEM CONFIG</span>
                 <Settings size={16} className="text-gray-400" />
               </div>
               <p className="text-xs font-bold mb-1">{dir === "rtl" ? "إعدادات النظام" : "System Settings Cache"}</p>
@@ -13483,7 +13483,7 @@ const SystemSettingsView = ({
             <button
               onClick={() => handleClearCache('system_settings')}
               disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {clearingCache === 'system_settings' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               {dir === "rtl" ? "مسح إعدادات النظام" : "Clear Settings Cache"}
@@ -13491,11 +13491,11 @@ const SystemSettingsView = ({
           </div>
 
           {/* Global All Caches */}
-          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-emerald-500/30" : "bg-emerald-50/40 border-emerald-500/30"}`}>
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-accent/30" : "bg-accent/40 border-accent/30"}`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-emerald-500">GLOBAL PURGE</span>
-                <Zap size={16} className="text-emerald-500" />
+                <span className="text-xs font-semibold font-mono text-accent">GLOBAL PURGE</span>
+                <Zap size={16} className="text-accent" />
               </div>
               <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسح شامل (Global)" : "Global Cache Purge"}</p>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
@@ -13505,7 +13505,7 @@ const SystemSettingsView = ({
             <button
               onClick={() => handleClearCache('global')}
               disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="w-full py-2 px-3 bg-accent hover:bg-accent text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
             >
               {clearingCache === 'global' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
               {dir === "rtl" ? "مسح جميع الذاكرات" : "Purge All Caches"}
@@ -13706,8 +13706,8 @@ const ComplianceAuditLogsView = ({
                 placeholder={isRtl ? "مثال: UPDATE, POST..." : "e.g., CREATE_PLAN, HTTP_POST..."}
                 className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
                   theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-emerald-500/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-emerald-500/50"
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
                 }`}
               />
             </div>
@@ -13725,8 +13725,8 @@ const ComplianceAuditLogsView = ({
                 placeholder={isRtl ? "البحث بالبريد..." : "e.g., admin@perplexta.com"}
                 className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
                   theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-emerald-500/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-emerald-500/50"
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
                 }`}
               />
             </div>
@@ -13737,7 +13737,7 @@ const ComplianceAuditLogsView = ({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
           >
             {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
             {isRtl ? "تطبيق التصفية" : "Apply Filter"}
@@ -13798,7 +13798,7 @@ const ComplianceAuditLogsView = ({
                     type="checkbox"
                     checked={logs.length > 0 && logs.every((log) => selectedLogIds.includes(log.id))}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer h-4 w-4"
+                    className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
                   />
                 </th>
                 <th className="py-3.5 px-4 text-center">{isRtl ? "الوقت (UTC)" : "Timestamp (UTC)"}</th>
@@ -13813,7 +13813,7 @@ const ComplianceAuditLogsView = ({
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-400">
-                    <RefreshCw className="animate-spin inline-block mr-2 text-emerald-500" size={18} />
+                    <RefreshCw className="animate-spin inline-block mr-2 text-accent" size={18} />
                     {isRtl ? "جاري جلب سجل التدقيق الأمني..." : "Ingesting secure compliance records..."}
                   </td>
                 </tr>
@@ -13829,7 +13829,7 @@ const ComplianceAuditLogsView = ({
                     key={log.id} 
                     className={`transition-theme ${
                       selectedLogIds.includes(log.id)
-                        ? "bg-emerald-500/5 hover:bg-emerald-500/10"
+                        ? "bg-accent/5 hover:bg-accent/10"
                         : theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
                     }`}
                   >
@@ -13838,7 +13838,7 @@ const ComplianceAuditLogsView = ({
                         type="checkbox"
                         checked={selectedLogIds.includes(log.id)}
                         onChange={() => toggleSelectLog(log.id)}
-                        className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer h-4 w-4"
+                        className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
                       />
                     </td>
                     <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap opacity-80">
@@ -13858,7 +13858,7 @@ const ComplianceAuditLogsView = ({
                             : log.action.includes("DELETE")
                               ? "bg-rose-500/10 text-rose-400 border border-rose-500/10"
                               : "bg-purple-500/10 text-purple-400 border border-purple-500/10"
-                          : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/10"
+                          : "bg-accent/10 text-accent border border-accent/10"
                       }`}>
                         {log.action}
                       </span>
@@ -13872,7 +13872,7 @@ const ComplianceAuditLogsView = ({
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="px-3 py-1 border border-emerald-500/20 rounded-md text-[10px] font-bold text-emerald-500 hover:border-emerald-500 hover:bg-emerald-500/10 cursor-pointer transition-theme"
+                        className="px-3 py-1 border border-accent/20 rounded-md text-[10px] font-bold text-accent hover:border-accent hover:bg-accent/10 cursor-pointer transition-theme"
                       >
                         {isRtl ? "عرض التفاصيل" : "Inspect Payload"}
                       </button>
@@ -13951,7 +13951,7 @@ const ComplianceAuditLogsView = ({
               {/* Header */}
               <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border)] mb-4">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" size={18} />
+                  <ShieldAlert className="text-accent " size={18} />
                   <span className="text-xs uppercase font-black tracking-wider w-auto h-auto leading-none mt-0">
                     {isRtl ? "التدقيق والتفاصيل القياسية" : "Compliance Payload Audit Inspection"}
                   </span>
@@ -13972,7 +13972,7 @@ const ComplianceAuditLogsView = ({
                 </div>
                 <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
                   <span className="text-gray-400 font-bold uppercase">{isRtl ? "العملية الإجرائية" : "Action Identifier"}</span>
-                  <span className="font-bold mt-0.5 text-emerald-400 font-mono">{selectedLog.action}</span>
+                  <span className="font-bold mt-0.5 text-accent font-mono">{selectedLog.action}</span>
                 </div>
                 <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
                   <span className="text-gray-400 font-bold uppercase">{isRtl ? "الوقت (توقيت عالمي)" : "Logged Timestamp (UTC)"}</span>
@@ -13996,7 +13996,7 @@ const ComplianceAuditLogsView = ({
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 pl-0.5">
                   {isRtl ? "البيانات المشفرة والمحفوظة (JSON Payloads)" : "Compliant Transaction Log (JSON)"}
                 </span>
-                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-emerald-400 font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
+                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-accent font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
                   <pre className="whitespace-pre-wrap select-text">
                     {JSON.stringify(typeof selectedLog.details === "string" ? JSON.parse(selectedLog.details) : selectedLog.details, null, 2)}
                   </pre>
@@ -14139,7 +14139,7 @@ export const AdminDashboard: React.FC = () => {
             ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
             : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
         </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-emerald-500/30 rounded-sm hover:border-emerald-500 text-emerald-500 text-xs font-bold transition-theme">
+        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
           {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
         </a>
       </div>
@@ -14276,7 +14276,7 @@ export const AdminDashboard: React.FC = () => {
 
   const getIcon = () => {
     const iconClass =
-      "text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+      "text-accent ";
     switch (path) {
       case "dashboard":
         return <Activity size={28} className={iconClass} />;
@@ -14349,7 +14349,7 @@ export const AdminDashboard: React.FC = () => {
     ? (language === 'ar' ? 'منخفض' : 'Degraded') 
     : (language === 'ar' ? 'معطل' : 'Disrupted');
   const pulseGlowClass = isOptimal 
-    ? 'text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
+    ? 'text-accent ' 
     : isDegraded 
     ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
     : 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]';
@@ -14403,7 +14403,7 @@ export const AdminDashboard: React.FC = () => {
           {showAddButton && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
             >
               <Plus size={18} />
               {getAddButtonText()}
@@ -14483,25 +14483,25 @@ export const AdminDashboard: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2 text-[10px]">
                           <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'قاعدة البيانات المركزية' : 'Core Engine DB'}</span>
-                            <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.core?.status === 'connected' ? `Connected (${pulseData.databases.core.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
                           <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'دفتر الحسابات والمالية' : 'Ledger Vault DB'}</span>
-                            <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.ledger?.status === 'connected' ? `Connected (${pulseData.databases.ledger.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
                           <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'السحابة الخارجية' : 'External Sync Registry'}</span>
-                            <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.external?.status === 'connected' ? `Connected (${pulseData.databases.external.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
                           <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'حماية وأمن البيانات' : 'Security Registry'}</span>
-                            <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.security?.status === 'connected' ? `Connected (${pulseData.databases.security.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
@@ -14515,31 +14515,31 @@ export const AdminDashboard: React.FC = () => {
                         <div className="space-y-1 text-[9px] text-[var(--text-muted)] font-medium font-sans">
                           <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
                             <span>{language === 'ar' ? 'الصيانة والمسح اليومي' : 'Daily Maintenance & Trash Purge'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                            <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.dailyMaintenance ? `${formatPulseRelative(pulseData.cronTasks.dailyMaintenance.lastRun)}` : 'Pending'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
                             <span>{language === 'ar' ? 'نبض المزامنة الذكية' : 'Database Pulse Tracker'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                            <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.databaseHeartbeat ? `${formatPulseRelative(pulseData.cronTasks.databaseHeartbeat.lastRun)}` : 'Pending'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
                             <span>{language === 'ar' ? 'تنظيف الجلسات المؤقتة' : 'Auth Token & Session Purge'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                            <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.expiredTokensCleanup ? `${formatPulseRelative(pulseData.cronTasks.expiredTokensCleanup.lastRun)}` : 'Pending'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
                             <span>{language === 'ar' ? 'تدقيق الاشتراكات الفعالة' : 'Subscription Renewal Audits'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                            <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.subscriptionAudit ? `${formatPulseRelative(pulseData.cronTasks.subscriptionAudit.lastRun)}` : 'Pending'}
                             </span>
                           </div>
                           <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
                             <span>{language === 'ar' ? 'ضغط وتقليص ذاكرة الذكاء' : 'Memory Distillation Cycle'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-emerald-400' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                            <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.memoryCompaction ? `${formatPulseRelative(pulseData.cronTasks.memoryCompaction.lastRun)}` : 'Pending'}
                             </span>
                           </div>
@@ -14554,7 +14554,7 @@ export const AdminDashboard: React.FC = () => {
                               <span>{pulseData?.cpu ?? 0}%</span>
                             </div>
                             <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
+                              <div className="h-full bg-accent" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
                             </div>
                           </div>
                           <div>
@@ -14666,7 +14666,7 @@ export const AdminDashboard: React.FC = () => {
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
               toast.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                ? "bg-accent/10 border-accent/20 text-accent"
                 : toast.type === "error"
                   ? "bg-red-500/10 border-red-500/20 text-red-500"
                   : "bg-blue-500/10 border-blue-500/20 text-blue-500"
@@ -14679,7 +14679,7 @@ export const AdminDashboard: React.FC = () => {
             }}
           >
             <span
-              className={`w-2 h-2 rounded-full ${toast.type === "success" ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
+              className={`w-2 h-2 rounded-full ${toast.type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
             />
             <span className="font-bold text-sm tracking-tight">
               {toast.message}

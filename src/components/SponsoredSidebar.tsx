@@ -112,7 +112,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
         <span className="text-[11px] font-extrabold tracking-wider text-gray-400 uppercase">
           {isRtl ? 'إعلانات ممولة مقترحة' : 'Sponsored Ads'}
         </span>
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
       </div>
 
       <AnimatePresence mode="popLayout">
@@ -130,7 +130,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.15 }}
               onClick={(e) => handleAdClick(ad, e)}
-              className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-theme flex flex-col gap-2.5"
+              className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-accent/40 transition-theme flex flex-col gap-2.5"
             >
               {/* Dismiss X button */}
               <button
@@ -149,7 +149,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {badge && (
-                  <span className="absolute bottom-1.5 start-1.5 z-10 bg-black/75 backdrop-blur-md text-emerald-400 text-[10px] font-extrabold px-2 py-0.5 rounded-[4px] border border-emerald-500/30 tracking-tight">
+                  <span className="absolute bottom-1.5 start-1.5 z-10 bg-black/75 backdrop-blur-md text-accent text-[10px] font-extrabold px-2 py-0.5 rounded-[4px] border border-accent/30 tracking-tight">
                     {badge}
                   </span>
                 )}
@@ -158,14 +158,14 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
               {/* Ad Details */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-emerald-500 transition-colors">
+                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-accent transition-colors">
                     {title}
                   </h4>
-                  <ExternalLink size={12} className="text-gray-400 group-hover:text-emerald-500 shrink-0 mt-0.5" />
+                  <ExternalLink size={12} className="text-gray-400 group-hover:text-accent shrink-0 mt-0.5" />
                 </div>
 
                 {ad.sponsor_name && (
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400/90 truncate">
+                  <span className="text-[11px] font-semibold text-accent dark:text-accent/90 truncate">
                     {ad.sponsor_name}
                   </span>
                 )}

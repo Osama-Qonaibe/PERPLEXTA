@@ -343,7 +343,7 @@ export const About: React.FC = () => {
           <button
             onClick={() => navigate(-1)}
             id="about-back-btn"
-            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-theme bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-theme bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent hover:"
           >
             {dir === "rtl" ? (
               <ChevronRight size={18} />
@@ -354,7 +354,7 @@ export const About: React.FC = () => {
           <div>
             <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white uppercase flex items-center gap-2">
               <Info
-                className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                className="text-accent "
                 size={20}
               />
               {isAr ? "من نحن" : "About Us"}
@@ -370,13 +370,13 @@ export const About: React.FC = () => {
         {/* Hero Section */}
         <section className="text-center space-y-4 pt-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-900/50 border border-gray-250/20 dark:border-gray-800/40 text-gray-800 dark:text-gray-200 text-xs font-bold uppercase tracking-widest">
-            <Info size={14} className="text-emerald-500" />
+            <Info size={14} className="text-accent" />
             {isAr ? "من نحن" : "About Us"}
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">
             {isAr ? "بيربليكستا" : "PERPLEXTA"}
           </h1>
-          <p className="text-lg md:text-2xl font-bold text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-2xl font-bold text-accent  max-w-2xl mx-auto leading-relaxed">
             {isAr
               ? "القوة الكامنة خلف القرار الذكي"
               : "The Power Behind Smart Decisions"}
@@ -386,9 +386,9 @@ export const About: React.FC = () => {
         {/* Vision & Mission Section */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
           <div className="space-y-8">
-            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-theme hover:border-emerald-500/20 group">
+            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-theme hover:border-accent/20 group">
               <div className="flex items-center gap-3 text-gray-900 dark:text-white mb-4">
-                <Target className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+                <Target className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                 <h2 className="text-xl md:text-2xl font-black">
                   {isAr ? "الرؤية" : "Vision"}
                 </h2>
@@ -400,9 +400,9 @@ export const About: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-theme hover:border-emerald-500/20 group">
+            <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-theme hover:border-accent/20 group">
               <div className="flex items-center gap-3 text-gray-900 dark:text-white mb-4">
-                <Zap className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+                <Zap className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                 <h2 className="text-xl md:text-2xl font-black">
                   {isAr ? "الرسالة" : "Mission"}
                 </h2>
@@ -417,8 +417,8 @@ export const About: React.FC = () => {
 
           <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-gray-50/50 dark:bg-gray-900/30 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center p-8 shadow-inner">
             <div className="relative z-10 flex flex-col items-center gap-8 w-full">
-              <div className="flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-emerald-500/5 transition-theme group">
-                <Layers className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.6)] transition-theme" />
+              <div className="flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-none transition-theme group">
+                <Layers className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
               </div>
 
               <div className="grid grid-cols-3 gap-3 w-full">
@@ -435,10 +435,10 @@ export const About: React.FC = () => {
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-center gap-2 transition-theme hover:border-emerald-500/10 hover:-translate-y-1 group"
+                    className="p-3 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-center gap-2 transition-theme hover:border-accent/10 hover:-translate-y-1 group"
                   >
                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-200/40 dark:border-gray-800/40">
-                      <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.6)] transition-theme" />
+                      <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                     </div>
                     <span className="text-[9px] uppercase font-black tracking-wider text-center leading-tight text-gray-800 dark:text-gray-200">
                       {item.label}
@@ -466,9 +466,9 @@ export const About: React.FC = () => {
             {features.map((feature, i) => (
               <div
                 key={i}
-                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/40 hover:border-emerald-500/20 transition-theme group"
+                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/40 hover:border-accent/20 transition-theme group"
               >
-                <div className="w-10 h-10 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:border-emerald-500/10 mb-4 transition-theme">
+                <div className="w-10 h-10 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: group-hover:border-accent/10 mb-4 transition-theme">
                   <feature.icon className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
@@ -483,9 +483,9 @@ export const About: React.FC = () => {
         </section>
 
         {/* Why PERPLEXTA */}
-        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-emerald-500/20 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.01] dark:border-emerald-500/10 shadow-[0_4px_24px_rgba(16,185,129,0.03)] space-y-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-theme" />
-          <h2 className="text-2xl font-black text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(16,185,129,0.03)] space-y-6 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl group-hover:bg-accent/10 transition-theme" />
+          <h2 className="text-2xl font-black text-accent ">
             {isAr ? "لماذا بيربليكستا؟" : "Why PERPLEXTA?"}
           </h2>
           <p className="text-sm md:text-base leading-relaxed text-gray-800 dark:text-gray-200 font-semibold font-sans">
@@ -498,7 +498,7 @@ export const About: React.FC = () => {
         {/* Technical Standards */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center border border-gray-200/60 dark:border-gray-800/60 rounded-[var(--radius)] p-6 md:p-8 bg-gray-50/20 dark:bg-gray-900/10">
           <div className="space-y-4 text-center md:text-right animate-pulse">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] mx-auto md:mx-0 md:mr-0 inline-block md:block" />
+            <CheckCircle2 className="w-12 h-12 text-accent  mx-auto md:mx-0 md:mr-0 inline-block md:block" />
             <h3 className="text-2xl font-black text-gray-900 dark:text-white">
               {isAr ? "أمان وموثوقية عالمية" : "Global Security & Reliability"}
             </h3>
@@ -523,7 +523,7 @@ export const About: React.FC = () => {
         {/* Corporate Identity & Transparency */}
         <section className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-8">
           <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-            <Shield className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <Shield className="w-5 h-5 text-accent " />
             <h2 className="text-xl md:text-2xl font-black">
               {isAr
                 ? "الهوية المؤسسية والشفافية"
@@ -549,7 +549,7 @@ export const About: React.FC = () => {
                 </p>
               </div>
               <div>
-                <span className="inline-block px-3 py-1 text-xs font-bold text-emerald-500 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
                   {isAr ? "نشطة" : "ACTIVE"}
                 </span>
               </div>
@@ -558,8 +558,8 @@ export const About: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-250/20 dark:border-gray-800/40">
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-emerald-500/10 transition-theme group shadow-sm">
-                <Globe className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-theme" />
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-accent/10 transition-theme group shadow-sm">
+                <Globe className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme" />
                 <div>
                   <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">
                     {isAr ? "رقم التسجيل" : "Registration Number"}
@@ -569,8 +569,8 @@ export const About: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-emerald-500/10 transition-theme group shadow-sm">
-                <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition-theme" />
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 hover:border-accent/10 transition-theme group shadow-sm">
+                <Building2 className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme" />
                 <div>
                   <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">
                     {isAr ? "المقر المسجل" : "Registered Office"}
@@ -588,7 +588,7 @@ export const About: React.FC = () => {
               </p>
               <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-mono font-bold">
+                  <span className="text-accent font-mono font-bold">
                     58190
                   </span>
                   <span>
@@ -598,7 +598,7 @@ export const About: React.FC = () => {
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-mono font-bold">
+                  <span className="text-accent font-mono font-bold">
                     62012
                   </span>
                   <span>
@@ -608,7 +608,7 @@ export const About: React.FC = () => {
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-mono font-bold">
+                  <span className="text-accent font-mono font-bold">
                     63110
                   </span>
                   <span>
@@ -618,7 +618,7 @@ export const About: React.FC = () => {
                   </span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-500 font-mono font-bold">
+                  <span className="text-accent font-mono font-bold">
                     70229
                   </span>
                   <span>
@@ -652,13 +652,13 @@ export const About: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 id={`ecosystem-link-${i}`}
-                className="p-5 rounded-2xl bg-gray-50/30 dark:bg-gray-900/10 border border-gray-200/60 dark:border-gray-800/60 hover:border-emerald-500/20 hover:bg-gray-55/70 dark:hover:bg-gray-900/30 transition-theme group block relative overflow-hidden shadow-sm hover:shadow-md"
+                className="p-5 rounded-2xl bg-gray-50/30 dark:bg-gray-900/10 border border-gray-200/60 dark:border-gray-800/60 hover:border-accent/20 hover:bg-gray-55/70 dark:hover:bg-gray-900/30 transition-theme group block relative overflow-hidden shadow-sm hover:shadow-md"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-accent transition-colors">
                     {item.name}
                   </h3>
-                  <ExternalLink className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" />
+                  <ExternalLink className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-semibold">
                   {item.desc}
@@ -678,7 +678,7 @@ export const About: React.FC = () => {
           <div className="text-center space-y-2">
             <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase flex items-center justify-center gap-2">
               <Boxes
-                className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                className="text-accent "
                 size={24}
               />
               {isAr ? "الميزات والأدوات" : "Features & Tools"}
@@ -694,21 +694,21 @@ export const About: React.FC = () => {
             {featuresToolsList.map((tool, i) => (
               <div
                 key={i}
-                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-emerald-500/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
+                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-accent/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
               >
                 <div className="space-y-4">
                   {/* Tool Header */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover:bg-emerald-500/20 group-hover:scale-105 transition-theme">
+                    <div className="w-10 h-10 rounded-[4px] bg-accent/10 border border-accent/20 flex items-center justify-center text-accent  group-hover:bg-accent/20 group-hover:scale-105 transition-theme">
                       {tool.icon}
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors duration-300">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-accent transition-colors duration-300">
                       {tool.title}
                     </h3>
                   </div>
 
                   {/* Image Preview Placeholder */}
-                  <div className="relative w-full aspect-[16/10] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-emerald-500/30 transition-colors duration-300">
+                  <div className="relative w-full aspect-[16/10] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-accent/30 transition-colors duration-300">
                     <img
                       src={tool.imageUrl}
                       alt={tool.title}
@@ -732,7 +732,7 @@ export const About: React.FC = () => {
         <section className="space-y-10">
           <div className="text-center space-y-2">
             <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase flex items-center justify-center gap-2">
-              <Wallet className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" size={24} />
+              <Wallet className="text-accent " size={24} />
               {isAr ? "اقتصاد المنصة والمكافآت" : "Platform Economy & Rewards"}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto font-medium">
@@ -746,21 +746,21 @@ export const About: React.FC = () => {
             {economyList.map((item, i) => (
               <div
                 key={i}
-                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-emerald-500/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
+                className="p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-accent/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
               >
                 <div className="space-y-4">
                   {/* Item Header */}
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-[4px] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover:bg-emerald-500/20 group-hover:scale-105 transition-theme">
+                    <div className="w-10 h-10 rounded-[4px] bg-accent/10 border border-accent/20 flex items-center justify-center text-accent  group-hover:bg-accent/20 group-hover:scale-105 transition-theme">
                       {item.icon}
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors duration-300">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white group-hover:text-accent transition-colors duration-300">
                       {item.title}
                     </h3>
                   </div>
 
                   {/* Image Preview Placeholder */}
-                  <div className="relative w-full aspect-[16/10] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-emerald-500/30 transition-colors duration-300">
+                  <div className="relative w-full aspect-[16/10] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-accent/30 transition-colors duration-300">
                     <img 
                       src={item.imageUrl} 
                       alt={item.title}
@@ -785,7 +785,7 @@ export const About: React.FC = () => {
           <div className="text-center space-y-2">
             <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white uppercase flex items-center justify-center gap-2">
               <Newspaper
-                className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                className="text-accent "
                 size={24}
               />
               {isAr ? "أحدث الأخبار وتحديثات النظام" : "Latest News & Releases"}
@@ -804,32 +804,32 @@ export const About: React.FC = () => {
                 <div
                   key={i}
                   id={`news-card-${i}`}
-                  className="news-card p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-emerald-500/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
+                  className="news-card p-6 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/20 hover:bg-gray-50/50 dark:hover:bg-gray-900/45 hover:border-accent/20 transition-theme group flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md h-fit"
                   onClick={() => toggleCard(i)}
                 >
                   <div className="space-y-3">
                     {/* Header: Date + Chevron indicator */}
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-black tracking-widest text-emerald-500 drop-shadow-[0_0_6px_rgba(16,185,129,0.3)] bg-emerald-500/5 px-2.5 py-1 rounded-[4px] border border-emerald-500/15">
+                      <span className="text-[10px] font-mono font-black tracking-widest text-accent  bg-accent/5 px-2.5 py-1 rounded-[4px] border border-accent/15">
                         {item.date}
                       </span>
                       <motion.div
                         animate={{ rotate: isExpanded ? 180 : 0 }}
                         transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                        className="text-gray-400 group-hover:text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme"
+                        className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
                       >
                         <ChevronDown size={14} />
                       </motion.div>
                     </div>
 
                     {/* News Title */}
-                    <h3 className="text-base font-black text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors duration-300 leading-snug">
+                    <h3 className="text-base font-black text-gray-900 dark:text-white group-hover:text-accent transition-colors duration-300 leading-snug">
                       {item.title}
                     </h3>
 
                     {/* Image Preview */}
                     {item.imageUrl && (
-                      <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-emerald-500/30 transition-colors duration-300">
+                      <div className="relative w-full aspect-[16/9] rounded-md overflow-hidden border border-gray-200/50 dark:border-gray-800/45 shadow-sm bg-black/5 dark:bg-black/20 group-hover:border-accent/30 transition-colors duration-300">
                         <img
                           src={item.imageUrl}
                           alt={item.title}
@@ -863,7 +863,7 @@ export const About: React.FC = () => {
                               e.stopPropagation();
                               toggleCard(i);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-gray-500/5 hover:bg-emerald-500/10 dark:bg-gray-800/30 dark:hover:bg-emerald-500/15 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/30 dark:hover:border-emerald-500/45 text-[var(--text-primary)] hover:text-emerald-500 text-[10px] font-black uppercase tracking-wider transition-theme cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.2)] select-none"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-gray-500/5 hover:bg-accent/10 dark:bg-gray-800/30 dark:hover:bg-accent/15 border border-gray-200 dark:border-gray-800 hover:border-accent/30 dark:hover:border-accent/45 text-[var(--text-primary)] hover:text-accent text-[10px] font-black uppercase tracking-wider transition-theme cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.2)] select-none"
                           >
                             <span>{isAr ? "▲ عرض أقل" : "▲ Show Less"}</span>
                           </button>
@@ -873,7 +873,7 @@ export const About: React.FC = () => {
                   </div>
 
                   {/* Read More Button with the "Emerald Glow" Hover Effect */}
-                  <div className="pt-2 flex items-center justify-start text-[10px] font-black uppercase tracking-wider text-emerald-500 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme select-none">
+                  <div className="pt-2 flex items-center justify-start text-[10px] font-black uppercase tracking-wider text-accent group-hover: transition-theme select-none">
                     <span>
                       {isExpanded
                         ? isAr
@@ -902,7 +902,7 @@ export const About: React.FC = () => {
 
           <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-4 max-w-4xl mx-auto shadow-inner">
             <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-              <Shield className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <Shield className="w-5 h-5 text-accent " />
               <h3 className="text-base md:text-lg font-black">
                 {isAr ? "حقوق الملكية الفكرية" : "Intellectual Property Rights"}
               </h3>

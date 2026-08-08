@@ -441,19 +441,19 @@ export const BlogPage: React.FC = () => {
               <header className={`px-8 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 border-b relative select-none flex-shrink-0 ${
                 isThemeDark ? 'border-gray-800/60 bg-[#131315]' : 'border-gray-200/80 bg-white'
               }`}>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
                 
                 <div className="flex flex-row items-start justify-between gap-4">
                   <div className="space-y-1 min-w-0 flex-1">
                     <h1 className="text-base sm:text-lg md:text-2xl font-black font-sans tracking-tight">
                       {isRtl ? (
                         <>
-                          <span className="text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.35)] font-sans">نبض بيربليكستا </span>
+                          <span className="text-accent  font-sans">نبض بيربليكستا </span>
                           <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>للمقالات والتحليلات</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-emerald-500 drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]">Perplexta Insights </span>
+                          <span className="text-accent ">Perplexta Insights </span>
                           <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>& Research Portal</span>
                         </>
                       )}
@@ -474,12 +474,12 @@ export const BlogPage: React.FC = () => {
                         onClick={() => setSelectedCategory('All')}
                         className={`px-3 h-9 rounded-[4px] border flex items-center gap-1.5 transition-theme text-xs font-black ${
                           isThemeDark
-                            ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 active:scale-95 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
-                            : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 active:scale-95'
+                            ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                            : 'border-accent/20 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95'
                         }`}
                         title={isRtl ? 'الرجوع للمقالات الرئيسية' : 'Back to main articles'}
                       >
-                        {isRtl ? <ArrowRight size={13} className="text-emerald-500" /> : <ArrowLeft size={13} className="text-emerald-500" />}
+                        {isRtl ? <ArrowRight size={13} className="text-accent" /> : <ArrowLeft size={13} className="text-accent" />}
                         <span>{isRtl ? 'الرئيسية' : 'Main'}</span>
                       </button>
                     )}
@@ -488,7 +488,7 @@ export const BlogPage: React.FC = () => {
                       onClick={() => setIsMobileSidebarOpen(true)}
                       className={`w-9 h-9 rounded-[4px] border flex items-center justify-center transition-theme ${
                         isThemeDark
-                          ? 'border-gray-800/80 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-emerald-500 hover:border-emerald-500/35 active:scale-95'
+                          ? 'border-gray-800/80 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-accent hover:border-accent/35 active:scale-95'
                           : 'border-gray-200 bg-transparent text-slate-700 hover:bg-[#fafafa] active:scale-95'
                       }`}
                       title={isRtl ? 'عرض الأقسام' : 'Show Categories'}
@@ -514,7 +514,7 @@ export const BlogPage: React.FC = () => {
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                             isSelected
-                              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] font-black'
+                              ? 'bg-accent/10 border border-accent/30 text-accent dark:text-accent  dark: font-black'
                               : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-650 hover:text-gray-800')
                           }`}
                         >
@@ -537,12 +537,12 @@ export const BlogPage: React.FC = () => {
                         }}
                         className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
                           isThemeDark
-                            ? 'text-gray-400 hover:text-emerald-500 hover:bg-gray-800'
-                            : 'text-slate-500 hover:text-emerald-600 hover:bg-gray-100'
+                            ? 'text-gray-400 hover:text-accent hover:bg-gray-800'
+                            : 'text-slate-500 hover:text-accent hover:bg-gray-100'
                         }`}
                         title={isRtl ? 'السابق' : 'Previous'}
                       >
-                        {isRtl ? <ChevronRight size={14} className="hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" /> : <ChevronLeft size={14} className="hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
+                        {isRtl ? <ChevronRight size={14} className="hover:" /> : <ChevronLeft size={14} className="hover:" />}
                       </button>
 
                       <div className="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
@@ -556,7 +556,7 @@ export const BlogPage: React.FC = () => {
                               onClick={() => setSelectedCategory(cat.id)}
                               className={`px-1.5 py-1 rounded-[4px] text-[10px] font-black whitespace-nowrap truncate cursor-pointer transition-theme border text-center flex items-center justify-center gap-1 min-w-0 ${
                                 isSelected
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.2)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                                  ? 'bg-accent/10 border-accent/30 text-accent dark:text-accent  dark:'
                                   : (isThemeDark 
                                       ? 'bg-[#131315]/80 border-gray-800/60 text-gray-400 hover:text-gray-200 hover:border-gray-700' 
                                       : 'bg-white border-gray-200 text-slate-650 hover:text-slate-800 hover:border-gray-300')
@@ -576,12 +576,12 @@ export const BlogPage: React.FC = () => {
                         }}
                         className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
                           isThemeDark
-                            ? 'text-gray-400 hover:text-emerald-500 hover:bg-gray-800'
-                            : 'text-slate-500 hover:text-emerald-600 hover:bg-gray-100'
+                            ? 'text-gray-400 hover:text-accent hover:bg-gray-800'
+                            : 'text-slate-500 hover:text-accent hover:bg-gray-100'
                         }`}
                         title={isRtl ? 'التالي' : 'Next'}
                       >
-                        {isRtl ? <ChevronLeft size={14} className="hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" /> : <ChevronRight size={14} className="hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
+                        {isRtl ? <ChevronLeft size={14} className="hover:" /> : <ChevronRight size={14} className="hover:" />}
                       </button>
                     </div>
 
@@ -592,7 +592,7 @@ export const BlogPage: React.FC = () => {
                           key={page}
                           className={`h-1 rounded-full transition-theme ${
                             mobileCategoryPage === page
-                              ? 'w-3.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.65)]'
+                              ? 'w-3.5 bg-accent shadow-[0_0_8px_rgba(16,185,129,0.65)]'
                               : 'w-1 bg-gray-305 dark:bg-gray-800/80'
                           }`}
                         />
@@ -601,7 +601,7 @@ export const BlogPage: React.FC = () => {
                   </div>
 
                   <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
-                    isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-emerald-500/35' : 'bg-white border-gray-200 focus-within:border-emerald-500/35'
+                    isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-accent/35' : 'bg-white border-gray-200 focus-within:border-accent/35'
                   }`}>
                     <Search size={14} className="text-gray-400 shrink-0" />
                     <input
@@ -613,7 +613,7 @@ export const BlogPage: React.FC = () => {
                         isThemeDark ? 'text-white' : 'text-gray-800'
                       }`}
                     />
-                    <div className="text-[9px] font-mono text-emerald-500 font-bold bg-emerald-500/5 px-2 py-0.5 rounded shrink-0 border border-emerald-500/10">
+                    <div className="text-[9px] font-mono text-accent font-bold bg-accent/5 px-2 py-0.5 rounded shrink-0 border border-accent/10">
                       {sortedArticles.length}
                     </div>
                   </div>
@@ -641,7 +641,7 @@ export const BlogPage: React.FC = () => {
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`flex items-center justify-between rounded px-2.5 py-1.5 text-[10px] font-black cursor-pointer transition-colors ${
                             isSelected
-                              ? 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500'
+                              ? 'bg-accent/10 text-accent border-r-2 border-accent'
                               : (isThemeDark ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-slate-600 hover:text-slate-900')
                           }`}
                         >
@@ -669,7 +669,7 @@ export const BlogPage: React.FC = () => {
                           key={item.val}
                           className={`flex items-center gap-2 text-[10px] font-bold cursor-pointer transition-colors ${
                             sortBy === item.val
-                              ? 'text-emerald-500'
+                              ? 'text-accent'
                               : (isThemeDark ? 'text-gray-400 hover:text-white' : 'text-slate-600 hover:text-slate-900')
                           }`}
                         >
@@ -679,7 +679,7 @@ export const BlogPage: React.FC = () => {
                             value={item.val}
                             checked={sortBy === item.val}
                             onChange={() => setSortBy(item.val as any)}
-                            className="accent-emerald-500 w-3 h-3 cursor-pointer"
+                            className="accent-accent w-3 h-3 cursor-pointer"
                           />
                           <span>{isRtl ? item.labelAr : item.labelEn}</span>
                         </label>
@@ -739,8 +739,8 @@ export const BlogPage: React.FC = () => {
                               transition={{ duration: 0.15 }}
                               className={`rounded-xl border overflow-hidden transition-theme flex flex-col h-[390px] cursor-pointer relative group ${
                                 isThemeDark
-                                  ? 'bg-[#090a0c] border-white/5 hover:border-emerald-500/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
-                                  : 'bg-white border-gray-150 hover:border-emerald-500/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
+                                  ? 'bg-[#090a0c] border-white/5 hover:border-accent/20 hover:shadow-[0_15px_30px_rgba(0,0,0,0.8)]'
+                                  : 'bg-white border-gray-150 hover:border-accent/30 hover:shadow-[0_15px_30px_rgba(0,0,0,0.05)]'
                               }`}
                               onClick={() => navigate(`/blog/${article.slug}`)}
                             >
@@ -752,14 +752,14 @@ export const BlogPage: React.FC = () => {
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-2">
-                                    <BookOpen size={24} className="text-emerald-500/30 mb-1 shrink-0" />
-                                    <span className="text-[7px] text-center uppercase tracking-widest text-emerald-500 font-bold">{isRtl ? 'تحليلات' : 'Intelligence'}</span>
+                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-500/10 to-teal-500/10 p-2">
+                                    <BookOpen size={24} className="text-accent/30 mb-1 shrink-0" />
+                                    <span className="text-[7px] text-center uppercase tracking-widest text-accent font-bold">{isRtl ? 'تحليلات' : 'Intelligence'}</span>
                                   </div>
                                 )}
                                 <div className="absolute top-2 right-2 flex items-center gap-1.5 select-none z-10">
                                   <span className="text-[8px] font-black px-2 py-0.5 rounded bg-black/70 backdrop-blur-md border border-white/10 text-white flex items-center gap-1">
-                                    {getCategoryIcon(article.category_en, 'w-2.5 h-2.5 text-emerald-400')}
+                                    {getCategoryIcon(article.category_en, 'w-2.5 h-2.5 text-accent')}
                                     <span>{isRtl ? article.category_ar : article.category_en}</span>
                                   </span>
                                 </div>
@@ -776,7 +776,7 @@ export const BlogPage: React.FC = () => {
                                       <span>{article.views} {isRtl ? 'مشاهدة' : 'views'}</span>
                                     </div>
                                   </div>
-                                  <h3 className="text-xs sm:text-[13px] font-black tracking-tight text-[var(--text-primary)] group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors duration-300 leading-snug line-clamp-2 font-sans">
+                                  <h3 className="text-xs sm:text-[13px] font-black tracking-tight text-[var(--text-primary)] group-hover:text-accent dark:group-hover:text-accent transition-colors duration-300 leading-snug line-clamp-2 font-sans">
                                     {isRtl ? article.title_ar : article.title_en}
                                   </h3>
                                   <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed font-sans font-medium text-right sm:text-justify select-text">
@@ -790,7 +790,7 @@ export const BlogPage: React.FC = () => {
                                       {article.author_avatar ? (
                                         <img src={article.author_avatar} alt={article.author_name} className="w-5 h-5 rounded-full border border-[var(--border-main)] shrink-0" />
                                       ) : (
-                                        <div className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                                        <div className="w-5 h-5 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">
                                           <User size={10} />
                                         </div>
                                       )}
@@ -807,12 +807,12 @@ export const BlogPage: React.FC = () => {
                                     type="button"
                                     className={`w-full py-1.5 rounded-[4px] text-[10px] font-bold flex items-center justify-center gap-1 border transition-theme ${
                                       isThemeDark
-                                        ? 'bg-emerald-500/5 border-emerald-500/15 text-emerald-400 hover:bg-emerald-500/15 hover:border-emerald-500/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                                        : 'bg-emerald-500/5 border-emerald-500/15 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                                        ? 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/15 hover:border-accent/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                                        : 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/10 hover:border-accent/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
                                     }`}
                                   >
                                     <span>{isRtl ? 'قراءة تقرير الجودة' : 'Read Analytical Insight'}</span>
-                                    {isRtl ? <ArrowLeft size={10} strokeWidth={3} className="text-emerald-500" /> : <ArrowRight size={10} strokeWidth={3} className="text-emerald-500" />}
+                                    {isRtl ? <ArrowLeft size={10} strokeWidth={3} className="text-accent" /> : <ArrowRight size={10} strokeWidth={3} className="text-accent" />}
                                   </button>
                                 </div>
                               </div>
@@ -843,12 +843,12 @@ export const BlogPage: React.FC = () => {
                                   {article.image_url ? (
                                     <img src={getMediaUrl(article.image_url)} alt="" className="w-full h-full object-cover" />
                                   ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-950 to-teal-905 p-3">
-                                      <BookOpen size={24} className="text-emerald-500/20" />
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-500/10 to-teal-905 p-3">
+                                      <BookOpen size={24} className="text-accent/20" />
                                     </div>
                                   )}
                                   <div className="absolute top-2.5 right-2.5">
-                                    <span className="text-[8.5px] font-black px-2.5 py-1 rounded bg-emerald-500 text-white shadow-sm font-sans tracking-wide">
+                                    <span className="text-[8.5px] font-black px-2.5 py-1 rounded bg-accent text-white shadow-sm font-sans tracking-wide">
                                       {isRtl ? article.category_ar : article.category_en}
                                     </span>
                                   </div>
@@ -883,14 +883,14 @@ export const BlogPage: React.FC = () => {
                                 {article.image_url ? (
                                   <img src={getMediaUrl(article.image_url)} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                                  <div className="w-full h-full flex items-center justify-center bg-accent/10 text-accent">
                                     <BookOpen size={16} />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                 <div>
-                                  <span className="text-[8px] font-black uppercase text-emerald-500 tracking-wider">
+                                  <span className="text-[8px] font-black uppercase text-accent tracking-wider">
                                     {isRtl ? article.category_ar : article.category_en}
                                   </span>
                                   <h3 className="text-xs font-bold leading-snug text-slate-900 dark:text-white line-clamp-2 mt-1 font-sans">
@@ -928,7 +928,7 @@ export const BlogPage: React.FC = () => {
                         setSearchQuery('');
                         setSelectedCategory('All');
                       }}
-                      className="mt-5 px-5 h-10 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-[4px] text-xs font-bold hover:bg-emerald-500/15 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme cursor-pointer text-center"
+                      className="mt-5 px-5 h-10 bg-accent/10 text-accent border border-accent/20 rounded-[4px] text-xs font-bold hover:bg-accent/15 hover: transition-theme cursor-pointer text-center"
                     >
                       {isRtl ? 'إعادة ضبط التصفية والبحث' : 'Reset Filters & Search'}
                     </button>
@@ -940,7 +940,7 @@ export const BlogPage: React.FC = () => {
                   <div className="mb-1 font-sans font-black tracking-widest text-[8px] uppercase text-gray-400">
                     PERPLEXTA PLATFORM INSIGHTS SYSTEM
                   </div>
-                  <div className="flex items-center justify-center gap-2.5 mb-1.5 text-emerald-500 font-bold">
+                  <div className="flex items-center justify-center gap-2.5 mb-1.5 text-accent font-bold">
                     <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{isRtl ? 'من نحن' : 'About Us'}</span>
                     <span className="text-gray-500/20">•</span>
                     <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{isRtl ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
@@ -970,18 +970,18 @@ export const BlogPage: React.FC = () => {
               <div className={`p-4 px-6 border rounded-xl flex items-center justify-between mt-1 mb-4 relative select-none shrink-0 ${
                 isThemeDark ? 'bg-zinc-950/80 border-white/5 shadow-2xl' : 'bg-white border-gray-150/80 shadow-sm'
               }`}>
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
               
               <button
                 onClick={handleBackToList}
-                className="group flex items-center gap-1.5 text-xs font-black font-sans tracking-tight text-gray-500 hover:text-emerald-500 dark:hover:text-emerald-400 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-theme cursor-pointer"
+                className="group flex items-center gap-1.5 text-xs font-black font-sans tracking-tight text-gray-500 hover:text-accent dark:hover:text-accent hover: transition-theme cursor-pointer"
               >
-                <ArrowLeft size={16} className={`group-hover:scale-110 transition-transform text-emerald-500 ${isRtl ? 'rotate-180' : ''}`} />
+                <ArrowLeft size={16} className={`group-hover:scale-110 transition-transform text-accent ${isRtl ? 'rotate-180' : ''}`} />
                 <span>{isRtl ? 'العودة إلى المقالات' : 'Back to Articles'}</span>
               </button>
               
               <div className="text-[9px] font-mono tracking-widest text-slate-500 dark:text-zinc-500 font-bold uppercase select-none flex items-center gap-1.5 font-sans">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                 <span>{isRtl ? 'منظور التقرير البحثي المحمي' : 'SECURE INTEL RESEARCH SPECIFICATION'}</span>
               </div>
             </div>
@@ -1012,13 +1012,13 @@ export const BlogPage: React.FC = () => {
                     {selectedArticle.author_avatar ? (
                       <img src={selectedArticle.author_avatar} alt={selectedArticle.author_name} className="w-10 h-10 rounded-full border border-slate-100 dark:border-white/5 object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center font-bold text-sm shrink-0">
                         {selectedArticle.author_name[0]}
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-xs sm:text-[13px] font-black text-slate-900 dark:text-white leading-tight truncate">{selectedArticle.author_name}</div>
-                      <div className="text-[8.5px] font-mono uppercase tracking-widest text-emerald-500 mt-1 leading-none">
+                      <div className="text-[8.5px] font-mono uppercase tracking-widest text-accent mt-1 leading-none">
                         {selectedArticle.author_role === 'admin' ? (isRtl ? 'إشراف سيادي' : 'PLATFORM ADMIN') : (isRtl ? 'محلل تقني' : 'FIELD ANALYST')}
                       </div>
                     </div>
@@ -1031,8 +1031,8 @@ export const BlogPage: React.FC = () => {
                     </div>
                     <div>
                       <span className="block text-[8.5px] text-slate-400 dark:text-zinc-500 uppercase">{isRtl ? 'المشاهدات' : 'VIEWS'}</span>
-                      <span className="font-bold text-[10.5px] text-emerald-500 flex items-center gap-1 mt-0.5">
-                        <Eye size={12} className="text-emerald-500" />
+                      <span className="font-bold text-[10.5px] text-accent flex items-center gap-1 mt-0.5">
+                        <Eye size={12} className="text-accent" />
                         {selectedArticle.views}
                       </span>
                     </div>
@@ -1069,9 +1069,9 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsShareOpen(true)}
-                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-emerald-500/15 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-500 rounded-[4px] hover:shadow-[0_0_8px_rgba(16,185,129,0.25)] transition-theme font-bold text-[10px] cursor-pointer select-none"
+                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-accent/15 bg-accent/10 hover:bg-accent/15 text-accent rounded-[4px] hover:shadow-[0_0_8px_rgba(16,185,129,0.25)] transition-theme font-bold text-[10px] cursor-pointer select-none"
                     >
-                      <Share2 size={11} className="text-emerald-500" />
+                      <Share2 size={11} className="text-accent" />
                       <span>{isRtl ? 'مشاركة وتعميم المقال' : 'Share & Distribute'}</span>
                     </button>
                   </div>
@@ -1098,20 +1098,20 @@ export const BlogPage: React.FC = () => {
                           <div
                             key={item.id}
                             onClick={() => navigate(`/blog/${item.slug}`)}
-                            className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-emerald-500/5 transition-theme"
+                            className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-accent/5 transition-theme"
                           >
                             <div className="w-8 h-8 rounded overflow-hidden shrink-0 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-white/5">
                               {item.image_url ? (
                                 <img src={getMediaUrl(item.image_url)} className="w-full h-full object-cover group-hover/related:scale-105 transition-transform duration-500 animate-fade-in" alt="" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-emerald-500/10 text-emerald-500">
+                                <div className="w-full h-full flex items-center justify-center bg-accent/10 text-accent">
                                   <BookOpen size={10} />
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="text-[7.5px] font-bold text-emerald-500 uppercase tracking-widest leading-none">{isRtl ? item.category_ar : item.category_en}</div>
-                              <div className="text-[10px] font-bold text-slate-900 dark:text-white truncate transition-colors group-hover/related:text-emerald-500 dark:group-hover/related:text-emerald-400 mt-0.5 font-sans leading-none">
+                              <div className="text-[7.5px] font-bold text-accent uppercase tracking-widest leading-none">{isRtl ? item.category_ar : item.category_en}</div>
+                              <div className="text-[10px] font-bold text-slate-900 dark:text-white truncate transition-colors group-hover/related:text-accent dark:group-hover/related:text-accent mt-0.5 font-sans leading-none">
                                 {isRtl ? item.title_ar : item.title_en}
                               </div>
                             </div>
@@ -1133,10 +1133,10 @@ export const BlogPage: React.FC = () => {
                     : 'bg-white border-gray-150/80 shadow-sm'
                 }`}>
                   <div className="flex items-center gap-2 mb-2 select-none">
-                    <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[8.5px] font-black tracking-wider uppercase px-2 py-0.5 rounded">
+                    <span className="bg-accent/10 border border-accent/20 text-accent text-[8.5px] font-black tracking-wider uppercase px-2 py-0.5 rounded">
                       {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
                     </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                     <span className="text-[9px] font-mono font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">
                       {isRtl ? 'تحليلات مستقلة عالية الدقة' : 'PERPLEXTA INDEPENDENT INTEL'}
                     </span>
@@ -1154,18 +1154,18 @@ export const BlogPage: React.FC = () => {
                 >
                   {/* Visual Reading Progress Indicator */}
                   <div className={`p-4 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150/80'} shadow-sm`}>
-                    <div className="flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mb-2">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-2">
                       <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                         <span>{isRtl ? 'مؤشر تقدم القراءة التحليلية' : 'Reading Progress Indicator'}</span>
                       </span>
-                      <span className="bg-emerald-500/10 px-2 py-0.5 rounded text-emerald-500 font-bold">
+                      <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
                         {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                       <div 
-                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                        className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
                         style={{ width: `${readingProgress}%` }}
                       />
                     </div>
@@ -1190,7 +1190,7 @@ export const BlogPage: React.FC = () => {
                   {/* Discussions Hub */}
                   <section className={`p-6 rounded-xl border ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150/80'} shadow-md`}>
                     <h3 className="text-xs sm:text-sm font-black tracking-tight text-slate-900 dark:text-white mb-5 flex items-center gap-2 select-none border-b border-slate-100 dark:border-white/5 pb-2.5">
-                      <MessageSquare size={16} className="text-emerald-400 font-sans" />
+                      <MessageSquare size={16} className="text-accent font-sans" />
                       <span>{isRtl ? 'المناقشات والتعليقات' : 'Article Debates & Public Forums'}</span>
                       <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-mono">({selectedArticle.comment_count || 0})</span>
                     </h3>
@@ -1204,14 +1204,14 @@ export const BlogPage: React.FC = () => {
                           onChange={(e) => setNewComment(e.target.value)}
                           placeholder={isRtl ? 'أضف تعليقك التحليلي هنا...' : 'Write your analytical comment here...'}
                           maxLength={1000}
-                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] hover:border-emerald-500/35 focus:border-emerald-500 rounded-lg p-3 text-xs leading-relaxed tracking-wide placeholder-slate-400 dark:placeholder-zinc-600 outline-none resize-none transition-theme font-sans font-medium"
+                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] hover:border-accent/35 focus:border-accent rounded-lg p-3 text-xs leading-relaxed tracking-wide placeholder-slate-400 dark:placeholder-zinc-600 outline-none resize-none transition-theme font-sans font-medium"
                         />
                         <div className="flex justify-between items-center mt-1.5">
                           <span className="text-[8.5px] font-mono text-slate-400 dark:text-zinc-500">{1000 - newComment.length} {isRtl ? 'رمز متبقي' : 'characters left'}</span>
                           <button
                             type="submit"
                             disabled={submittingComment || !newComment.trim()}
-                            className="flex items-center gap-1 px-3 h-8 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:hover:bg-emerald-500 font-bold text-white text-xs transition-theme shadow-sm uppercase shrink-0 cursor-pointer"
+                            className="flex items-center gap-1 px-3 h-8 rounded-[4px] bg-accent hover:bg-accent disabled:opacity-40 disabled:hover:bg-accent font-bold text-white text-xs transition-theme shadow-sm uppercase shrink-0 cursor-pointer"
                           >
                             {submittingComment ? (
                               <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -1225,8 +1225,8 @@ export const BlogPage: React.FC = () => {
                         </div>
                       </form>
                     ) : (
-                      <div className="mb-5 p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-center select-none">
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 leading-relaxed font-sans font-medium">
+                      <div className="mb-5 p-3.5 bg-accent/5 border border-accent/10 rounded-lg text-center select-none">
+                        <p className="text-xs text-accent dark:text-accent leading-relaxed font-sans font-medium">
                           {isRtl 
                             ? 'يرجى تسجيل الدخول للمشاركة بالتحليلات والتعليق على المقالات.' 
                             : 'Please login to join the analytical discussions.'}
@@ -1255,7 +1255,7 @@ export const BlogPage: React.FC = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-emerald-500/10 transition-theme"
+                            className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-accent/10 transition-theme"
                           >
                             {comment.author_avatar ? (
                               <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-full border border-slate-100 dark:border-white/5 shrink-0" />
@@ -1270,7 +1270,7 @@ export const BlogPage: React.FC = () => {
                                 <div className="flex items-center gap-1">
                                   <span className="text-[11px] font-black text-slate-900 dark:text-white truncate">{comment.author_name}</span>
                                   {comment.author_role === 'admin' && (
-                                    <span className="text-[7.5px] tracking-wide font-black uppercase text-emerald-500 bg-emerald-500/10 border border-emerald-500/15 px-1 py-0.5 rounded-[2px] select-none">{isRtl ? 'إشراف' : 'Staff'}</span>
+                                    <span className="text-[7.5px] tracking-wide font-black uppercase text-accent bg-accent/10 border border-accent/15 px-1 py-0.5 rounded-[2px] select-none">{isRtl ? 'إشراف' : 'Staff'}</span>
                                   )}
                                 </div>
                                 
@@ -1319,15 +1319,15 @@ export const BlogPage: React.FC = () => {
               }`}>
                 <button
                   onClick={handleBackToList}
-                  className="flex items-center gap-1 text-xs font-black text-gray-500 active:text-emerald-500 cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-black text-gray-500 active:text-accent cursor-pointer"
                 >
-                  <ArrowLeft size={16} className={isRtl ? 'rotate-180 text-emerald-500' : 'text-emerald-500'} />
+                  <ArrowLeft size={16} className={isRtl ? 'rotate-180 text-accent' : 'text-accent'} />
                   <span>{isRtl ? 'المقالات' : 'Articles'}</span>
                 </button>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsShareOpen(true)}
-                    className="p-1.5 focus:bg-emerald-500/10 text-gray-400 hover:text-emerald-500 cursor-pointer"
+                    className="p-1.5 focus:bg-accent/10 text-gray-400 hover:text-accent cursor-pointer"
                   >
                     <Share2 size={15} />
                   </button>
@@ -1339,16 +1339,16 @@ export const BlogPage: React.FC = () => {
                 {selectedArticle.image_url ? (
                   <img src={getMediaUrl(selectedArticle.image_url)} alt="" className="w-full h-full object-cover animate-fade-in animate-duration-500" />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-emerald-950 to-teal-900 flex flex-col items-center justify-center p-4">
-                    <BookOpen size={36} className="text-emerald-500/30 mb-1" />
-                    <span className="text-[8px] tracking-widest font-bold uppercase text-emerald-500">{isRtl ? 'تحليلات مستقلة' : 'Sovereign Intelligence'}</span>
+                  <div className="w-full h-full bg-gradient-to-br from-gray-500/10 to-teal-900 flex flex-col items-center justify-center p-4">
+                    <BookOpen size={36} className="text-accent/30 mb-1" />
+                    <span className="text-[8px] tracking-widest font-bold uppercase text-accent">{isRtl ? 'تحليلات مستقلة' : 'Sovereign Intelligence'}</span>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 
                 {/* Float Category Badge */}
                 <div className="absolute top-3 right-3 select-none">
-                  <span className="text-[8px] bg-emerald-500 text-white font-black px-2.5 py-1 rounded-full uppercase shadow-lg">
+                  <span className="text-[8px] bg-accent text-white font-black px-2.5 py-1 rounded-full uppercase shadow-lg">
                     {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
                   </span>
                 </div>
@@ -1368,11 +1368,11 @@ export const BlogPage: React.FC = () => {
                   {selectedArticle.author_avatar ? (
                     <img src={selectedArticle.author_avatar} alt="" className="w-6 h-6 rounded-full border border-white/10" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
+                    <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
                   )}
                   <div className="min-w-0">
                     <div className="text-[10px] font-black text-slate-900 dark:text-white truncate leading-none font-sans">{selectedArticle.author_name}</div>
-                    <span className="text-[7.5px] font-mono text-emerald-500 uppercase tracking-wider block mt-0.5">{isRtl ? 'محلل معتمد' : 'Field Analyst'}</span>
+                    <span className="text-[7.5px] font-mono text-accent uppercase tracking-wider block mt-0.5">{isRtl ? 'محلل معتمد' : 'Field Analyst'}</span>
                   </div>
                 </div>
 
@@ -1391,18 +1391,18 @@ export const BlogPage: React.FC = () => {
 
               {/* Mobile Visual Reading Progress Indicator */}
               <div className={`mx-4 mt-4 p-3.5 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150'} shadow-sm`}>
-                <div className="flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mb-1.5">
+                <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-1.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                     <span>{isRtl ? 'مؤشر تقدم القراءة' : 'Reading Progress'}</span>
                   </span>
-                  <span className="bg-emerald-500/10 px-2 py-0.5 rounded text-emerald-500 font-bold">
+                  <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
                     {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                   <div 
-                    className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                    className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
                     style={{ width: `${readingProgress}%` }}
                   />
                 </div>
@@ -1462,11 +1462,11 @@ export const BlogPage: React.FC = () => {
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <MessageSquare size={14} className="text-emerald-500" />
+                    <MessageSquare size={14} className="text-accent" />
                     <span>{isRtl ? 'المناقشات والتعليقات' : 'Article Debates & Discussions'}</span>
                     <span className="text-[10px] text-slate-400">({selectedArticle.comment_count || 0})</span>
                   </span>
-                  <span className="text-emerald-500 text-xs font-bold font-mono">
+                  <span className="text-accent text-xs font-bold font-mono">
                     {isCommentsOpenOnMobile ? (isRtl ? 'إخفاء [-]' : 'Hide [-]') : (isRtl ? 'عرض [+]' : 'Show [+]')}
                   </span>
                 </button>
@@ -1483,21 +1483,21 @@ export const BlogPage: React.FC = () => {
                           onChange={(e) => setNewComment(e.target.value)}
                           placeholder={isRtl ? 'أضف تعليقك التحليلي هنا...' : 'Write your comment...'}
                           maxLength={1000}
-                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] hover:border-emerald-500/35 focus:border-emerald-500 rounded-lg p-2.5 text-xs placeholder-slate-500 dark:placeholder-zinc-600 outline-none resize-none font-sans animate-duration-500"
+                          className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] hover:border-accent/35 focus:border-accent rounded-lg p-2.5 text-xs placeholder-slate-500 dark:placeholder-zinc-600 outline-none resize-none font-sans animate-duration-500"
                         />
                         <div className="flex justify-between items-center mt-1.5">
                           <span className="text-[8px] font-mono text-gray-400">{1000 - newComment.length} {isRtl ? 'رمز متبقي' : 'left'}</span>
                           <button
                             type="submit"
                             disabled={submittingComment || !newComment.trim()}
-                            className="flex items-center justify-center h-8 px-4 bg-emerald-500 text-white rounded font-bold text-[10px] cursor-pointer animate-duration-500"
+                            className="flex items-center justify-center h-8 px-4 bg-accent text-white rounded font-bold text-[10px] cursor-pointer animate-duration-500"
                           >
                             {submittingComment ? '...' : (isRtl ? 'تعليق' : 'Comment')}
                           </button>
                         </div>
                       </form>
                     ) : (
-                      <p className="text-[10px] text-emerald-500/85 text-center py-2 font-sans">
+                      <p className="text-[10px] text-accent/85 text-center py-2 font-sans">
                         {isRtl ? 'يرجى تسجيل الدخول للمشاركة بالتعليقات.' : 'Please sign in to participate in debates.'}
                       </p>
                     )}
@@ -1528,9 +1528,9 @@ export const BlogPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleBackToList}
-                  className="w-full h-11 border border-emerald-500/20 bg-emerald-500/5 font-black text-xs text-emerald-500 rounded-xl transition-theme active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full h-11 border border-accent/20 bg-accent/5 font-black text-xs text-accent rounded-xl transition-theme active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <ArrowLeft size={14} className={isRtl ? 'rotate-180 text-emerald-500' : 'text-emerald-500'} />
+                  <ArrowLeft size={14} className={isRtl ? 'rotate-180 text-accent' : 'text-accent'} />
                   <span>{isRtl ? 'العودة للمقالات والأبحاث' : 'Back to Insight Portal'}</span>
                 </button>
               </div>
@@ -1540,7 +1540,7 @@ export const BlogPage: React.FC = () => {
                 <div className="mb-1 font-sans font-black tracking-widest text-[8px] uppercase text-gray-400">
                   PERPLEXTA PLATFORM INSIGHTS SYSTEM
                 </div>
-                <div className="flex items-center justify-center gap-2.5 mb-1.5 text-emerald-500 font-bold">
+                <div className="flex items-center justify-center gap-2.5 mb-1.5 text-accent font-bold">
                   <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
                   <span className="text-gray-500/20">•</span>
                   <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
@@ -1619,13 +1619,13 @@ export const BlogPage: React.FC = () => {
                       setCopiedSlug(selectedArticle.slug);
                       setTimeout(() => setCopiedSlug(null), 2000);
                     }}
-                    className="px-3 bg-emerald-500 text-white font-bold text-xs flex items-center justify-center cursor-pointer font-sans"
+                    className="px-3 bg-accent text-white font-bold text-xs flex items-center justify-center cursor-pointer font-sans"
                   >
                     {copiedSlug === selectedArticle.slug ? <Check size={14} /> : <Link size={14} />}
                   </button>
                 </div>
                 {copiedSlug === selectedArticle.slug && (
-                  <p className="text-[10px] font-mono text-emerald-500">{isRtl ? 'تم نسخ الرابط المباشر بنجاح!' : 'Report link copied successfully!'}</p>
+                  <p className="text-[10px] font-mono text-accent">{isRtl ? 'تم نسخ الرابط المباشر بنجاح!' : 'Report link copied successfully!'}</p>
                 )}
               </div>
 
@@ -1667,12 +1667,12 @@ export const BlogPage: React.FC = () => {
                   onClick={() => setIsMobileSidebarOpen(false)}
                   className={`px-3 py-1.5 rounded-[4px] border flex items-center gap-1.5 transition-theme text-[11px] font-black cursor-pointer ${
                     isThemeDark
-                      ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-300 drop-shadow-[0_0_8px_rgba(16,185,129,0.15)]'
-                      : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-700'
+                      ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 hover:border-accent/50 hover:text-accent '
+                      : 'border-accent/20 bg-accent/5 text-accent hover:bg-accent/10 hover:border-accent/40 hover:text-accent'
                   }`}
                   title={isRtl ? 'الرجوع للمقالات' : 'Back to insights'}
                 >
-                  {isRtl ? <ChevronRight size={14} className="text-emerald-500" /> : <ChevronLeft size={14} className="text-emerald-500" />}
+                  {isRtl ? <ChevronRight size={14} className="text-accent" /> : <ChevronLeft size={14} className="text-accent" />}
                   <span>{isRtl ? 'الرجوع' : 'Back'}</span>
                 </button>
 
@@ -1681,8 +1681,8 @@ export const BlogPage: React.FC = () => {
                   onClick={() => setIsMobileSidebarOpen(false)}
                   className={`w-8 h-8 rounded-[4px] flex items-center justify-center border transition-theme ${
                     isThemeDark
-                      ? 'bg-white/5 border-white/10 text-gray-400 hover:text-emerald-500 hover:border-emerald-500/45'
-                      : 'bg-gray-50 border-gray-250 text-gray-750 hover:text-emerald-600 hover:border-emerald-500/20'
+                      ? 'bg-white/5 border-white/10 text-gray-400 hover:text-accent hover:border-accent/45'
+                      : 'bg-gray-50 border-gray-250 text-gray-750 hover:text-accent hover:border-accent/20'
                   }`}
                   title={isRtl ? 'إغلاق' : 'Close'}
                 >
@@ -1705,15 +1705,15 @@ export const BlogPage: React.FC = () => {
                       }}
                       className={`w-full flex items-center justify-between rounded px-3 py-2.5 text-[11px] font-black cursor-pointer transition-theme border mb-2 select-none ${
                         selectedCategory === 'All'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/35 border-r-2'
+                          ? 'bg-accent/10 text-accent border-accent/35 border-r-2'
                           : (isThemeDark 
-                              ? 'bg-[#131315]/40 border-gray-800/60 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30' 
-                              : 'bg-white border-gray-200 text-slate-650 hover:text-emerald-600 hover:border-emerald-500/20')
+                              ? 'bg-[#131315]/40 border-gray-800/60 text-gray-400 hover:text-accent hover:border-accent/30' 
+                              : 'bg-white border-gray-200 text-slate-650 hover:text-accent hover:border-accent/20')
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        {isRtl ? <ArrowRight size={13} className="text-emerald-500" /> : <ArrowLeft size={13} className="text-emerald-500" />}
-                        <span className="text-emerald-500 font-sans tracking-wide">
+                        {isRtl ? <ArrowRight size={13} className="text-accent" /> : <ArrowLeft size={13} className="text-accent" />}
+                        <span className="text-accent font-sans tracking-wide">
                           {isRtl ? 'المقالات الرئيسية (كل الأقسام)' : 'Main Articles (All divisions)'}
                         </span>
                       </span>
@@ -1731,7 +1731,7 @@ export const BlogPage: React.FC = () => {
                           }}
                           className={`flex items-center justify-between rounded px-3 py-2 text-[11px] font-black cursor-pointer transition-colors ${
                             isSelected
-                              ? 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500'
+                              ? 'bg-accent/10 text-accent border-r-2 border-accent'
                               : (isThemeDark ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-650 hover:text-gray-900')
                           }`}
                         >
@@ -1759,7 +1759,7 @@ export const BlogPage: React.FC = () => {
                         key={item.val}
                         className={`flex items-center gap-2.5 text-[11px] font-bold cursor-pointer transition-colors ${
                           sortBy === item.val
-                            ? 'text-emerald-500'
+                            ? 'text-accent'
                             : (isThemeDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-605 hover:text-gray-850')
                         }`}
                       >
@@ -1772,7 +1772,7 @@ export const BlogPage: React.FC = () => {
                             setSortBy(item.val as any);
                             setIsMobileSidebarOpen(false);
                           }}
-                          className="accent-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                          className="accent-accent w-3.5 h-3.5 cursor-pointer"
                         />
                         <span>{isRtl ? item.labelAr : item.labelEn}</span>
                       </label>
@@ -1794,7 +1794,7 @@ export const BlogPage: React.FC = () => {
             <span className="font-sans font-black tracking-widest text-[9px] uppercase">
               PERPLEXTA PLATFORM INSIGHTS SYSTEM
             </span>
-            <div className="flex items-center justify-center gap-2.5 text-[9px] text-emerald-500 font-bold">
+            <div className="flex items-center justify-center gap-2.5 text-[9px] text-accent font-bold">
               <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
               <span className="text-gray-500/20">•</span>
               <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
@@ -1829,7 +1829,7 @@ export const BlogPage: React.FC = () => {
                   setShowAdPopup(false);
                   localStorage.setItem('hide_blog_ad', 'true');
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
+                className="absolute top-4 right-4 text-gray-400 hover:text-accent hover:bg-[var(--bg-overlay)] p-1.5 rounded-[4px] transition-theme"
               >
                 <X size={16} />
               </button>
@@ -1837,14 +1837,14 @@ export const BlogPage: React.FC = () => {
               <div className="flex flex-col gap-4">
                 {/* Promo Badge */}
                 <div className="flex items-center gap-2">
-                  <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
+                  <span className="bg-accent/10 text-accent text-[10px] font-black px-2 py-0.5 rounded tracking-widest uppercase">
                     {language === 'ar' ? 'نشرة النخبة الفنية' : 'Elite Insight Club'}
                   </span>
                   <div className="h-px flex-1 bg-[var(--border-main)]/50" />
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                     <BookOpen size={24} />
                   </div>
                   <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
@@ -1875,7 +1875,7 @@ export const BlogPage: React.FC = () => {
                       localStorage.setItem('hide_blog_ad', 'true');
                       toast.success(language === 'ar' ? 'تم تسجيل بريدك بنجاح لتلقي نشرة النخبة!' : 'Successfully subscribed to Elite Insights!');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-emerald-500 text-black hover:bg-emerald-400 transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-accent text-black hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
                   >
                     <span>{language === 'ar' ? 'انضمام فوري' : 'Subscribe Now'}</span>
                     <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />

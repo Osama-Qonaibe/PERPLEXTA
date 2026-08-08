@@ -25,10 +25,10 @@ export const StudioPage = () => {
             </h1>
           </div>
           <nav className="flex items-center gap-6">
-            <a href="#overview" className="text-sm font-bold text-gray-400 hover:text-emerald-500 transition-colors">{language === 'ar' ? 'نظرة عامة' : 'Overview'}</a>
-            <a href="#api" className="text-sm font-bold text-gray-400 hover:text-emerald-500 transition-colors">{language === 'ar' ? 'الربط البرمجي' : 'API'}</a>
-            <a href="#subscription" className="text-sm font-bold text-gray-400 hover:text-emerald-500 transition-colors">{language === 'ar' ? 'الاشتراكات' : 'Subscription'}</a>
-            <a href="#legal" className="text-sm font-bold text-gray-400 hover:text-emerald-500 transition-colors">{language === 'ar' ? 'القوانين' : 'Legal'}</a>
+            <a href="#overview" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'نظرة عامة' : 'Overview'}</a>
+            <a href="#api" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'الربط البرمجي' : 'API'}</a>
+            <a href="#subscription" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'الاشتراكات' : 'Subscription'}</a>
+            <a href="#legal" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'القوانين' : 'Legal'}</a>
           </nav>
         </div>
       </header>
@@ -44,8 +44,8 @@ export const StudioPage = () => {
         </section>
 
         <section id="overview" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
-            <BookOpen className="text-emerald-500 mb-4" size={32} />
+          <div className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
+            <BookOpen className="text-accent mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الأدوات وسير العمل' : 'Tools & Workflows'}</h3>
             <p className="text-gray-400">
               {language === 'ar' 
@@ -53,8 +53,8 @@ export const StudioPage = () => {
                 : 'A sovereign platform designed for businesses and merchants to protect profits and eliminate financial waste. We combine intelligent AI content generation with local geo-targeted advertising for a pure, bot-free commercial environment.'}
             </p>
           </div>
-          <div id="api" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
-            <Cpu className="text-emerald-500 mb-4" size={32} />
+          <div id="api" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
+            <Cpu className="text-accent mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الربط البرمجي API' : 'API Integration'}</h3>
             <p className="text-gray-400">
               {language === 'ar'
@@ -62,8 +62,8 @@ export const StudioPage = () => {
                 : 'Your technical gateway to link your systems directly with Perplexta sovereign engines. Enjoy a flexible, secure API environment to automate commercial processes and integrate services with top-tier security.'}
             </p>
           </div>
-          <div id="subscription" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
-            <CreditCard className="text-emerald-500 mb-4" size={32} />
+          <div id="subscription" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
+            <CreditCard className="text-accent mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الاشتراكات' : 'Subscriptions'}</h3>
             <p className="text-gray-400">
               {language === 'ar'
@@ -71,8 +71,8 @@ export const StudioPage = () => {
                 : 'Say goodbye to high commissions and exhausting advertising expenses that eat your profits. Choose the plan that fits your project size and enjoy unlimited powers that put you at the top of the competition.'}
             </p>
           </div>
-          <div id="legal" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-emerald-500/50 transition-theme">
-            <ShieldCheck className="text-emerald-500 mb-4" size={32} />
+          <div id="legal" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
+            <ShieldCheck className="text-accent mb-4" size={32} />
             <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'القوانين' : 'Legal'}</h3>
             <p className="text-gray-400">
               {language === 'ar'
@@ -91,7 +91,7 @@ export const StudioPage = () => {
 
           <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-4 max-w-4xl mx-auto shadow-inner">
             <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-              <ShieldCheck className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <ShieldCheck className="w-5 h-5 text-accent " />
               <h3 className="text-base md:text-lg font-black">{language === 'ar' ? "حقوق الملكية الفكرية" : "Intellectual Property Rights"}</h3>
             </div>
             <p className="text-xs md:text-sm leading-relaxed text-gray-600 dark:text-gray-300 font-semibold font-sans">
