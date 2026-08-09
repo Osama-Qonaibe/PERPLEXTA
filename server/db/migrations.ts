@@ -468,6 +468,11 @@ export async function runSystemMaintenance() {
 }
 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
+  if (type === 'scratch') {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SCRATCH_MODE !== 'true') {
+      throw new Error('Scratch mode is strictly prohibited in production environments unless ALLOW_SCRATCH_MODE=true is explicitly set.');
+    }
+  }
   if (!pool) return;
 
   const client = await pool.connect();
