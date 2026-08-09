@@ -522,8 +522,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                         }}
                                         className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
                                           activeOptionsMenuChatId === chat.id 
-                                            ? 'bg-gray-50 dark:bg-gray-800 text-[var(--text-primary)]' 
-                                            : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800/80'
+                                            ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)]' 
+                                            : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
                                         }`}
                                         title={language === 'ar' ? 'خيارات' : 'Options'}
                                       >
@@ -553,8 +553,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                               }}
                                               className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
                                                 theme === 'dark' 
-                                                  ? 'text-gray-300 hover:bg-gray-800 hover:text-[var(--text-primary)]' 
-                                                  : 'text-gray-700 hover:bg-gray-100 hover:text-[var(--text-primary)]'
+                                                  ? 'text-gray-300 hover:bg-[var(--surface-inset)] hover:text-[var(--text-primary)]' 
+                                                  : 'text-gray-700 hover:bg-[var(--surface-inset)] hover:text-[var(--text-primary)]'
                                               }`}
                                             >
                                               <Edit2 size={12} className="text-gray-400" />
@@ -570,8 +570,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                               }}
                                               className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
                                                 theme === 'dark' 
-                                                  ? 'text-[var(--text-primary)] hover:bg-gray-800' 
-                                                  : 'text-[var(--text-primary)] hover:bg-gray-100'
+                                                  ? 'text-[var(--text-primary)] hover:bg-[var(--surface-inset)]' 
+                                                  : 'text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
                                               }`}
                                             >
                                               <Trash2 size={12} className="text-[var(--text-primary)]" />
@@ -599,7 +599,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 </div>
 
                 {isSidebarOpen && activeChatId && (
-                  <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10 flex flex-col transition-theme`}>
+                  <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-[var(--surface-subtle)] flex flex-col transition-theme`}>
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
                       <div className="flex items-center gap-1.5 min-w-0">
                         <BrainCircuit size={14} className="text-[var(--text-primary)] flex-shrink-0" />
@@ -611,7 +611,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         {!isEditingContext && (
                           <button
                             onClick={() => setIsEditingContext(true)}
-                            className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme"
+                            className="w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-theme"
                             title={language === 'ar' ? 'تعديل المعرفة' : 'Edit Context'}
                           >
                             <Edit2 size={11} />
@@ -619,7 +619,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         )}
                         <button
                           onClick={() => setIsContextCollapsed(!isContextCollapsed)}
-                          className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-150 dark:hover:bg-gray-800 transition-theme transform ${isContextCollapsed ? 'rotate-180' : ''}`}
+                          className={`w-5 h-5 flex items-center justify-center rounded-[4px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-theme transform ${isContextCollapsed ? 'rotate-180' : ''}`}
                         >
                           <ChevronLeft size={12} className="rotate-270" style={{ transform: isContextCollapsed ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
                         </button>
@@ -651,7 +651,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     setEditedContext(currentChat?.context_summary || '');
                                   }}
                                   disabled={isSavingContext}
-                                  className="text-[10px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-800 transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1"
+                                  className="text-[10px] text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-theme rounded-[4px] px-2 py-1 flex items-center gap-1"
                                 >
                                   <X size={10} />
                                   {language === 'ar' ? 'إلغاء' : 'Cancel'}
@@ -909,7 +909,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     }}
                   >
                     <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-gray-50 dark:group-hover:bg-gray-800`} />
+                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]`} />
                       <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]`}>
                         <User size={isMobile ? 16 : 18} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                       </div>
@@ -1009,7 +1009,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               <div className={`mt-3 p-3 rounded-lg text-xs font-bold leading-relaxed break-all text-start border ${
                 theme === 'dark' 
                   ? 'bg-[#212124] border-[#2d2d31] text-gray-200' 
-                  : 'bg-gray-50 border-gray-200 text-gray-800'
+                  : 'bg-[var(--surface-subtle)] border-gray-200 text-gray-800'
               }`}>
                 {deletingChatTitle}
               </div>
@@ -1021,7 +1021,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                     theme === 'dark' 
 					  ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-[var(--surface-inset)]'
                   }`}
                 >
                   {language === 'ar' ? 'إلغاء' : 'Cancel'}
@@ -1089,7 +1089,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   className={`w-full px-3 py-2 text-xs font-semibold leading-relaxed text-start border rounded-lg outline-none transition-theme ${
                     theme === 'dark' 
                       ? 'bg-[#212124] border-[#2d2d31] text-gray-100 focus:border-[var(--border-accent)]' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-[var(--border-accent)]'
+                      : 'bg-[var(--surface-subtle)] border-gray-200 text-gray-900 focus:border-[var(--border-accent)]'
                   }`}
                   autoFocus
                   placeholder={language === 'ar' ? 'اسم الجلسة...' : 'Session name...'}
@@ -1103,7 +1103,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
                     theme === 'dark' 
 					  ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                      : 'text-gray-500 hover:text-gray-800 hover:bg-[var(--surface-inset)]'
                   }`}
                 >
                   {language === 'ar' ? 'إلغاء' : 'Cancel'}
