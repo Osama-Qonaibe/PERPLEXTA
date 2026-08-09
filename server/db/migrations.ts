@@ -6,6 +6,21 @@ import crypto from 'crypto';
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
+/**
+ * TABLE_POOL_REGISTRY: Single Source of Truth for Database Table Allocation
+ * 
+ * Architectural Allocation Decisions:
+ * 1. Core Pool ('core'): Holds operational entities (users, chats, advertisements, bulletin board, marketplace).
+ *    - Note: bulletin_* and marketplace_* belong to 'core' because they hold direct FK relations and transactional constraints with 'users'.
+ * 2. Ledger Pool ('ledger'): Holds financial audit ledger entities (wallets, transactions, referrals, KYC, coupons).
+ * 3. External Pool ('external'): Holds secondary content entities (blog articles, ratings).
+ * 4. Security Pool ('security'): Holds threat monitoring and security logging entities.
+ * 
+ * MULTI-POOL QUERY RULE:
+ * Queries MUST NOT perform direct SQL JOINs across different physical database pools.
+ * Cross-pool data aggregation (e.g., combining ledger_transactions with user profiles) MUST be performed
+ * at the application service level by making separate pool queries and merging results in TypeScript.
+ */
 export const TABLE_POOL_REGISTRY: Record<string, 'core' | 'ledger' | 'external' | 'security'> = {
   // Core Database
   users: 'core',

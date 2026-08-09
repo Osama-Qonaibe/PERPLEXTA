@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../db/index.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 import { Advertisement } from '../db/types.js';
+import { formatDatabaseError } from '../utils/dbErrors.js';
 
 const router = express.Router();
 
@@ -66,44 +67,20 @@ export async function ensureAdsSeedData() {
 router.get('/', async (req, res) => {
   try {
     const position = (req.query.position as string) || 'sidebar';
-    let result;
-    try {
-      result = await pool.query(
-        `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
-                sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active, 
-                click_count, impression_count, created_at
-         FROM advertisements 
-         WHERE is_active = true AND position = $1
-         ORDER BY display_order ASC, created_at DESC`,
-        [position]
-      );
-    } catch (dbErr: any) {
-      const isMissingSchema = 
-        dbErr.message.includes('relation "advertisements" does not exist') || 
-        dbErr.message.includes('column "format" does not exist') ||
-        dbErr.message.includes('column "video_url" does not exist') ||
-        dbErr.message.includes('column "position" does not exist');
-
-      if (isMissingSchema) {
-        console.warn('[Ads API] Schema mismatch or missing column detected, seeding default ads...');
-        await ensureAdsSeedData();
-        result = await pool.query(
-          `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
-                  sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active, 
-                  click_count, impression_count, created_at
-           FROM advertisements 
-           WHERE is_active = true AND position = $1
-           ORDER BY display_order ASC, created_at DESC`,
-          [position]
-        );
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(
+      `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
+              sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active, 
+              click_count, impression_count, created_at
+       FROM advertisements 
+       WHERE is_active = true AND position = $1
+       ORDER BY display_order ASC, created_at DESC`,
+      [position]
+    );
     res.json({ success: true, ads: result.rows });
   } catch (error: any) {
     console.error('[Ads API] Error fetching active ads:', error.message);
-    res.status(500).json({ error: 'Failed to retrieve advertisements' });
+    const formatted = formatDatabaseError(error);
+    res.status(formatted.status).json({ success: false, error: formatted.error_ar, error_ar: formatted.error_ar, error_en: formatted.error_en, code: formatted.code });
   }
 });
 
@@ -153,7 +130,7 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       const pRes = await pool.query('SELECT * FROM advertisements ORDER BY id DESC');
       platformAds = pRes.rows;
     } catch (e) {
-      await ensureAdsSeedData();
+      platformAds = [];
     }
 
     let bulletinAds: any[] = [];
@@ -309,25 +286,14 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
  */
 router.get('/admin/list', authenticateAdmin, async (req, res) => {
   try {
-    let result;
-    try {
-      result = await pool.query(
-        'SELECT * FROM advertisements ORDER BY display_order ASC, id DESC'
-      );
-    } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "advertisements" does not exist')) {
-        await ensureAdsSeedData();
-        result = await pool.query(
-          'SELECT * FROM advertisements ORDER BY display_order ASC, id DESC'
-        );
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(
+      'SELECT * FROM advertisements ORDER BY display_order ASC, id DESC'
+    );
     res.json({ success: true, ads: result.rows });
   } catch (error: any) {
     console.error('[Admin Ads API] Error listing ads:', error.message);
-    res.status(500).json({ error: 'Failed to retrieve admin advertisements' });
+    const formatted = formatDatabaseError(error);
+    res.status(formatted.status).json({ success: false, error: formatted.error_ar, error_ar: formatted.error_ar, error_en: formatted.error_en, code: formatted.code });
   }
 });
 

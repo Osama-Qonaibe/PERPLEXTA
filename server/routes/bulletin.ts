@@ -4,6 +4,7 @@ import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { createNotification } from '../services/notifications.js';
 import { createChat, addChatMessage } from '../services/chat.js';
 import { io } from '../config/socket.js';
+import { formatDatabaseError } from '../utils/dbErrors.js';
 
 const router = express.Router();
 
@@ -229,23 +230,7 @@ router.get('/ads', async (req, res) => {
     const offsetIdx = params.length;
     query += ` LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
 
-    let result;
-    try {
-      result = await pool.query(query, params);
-    } catch (dbErr: any) {
-      if (
-        dbErr.code === '42P01' ||
-        dbErr.code === '42703' ||
-        dbErr.message?.includes('does not exist') ||
-        dbErr.message?.includes('column') ||
-        dbErr.message?.includes('relation')
-      ) {
-        await ensureBulletinSeedData();
-        result = await pool.query(query, params);
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(query, params);
 
     let likedAdIds = new Set<number>();
     let savedAdIds = new Set<number>();
@@ -1354,17 +1339,7 @@ router.get('/pages', async (req, res) => {
 
     query += ` ORDER BY followers_count DESC, id DESC`;
 
-    let result;
-    try {
-      result = await pool.query(query, params);
-    } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinSeedData();
-        result = await pool.query(query, params);
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(query, params);
 
     let followedPageIds = new Set<number>();
     if (currentUserId && result.rows.length > 0) {
@@ -1397,23 +1372,10 @@ router.get('/pages', async (req, res) => {
 router.get('/pages/my', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
-    let result;
-    try {
-      result = await pool.query(
-        'SELECT * FROM bulletin_pages WHERE user_id = $1 ORDER BY created_at DESC',
-        [userId]
-      );
-    } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinSeedData();
-        result = await pool.query(
-          'SELECT * FROM bulletin_pages WHERE user_id = $1 ORDER BY created_at DESC',
-          [userId]
-        );
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(
+      'SELECT * FROM bulletin_pages WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
 
     res.json({ success: true, pages: result.rows });
   } catch (error: any) {
@@ -1516,53 +1478,25 @@ router.post('/pages', authenticateToken, async (req: any, res) => {
       });
     }
 
-    let insertRes;
-    try {
-      insertRes = await pool.query(`
-        INSERT INTO bulletin_pages (
-          user_id, name, category, city, address, description,
-          avatar_url, cover_url, whatsapp_number, phone_number, website_url, is_verified
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)
-        RETURNING *
-      `, [
-        userId,
-        name.trim(),
-        category || 'تجارة إلكترونية / E-Commerce',
-        city || 'غزة',
-        address ? address.trim() : null,
-        description.trim(),
-        avatar_url.trim(),
-        cover_url.trim(),
-        whatsapp_number ? whatsapp_number.trim() : null,
-        phone_number ? phone_number.trim() : null,
-        website_url ? website_url.trim() : null
-      ]);
-    } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinSeedData();
-        insertRes = await pool.query(`
-          INSERT INTO bulletin_pages (
-            user_id, name, category, city, address, description,
-            avatar_url, cover_url, whatsapp_number, phone_number, website_url, is_verified
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)
-          RETURNING *
-        `, [
-          userId,
-          name.trim(),
-          category || 'تجارة إلكترونية / E-Commerce',
-          city || 'غزة',
-          address ? address.trim() : null,
-          description.trim(),
-          avatar_url.trim(),
-          cover_url.trim(),
-          whatsapp_number ? whatsapp_number.trim() : null,
-          phone_number ? phone_number.trim() : null,
-          website_url ? website_url.trim() : null
-        ]);
-      } else {
-        throw dbErr;
-      }
-    }
+    const insertRes = await pool.query(`
+      INSERT INTO bulletin_pages (
+        user_id, name, category, city, address, description,
+        avatar_url, cover_url, whatsapp_number, phone_number, website_url, is_verified
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, TRUE)
+      RETURNING *
+    `, [
+      userId,
+      name.trim(),
+      category || 'تجارة إلكترونية / E-Commerce',
+      city || 'غزة',
+      address ? address.trim() : null,
+      description.trim(),
+      avatar_url.trim(),
+      cover_url.trim(),
+      whatsapp_number ? whatsapp_number.trim() : null,
+      phone_number ? phone_number.trim() : null,
+      website_url ? website_url.trim() : null
+    ]);
 
     const createdPage = insertRes.rows[0];
 
@@ -1874,12 +1808,7 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
           ORDER BY m.created_at ASC
         `, [adId, userId, otherUserId]);
       } catch (dbErr: any) {
-        if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-          await ensureBulletinSeedData();
-          msgRes = { rows: [] };
-        } else {
-          throw dbErr;
-        }
+        msgRes = { rows: [] };
       }
       messages = msgRes.rows;
 
@@ -1965,47 +1894,22 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
 
     const encryptionHash = `AES256-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-    let insertRes;
-    try {
-      insertRes = await pool.query(`
-        INSERT INTO bulletin_ad_messages (
-          ad_id, sender_id, recipient_id, sender_name, sender_avatar, message, media_url, is_encrypted, encryption_hash, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'sent')
-        RETURNING *
-      `, [
-        adId,
-        senderId,
-        recipientId,
-        senderName,
-        senderAvatar,
-        message ? message.trim() : '',
-        media_url || null,
-        is_encrypted !== false,
-        encryptionHash
-      ]);
-    } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-        await ensureBulletinSeedData();
-        insertRes = await pool.query(`
-          INSERT INTO bulletin_ad_messages (
-            ad_id, sender_id, recipient_id, sender_name, sender_avatar, message, media_url, is_encrypted, encryption_hash, status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'sent')
-          RETURNING *
-        `, [
-          adId,
-          senderId,
-          recipientId,
-          senderName,
-          senderAvatar,
-          message ? message.trim() : '',
-          media_url || null,
-          is_encrypted !== false,
-          encryptionHash
-        ]);
-      } else {
-        throw dbErr;
-      }
-    }
+    const insertRes = await pool.query(`
+      INSERT INTO bulletin_ad_messages (
+        ad_id, sender_id, recipient_id, sender_name, sender_avatar, message, media_url, is_encrypted, encryption_hash, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'sent')
+      RETURNING *
+    `, [
+      adId,
+      senderId,
+      recipientId,
+      senderName,
+      senderAvatar,
+      message ? message.trim() : '',
+      media_url || null,
+      is_encrypted !== false,
+      encryptionHash
+    ]);
 
     const createdMsg = insertRes.rows[0];
 
@@ -2086,12 +1990,7 @@ router.get('/my-inquiries', authenticateToken, async (req: any, res) => {
         ORDER BY m.ad_id, CASE WHEN m.sender_id = $1 THEN m.recipient_id ELSE m.sender_id END, m.created_at DESC
       `, [userId]);
     } catch (dbErr: any) {
-      if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-        await ensureBulletinSeedData();
-        threadsRes = { rows: [] };
-      } else {
-        throw dbErr;
-      }
+      threadsRes = { rows: [] };
     }
 
     res.json({
@@ -2484,33 +2383,12 @@ router.get('/admin/export-schedule', authenticateAdmin, async (req, res) => {
  */
 router.get('/admin/list', authenticateAdmin, async (req, res) => {
   try {
-    let result;
-    try {
-      result = await pool.query(`
-        SELECT b.*, u.name as u_name, u.email as u_email, u.avatar as u_avatar
-        FROM bulletin_ads b
-        LEFT JOIN users u ON b.user_id = u.id
-        ORDER BY b.created_at DESC
-      `);
-    } catch (dbErr: any) {
-      if (
-        dbErr.code === '42P01' ||
-        dbErr.code === '42703' ||
-        dbErr.message?.includes('does not exist') ||
-        dbErr.message?.includes('column') ||
-        dbErr.message?.includes('relation')
-      ) {
-        await ensureBulletinSeedData();
-        result = await pool.query(`
-          SELECT b.*, u.name as u_name, u.email as u_email, u.avatar as u_avatar
-          FROM bulletin_ads b
-          LEFT JOIN users u ON b.user_id = u.id
-          ORDER BY b.created_at DESC
-        `);
-      } else {
-        throw dbErr;
-      }
-    }
+    const result = await pool.query(`
+      SELECT b.*, u.name as u_name, u.email as u_email, u.avatar as u_avatar
+      FROM bulletin_ads b
+      LEFT JOIN users u ON b.user_id = u.id
+      ORDER BY b.created_at DESC
+    `);
 
     const formatted = result.rows.map((row: any) => ({
       ...row,
