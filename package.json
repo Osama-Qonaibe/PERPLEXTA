@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "migrate:drop-forum": "tsx server/scripts/delete_forum_tables.ts",
     "clean": "rm -rf dist",
+    "check:colors": "node scripts/check-color-governance.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

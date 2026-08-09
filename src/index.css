@@ -2,37 +2,101 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+/* ==========================================================================
+   LAYER 1: BASE TOKENS (Raw scale values - never used directly in code)
+   ========================================================================== */
 :root {
+  --scale-gray-0: #ffffff;
+  --scale-gray-1: #f6f8fa;
+  --scale-gray-2: #eaeef2;
+  --scale-gray-3: #d1d9e0;
+  --scale-gray-4: #99a1af;
+  --scale-gray-5: #6b7280;
+  --scale-gray-6: #454c53;
+  --scale-gray-7: #24292f;
+  --scale-gray-8: #14171a;
+
+  --scale-slate-accent: #334155;
+  --scale-slate-accent-hover: #1e293b;
+  --scale-slate-accent-active: #0f172a;
+
+  --scale-green-emphasis: #1a7f37;
+  --scale-green-muted: #dafbe1;
+  --scale-red-emphasis: #cf222e;
+  --scale-red-muted: #ffebe9;
+  --scale-amber-emphasis: #9a6700;
+  --scale-amber-muted: #fff8c5;
+  --scale-blue-emphasis: #0969da;
+  --scale-blue-muted: #ddf4ff;
+
   --theme-transition-duration: 180ms;
   --theme-transition-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --ms-duration: var(--theme-transition-duration);
   --ms-easing: var(--theme-transition-easing);
 
-  --bg-base: var(--pwa-bg-color, #FFFFFF);
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F7F7F7;
-  --bg-dropdown: #FFFFFF;
-  --bg-hover: #EFEFEF;
-  --bg-surface: #FFFFFF;
-  --bg-input: #F7F7F7;
-  
-  --text-primary: #000000;
-  --text-secondary: #52525b;
-  --text-muted: #71717a;
-  
-  --border-subtle: #E4E4E7;
-  --border-main: #D4D4D8;
-  --border-perplexta: #D4D4D8;
-  --border: var(--border-subtle);
-  --border-accent: #000000;
-  
-  --accent-accent: #000000;
-  --accent-primary: #000000;
-  --accent-glow: transparent;
-  --danger: #000000;
-  --warning: #52525b;
+  /* ==========================================================================
+     LAYER 2: FUNCTIONAL TOKENS (Light Mode)
+     ========================================================================== */
+  --bg-default: var(--scale-gray-0);
+  --bg-muted: var(--scale-gray-1);
+  --bg-inset: var(--scale-gray-1);
+  --bg-overlay: var(--scale-gray-2);
 
-  --bg-overlay: rgba(0, 0, 0, 0.05);
+  --border-default: var(--scale-gray-3);
+  --border-muted: color-mix(in srgb, var(--scale-gray-3) 70%, transparent);
+
+  --fg-default: var(--scale-gray-7);
+  --fg-muted: var(--scale-gray-5);
+  --fg-disabled: var(--scale-gray-4);
+  --fg-on-emphasis: #ffffff;
+
+  /* Perplexta Accent (Slate/Gray) */
+  --fg-accent: var(--scale-slate-accent);
+  --bg-accent-emphasis: var(--scale-slate-accent);
+  --bg-accent-muted: color-mix(in srgb, var(--scale-slate-accent) 10%, transparent);
+  --border-accent-emphasis: var(--scale-slate-accent);
+  --focus-outline: var(--scale-slate-accent);
+
+  /* Semantic Statuses */
+  --fg-success: var(--scale-green-emphasis);
+  --bg-success-muted: var(--scale-green-muted);
+  --bg-success-emphasis: var(--scale-green-emphasis);
+
+  --fg-danger: var(--scale-red-emphasis);
+  --bg-danger-muted: var(--scale-red-muted);
+  --bg-danger-emphasis: var(--scale-red-emphasis);
+
+  --fg-attention: var(--scale-amber-emphasis);
+  --bg-attention-muted: var(--scale-amber-muted);
+  --bg-attention-emphasis: var(--scale-amber-emphasis);
+
+  --fg-info: var(--scale-blue-emphasis);
+  --bg-info-muted: var(--scale-blue-muted);
+
+  /* Legacy variable bindings */
+  --bg-base: var(--bg-default);
+  --bg-primary: var(--bg-default);
+  --bg-secondary: var(--bg-muted);
+  --bg-dropdown: var(--bg-default);
+  --bg-hover: var(--bg-overlay);
+  --bg-surface: var(--bg-default);
+  --bg-input: var(--bg-inset);
+
+  --text-primary: var(--fg-default);
+  --text-secondary: var(--fg-muted);
+  --text-muted: var(--fg-disabled);
+
+  --border-subtle: var(--border-muted);
+  --border-main: var(--border-default);
+  --border-perplexta: var(--border-default);
+  --border: var(--border-default);
+  --border-accent: var(--border-accent-emphasis);
+
+  --accent-accent: var(--fg-accent);
+  --accent-primary: var(--fg-accent);
+  --accent-glow: transparent;
+  --danger: var(--fg-danger);
+  --warning: var(--fg-attention);
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -52,64 +116,131 @@
   color-scheme: light;
 }
 
+/* ==========================================================================
+   LAYER 2: FUNCTIONAL TOKENS (Dark Mode)
+   ========================================================================== */
 .dark,
 [data-theme="dark"] {
-  --bg-base: var(--pwa-bg-color, #000000);
-  --bg-primary: #0A0A0C;
-  --bg-secondary: #121215;
-  --bg-dropdown: #121215;
-  --bg-hover: #1a1a1e;
-  --bg-surface: #0A0A0C;
-  --bg-input: #121215;
+  --bg-default: #0d1117;
+  --bg-muted: #151b23;
+  --bg-inset: #151b23;
+  --bg-overlay: #1c2128;
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --border-default: #3d444d;
+  --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
 
-  --border-subtle: #27272a;
-  --border-main: #27272a;
-  --border-perplexta: #27272a;
-  --border: var(--border-main);
-  --border-accent: #FFFFFF;
+  --fg-default: #f0f6fc;
+  --fg-muted: #9198a1;
+  --fg-disabled: #656d76;
+  --fg-on-emphasis: #ffffff;
 
-  --accent-accent: #FFFFFF;
-  --accent-primary: #FFFFFF;
+  --fg-accent: #94a3b8;
+  --bg-accent-emphasis: #64748b;
+  --bg-accent-muted: color-mix(in srgb, #64748b 15%, transparent);
+  --border-accent-emphasis: #64748b;
+  --focus-outline: #94a3b8;
+
+  --fg-success: #3fb950;
+  --bg-success-muted: color-mix(in srgb, #3fb950 15%, transparent);
+  --bg-success-emphasis: #238636;
+
+  --fg-danger: #f85149;
+  --bg-danger-muted: color-mix(in srgb, #f85149 15%, transparent);
+  --bg-danger-emphasis: #da3633;
+
+  --fg-attention: #d29922;
+  --bg-attention-muted: color-mix(in srgb, #d29922 15%, transparent);
+  --bg-attention-emphasis: #9e6a03;
+
+  --fg-info: #58a6ff;
+  --bg-info-muted: color-mix(in srgb, #58a6ff 15%, transparent);
+
+  --bg-base: var(--bg-default);
+  --bg-primary: var(--bg-default);
+  --bg-secondary: var(--bg-muted);
+  --bg-dropdown: var(--bg-muted);
+  --bg-hover: var(--bg-overlay);
+  --bg-surface: var(--bg-default);
+  --bg-input: var(--bg-inset);
+
+  --text-primary: var(--fg-default);
+  --text-secondary: var(--fg-muted);
+  --text-muted: var(--fg-disabled);
+
+  --border-subtle: var(--border-muted);
+  --border-main: var(--border-default);
+  --border-perplexta: var(--border-default);
+  --border: var(--border-default);
+  --border-accent: var(--border-accent-emphasis);
+
+  --accent-accent: var(--fg-accent);
+  --accent-primary: var(--fg-accent);
   --accent-glow: transparent;
-  --danger: #FFFFFF;
-  --warning: #a1a1aa;
-
-  --bg-overlay: rgba(255, 255, 255, 0.06);
+  --danger: var(--fg-danger);
+  --warning: var(--fg-attention);
 
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.light) {
-    --bg-base: var(--pwa-bg-color, #000000);
-    --bg-primary: #0A0A0C;
-    --bg-secondary: #121215;
-    --bg-dropdown: #121215;
-    --bg-hover: #1a1a1e;
-    --bg-surface: #0A0A0C;
-    --bg-input: #121215;
+    --bg-default: #0d1117;
+    --bg-muted: #151b23;
+    --bg-inset: #151b23;
+    --bg-overlay: #1c2128;
 
-    --text-primary: #FFFFFF;
-    --text-secondary: #a1a1aa;
-    --text-muted: #71717a;
+    --border-default: #3d444d;
+    --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
 
-    --border-subtle: #27272a;
-    --border-main: #27272a;
-    --border-perplexta: #27272a;
-    --border: var(--border-main);
-    --border-accent: #FFFFFF;
+    --fg-default: #f0f6fc;
+    --fg-muted: #9198a1;
+    --fg-disabled: #656d76;
+    --fg-on-emphasis: #ffffff;
 
-    --accent-accent: #FFFFFF;
-    --accent-primary: #FFFFFF;
+    --fg-accent: #94a3b8;
+    --bg-accent-emphasis: #64748b;
+    --bg-accent-muted: color-mix(in srgb, #64748b 15%, transparent);
+    --border-accent-emphasis: #64748b;
+    --focus-outline: #94a3b8;
+
+    --fg-success: #3fb950;
+    --bg-success-muted: color-mix(in srgb, #3fb950 15%, transparent);
+    --bg-success-emphasis: #238636;
+
+    --fg-danger: #f85149;
+    --bg-danger-muted: color-mix(in srgb, #f85149 15%, transparent);
+    --bg-danger-emphasis: #da3633;
+
+    --fg-attention: #d29922;
+    --bg-attention-muted: color-mix(in srgb, #d29922 15%, transparent);
+    --bg-attention-emphasis: #9e6a03;
+
+    --fg-info: #58a6ff;
+    --bg-info-muted: color-mix(in srgb, #58a6ff 15%, transparent);
+
+    --bg-base: var(--bg-default);
+    --bg-primary: var(--bg-default);
+    --bg-secondary: var(--bg-muted);
+    --bg-dropdown: var(--bg-muted);
+    --bg-hover: var(--bg-overlay);
+    --bg-surface: var(--bg-default);
+    --bg-input: var(--bg-inset);
+
+    --text-primary: var(--fg-default);
+    --text-secondary: var(--fg-muted);
+    --text-muted: var(--fg-disabled);
+
+    --border-subtle: var(--border-muted);
+    --border-main: var(--border-default);
+    --border-perplexta: var(--border-default);
+    --border: var(--border-default);
+    --border-accent: var(--border-accent-emphasis);
+
+    --accent-accent: var(--fg-accent);
+    --accent-primary: var(--fg-accent);
     --accent-glow: transparent;
-    --danger: #FFFFFF;
-    --warning: #a1a1aa;
-
-    --bg-overlay: rgba(255, 255, 255, 0.06);
+    --danger: var(--fg-danger);
+    --warning: var(--fg-attention);
 
     color-scheme: dark;
   }
@@ -156,40 +287,75 @@
   --radius-custom: var(--radius);
 }
 
-@layer utilities {
-  .dark .bg-accent { color: #000000 !important; }
-  .dark .bg-accent.text-white { color: #000000 !important; }
-  .dark .bg-accent .text-white { color: #000000 !important; }
+@layer components {
   .btn-primary {
-    @apply bg-accent text-white font-medium transition-all shadow-none;
-    transition-duration: var(--ms-duration);
-    transition-timing-function: var(--ms-easing);
+    background-color: var(--bg-accent-emphasis);
+    color: var(--fg-on-emphasis);
+    border: 1px solid transparent;
+    transition: background-color 120ms var(--ms-easing);
     border-radius: var(--radius-sm);
+    font-weight: 500;
   }
-  
+  .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--bg-accent-emphasis) 85%, black);
+  }
+  .btn-primary:active {
+    background-color: color-mix(in srgb, var(--bg-accent-emphasis) 70%, black);
+  }
+
+  .btn-default {
+    background-color: var(--bg-muted);
+    color: var(--fg-default);
+    border: 1px solid var(--border-default);
+    transition: background-color 120ms var(--ms-easing);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  .btn-default:hover {
+    background-color: var(--bg-overlay);
+  }
+
   .btn-secondary {
-    @apply bg-surface border border-border-main text-primary font-medium transition-all hover:bg-input shadow-none;
-    transition-duration: var(--ms-duration);
-    transition-timing-function: var(--ms-easing);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-main);
+    transition: background-color 120ms var(--ms-easing);
     border-radius: var(--radius-sm);
+    font-weight: 500;
   }
-  
-  .btn-ghost {
-    @apply bg-transparent text-secondary hover:text-primary hover:bg-input transition-all;
-    transition-duration: var(--ms-duration);
-    transition-timing-function: var(--ms-easing);
-    border-radius: var(--radius-sm);
+  .btn-secondary:hover {
+    background-color: var(--bg-hover);
   }
-  
+
   .btn-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--danger);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    @apply font-medium transition-all hover:bg-[rgba(239,68,68,0.2)];
-    transition-duration: var(--ms-duration);
-    transition-timing-function: var(--ms-easing);
+    background-color: var(--bg-muted);
+    color: var(--fg-danger);
+    border: 1px solid var(--border-default);
+    transition: all 120ms var(--ms-easing);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  .btn-danger:hover {
+    background-color: var(--bg-danger-emphasis);
+    color: var(--fg-on-emphasis);
+    border-color: transparent;
+  }
+
+  .btn-invisible, .btn-ghost {
+    background-color: transparent;
+    color: var(--fg-default);
+    border: 1px solid transparent;
+    transition: background-color 120ms var(--ms-easing);
     border-radius: var(--radius-sm);
   }
+  .btn-invisible:hover, .btn-ghost:hover {
+    background-color: var(--bg-hover);
+  }
+}
+
+@layer utilities {
+  .dark .bg-accent { color: #ffffff !important; }
+  .dark .bg-accent.text-white { color: #ffffff !important; }
 
   /* Standardized Monochrome Text Hover Utilities */
   .text-hover-primary {
