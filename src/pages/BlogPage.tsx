@@ -410,9 +410,7 @@ export const BlogPage: React.FC = () => {
 
   return (
     <div
-      className={`h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
-        isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-[var(--bg-base)] text-gray-900'
-      }`}
+      className="h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none bg-[var(--surface-page)] text-[var(--text-primary)]"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div className={`absolute inset-0 pointer-events-none opacity-[0.25] ${

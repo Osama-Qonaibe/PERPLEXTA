@@ -162,19 +162,30 @@ export async function updateSystemSettings(settings: any) {
     }
   }
 
-  // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
-  const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
-    ? (settings.logo_url.startsWith('data:') ? settings.logo_url : normalizeMediaUrl(settings.logo_url)) 
-    : existing.logo_url;
-  const logo_light_url = (settings.logo_light_url !== undefined && settings.logo_light_url !== null && settings.logo_light_url !== '') 
-    ? (settings.logo_light_url.startsWith('data:') ? settings.logo_light_url : normalizeMediaUrl(settings.logo_light_url)) 
-    : existing.logo_light_url;
-  const favicon_url = (settings.favicon_url !== undefined && settings.favicon_url !== null && settings.favicon_url !== '') 
-    ? (settings.favicon_url.startsWith('data:') ? settings.favicon_url : normalizeMediaUrl(settings.favicon_url)) 
-    : existing.favicon_url;
-  const seo_image_url = (settings.seo_image_url !== undefined && settings.seo_image_url !== null && settings.seo_image_url !== '') 
-    ? (settings.seo_image_url.startsWith('data:') ? settings.seo_image_url : normalizeMediaUrl(settings.seo_image_url)) 
-    : existing.seo_image_url;
+  // Handle image URLs cleanly: if key is in payload (even if null/empty), update it (allowing deletion); if undefined, preserve existing.
+  const logo_url = (settings.logo_url !== undefined)
+    ? (settings.logo_url && String(settings.logo_url).trim() !== '' 
+        ? (String(settings.logo_url).startsWith('data:') ? String(settings.logo_url) : normalizeMediaUrl(String(settings.logo_url))) 
+        : null)
+    : (existing ? existing.logo_url : null);
+
+  const logo_light_url = (settings.logo_light_url !== undefined)
+    ? (settings.logo_light_url && String(settings.logo_light_url).trim() !== '' 
+        ? (String(settings.logo_light_url).startsWith('data:') ? String(settings.logo_light_url) : normalizeMediaUrl(String(settings.logo_light_url))) 
+        : null)
+    : (existing ? existing.logo_light_url : null);
+
+  const favicon_url = (settings.favicon_url !== undefined)
+    ? (settings.favicon_url && String(settings.favicon_url).trim() !== '' 
+        ? (String(settings.favicon_url).startsWith('data:') ? String(settings.favicon_url) : normalizeMediaUrl(String(settings.favicon_url))) 
+        : null)
+    : (existing ? existing.favicon_url : null);
+
+  const seo_image_url = (settings.seo_image_url !== undefined)
+    ? (settings.seo_image_url && String(settings.seo_image_url).trim() !== '' 
+        ? (String(settings.seo_image_url).startsWith('data:') ? String(settings.seo_image_url) : normalizeMediaUrl(String(settings.seo_image_url))) 
+        : null)
+    : (existing ? existing.seo_image_url : null);
   
   await pool.query(`
     UPDATE system_settings SET 

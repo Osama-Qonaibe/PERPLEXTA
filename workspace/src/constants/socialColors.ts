@@ -19,4 +19,14 @@ export const SOCIAL_COLORS = {
     base: '#111827',
     dark: '#E5E7EB',
   },
+  google: {
+    base: '#EA4335',
+    dark: '#C5221F',
+  },
+  github: {
+    base: '#24292F',
+    dark: '#0D1117',
+  },
 } as const;
+
+export type SocialProvider = keyof typeof SOCIAL_COLORS;

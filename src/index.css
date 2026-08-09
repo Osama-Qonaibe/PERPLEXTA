@@ -37,9 +37,15 @@
   /* ==========================================================================
      LAYER 2: FUNCTIONAL TOKENS (Light Mode)
      ========================================================================== */
-  --bg-default: var(--scale-gray-0);
-  --bg-muted: var(--scale-gray-1);
-  --bg-inset: var(--scale-gray-1);
+  /* Surface System Tokens (Light Mode) */
+  --surface-page: #f8fafc;
+  --surface-card: #ffffff;
+  --surface-subtle: #f1f5f9;
+  --surface-inset: #e2e8f0;
+
+  --bg-default: var(--surface-card);
+  --bg-muted: var(--surface-subtle);
+  --bg-inset: var(--surface-inset);
   --bg-overlay: var(--scale-gray-2);
 
   --border-default: var(--scale-gray-3);
@@ -74,13 +80,13 @@
   --bg-info-muted: var(--scale-blue-muted);
 
   /* Legacy variable bindings */
-  --bg-base: var(--bg-default);
-  --bg-primary: var(--bg-default);
-  --bg-secondary: var(--bg-muted);
-  --bg-dropdown: var(--bg-default);
-  --bg-hover: var(--bg-overlay);
-  --bg-surface: var(--bg-default);
-  --bg-input: var(--bg-inset);
+  --bg-base: var(--surface-page);
+  --bg-primary: var(--surface-page);
+  --bg-secondary: var(--surface-subtle);
+  --bg-dropdown: var(--surface-card);
+  --bg-hover: var(--surface-subtle);
+  --bg-surface: var(--surface-card);
+  --bg-input: var(--surface-inset);
 
   --text-primary: var(--fg-default);
   --text-secondary: var(--fg-muted);
@@ -121,10 +127,16 @@
    ========================================================================== */
 .dark,
 [data-theme="dark"] {
-  --bg-default: #0d1117;
-  --bg-muted: #151b23;
-  --bg-inset: #151b23;
-  --bg-overlay: #1c2128;
+  /* Surface System Tokens (Dark Mode) */
+  --surface-page: #0b0b0d;
+  --surface-card: #151517;
+  --surface-subtle: #1c1c1f;
+  --surface-inset: #232326;
+
+  --bg-default: var(--surface-card);
+  --bg-muted: var(--surface-subtle);
+  --bg-inset: var(--surface-inset);
+  --bg-overlay: #232328;
 
   --border-default: #3d444d;
   --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
@@ -155,13 +167,13 @@
   --fg-info: #58a6ff;
   --bg-info-muted: color-mix(in srgb, #58a6ff 15%, transparent);
 
-  --bg-base: var(--bg-default);
-  --bg-primary: var(--bg-default);
-  --bg-secondary: var(--bg-muted);
-  --bg-dropdown: var(--bg-muted);
-  --bg-hover: var(--bg-overlay);
-  --bg-surface: var(--bg-default);
-  --bg-input: var(--bg-inset);
+  --bg-base: var(--surface-page);
+  --bg-primary: var(--surface-page);
+  --bg-secondary: var(--surface-subtle);
+  --bg-dropdown: var(--surface-card);
+  --bg-hover: var(--surface-subtle);
+  --bg-surface: var(--surface-card);
+  --bg-input: var(--surface-inset);
 
   --text-primary: var(--fg-default);
   --text-secondary: var(--fg-muted);
@@ -184,10 +196,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.light) {
-    --bg-default: #0d1117;
-    --bg-muted: #151b23;
-    --bg-inset: #151b23;
-    --bg-overlay: #1c2128;
+    /* Surface System Tokens (Dark Mode) */
+    --surface-page: #0b0b0d;
+    --surface-card: #151517;
+    --surface-subtle: #1c1c1f;
+    --surface-inset: #232326;
+
+    --bg-default: var(--surface-card);
+    --bg-muted: var(--surface-subtle);
+    --bg-inset: var(--surface-inset);
+    --bg-overlay: #232328;
 
     --border-default: #3d444d;
     --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
@@ -218,13 +236,13 @@
     --fg-info: #58a6ff;
     --bg-info-muted: color-mix(in srgb, #58a6ff 15%, transparent);
 
-    --bg-base: var(--bg-default);
-    --bg-primary: var(--bg-default);
-    --bg-secondary: var(--bg-muted);
-    --bg-dropdown: var(--bg-muted);
-    --bg-hover: var(--bg-overlay);
-    --bg-surface: var(--bg-default);
-    --bg-input: var(--bg-inset);
+    --bg-base: var(--surface-page);
+    --bg-primary: var(--surface-page);
+    --bg-secondary: var(--surface-subtle);
+    --bg-dropdown: var(--surface-card);
+    --bg-hover: var(--surface-subtle);
+    --bg-surface: var(--surface-card);
+    --bg-input: var(--surface-inset);
 
     --text-primary: var(--fg-default);
     --text-secondary: var(--fg-muted);

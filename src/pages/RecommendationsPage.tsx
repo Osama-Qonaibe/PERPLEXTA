@@ -120,7 +120,7 @@ export const RecommendationsPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
         {/* User Interaction & Vector Intelligence Banner */}
-        <div className="p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-gray-500/10[0.04] via-[var(--bg-surface)] to-teal-500/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-sm">
+        <div className="p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-gray-500/10[0.04] via-[var(--bg-surface)] to-[var(--fg-accent)]/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-sm">
           <div className="flex items-start gap-3.5 min-w-0">
             <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 mt-0.5">
               <Activity size={22} />
@@ -213,7 +213,7 @@ export const RecommendationsPage: React.FC = () => {
         <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+              <div className="w-8 h-8 rounded-lg bg-[var(--bg-attention-muted)] border border-[var(--border-default)] flex items-center justify-center text-[var(--fg-attention)]">
                 <Megaphone size={18} />
               </div>
               <div>

@@ -14,14 +14,14 @@ export function resolveImageUrl(url?: string | null, type: 'avatar' | 'cover' | 
   if (!url || typeof url !== 'string' || url.trim() === '') {
     if (type === 'avatar') return DEFAULT_AVATAR;
     if (type === 'cover') return DEFAULT_COVER;
-    return DEFAULT_AVATAR;
+    return '';
   }
 
   const resolved = getMediaUrl(url);
   if (!resolved) {
     if (type === 'avatar') return DEFAULT_AVATAR;
     if (type === 'cover') return DEFAULT_COVER;
-    return DEFAULT_AVATAR;
+    return '';
   }
 
   return resolved;

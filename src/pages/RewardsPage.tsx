@@ -20,7 +20,7 @@ const getTxTypeBadgeClass = (type: string, points: number, amount: number) => {
     return 'bg-rose-500/10 text-rose-500 border border-rose-500/20';
   }
   if (type === 'tool_usage_hold') {
-    return 'bg-amber-500/10 text-amber-500 border border-amber-500/20';
+    return 'bg-[var(--bg-attention-muted)] text-[var(--fg-attention)] border border-[var(--border-default)]';
   }
   if (type === 'tool_usage_reconcile') {
     return isPositive 
@@ -1573,7 +1573,7 @@ export const RewardsPage: React.FC = () => {
                       };
                     } else if (friend.deposit_status === 'pending') {
                       depBadgeProps = {
-                        bg: 'bg-amber-500/10 border-amber-500/20 text-amber-500 animate-pulse',
+                        bg: 'bg-[var(--bg-attention-muted)] border-[var(--border-default)] text-[var(--fg-attention)]',
                         label: dir === 'rtl' ? 'قيد المراجعة اليدوية' : 'Under Review'
                       };
                     } else if (friend.deposit_status === 'rejected') {
@@ -1585,7 +1585,7 @@ export const RewardsPage: React.FC = () => {
 
                     // Decide referral reward / status props
                     let refStatusProps = {
-                      bg: 'bg-amber-500/10 text-amber-500 border border-amber-500/20',
+                      bg: 'bg-[var(--bg-attention-muted)] text-[var(--fg-attention)] border border-[var(--border-default)]',
                       label: dir === 'rtl' ? 'قيد الانتظار' : 'Pending Activation'
                     };
                     if (friend.referral_status === 'active') {

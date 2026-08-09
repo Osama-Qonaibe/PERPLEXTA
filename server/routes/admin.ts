@@ -3403,15 +3403,7 @@ router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), 
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    let imageUrl = normalizeMediaUrl(optResult.fileUrl);
-    try {
-      const filePath = path.join(process.cwd(), optResult.fileUrl.startsWith('/') ? optResult.fileUrl.slice(1) : optResult.fileUrl);
-      const fileBuffer = await fs.readFile(filePath);
-      const mime = optResult.format === 'webp' ? 'image/webp' : (req.file.mimetype || 'image/png');
-      imageUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
-    } catch (readErr) {
-      console.warn('[AssetUpload] Failed to convert image to base64 data URI, using URL fallback:', readErr);
-    }
+    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
     res.json({ success: true, imageUrl });
   } catch (error: any) {
     console.error('[AssetUpload] Upload failed:', error);
@@ -3425,15 +3417,7 @@ router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    let imageUrl = normalizeMediaUrl(optResult.fileUrl);
-    try {
-      const filePath = path.join(process.cwd(), optResult.fileUrl.startsWith('/') ? optResult.fileUrl.slice(1) : optResult.fileUrl);
-      const fileBuffer = await fs.readFile(filePath);
-      const mime = optResult.format === 'webp' ? 'image/webp' : (req.file.mimetype || 'image/png');
-      imageUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
-    } catch (readErr) {
-      console.warn('[SEOImageUpload] Failed to convert image to base64 data URI, using URL fallback:', readErr);
-    }
+    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
     res.json({ success: true, imageUrl });
   } catch (error: any) {
     console.error('[SEOImageUpload] Upload failed:', error);

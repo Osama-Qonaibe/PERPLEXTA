@@ -338,8 +338,8 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           onClick={() => setActiveMetric('clicks')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'clicks'
-              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
+              ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
+              : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
@@ -354,8 +354,8 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           onClick={() => setActiveMetric('matchScore')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'matchScore'
-              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
+              ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
+              : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
@@ -370,8 +370,8 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           onClick={() => setActiveMetric('impressions')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'impressions'
-              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
+              ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
+              : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
@@ -386,8 +386,8 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           onClick={() => setActiveMetric('conversions')}
           className={`p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'conversions'
-              ? 'border-accent bg-accent/10 shadow-md shadow-none ring-1 ring-accent-500/30'
-              : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/30'
+              ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
+              : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">

@@ -142,7 +142,7 @@ const getHighlightDetails = (tag: string, className?: string) => {
       return {
         labelAr: 'رائج',
         labelEn: 'Trending',
-        colorClass: 'bg-[var(--bg-surface)] border-[var(--border-accent)] text-[var(--text-primary)] shadow-sm animate-pulse',
+        colorClass: 'bg-[var(--surface-card)] border-[var(--border-accent)] text-[var(--text-primary)] shadow-sm',
         icon: <Flame className={className || "w-2.5 h-2.5"} strokeWidth={3} />
       };
     case 'exclusive':
@@ -1574,9 +1574,7 @@ export const MarketplacePage: React.FC = () => {
 
   return (
     <div
-      className={`h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none ${
-        isThemeDark ? 'bg-[#050505] text-white' : 'bg-[var(--bg-base)] text-gray-900'
-      }`}
+      className="h-full w-full flex flex-col overflow-hidden relative transition-colors duration-300 select-none bg-[var(--surface-page)] text-[var(--text-primary)]"
       dir={dir}
     >
       <div className={`absolute inset-0 pointer-events-none opacity-[0.25] ${
@@ -1730,13 +1728,13 @@ export const MarketplacePage: React.FC = () => {
                       isThemeDark ? 'bg-black/45 border-white/10 focus:border-[var(--border-accent)] text-gray-200' : 'bg-white border-gray-250 focus:border-[var(--border-accent)] text-gray-750'
                     }`}
                   >
-                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="recent">
+                    <option className="bg-[var(--surface-card)] text-[var(--text-primary)]" value="recent">
                       {t.sortByRecent}
                     </option>
-                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="price-asc">
+                    <option className="bg-[var(--surface-card)] text-[var(--text-primary)]" value="price-asc">
                       {t.sortByPriceAsc}
                     </option>
-                    <option className={isThemeDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-gray-800'} value="price-desc">
+                    <option className="bg-[var(--surface-card)] text-[var(--text-primary)]" value="price-desc">
                       {t.sortByPriceDesc}
                     </option>
                   </select>

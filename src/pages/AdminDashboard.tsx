@@ -12133,6 +12133,20 @@ const SystemSettingsView = ({
           <div
             className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
+            {logoBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setLogoBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف الشعار" : "Remove Logo"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
             <input
               type="file"
               accept="image/*"
@@ -12190,6 +12204,20 @@ const SystemSettingsView = ({
           <div
             className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
+            {logoLightBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setLogoLightBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف الشعار الفاتح" : "Remove Light Logo"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
             <input
               type="file"
               accept="image/*"
@@ -12247,6 +12275,20 @@ const SystemSettingsView = ({
           <div
             className={`p-6 rounded-lg border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
           >
+            {faviconBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setFaviconBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف أيقونة المفضلة" : "Remove Favicon"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
             <input
               type="file"
               accept="image/*"
