@@ -10,9 +10,9 @@ const router = express.Router();
 let isBulletinTablesEnsured = false;
 
 /**
- * Self-healing helper: ensures bulletin board tables exist
+ * Seed data helper: ensures default initial bulletin board data exists
  */
-export async function ensureBulletinTables() {
+export async function ensureBulletinSeedData() {
   if (isBulletinTablesEnsured || !pool) return;
   console.log('[Bulletin] Ensuring bulletin initial data state...');
   try {
@@ -240,7 +240,7 @@ router.get('/ads', async (req, res) => {
         dbErr.message?.includes('column') ||
         dbErr.message?.includes('relation')
       ) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         result = await pool.query(query, params);
       } else {
         throw dbErr;
@@ -1359,7 +1359,7 @@ router.get('/pages', async (req, res) => {
       result = await pool.query(query, params);
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         result = await pool.query(query, params);
       } else {
         throw dbErr;
@@ -1405,7 +1405,7 @@ router.get('/pages/my', authenticateToken, async (req: any, res) => {
       );
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         result = await pool.query(
           'SELECT * FROM bulletin_pages WHERE user_id = $1 ORDER BY created_at DESC',
           [userId]
@@ -1539,7 +1539,7 @@ router.post('/pages', authenticateToken, async (req: any, res) => {
       ]);
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "bulletin_pages" does not exist')) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         insertRes = await pool.query(`
           INSERT INTO bulletin_pages (
             user_id, name, category, city, address, description,
@@ -1875,7 +1875,7 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
         `, [adId, userId, otherUserId]);
       } catch (dbErr: any) {
         if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-          await ensureBulletinTables();
+          await ensureBulletinSeedData();
           msgRes = { rows: [] };
         } else {
           throw dbErr;
@@ -1985,7 +1985,7 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
       ]);
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         insertRes = await pool.query(`
           INSERT INTO bulletin_ad_messages (
             ad_id, sender_id, recipient_id, sender_name, sender_avatar, message, media_url, is_encrypted, encryption_hash, status
@@ -2087,7 +2087,7 @@ router.get('/my-inquiries', authenticateToken, async (req: any, res) => {
       `, [userId]);
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "bulletin_ad_messages" does not exist')) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         threadsRes = { rows: [] };
       } else {
         throw dbErr;
@@ -2500,7 +2500,7 @@ router.get('/admin/list', authenticateAdmin, async (req, res) => {
         dbErr.message?.includes('column') ||
         dbErr.message?.includes('relation')
       ) {
-        await ensureBulletinTables();
+        await ensureBulletinSeedData();
         result = await pool.query(`
           SELECT b.*, u.name as u_name, u.email as u_email, u.avatar as u_avatar
           FROM bulletin_ads b

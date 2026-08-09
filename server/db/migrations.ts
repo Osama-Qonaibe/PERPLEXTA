@@ -614,40 +614,48 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
         const lockKey = hashStringToAdvisoryLockKey(name);
-        await client.query(`SELECT pg_advisory_lock($1)`, [lockKey]);
+        const startTime = Date.now();
+        console.log(`[Migrations] Applying ${name}: ${description}...`);
+        
+        await client.query('BEGIN');
+        if (ledgerClient) await ledgerClient.query('BEGIN');
+        if (externalClient) await externalClient.query('BEGIN');
+        if (securityClient) await securityClient.query('BEGIN');
+
         try {
+          // Transaction-level advisory lock prevents race conditions and auto-releases on COMMIT/ROLLBACK
+          await client.query(`SELECT pg_advisory_xact_lock($1)`, [lockKey]);
+
           const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
-          if (doubleCheck.rows.length > 0) return;
+          if (doubleCheck.rows.length > 0) {
+            await client.query('COMMIT');
+            if (ledgerClient) await ledgerClient.query('COMMIT');
+            if (externalClient) await externalClient.query('COMMIT');
+            if (securityClient) await securityClient.query('COMMIT');
+            return;
+          }
 
-          const startTime = Date.now();
-          console.log(`[Migrations] Applying ${name}: ${description}...`);
-          await client.query('BEGIN');
-          if (ledgerClient) await ledgerClient.query('BEGIN');
-          if (externalClient) await externalClient.query('BEGIN');
-          if (securityClient) await securityClient.query('BEGIN');
+          const findClientForQuery = (sql: string, params?: unknown[]) => {
+            const queryLower = sql.toLowerCase();
 
-          try {
-            const findClientForQuery = (sql: string, params?: unknown[]) => {
-              const queryLower = sql.toLowerCase();
-
-              for (const [tableName, targetPoolType] of Object.entries(TABLE_POOL_REGISTRY)) {
-                if (queryLower.includes(tableName) || (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName))) {
-                  switch (targetPoolType) {
-                    case 'ledger':
-                      return ledgerClient || client;
-                    case 'external':
-                      return externalClient || client;
-                    case 'security':
-                      return securityClient || client;
-                    case 'core':
-                    default:
-                      return client;
-                  }
+            // First check non-core pools (ledger, external, security) using exact word boundaries
+            for (const [tableName, targetPoolType] of Object.entries(TABLE_POOL_REGISTRY)) {
+              if (targetPoolType === 'core') continue;
+              const regex = new RegExp(`\\b${tableName}\\b`, 'i');
+              if (regex.test(queryLower) || (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName))) {
+                switch (targetPoolType) {
+                  case 'ledger':
+                    return ledgerClient || client;
+                  case 'external':
+                    return externalClient || client;
+                  case 'security':
+                    return securityClient || client;
                 }
               }
+            }
 
-              return client;
-            };
+            return client;
+          };
 
             const wrappedClient: WrappedClient = {
               release: () => {},
@@ -722,11 +730,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
             throw error;
           }
-        } finally {
-          await client.query(`SELECT pg_advisory_unlock($1)`, [lockKey]);
         }
-      }
-    };
+      };
 
     console.log('[Migrations] Running dynamic schema auto-repair...');
     await initDb('additive');

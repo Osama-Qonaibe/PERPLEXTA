@@ -11,15 +11,14 @@ export interface LocalizedErrorResponse {
  */
 export function formatDatabaseError(err: any, language: 'ar' | 'en' = 'ar'): LocalizedErrorResponse {
   const pgCode = err?.code || '';
-  const message = err?.message || 'Database error occurred';
+  const constraint = err?.constraint || '';
+  const table = err?.table || '';
 
-  // Log internal details securely for server diagnostic logs
+  // Log internal details securely without exposing full raw SQL query strings or sensitive credentials
   console.error('[DatabaseError]', {
-    code: pgCode,
-    detail: err?.detail,
-    constraint: err?.constraint,
-    table: err?.table,
-    message: message,
+    pgCode,
+    constraint,
+    table,
     timestamp: new Date().toISOString()
   });
 

@@ -8,9 +8,9 @@ const router = express.Router();
 let isAdsTableEnsured = false;
 
 /**
- * Self-Healing helper: ensures the advertisements table exists and has initial seed data
+ * Seed data helper: ensures initial default advertisements exist in DB
  */
-export async function ensureAdsTable() {
+export async function ensureAdsSeedData() {
   if (isAdsTableEnsured || !pool) return;
   try {
     const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM advertisements');
@@ -85,8 +85,8 @@ router.get('/', async (req, res) => {
         dbErr.message.includes('column "position" does not exist');
 
       if (isMissingSchema) {
-        console.warn('[Ads API] Schema mismatch or missing column detected, attempting self-healing...');
-        await ensureAdsTable();
+        console.warn('[Ads API] Schema mismatch or missing column detected, seeding default ads...');
+        await ensureAdsSeedData();
         result = await pool.query(
           `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
                   sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active, 
@@ -153,7 +153,7 @@ router.get('/admin/analytics', authenticateAdmin, async (req, res) => {
       const pRes = await pool.query('SELECT * FROM advertisements ORDER BY id DESC');
       platformAds = pRes.rows;
     } catch (e) {
-      await ensureAdsTable();
+      await ensureAdsSeedData();
     }
 
     let bulletinAds: any[] = [];
@@ -316,7 +316,7 @@ router.get('/admin/list', authenticateAdmin, async (req, res) => {
       );
     } catch (dbErr: any) {
       if (dbErr.message.includes('relation "advertisements" does not exist')) {
-        await ensureAdsTable();
+        await ensureAdsSeedData();
         result = await pool.query(
           'SELECT * FROM advertisements ORDER BY display_order ASC, id DESC'
         );
