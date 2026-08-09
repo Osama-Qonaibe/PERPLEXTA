@@ -357,7 +357,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`${(item as any).className || 'flex'} items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}>
                           <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
                             <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme ${
-                              active ? 'bg-accent/10 border-accent/20' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'
+                              active ? 'bg-accent/10 border-accent/20' : 'group-hover:bg-[var(--bg-hover)]'
                             }`} />
                             <div className={`relative z-10 transition-theme ${
                               active 
@@ -461,7 +461,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-theme group relative border rounded-[4px] ${
                                 isActive 
                                   ? 'text-accent bg-transparent border-transparent' 
-                                  : 'text-gray-400 hover:text-accent hover:bg-gray-50/50 dark:hover:bg-gray-800/20 border-transparent'
+                                  : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border-transparent'
                               }`}
                             >
                               <div
@@ -472,7 +472,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                               >
                                 <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                  <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme ${isActive ? 'bg-transparent' : 'group-hover:bg-gray-50 dark:group-hover:bg-gray-800'}`} />
+                                  <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme ${isActive ? 'bg-transparent' : 'group-hover:bg-[var(--bg-hover)]'}`} />
                                   <MessageSquare 
                                     size={isMobile ? 16 : 16} 
                                     className={`relative z-10 transition-theme ${
@@ -721,7 +721,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className={`p-2 ${isMobile ? 'space-y-1.5' : 'space-y-1'}`}>
                           <button 
                             onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
                           >
                             <User size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -741,7 +741,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
                           >
                             <Activity size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -759,11 +759,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </AnimatePresence>
                           </button>
 
-                          <div className={`h-px bg-[var(--border)] my-1 mx-2 transition-theme`}></div>
+                          <div className={`h-px bg-[var(--border-main)] my-1 mx-2 transition-theme`}></div>
 
                           <button 
                             onClick={() => { navigate('/settings?tab=wallet'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
                           >
                             <Wallet size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -783,7 +783,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=marketplace_purchases'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-800 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
                           >
                             <ShoppingBag size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -803,7 +803,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-50 dark:hover:bg-gray-850 group/item`}
+                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
                           >
                             <BrainCircuit size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
@@ -823,7 +823,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                            <button 
                              onClick={() => { logout(); setIsDropdownOpen(false); }} 
-                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-gray-800 transition-theme`}
+                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-theme`}
                            >
                             <LogOut size={isMobile ? 16 : 16} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>

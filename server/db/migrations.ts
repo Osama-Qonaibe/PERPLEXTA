@@ -6,6 +6,95 @@ import crypto from 'crypto';
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
+export const TABLE_POOL_REGISTRY: Record<string, 'core' | 'ledger' | 'external' | 'security'> = {
+  // Core Database
+  users: 'core',
+  user_sessions: 'core',
+  chats: 'core',
+  messages: 'core',
+  api_keys_vault: 'core',
+  tool_orchestrator: 'core',
+  subscriptions: 'core',
+  plans: 'core',
+  user_usage: 'core',
+  notifications: 'core',
+  chat_memories: 'core',
+  email_templates: 'core',
+  email_settings: 'core',
+  message_reports: 'core',
+  user_shortcuts: 'core',
+  system_settings: 'core',
+  system_broadcasts: 'core',
+  user_files: 'core',
+  system_logs: 'core',
+  password_resets: 'core',
+  support_tickets: 'core',
+  support_ticket_replies: 'core',
+  oauth_states: 'core',
+  marketplace_items: 'core',
+  marketplace_purchases: 'core',
+  marketplace_reviews: 'core',
+  video_resources: 'core',
+  referral_invitations: 'core',
+  shared_snapshots: 'core',
+  advertisements: 'core',
+  bulletin_ads: 'core',
+  bulletin_saved_ads: 'core',
+  bulletin_reports: 'core',
+  bulletin_pages: 'core',
+  bulletin_page_followers: 'core',
+  bulletin_page_inquiries: 'core',
+  bulletin_ad_likes: 'core',
+  bulletin_ad_comments: 'core',
+  bulletin_ad_messages: 'core',
+  route_seo_settings: 'core',
+  asset_metadata: 'core',
+  user_recommendation_interactions: 'core',
+  user_recommendation_preferences: 'core',
+  recommendation_feedback: 'core',
+  gift_catalog: 'core',
+  google_tool_connections: 'core',
+  db_connections_registry: 'core',
+  migration_history: 'core',
+
+  // Ledger Database
+  wallets: 'ledger',
+  ledger_transactions: 'ledger',
+  referrals: 'ledger',
+  referral_tree: 'ledger',
+  kyc_requests: 'ledger',
+  withdrawal_requests: 'ledger',
+  payout_accounts: 'ledger',
+  economy_settings: 'ledger',
+  coupon_usages: 'ledger',
+  deposit_requests: 'ledger',
+  coupons: 'ledger',
+  stripe_events: 'ledger',
+
+  // External Database
+  blog_articles: 'external',
+  blog_comments: 'external',
+  blog_ratings: 'external',
+
+  // Security Database
+  token_blacklist: 'security',
+  security_alerts: 'security',
+  admin_audit_logs: 'security',
+  registered_agents: 'security',
+};
+
+/**
+ * Hash a string deterministically to a signed 32-bit integer for PostgreSQL pg_advisory_lock
+ */
+export function hashStringToAdvisoryLockKey(str: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash | 0; // Convert to signed 32-bit integer
+}
+
 export type QueryClient = any;
 
 export interface WrappedClient {
@@ -430,15 +519,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
       if (!checkSecTable.rows[0].exists) {
-        console.log('[Migrations] token_blacklist table does not exist on active security database. Forcing re-run...');
-        await client.query(`
-          DELETE FROM migration_history 
-          WHERE migration_name IN (
-            'v11_ensure_baseline_tables',
-            'v12_token_blacklist_security_hardening'
-          )
-        `);
-
+        console.log('[Migrations] token_blacklist table does not exist on active security database. Initializing...');
         await activeSecurityClient.query(`
           CREATE TABLE IF NOT EXISTS token_blacklist (
             id SERIAL PRIMARY KEY,
@@ -532,7 +613,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
       const check = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
       if (check.rows.length === 0) {
-        const lockKey = Buffer.from(name).reduce((acc, c) => acc + c, 0);
+        const lockKey = hashStringToAdvisoryLockKey(name);
         await client.query(`SELECT pg_advisory_lock($1)`, [lockKey]);
         try {
           const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
@@ -549,36 +630,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             const findClientForQuery = (sql: string, params?: unknown[]) => {
               const queryLower = sql.toLowerCase();
 
-              const isTableMatched = (tableName: string) => {
-                if (queryLower.includes(tableName)) return true;
-                if (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName)) return true;
-                return false;
-              };
-
-              if (
-                isTableMatched('blog_articles') ||
-                isTableMatched('blog_comments') ||
-                isTableMatched('blog_ratings')
-              ) {
-                return externalClient || client;
-              }
-
-              if (
-                isTableMatched('token_blacklist') ||
-                isTableMatched('security_alerts') ||
-                isTableMatched('admin_audit_logs')
-              ) {
-                return securityClient || client;
-              }
-
-              const ledgerTables = [
-                'wallets', 'ledger_transactions', 'referrals', 'referral_tree',
-                'kyc_requests', 'withdrawal_requests', 'payout_accounts',
-                'economy_settings', 'coupon_usages', 'deposit_requests',
-                'coupons', 'stripe_events'
-              ];
-              if (ledgerTables.some(t => isTableMatched(t))) {
-                return ledgerClient || client;
+              for (const [tableName, targetPoolType] of Object.entries(TABLE_POOL_REGISTRY)) {
+                if (queryLower.includes(tableName) || (params && params.some(p => typeof p === 'string' && p.toLowerCase() === tableName))) {
+                  switch (targetPoolType) {
+                    case 'ledger':
+                      return ledgerClient || client;
+                    case 'external':
+                      return externalClient || client;
+                    case 'security':
+                      return securityClient || client;
+                    case 'core':
+                    default:
+                      return client;
+                  }
+                }
               }
 
               return client;
