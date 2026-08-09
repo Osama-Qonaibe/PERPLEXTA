@@ -1808,7 +1808,11 @@ router.get('/ads/:id/direct-messages', authenticateToken, async (req: any, res) 
           ORDER BY m.created_at ASC
         `, [adId, userId, otherUserId]);
       } catch (dbErr: any) {
-        msgRes = { rows: [] };
+        if (dbErr.code === '42P01' || dbErr.code === '42703') {
+          msgRes = { rows: [] };
+        } else {
+          throw dbErr;
+        }
       }
       messages = msgRes.rows;
 
@@ -1990,7 +1994,11 @@ router.get('/my-inquiries', authenticateToken, async (req: any, res) => {
         ORDER BY m.ad_id, CASE WHEN m.sender_id = $1 THEN m.recipient_id ELSE m.sender_id END, m.created_at DESC
       `, [userId]);
     } catch (dbErr: any) {
-      threadsRes = { rows: [] };
+      if (dbErr.code === '42P01' || dbErr.code === '42703') {
+        threadsRes = { rows: [] };
+      } else {
+        throw dbErr;
+      }
     }
 
     res.json({

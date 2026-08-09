@@ -469,8 +469,8 @@ export async function runSystemMaintenance() {
 
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
   if (type === 'scratch') {
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SCRATCH_MODE !== 'true') {
-      throw new Error('Scratch mode is strictly prohibited in production environments unless ALLOW_SCRATCH_MODE=true is explicitly set.');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Scratch mode is strictly and unconditionally prohibited in production environments.');
     }
   }
   if (!pool) return;
