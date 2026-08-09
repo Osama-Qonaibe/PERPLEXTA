@@ -220,7 +220,7 @@ export const AdminRenderMetricsView: React.FC = () => {
                     color: isDark ? '#f4f4f5' : '#111827'
                   }} 
                 />
-                <Area type="monotone" dataKey="duration" name="مدة الرندر (ms)" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
+                <Area type="monotone" dataKey="duration" name="مدة الرندر (ms)" stroke="#334155" fill="#334155" fillOpacity={0.2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

@@ -1117,8 +1117,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                 <div class="demo-card" style="border: 1px solid ${isDark ? '#334155' : '#e2e8f0'}; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; background-color: ${isDark ? '#1a1a1c' : '#f8fafc'}; max-width: 450px;">
                   <h3 style="margin-top: 0;">Interactive Demo Card</h3>
                   <p style="font-size: 14px; opacity: 0.85;">This card mimics typical interface content to display visual styles clearly.</p>
-                  <button class="demo-button" style="padding: 0.5rem 1rem; border-radius: 4px; border: none; font-weight: bold; background-color: #10b981; color: white;">Button One</button>
-                  <button class="demo-button outline" style="padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #10b981; font-weight: bold; background-color: transparent; color: #10b981; margin-left: 0.5rem;">Button Two</button>
+                  <button class="demo-button" style="padding: 0.5rem 1rem; border-radius: 4px; border: none; font-weight: bold; background-color: #334155; color: white;">Button One</button>
+                  <button class="demo-button outline" style="padding: 0.5rem 1rem; border-radius: 4px; border: 1px solid #334155; font-weight: bold; background-color: transparent; color: #334155; margin-left: 0.5rem;">Button Two</button>
                 </div>
               </div>
             </body>
@@ -1532,7 +1532,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                             <div key={lidx} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
                               log.type === 'error' ? 'text-red-400 bg-red-950/20 px-2 rounded-sm' :
                               log.type === 'warn' ? 'text-amber-400 bg-amber-950/20 px-2 rounded-sm' :
-                              log.type === 'info' ? 'text-accent bg-accent-950/10 px-2 rounded-sm' : 'text-gray-300'
+                              log.type === 'info' ? 'text-accent bg-accent/10 px-2 rounded-sm' : 'text-gray-300'
                             }`}>
                               <span className="text-gray-600 select-none text-[9px] mt-0.5 font-bold tracking-tighter">[{log.time}]</span>
                               {log.type === 'error' && <AlertTriangle size={12} className="mt-0.5 shrink-0" />}
@@ -3141,7 +3141,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
           {}
           <div className="hidden sm:flex flex-col text-center">
-            <span className="text-[10px] text-[#10b981] font-[#10b981]  font-bold uppercase tracking-widest leading-none">
+            <span className="text-[10px] text-[#334155] font-[#334155]  font-bold uppercase tracking-widest leading-none">
               {styleName} • {vocalName}
             </span>
             <span className="text-[8px] text-[var(--text-muted)] font-mono mt-0.5">
@@ -4076,7 +4076,7 @@ export const ChatPage: React.FC = () => {
     return localStorage.getItem('last_active_tool') || 'chat';
   });
 
-  const prevUserRef = useRef<any>(null);
+  const prevUserRef = useRef<any>(user);
   useEffect(() => {
     if (user && !prevUserRef.current) {
       setSelectedTool('chat');
@@ -4130,8 +4130,12 @@ export const ChatPage: React.FC = () => {
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isAdvancedToolsOpen, setIsAdvancedToolsOpen] = useState(false);
-  const [forensicMode, setForensicMode] = useState(false);
+  const [isAdvancedToolsOpen, setIsAdvancedToolsOpen] = useState(() => {
+    return localStorage.getItem('perplexta_advanced_tools_open') === 'true';
+  });
+  const [forensicMode, setForensicMode] = useState(() => {
+    return localStorage.getItem('perplexta_forensic_mode') === 'true';
+  });
   const [isAnalyzingForensic, setIsAnalyzingForensic] = useState(false);
   const [forensicReport, setForensicReport] = useState<any | null>(null);
   const [isForensicModalOpen, setIsForensicModalOpen] = useState(false);
@@ -4258,6 +4262,14 @@ export const ChatPage: React.FC = () => {
     localStorage.setItem('last_active_tool', selectedTool);
     triggerMemoryNotification('startup');
   }, [selectedTool]);
+
+  useEffect(() => {
+    localStorage.setItem('perplexta_advanced_tools_open', String(isAdvancedToolsOpen));
+  }, [isAdvancedToolsOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('perplexta_forensic_mode', String(forensicMode));
+  }, [forensicMode]);
 
   const handleUserTyping = () => {
     if (!socket || !user) return;
@@ -4676,7 +4688,7 @@ export const ChatPage: React.FC = () => {
         const header = document.createElement('div');
         header.innerHTML = `
           <div style="text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid ${theme === 'dark' ? '#1a1a1c' : '#f0f0f0'};">
-            <h1 style="margin: 0; font-size: 28px; color: #10b981;">PERPLEXTA</h1>
+            <h1 style="margin: 0; font-size: 28px; color: #334155;">PERPLEXTA</h1>
             <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.6;">${dir === 'rtl' ? 'تقرير تصدير الذكاء الاصطناعي' : 'AI Intelligence Export Report'}</p>
             <p style="margin: 5px 0 0 0; font-size: 10px; opacity: 0.4;">${new Date().toLocaleString()}</p>
           </div>
@@ -4700,7 +4712,7 @@ export const ChatPage: React.FC = () => {
           roleLabel.style.fontSize = '12px';
           roleLabel.style.textTransform = 'uppercase';
           roleLabel.style.letterSpacing = '1px';
-          roleLabel.style.color = '#10b981';
+          roleLabel.style.color = '#334155';
 
           const content = document.createElement('div');
           content.innerText = msg.content;
@@ -4766,8 +4778,8 @@ export const ChatPage: React.FC = () => {
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
             .user { background-color: #f0f0f0; padding: 10px; margin-bottom: 10px; }
-            .assistant { padding: 10px; margin-bottom: 10px; border-left: 3px solid #10b981; }
-            .label { font-weight: bold; color: #10b981; font-size: 0.8em; }
+            .assistant { padding: 10px; margin-bottom: 10px; border-left: 3px solid #334155; }
+            .label { font-weight: bold; color: #334155; font-size: 0.8em; }
           </style>
           </head>
           <body dir="${dir}">
@@ -6192,15 +6204,15 @@ export const ChatPage: React.FC = () => {
               <div 
                 className={`flex items-center gap-2 font-sans text-xs sm:text-[13px] md:text-[14px] font-medium leading-relaxed select-none ${dir === 'rtl' ? 'justify-start text-right pr-1' : 'justify-start text-left pl-1'}`}
                 style={{ 
-                  color: user?.subscription?.plan_color || '#10b981',
-                  textShadow: `0 0 14px ${(user?.subscription?.plan_color || '#10b981')}45`
+                  color: user?.subscription?.plan_color || '#334155',
+                  textShadow: `0 0 14px ${(user?.subscription?.plan_color || '#334155')}45`
                 }}
               >
                 <span>{typedNotice || ''}</span>
                 {typedNotice && typedNotice.length < (dir === 'rtl' ? ledgerNotice.textAr : ledgerNotice.textEn).length && (
                   <span 
                     className="inline-block w-1.5 h-4 animate-pulse bg-current relative top-0.5" 
-                    style={{ backgroundColor: user?.subscription?.plan_color || '#10b981' }} 
+                    style={{ backgroundColor: user?.subscription?.plan_color || '#334155' }} 
                   />
                 )}
               </div>
@@ -7761,7 +7773,7 @@ export const ChatPage: React.FC = () => {
                         </ul>
                       </div>
                     ) : (
-                      <div className="p-4 rounded-md bg-accent-950/20 border border-accent-900/40 text-accent-200">
+                      <div className="p-4 rounded-md bg-accent/20 border border-accent/40 text-accent">
                         <div className="flex items-center gap-2 font-black text-xs tracking-wider uppercase">
                           <Check size={14} className="text-accent" />
                           <span>{dir === 'rtl' ? 'التحقق السليم لهيكل الملف' : 'Document Format Integrity Verified'}</span>

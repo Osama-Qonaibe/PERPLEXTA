@@ -24,6 +24,7 @@ import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
+import { SOCIAL_COLORS } from '../constants/socialColors';
 
 const DURATION_TIERS = [
   { days: 3, price: 3.00, labelAr: '3 أيام', labelEn: '3 Days', badgeAr: 'اقتصادي', badgeEn: 'Basic' },
@@ -1895,7 +1896,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'board' && !selectedPageDetail
-                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
@@ -1924,7 +1925,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'pages' && !selectedPageDetail
-                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
@@ -1937,7 +1938,7 @@ export const BulletinBoardPage: React.FC = () => {
                         onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); setIsMobileSidebarOpen(false); }}
                         className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-theme ${
                           activeTab === 'inquiries' && !selectedPageDetail
-                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
+                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
                             : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                         }`}
                       >
@@ -1958,7 +1959,7 @@ export const BulletinBoardPage: React.FC = () => {
                         onClick={() => { setSelectedPageDetail(null); setActiveTab('my_ads'); setIsMobileSidebarOpen(false); }}
                         className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                           activeTab === 'my_ads' && !selectedPageDetail
-                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
+                            ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
                             : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                         }`}
                       >
@@ -1971,7 +1972,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('analytics'); setIsMobileSidebarOpen(false); }}
                       className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
                         activeTab === 'analytics' && !selectedPageDetail
-                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent-100 dark:border-accent/20'
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
                           : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
                       }`}
                     >
@@ -2106,7 +2107,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }
                   setIsPageModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white font-bold text-xs shadow flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs shadow flex items-center gap-1.5 shrink-0"
               >
                 <Plus size={15} />
                 <span>{isRtl ? 'أنشئ صفحتك التجارية' : 'Create Merchant Page'}</span>
@@ -2187,7 +2188,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                           <button
                             onClick={() => handleOpenPageDetail(page.id)}
-                            className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white font-bold text-xs flex items-center gap-1.5 shadow"
+                            className="px-4 py-2 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs flex items-center gap-1.5 shadow"
                           >
                             <Globe size={14} />
                             <span>{isRtl ? 'زيارة الصفحة والإعلانات' : 'Visit Page'}</span>
@@ -2198,7 +2199,7 @@ export const BulletinBoardPage: React.FC = () => {
                               href={`https://wa.me/${page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-1 hover:bg-accent transition-theme shadow"
+                              className="p-2.5 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 font-bold text-xs flex items-center gap-1.5 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
                               title={isRtl ? 'تواصل واتساب' : 'WhatsApp'}
                             >
                               <Phone size={15} />
@@ -2656,7 +2657,7 @@ export const BulletinBoardPage: React.FC = () => {
                 }}
               >
                 <div className="absolute inset-1 rounded-full bg-accent/40 animate-ping opacity-75" />
-                <div className="absolute inset-2 rounded-full bg-accent shadow-[0_0_8px_#10b981]" />
+                <div className="absolute inset-2 rounded-full bg-accent shadow-[0_0_8px_#334155]" />
               </div>
             )}
 
@@ -2674,7 +2675,7 @@ export const BulletinBoardPage: React.FC = () => {
                   transition={{ type: 'spring', damping: 22, stiffness: 350 }}
                   className={`absolute -top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-xl backdrop-blur-md transition-theme pointer-events-none ${
                     isRefreshing || pullDistance >= 55
-                      ? 'bg-accent/10 dark:bg-accent-950/40 border-accent/40 text-accent shadow-none'
+                      ? 'bg-accent/10 dark:bg-accent/40 border-accent/40 text-accent shadow-none'
                       : 'bg-white/90 dark:bg-[#1a1a1c]/90 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'
                   }`}
                 >
@@ -2764,7 +2765,7 @@ export const BulletinBoardPage: React.FC = () => {
                           href={`https://wa.me/${selectedPageDetail.page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-1.5 hover:bg-accent transition-theme shadow"
+                          className="px-4 py-2 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 font-bold text-xs flex items-center gap-1.5 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
                         >
                           <Phone size={15} />
                           <span>واتساب</span>
@@ -2892,7 +2893,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 {ad.whatsapp_number && (
                                   <button
                                     onClick={(e) => handleWhatsAppClick(ad, e)}
-                                    className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-accent transition-theme"
+                                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
                                   >
                                     <Phone size={13} />
                                     <span>واتساب</span>
@@ -3821,7 +3822,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setIsAudienceModalOpen(true)}
-                            className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-theme border cursor-pointer active:scale-95 bg-accent dark:bg-accent-950/40 border-accent/30 text-accent dark:text-accent hover:bg-accent dark:hover:bg-accent/60"
+                            className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-theme border cursor-pointer active:scale-95 bg-accent dark:bg-accent/40 border-accent/30 text-accent dark:text-accent hover:bg-accent dark:hover:bg-accent/60"
                             title={isRtl ? 'تحديد جمهور رؤية المنشور' : 'Change post audience'}
                           >
                             {adFormData.audience === 'friends' ? (
@@ -4585,7 +4586,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className={`w-full p-3.5 rounded-2xl border text-start transition-theme flex items-center justify-between ${
                     adFormData.audience === 'public'
-                      ? 'border-accent bg-accent/60 dark:bg-accent-950/30 ring-1 ring-accent-500/50'
+                      ? 'border-accent bg-accent/60 dark:bg-accent/30 ring-1 ring-accent-500/50'
                       : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   }`}
                 >
@@ -5246,7 +5247,7 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
 
               {/* Active Location & Radius Badge */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-500/10 to-gray-500/5 border border-accent/25 text-accent dark:text-accent-200 shadow-2xs">
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-500/10 to-gray-500/5 border border-accent/25 text-accent dark:text-accent shadow-2xs">
                 <div className="flex items-center gap-2 text-[11px] font-bold truncate">
                   <Navigation size={13} className="text-accent shrink-0" />
                   <span className="truncate">

@@ -69,7 +69,7 @@ export const InactivityWarningModal: React.FC = () => {
               {/* Outer pulsing ring */}
               <div className="absolute inset-0 rounded-full bg-accent/10 dark:bg-accent/5 animate-ping duration-2000" />
               {/* Inner container */}
-              <div className="relative w-14 h-14 rounded-full bg-accent dark:bg-accent-950/40 flex items-center justify-center border border-accent-100 dark:border-accent-900/50">
+              <div className="relative w-14 h-14 rounded-full bg-accent dark:bg-accent/40 flex items-center justify-center border border-accent dark:border-accent/50">
                 <ShieldAlert className="w-7 h-7 text-accent" />
               </div>
             </div>

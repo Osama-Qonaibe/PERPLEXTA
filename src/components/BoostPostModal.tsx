@@ -213,7 +213,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                       VIP
                     </span>
                   </h3>
-                  <p className="text-xs text-accent-100 font-medium pt-0.5">
+                  <p className="text-xs text-accent font-medium pt-0.5">
                     {isRtl ? 'احصل على ضعف المشاهدات وضاعف مبيعاتك واستفساراتك' : 'Multiply views, inquiries & sales instantly'}
                   </p>
                 </div>

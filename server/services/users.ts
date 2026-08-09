@@ -3,6 +3,7 @@ import { io } from '../config/socket.js';
 import { getUserStorageUsage } from './files.js';
 import bcrypt from 'bcryptjs';
 import { walletLoader } from '../db/queries.js';
+import { invalidateUserCache } from '../middleware/auth.js';
 
 const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: string, desc_ar: string }> = {
   'chat': {
@@ -163,7 +164,7 @@ export async function getUserUsage(userId: string | number) {
       name_en: 'Sovereign Administrator',
       name_ar: 'الرئيس التنفيذي للمنصة',
       limits: {},
-      color: '#10b981',
+      color: '#334155',
       status: 'active',
       billing_period: 'Lifetime',
       current_period_end: null,
@@ -314,7 +315,7 @@ export async function getUserUsage(userId: string | number) {
       name_en: plan.name_en,
       name_ar: plan.name_ar,
       limits: plan.limits,
-      color: plan.color || '#10b981',
+      color: plan.color || '#334155',
       status: plan.status || 'Active',
       billing_period: plan.billing_period || 'Monthly',
       current_period_end: plan.current_period_end,
@@ -452,6 +453,9 @@ export async function updateUserProfile(userId: string | number, data: any) {
   values.push(userIdStr);
   const query = `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`;
   await pool.query(query, values);
+  
+  // Invalidate caches to ensure next fetch (on refresh) gets latest theme/data
+  invalidateUserCache(userIdStr);
   
   if (io) io.to(`user_${userIdStr}`).emit('user_profile_updated');
 

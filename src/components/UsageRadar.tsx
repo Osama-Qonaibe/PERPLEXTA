@@ -112,7 +112,7 @@ export const UsageRadar: React.FC = () => {
     );
   }
 
-  const planColor = data.plan.color || '#10b981';
+  const planColor = data.plan.color || '#334155';
   const renewalDate = data.plan.current_period_end ? new Date(data.plan.current_period_end).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '∞';
   const startDate = data.plan.subscription_start ? new Date(data.plan.subscription_start).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 

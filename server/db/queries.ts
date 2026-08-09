@@ -198,6 +198,7 @@ export async function getCachedSystemSettings(): Promise<any> {
 
   const result = await pool.query(`
     SELECT 
+      id,
       site_name_en, site_name_ar, site_description_en, site_description_ar,
       seo_description_en, seo_description_ar, keywords_en, keywords_ar,
       google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
@@ -205,7 +206,9 @@ export async function getCachedSystemSettings(): Promise<any> {
       paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
       blocked_paths, seo_site_name_en, seo_site_name_ar,
       font_loading_config, font_config_ar, font_config_en
-    FROM system_settings LIMIT 1
+    FROM system_settings 
+    ORDER BY id ASC
+    LIMIT 1
   `);
 
   let settings = result.rows[0];

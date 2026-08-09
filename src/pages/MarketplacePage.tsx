@@ -66,16 +66,16 @@ interface ChildCategory {
 }
 
 const parents: ParentCategory[] = [
-  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', ic: 'code', co: '#10b981' },
+  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', ic: 'code', co: '#334155' },
   { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', ic: 'trading-bots', co: '#f59e0b' },
   { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', ic: 'templates', co: '#ec4899' },
   { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', ic: 'startup-box', co: '#8b5cf6' },
   { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', ic: 'ebooks', co: '#14b8a6' },
-  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', ic: 'free', co: '#10b981' }
+  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', ic: 'free', co: '#334155' }
 ];
 
 const children: ChildCategory[] = [
-  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', ic: 'saas', co: '#10b981' },
+  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', ic: 'saas', co: '#334155' },
   { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', ic: 'mobile', co: '#06b6d4' },
   { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', ic: 'plugins', co: '#6366f1' },
   { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', ic: 'ai-agents', co: '#f43f5e' },
@@ -88,9 +88,9 @@ const children: ChildCategory[] = [
   { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', ic: 'game-bundles', co: '#ef4444' },
   { id: 'ebooks', parent: 'digital', nAr: 'كتب وأدلة رقمية', nEn: 'E-books & Guides', ic: 'ebooks', co: '#14b8a6' },
   { id: 'plr', parent: 'digital', nAr: 'منتجات إعادة البيع PLR', nEn: 'PLR/MRR Products', ic: 'plr', co: '#f97316' },
-  { id: 'free-scripts', parent: 'free', nAr: 'أكواد مجانية جاهزة', nEn: 'Free Ready Code', ic: 'code', co: '#10b981' },
+  { id: 'free-scripts', parent: 'free', nAr: 'أكواد مجانية جاهزة', nEn: 'Free Ready Code', ic: 'code', co: '#334155' },
   { id: 'free-templates', parent: 'free', nAr: 'قوالب مجانية', nEn: 'Free Templates', ic: 'templates', co: '#ec4899' },
-  { id: 'open-source', parent: 'free', nAr: 'أنظمة مفتوحة المصدر', nEn: 'Open Source Systems', ic: 'saas', co: '#10b981' }
+  { id: 'open-source', parent: 'free', nAr: 'أنظمة مفتوحة المصدر', nEn: 'Open Source Systems', ic: 'saas', co: '#334155' }
 ];
 
 const getCategoryIcon = (id: string, className?: string) => {

@@ -145,6 +145,9 @@ const translations = {
     subscription: 'الاشتراكات',
     consumption: 'الاستهلاك',
     inactivityWarningTitle: 'جلسة العمل على وشك الانتهاء',
+    sessionExpiringTitle: 'تنتهي الجلسة قريباً',
+    sessionExpiringMessage: 'ستنتهي جلستك خلال 5 دقائق. يرجى تحديث الصفحة أو إعادة تسجيل الدخول للبقاء متصلاً.',
+    refreshNow: 'تحديث الآن',
     inactivityWarningDesc: 'لقد كنت غير نشط لفترة من الوقت. لحماية حسابك وأمان بياناتك، سيتم تسجيل خروجك تلقائياً خلال {seconds} ثانية.',
     stayLoggedInBtn: 'البقاء متصلاً',
     logoutNowBtn: 'تسجيل الخروج الآن',
@@ -855,6 +858,9 @@ const translations = {
     subscription: 'Subscriptions',
     consumption: 'Consumption',
     inactivityWarningTitle: 'Session is About to Expire',
+    sessionExpiringTitle: 'Session Expiring Soon',
+    sessionExpiringMessage: 'Your session will expire in 5 minutes. Please refresh your page or re-login to stay connected.',
+    refreshNow: 'Refresh Now',
     inactivityWarningDesc: 'We noticed you have been inactive. For your security, you will be automatically logged out in {seconds} seconds.',
     stayLoggedInBtn: 'Stay Logged In',
     logoutNowBtn: 'Logout Now',
@@ -2668,6 +2674,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [milestoneData, setMilestoneData] = useState<any>(null);
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const t = (key: string, replacements?: Record<string, string | number>) => {
+    let str = (translations[language] as any)[key] || key;
+
+    if (key === 'appName') {
+      str = language === 'ar' 
+        ? (siteSettings.siteNameAr || '') 
+        : (siteSettings.siteName || '');
+    }
+
+    if (replacements) {
+      Object.entries(replacements).forEach(([k, v]) => {
+        str = str.replace(`{${k}}`, v.toString());
+      });
+    }
+    return str;
+  };
+
   useEffect(() => {
     if (!token) {
       if (socket) {
@@ -2844,6 +2867,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newSocket.disconnect();
     };
   }, [token, language, usePollingFallback]);
+
+  // Session Expiration Notification Helper
+  useEffect(() => {
+    if (!token) return;
+
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return;
+      const decodedPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const exp = decodedPayload.exp;
+      if (!exp) return;
+
+      const expiryTime = exp * 1000;
+      const warningTime = expiryTime - (5 * 60 * 1000); // 5 minutes before
+      const timeToWarning = warningTime - Date.now();
+
+      if (timeToWarning > 0) {
+        const timerId = setTimeout(() => {
+          toast.warning(t('sessionExpiringTitle'), {
+            description: t('sessionExpiringMessage'),
+            duration: 15000,
+            action: {
+              label: t('refreshNow'),
+              onClick: () => window.location.reload()
+            }
+          });
+        }, timeToWarning);
+
+        return () => clearTimeout(timerId);
+      }
+    } catch (e) {
+      console.warn('[AppContext] Failed to schedule session expiration warning:', e);
+    }
+  }, [token, language, t]);
 
   const markAsRead = async (id: number) => {
     if (!token) return;
@@ -3190,7 +3247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               isVisible: p.is_visible ?? true,
               monthlyPrice: parseFloat(p.monthly_price || 0),
               annualPrice: parseFloat(p.annual_price || 0),
-              color: p.color || '#10b981',
+              color: p.color || '#334155',
               planType: p.plan_type || 'user',
               features,
               limits
@@ -3324,23 +3381,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `;
     }
   }, [siteSettings, language]);
-
-  const t = (key: string, replacements?: Record<string, string | number>) => {
-    let str = (translations[language] as any)[key] || key;
-
-    if (key === 'appName') {
-      str = language === 'ar' 
-        ? (siteSettings.siteNameAr || '') 
-        : (siteSettings.siteName || '');
-    }
-
-    if (replacements) {
-      Object.entries(replacements).forEach(([k, v]) => {
-        str = str.replace(`{${k}}`, v.toString());
-      });
-    }
-    return str;
-  };
 
   return (
     <AppContext.Provider value={{ 

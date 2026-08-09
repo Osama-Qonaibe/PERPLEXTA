@@ -585,8 +585,8 @@ export const ReferralDashboardView = ({
                   <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorAccepted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#334155" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#334155" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === "dark" ? "#2a2a2c" : "#e5e7eb"} />
@@ -634,7 +634,7 @@ export const ReferralDashboardView = ({
                 type="monotone" 
                 dataKey="accepted" 
                 name={isRtl ? "المقبول" : "Accepted"}
-                stroke="#10b981" 
+                stroke="#334155" 
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#colorAccepted)" 

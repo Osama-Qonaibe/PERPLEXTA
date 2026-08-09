@@ -468,7 +468,7 @@ export const AdminCommunityPage: React.FC = () => {
                           {uploadingImage ? (
                             <div className="flex flex-col items-center gap-1.5 text-center">
                               <div className="w-6 h-6 border-2 border-accent/45 border-t-accent-500 rounded-full animate-spin" />
-                              <span className="text-[10px] text-accent-550 font-mono">{isRtl ? 'جاري معالجة الصورة...' : 'Processing, cropping...'}</span>
+                              <span className="text-[10px] text-accent font-mono">{isRtl ? 'جاري معالجة الصورة...' : 'Processing, cropping...'}</span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-1.5 text-center p-3 select-none">

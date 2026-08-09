@@ -323,8 +323,8 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
             <AreaChart data={data.time_series} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorReach" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                  <stop offset="5%" stopColor="#334155" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#334155" stopOpacity={0.0}/>
                 </linearGradient>
                 <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
@@ -342,7 +342,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
                   color: '#fff'
                 }}
               />
-              <Area type="monotone" dataKey="impressions" name={isRtl ? "المشاهدات" : "Views"} stroke="#10b981" fillOpacity={1} fill="url(#colorReach)" />
+              <Area type="monotone" dataKey="impressions" name={isRtl ? "المشاهدات" : "Views"} stroke="#334155" fillOpacity={1} fill="url(#colorReach)" />
               <Area type="monotone" dataKey="clicks" name={isRtl ? "النقرات" : "Clicks"} stroke="#3b82f6" fillOpacity={1} fill="url(#colorClicks)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -399,7 +399,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
               </div>
             ))}
 
-            <div className="p-2 rounded-lg bg-accent-950/40 border border-accent/30 text-[9.5px] text-accent flex items-center gap-1.5 mt-2">
+            <div className="p-2 rounded-lg bg-accent/40 border border-accent/30 text-[9.5px] text-accent flex items-center gap-1.5 mt-2">
               <Sparkles size={13} className="shrink-0 text-accent" />
               <span>
                 {isRtl

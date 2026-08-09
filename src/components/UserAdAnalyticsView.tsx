@@ -103,7 +103,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
   const { summary, timeSeries, demographics, audienceType, locations, insights, ads } = data;
 
-  const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'];
+  const COLORS = ['#334155', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'];
 
   return (
     <div className="space-y-6 transition-theme [will-change:background-color,border-color,color]">
@@ -228,8 +228,8 @@ export const UserAdAnalyticsView: React.FC = () => {
               <AreaChart data={timeSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="userImpGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#334155" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#334155" stopOpacity={0.0} />
                   </linearGradient>
                   <linearGradient id="userClickGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
@@ -253,7 +253,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                   type="monotone"
                   dataKey="impressions"
                   name={isRtl ? 'المشاهدات (Impressions)' : 'Impressions'}
-                  stroke="#10b981"
+                  stroke="#334155"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#userImpGrad)"

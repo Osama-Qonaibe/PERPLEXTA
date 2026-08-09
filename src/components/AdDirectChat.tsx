@@ -401,7 +401,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
 
                   <div
                     className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                      isMe ? 'text-accent-100' : 'text-gray-400 dark:text-gray-500'
+                      isMe ? 'text-accent' : 'text-gray-400 dark:text-gray-500'
                     }`}
                   >
                     <span className="font-mono text-[9px]">

@@ -3261,7 +3261,7 @@ const DatabaseOrchestrationView = ({
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-md border transition-theme ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] text-accent " : "bg-white border-accent-100 text-accent"}`}
+                    className={`p-2.5 rounded-md border transition-theme ${theme === "dark" ? "bg-[var(--bg-surface)] border-[var(--border-main)] text-accent " : "bg-white border-accent text-accent"}`}
                   >
                     <Icon size={20} />
                   </div>
@@ -3560,8 +3560,8 @@ const DatabaseOrchestrationView = ({
                     title={t("migrateAdditiveDesc")}
                     className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
                       theme === "dark"
-                        ? "border-accent-900/40 bg-accent-950/20 hover:bg-accent/30 text-accent hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                        : "border-accent-100 bg-accent hover:bg-accent/50 text-accent shadow-sm"
+                        ? "border-accent/40 bg-accent/20 hover:bg-accent/30 text-accent hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        : "border-accent bg-accent hover:bg-accent/50 text-accent shadow-sm"
                     } ${isMigrating?.id === db.id && isMigrating?.type === "additive" ? "opacity-70 grayscale" : ""}`}
                   >
                     {isMigrating?.id === db.id &&
@@ -5237,7 +5237,7 @@ const FinanceVaultView = ({
                 
                 {/* 1. MANUAL DEPOSITS BLOCK */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-[#10b981] border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-[#334155] border-b border-gray-100 dark:border-gray-800 pb-2">
                     {language === "ar" ? "طلبات الإيداع اليدوي العالقة" : "Pending Manual Deposits"} ({financialRequests.deposits.filter(d => d.status === 'pending').length})
                   </h4>
                   
@@ -5261,7 +5261,7 @@ const FinanceVaultView = ({
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-[#10b981] bg-accent/5 px-2 py-0.5 rounded-[4px]">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#334155] bg-accent/5 px-2 py-0.5 rounded-[4px]">
                               {request.method}
                             </span>
                             <div className="font-bold text-xs text-gray-900 dark:text-white mt-1 font-sans">
@@ -5272,14 +5272,14 @@ const FinanceVaultView = ({
                           
                           <div className="text-right">
                             <div className="text-[9px] text-gray-500 font-black uppercase tracking-widest font-sans">Requested Value</div>
-                            <div className="text-sm font-black text-[#10b981] font-mono">${Number(request.amount).toFixed(2)} USD</div>
+                            <div className="text-sm font-black text-[#334155] font-mono">${Number(request.amount).toFixed(2)} USD</div>
                           </div>
                         </div>
 
                         <div className="p-3 bg-black/20 dark:bg-black/40 rounded-[4px] border border-gray-100 dark:border-gray-800/60 text-[10px] font-mono space-y-1">
                           <div className="flex justify-between">
                             <span className="text-gray-500">TXID Reference:</span>
-                            <span className="font-bold text-[#10b981] select-all">{refId}</span>
+                            <span className="font-bold text-[#334155] select-all">{refId}</span>
                           </div>
                           {proofImg && (
                             <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-800/20">
@@ -5288,7 +5288,7 @@ const FinanceVaultView = ({
                                 href={`/uploads/${proofImg}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[#10b981] font-black flex items-center gap-1 hover:underline"
+                                className="text-[#334155] font-black flex items-center gap-1 hover:underline"
                               >
                                 {language === "ar" ? "عرض إثبات التحويل ↗" : "VIEW STATEMENT ↗"}
                               </a>
@@ -5350,7 +5350,7 @@ const FinanceVaultView = ({
 
                 {/* 2. MANUAL WITHDRAWALS BLOCK */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-[#10b981] border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-[#334155] border-b border-gray-100 dark:border-gray-800 pb-2">
                     {language === "ar" ? "طلبات السحب المعلقة" : "Pending User Withdrawals"} ({financialRequests.withdrawals.filter(w => w.status === 'pending').length})
                   </h4>
 
@@ -6237,7 +6237,7 @@ const PlansSubscriptionsView = ({
         isVisible: true,
         monthlyPrice: 0,
         annualPrice: 0,
-        color: "#10b981",
+        color: "#334155",
         features: [],
         planType: "user",
         limits,
@@ -6511,7 +6511,7 @@ const PlansSubscriptionsView = ({
                     {/* Top Color Accent */}
                     <div
                       className="absolute top-0 left-0 right-0 h-1"
-                      style={{ backgroundColor: plan.color || "#10b981" }}
+                      style={{ backgroundColor: plan.color || "#334155" }}
                     ></div>
 
                     {/* Badge */}
@@ -6530,7 +6530,7 @@ const PlansSubscriptionsView = ({
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                           <span
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: plan.color || "#10b981" }}
+                            style={{ backgroundColor: plan.color || "#334155" }}
                           ></span>
                           {dir === "rtl" ? plan.nameAr : plan.nameEn}
                         </h3>
@@ -6919,7 +6919,7 @@ const PlansSubscriptionsView = ({
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
-                          value={editingPlan.color || "#10b981"}
+                          value={editingPlan.color || "#334155"}
                           onChange={(e) =>
                             setEditingPlan({
                               ...editingPlan,
@@ -6929,7 +6929,7 @@ const PlansSubscriptionsView = ({
                           className="w-8 h-8 rounded cursor-pointer border-0 p-0 bg-transparent"
                         />
                         <span className="text-xs font-mono text-gray-500 uppercase">
-                          {editingPlan.color || "#10b981"}
+                          {editingPlan.color || "#334155"}
                         </span>
                       </div>
                     </div>
@@ -11763,6 +11763,9 @@ const SystemSettingsView = ({
           keywordsEn: keywordsEn,
           keywordsAr: keywordsAr,
           seoImageUrl: seoImageUrl,
+          logoBase64,
+          logoLightBase64,
+          faviconBase64,
         });
         showToast(t("saveSuccess") || "General settings saved", "success");
       } else {
@@ -14342,7 +14345,7 @@ export const AdminDashboard: React.FC = () => {
 
   const isOptimal = pulseData && pulseData.status === 'optimal' && pulseErrorCount < 3;
   const isDegraded = pulseData && pulseData.status === 'degraded' && pulseErrorCount < 3;
-  const pulseColor = isOptimal ? '#10b981' : isDegraded ? '#f59e0b' : '#f43f5e';
+  const pulseColor = isOptimal ? '#334155' : isDegraded ? '#f59e0b' : '#f43f5e';
   const pulseText = isOptimal 
     ? (language === 'ar' ? 'ممتاز' : 'Optimal') 
     : isDegraded 

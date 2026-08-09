@@ -200,7 +200,7 @@ export const UpgradePromptModal: React.FC = () => {
           {/* Subtle Ambient Glowing Background Aura */}
           <div 
             className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-[0.13] blur-[80px] pointer-events-none transition-theme"
-            style={{ backgroundColor: nextRequiredPlan?.color || '#10b981' }}
+            style={{ backgroundColor: nextRequiredPlan?.color || '#334155' }}
           />
 
           {/* Modal Header */}
@@ -209,10 +209,10 @@ export const UpgradePromptModal: React.FC = () => {
               <div 
                 className="w-10 h-10 rounded-sm flex items-center justify-center border transition-theme shadow-sm"
                 style={{ 
-                  color: nextRequiredPlan?.color || '#10b981', 
-                  borderColor: `${nextRequiredPlan?.color || '#10b981'}30`,
-                  backgroundColor: `${nextRequiredPlan?.color || '#10b981'}0a`,
-                  textShadow: `0 0 10px ${nextRequiredPlan?.color || '#10b981'}40`
+                  color: nextRequiredPlan?.color || '#334155', 
+                  borderColor: `${nextRequiredPlan?.color || '#334155'}30`,
+                  backgroundColor: `${nextRequiredPlan?.color || '#334155'}0a`,
+                  textShadow: `0 0 10px ${nextRequiredPlan?.color || '#334155'}40`
                 }}
               >
                 <Zap className="animate-pulse" size={18} />
@@ -365,14 +365,14 @@ export const UpgradePromptModal: React.FC = () => {
               <div 
                 className="p-5 rounded-sm bg-[#161619]/50 border transition-theme relative flex flex-col justify-between shadow-xl"
                 style={{ 
-                  borderColor: `${nextRequiredPlan?.color || '#10b981'}40`,
-                  boxShadow: `0 0 25px ${(nextRequiredPlan?.color || '#10b981')}05`
+                  borderColor: `${nextRequiredPlan?.color || '#334155'}40`,
+                  boxShadow: `0 0 25px ${(nextRequiredPlan?.color || '#334155')}05`
                 }}
               >
                 {/* Visual Accent Corner Diamond */}
                 <div 
                   className="absolute top-0 right-0 w-2.5 h-2.5 rounded-bl-sm"
-                  style={{ backgroundColor: nextRequiredPlan?.color || '#10b981' }}
+                  style={{ backgroundColor: nextRequiredPlan?.color || '#334155' }}
                 />
 
                 <div>
@@ -380,9 +380,9 @@ export const UpgradePromptModal: React.FC = () => {
                     <span 
                       className="text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded-sm flex items-center gap-1"
                       style={{ 
-                        color: nextRequiredPlan?.color || '#10b981',
-                        backgroundColor: `${nextRequiredPlan?.color || '#10b981'}15`,
-                        border: `1px solid ${nextRequiredPlan?.color || '#10b981'}22`
+                        color: nextRequiredPlan?.color || '#334155',
+                        backgroundColor: `${nextRequiredPlan?.color || '#334155'}15`,
+                        border: `1px solid ${nextRequiredPlan?.color || '#334155'}22`
                       }}
                     >
                       <Sparkles size={10} className="animate-spin" style={{ animationDuration: '6s' }} />
@@ -396,7 +396,7 @@ export const UpgradePromptModal: React.FC = () => {
 
                   <h4 
                     className="text-lg font-black leading-tight drop-shadow-sm"
-                    style={{ color: nextRequiredPlan?.color || '#10b981' }}
+                    style={{ color: nextRequiredPlan?.color || '#334155' }}
                   >
                     {nextPlanName}
                   </h4>

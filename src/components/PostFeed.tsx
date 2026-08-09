@@ -46,6 +46,7 @@ import { AdInsightsTab } from './AdInsightsTab';
 import { HighlightText } from './HighlightText';
 import { MediaFormatPlayer } from './MediaFormatPlayer';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { SOCIAL_COLORS } from '../constants/socialColors';
 
 export interface PostFeedProps {
   ads: BulletinAd[];
@@ -709,7 +710,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               {ad.whatsapp_number && (
                 <button
                   onClick={(e) => onWhatsApp(ad, e)}
-                  className="px-2.5 py-1.5 rounded-lg bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 hover:bg-accent transition-theme shadow-sm shrink-0"
+                  className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }}
                   title={isRtl ? 'تواصل عبر الواتساب' : 'WhatsApp Contact'}
                 >
                   <Phone size={13} />
@@ -817,7 +818,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                           className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Phone size={15} className="text-accent shrink-0" />
+                            <Phone size={15} className="shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }} />
                             <span className="text-xs">{isRtl ? 'مشاركة عبر واتساب' : 'Share to WhatsApp'}</span>
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">WA</span>

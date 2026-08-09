@@ -1050,7 +1050,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       {/* Manual Verification Form Fields for Crypto */}
                       <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                             {dir === 'rtl' ? 'هاش المعاملة أو الكود التعريفي (مطلوب)' : 'Transaction Hash / Hash ID (Required)'}
                           </label>
                           <input
@@ -1064,7 +1064,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                             {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload Payment Receipt (Optional)'}
                           </label>
                           <div className="flex items-center gap-3">
@@ -1161,7 +1161,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       {/* Manual Verification Form Fields for Bank */}
                       <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                             {dir === 'rtl' ? 'الرقم المرجعي أو كود التحويل البنكي (مطلوب)' : 'Bank Transaction Reference / Hash ID (Required)'}
                           </label>
                           <input
@@ -1175,7 +1175,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                             {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload Bank Transfer Receipt (Optional)'}
                           </label>
                           <div className="flex items-center gap-3">
@@ -1263,7 +1263,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           {/* Manual Verification Form Fields for PayPal */}
                           <div className="p-4 rounded-[var(--radius)] bg-[#1a1a1c]/80 border border-gray-800/80 space-y-4">
                             <div className="space-y-1">
-                              <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                                 {dir === 'rtl' ? 'رقم معاملة بايبال أو كود الحوالة (مطلوب)' : 'PayPal Transaction ID / Invoice Hash (Required)'}
                               </label>
                               <input
@@ -1277,7 +1277,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-[9px] font-black uppercase tracking-widest text-[#10b981] block">
+                              <label className="text-[9px] font-black uppercase tracking-widest text-[#334155] block">
                                 {dir === 'rtl' ? 'صورة إيصال المعاملة أو لقطة الشاشة' : 'Screenshot / Upload PayPal Payment Receipt (Optional)'}
                               </label>
                               <div className="flex items-center gap-3">

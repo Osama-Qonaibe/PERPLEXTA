@@ -95,7 +95,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
     // Color definitions
     const isDark = resolvedTheme === 'dark';
-    const strokeColor = '#10b981'; // Emerald 500
+    const strokeColor = '#334155'; // Emerald 500
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)';
     const textColor = isDark ? '#9ca3af' : '#6b7280';
 
@@ -113,13 +113,13 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     gradient
       .append('stop')
       .attr('offset', '0%')
-      .attr('stop-color', '#10b981')
+      .attr('stop-color', '#334155')
       .attr('stop-opacity', isDark ? 0.35 : 0.25);
 
     gradient
       .append('stop')
       .attr('offset', '100%')
-      .attr('stop-color', '#10b981')
+      .attr('stop-color', '#334155')
       .attr('stop-opacity', 0.0);
 
     // Filter for line drop shadow / glow
@@ -226,7 +226,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .append('line')
       .attr('y1', 0)
       .attr('y2', height - margin.top - margin.bottom)
-      .attr('stroke', '#10b981')
+      .attr('stroke', '#334155')
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '4,4')
       .style('opacity', 0);
@@ -234,7 +234,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     const focusDot = g
       .append('circle')
       .attr('r', 5)
-      .attr('fill', '#10b981')
+      .attr('fill', '#334155')
       .attr('stroke', isDark ? '#0f0f11' : '#ffffff')
       .attr('stroke-width', 2.5)
       .style('opacity', 0);

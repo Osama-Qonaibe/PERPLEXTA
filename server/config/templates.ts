@@ -15,9 +15,9 @@ const footer = (lang: string) => {
       </p>
       
       <div style="margin-top: 15px; font-family: ${isAr ? 'Tajawal, Arial' : 'Arial'}; font-size: 13px; color: #64748b; line-height: 1.8;">
-        <div style="margin-bottom: 4px;"><strong>${isAr ? 'الدعم الفني:' : 'Support:'}</strong> <a href="mailto:support@perplexta.com" style="color: #10b981; text-decoration: none;">support@perplexta.com</a></div>
-        <div style="margin-bottom: 4px;"><strong>${isAr ? 'المنصة الرئيسية:' : 'Primary Domain:'}</strong> <a href="https://perplexta.com" style="color: #10b981; text-decoration: none;">perplexta.com</a></div>
-        <div style="margin-bottom: 4px;"><strong>${isAr ? 'بوابة الشركة:' : 'Corporate Gateway:'}</strong> <a href="https://perplexta.uk" style="color: #10b981; text-decoration: none;">perplexta.uk</a></div>
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'الدعم الفني:' : 'Support:'}</strong> <a href="mailto:support@perplexta.com" style="color: #334155; text-decoration: none;">support@perplexta.com</a></div>
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'المنصة الرئيسية:' : 'Primary Domain:'}</strong> <a href="https://perplexta.com" style="color: #334155; text-decoration: none;">perplexta.com</a></div>
+        <div style="margin-bottom: 4px;"><strong>${isAr ? 'بوابة الشركة:' : 'Corporate Gateway:'}</strong> <a href="https://perplexta.uk" style="color: #334155; text-decoration: none;">perplexta.uk</a></div>
       </div>
       
       <div style="margin-top: 40px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
@@ -199,7 +199,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">A capital export request of <strong>{{amount}}</strong> has been registered in the Perplexta Terminal.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
         <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Audit Reference ID:</span><br>
-        <code style="color: #10b981; font-size: 15px; font-weight: 700;">{{referenceId}}</code>
+        <code style="color: #334155; font-size: 15px; font-weight: 700;">{{referenceId}}</code>
       </div>
       <p style="color: #64748b; font-size: 13px;">Our auditing team is currently verifying the ledger integrity for this transaction.</p>
     `, 'en'),
@@ -208,7 +208,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل طلب تصدير رأس مال بمبلغ <strong>{{amount}}</strong> في نظام بيربليكستا.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0; text-align: center;">
         <span style="color: #94a3b8; font-size: 12px; text-transform: uppercase; font-weight: 700;">معرّف المراجعة:</span><br>
-        <code style="color: #10b981; font-size: 18px; font-weight: 700;">{{referenceId}}</code>
+        <code style="color: #334155; font-size: 18px; font-weight: 700;">{{referenceId}}</code>
       </div>
       <p style="color: #64748b; font-size: 14px;">يقوم فريق التدقيق حالياً بالتحقق من سلامة السجلات لهذه المعاملة.</p>
     `, 'ar')
@@ -218,17 +218,17 @@ export const systemTemplates = [
     subject_en: 'Financial Record: Capital Export Finalized',
     subject_ar: 'سجل مالي: تم اعتماد طلب التصدير',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Export Authorized</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Export Authorized</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">Audit confirmed. The export request for <strong>{{amount}}</strong> has been cleared for execution.</p>
-      <div style="border-left: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+      <div style="border-left: 3px solid #334155; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; color: #166534; font-size: 13px; font-family: monospace;">{{transactionDetails}}</p>
       </div>
       <p style="color: #94a3b8; font-size: 12px;">Transaction officially recorded in the global ledger.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد التصدير</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد التصدير</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تأكيد التدقيق. تمت الموافقة على طلب التصدير لمبلغ <strong>{{amount}}</strong> وهو الآن قيد التنفيذ.</p>
-      <div style="border-right: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+      <div style="border-right: 3px solid #334155; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; color: #166534; font-size: 14px; font-family: monospace;">{{transactionDetails}}</p>
       </div>
       <p style="color: #94a3b8; font-size: 13px;">تم تسجيل المعاملة رسمياً في السجل العالمي.</p>
@@ -239,12 +239,12 @@ export const systemTemplates = [
     subject_en: 'Protocol Update: Infrastructure Growth Incentive',
     subject_ar: 'تحديث البروتوكول: حافز نمو البنية التحتية',
     body_en: wrapper(`
-      <h3 style="color: #10b981; font-size: 18px;">Network Expansion Successful</h3>
+      <h3 style="color: #334155; font-size: 18px;">Network Expansion Successful</h3>
       <p style="color: #475569; font-size: 15px;">System adjustment: <strong>+{{bonusPoints}} PTS</strong> credited to your profile for successful terminal referral.</p>
       <p style="color: #0f172a; font-weight: 700; margin-top: 20px;">Current Identity Balance: {{newBalance}} PTS</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h3 style="color: #10b981; font-size: 20px;">توسعة ناجحة للشبكة</h3>
+      <h3 style="color: #334155; font-size: 20px;">توسعة ناجحة للشبكة</h3>
       <p style="color: #475569; font-size: 16px;">تعديل النظام: تم إيداع <strong>+{{bonusPoints}} نقطة</strong> في ملفكم نتيجة إحالة ناجحة للنظام.</p>
       <p style="color: #0f172a; font-weight: 700; margin-top: 20px;">رصيد الهوية الحالي: {{newBalance}} نقطة</p>
     `, 'ar')
@@ -269,11 +269,11 @@ export const systemTemplates = [
     subject_en: 'Compliance Result: Identity Verified',
     subject_ar: 'نتيجة الامتثال: تم توثيق الهوية',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600;">Audit Successful</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600;">Audit Successful</h2>
       <p style="color: #475569; font-size: 15px;">Full identity verification for <strong>{{userName}}</strong> has been successfully concluded. All terminal restrictions related to identity verification have been lifted.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700;">نجاح التدقيق</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700;">نجاح التدقيق</h2>
       <p style="color: #475569; font-size: 16px;">تم الانتهاء بنجاح من عملية تدقيق الهوية بالكامل للمعرّف <strong>{{userName}}</strong>. تم رفع كافة قيود النظام المرتبطة بتوثيق الهوية.</p>
     `, 'ar')
   },
@@ -304,14 +304,14 @@ export const systemTemplates = [
       <div style="background-color: #f8fafc; padding: 25px; border-radius: 2px; border: 1px solid #e2e8f0;">
         <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px;">Transaction Type: {{type}}</div>
         <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px;">Adjustment: {{amount}} PTS</div>
-        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #10b981;">New Authorized Balance: {{newBalance}} PTS</div>
+        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #334155;">New Authorized Balance: {{newBalance}} PTS</div>
       </div>
     `, 'en'),
     body_ar: wrapper(`
       <div style="background-color: #f8fafc; padding: 25px; border-radius: 2px; border: 1px solid #e2e8f0;">
         <div style="font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px;">نوع المعاملة: {{type}}</div>
         <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 15px;">مقدار التعديل: {{amount}} نقطة</div>
-        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 16px; font-weight: 700; color: #10b981;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</div>
+        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 16px; font-weight: 700; color: #334155;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</div>
       </div>
     `, 'ar')
   },
@@ -324,7 +324,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">A ledger deposit of <strong>{{amount}}</strong> has been registered in the system under pending status.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Transaction Method:</strong> <span style="color: #0f172a;">{{method}}</span></div>
-        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Audit Reference:</strong> <code style="color: #10b981;">{{referenceId}}</code></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Audit Reference:</strong> <code style="color: #334155;">{{referenceId}}</code></div>
       </div>
       <p style="color: #64748b; font-size: 13px;">The ledger credit operation will execute automatically upon clearing confirmation from the gateway or audit controller.</p>
     `, 'en'),
@@ -333,7 +333,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل معاملة إيداع مالي بمبلغ <strong>{{amount}}</strong> في السجل وهي بانتظار التأكيد المالي.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>طريقة المعاملة:</strong> <span style="color: #0f172a;">{{method}}</span></div>
-        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>مرجع التدقيق:</strong> <code style="color: #10b981;">{{referenceId}}</code></div>
+        <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>مرجع التدقيق:</strong> <code style="color: #334155;">{{referenceId}}</code></div>
       </div>
       <p style="color: #64748b; font-size: 14px;">سيتم تنفيذ عملية الإضافة فور تلقي إشعار التأكيد التلقائي من بوابة المعاملات أو مسئول التدقيق المالي.</p>
     `, 'ar')
@@ -343,17 +343,17 @@ export const systemTemplates = [
     subject_en: 'Financial Record: Capital Deposit Cleared',
     subject_ar: 'سجل مالي: تم اعتماد الإيداع وتغذية المحفظة',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Capital Deposit Cleared</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Capital Deposit Cleared</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">A payment of <strong>{{amount}}</strong> has been successfully processed and credited to your terminal wallet.</p>
-      <div style="border-left: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+      <div style="border-left: 3px solid #334155; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; color: #166534; font-size: 14px; font-weight: bold; font-family: monospace;">CREDITED TARGET: {{newBalance}} PTS</p>
       </div>
       <p style="color: #94a3b8; font-size: 12px;">This is a secured ledger confirmation of final balance settlement.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم التسوية المالية للإيداع</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم التسوية المالية للإيداع</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تمت معالجة دفعة بقيمة <strong>{{amount}}</strong> بنجاح وتغذية محفظتكم الرقمية في المنصة.</p>
-      <div style="border-right: 3px solid #10b981; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
+      <div style="border-right: 3px solid #334155; background-color: #f0fdf4; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; color: #166534; font-size: 15px; font-weight: bold; font-family: monospace;">الرصيد المعتمد الجديد: {{newBalance}} نقطة</p>
       </div>
       <p style="color: #94a3b8; font-size: 13px;">هذا إشعار ائتمان مالي آمن لتسوية الحساب النهائي.</p>
@@ -387,22 +387,22 @@ export const systemTemplates = [
     subject_en: 'Ledger Notice: Reimbursement Settlement',
     subject_ar: 'إشعار بالسجل: تسوية إرجاع مالي',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Reimbursement Ledger Settlement</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600; margin-bottom: 25px;">Reimbursement Ledger Settlement</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">A ledger refund process has been completed for <strong>{{userName}}</strong>.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Reimbursed Amount:</strong> <span style="color: #0f172a; font-weight: bold;">{{amount}} PTS</span></div>
         <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Reason / Note:</strong> <span style="color: #0f172a;">{{reason}}</span></div>
-        <div style="font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>Updated Ledger:</strong> <span style="color: #10b981; font-weight: bold;">{{newBalance}} PTS</span></div>
+        <div style="font-size: 13px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>Updated Ledger:</strong> <span style="color: #334155; font-weight: bold;">{{newBalance}} PTS</span></div>
       </div>
       <p style="color: #94a3b8; font-size: 12px;">The associated credits are immediately ready and authorized for consumption.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تسوية الإرجاع المالي للحساب</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تسوية الإرجاع المالي للحساب</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم إنجاز تسوية ائتمان إرجاع مالي في السجل للمعرف <strong>{{userName}}</strong>.</p>
       <div style="background-color: #f8fafc; padding: 25px; border: 1px solid #e2e8f0; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>المبلغ المسترجع:</strong> <span style="color: #0f172a; font-weight: bold;">{{amount}} نقطة</span></div>
         <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>السبب / ملاحظة:</strong> <span style="color: #0f172a;">{{reason}}</span></div>
-        <div style="font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>الرصيد المحدَّث:</strong> <span style="color: #10b981; font-weight: bold;">{{newBalance}} نقطة</span></div>
+        <div style="font-size: 14px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 8px;"><strong>الرصيد المحدَّث:</strong> <span style="color: #334155; font-weight: bold;">{{newBalance}} نقطة</span></div>
       </div>
       <p style="color: #94a3b8; font-size: 13px;">تتوفر هذه الأرصدة المستردة فوراً للاستهلاك أو الاستخدام ضمن المنصة.</p>
     `, 'ar')
@@ -460,12 +460,12 @@ export const systemTemplates = [
     subject_en: 'Infrastructure Growth: Node Connectivity Extended',
     subject_ar: 'نمو البنية التحتية: انضمام مستخدم جديد لشبكتك',
     body_en: wrapper(`
-      <h3 style="color: #10b981; font-size: 18px; font-weight: 600;">Node Connectivity Extended</h3>
+      <h3 style="color: #334155; font-size: 18px; font-weight: 600;">Node Connectivity Extended</h3>
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">A new system participant, <strong>{{referredUser}}</strong>, has successfully joined the Perplexta Terminal via your invitation protocol link.</p>
       <p style="color: #64748b; font-size: 13px;">Upon execution of qualified platform actions by the referred node, compensation incentives will automatically sync and ledger to your balance.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h3 style="color: #10b981; font-size: 19px; font-weight: 700;">انضمام مستخدم جديد لشبكتك</h3>
+      <h3 style="color: #334155; font-size: 19px; font-weight: 700;">انضمام مستخدم جديد لشبكتك</h3>
       <p style="color: #475569; font-size: 16px; line-height: 1.8;">تم تسجيل انضمام بنجاح للمعرّف <strong>{{referredUser}}</strong> في منصة بيربليكستا من خلال رابط الدعوة الخاص بالبروتوكول الخاص بك.</p>
       <p style="color: #64748b; font-size: 14px;">عند قيام العقدة الجديدة بإجراء اشتراك مؤهل للمنصة، ستتم مزامنة حوافز الإحالة وإيداعها في رصيد محفظتكم تلقائياً.</p>
     `, 'ar')
@@ -502,7 +502,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">This is a friendly reminder from your peer <strong>{{referrerName}}</strong> about your pending invitation to register at the Perplexta Advanced Analytics Terminal.</p>
       <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 35px;">Complete your deposit verification pathway to unlock your professional analytical accounts and activate your credited referral incentives.</p>
       <div style="text-align: center; margin: 40px 0;">
-        <a href="{{invitationLink}}" style="background-color: #10b981; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">Activate & Verify Now</a>
+        <a href="{{invitationLink}}" style="background-color: #334155; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">Activate & Verify Now</a>
       </div>
       <p style="color: #94a3b8; font-size: 12px; line-height: 1.6;">Invitation Reference Code: <code>{{referralCode}}</code></p>
     `, 'en'),
@@ -511,7 +511,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">نود تذكيركم بالدعوة الحصرية المقدمة من الزميل <strong>{{referrerName}}</strong> لإكمال تسجيلكم وتفعيل مسار إحالتكم في نظام بيربليكستا للتحليلات المتقدمة.</p>
       <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 35px;">يرجى إكمال خطوات التحقق من الإيداع الخاصة بكم لتفعيل خيارات حسابكم التحليلي وعمولاتكم الترحيبية المرتبطة بالحساب.</p>
       <div style="text-align: center; margin: 40px 0;">
-        <a href="{{invitationLink}}" style="background-color: #10b981; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">تفقد وتفعيل الحساب الآن</a>
+        <a href="{{invitationLink}}" style="background-color: #334155; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 2px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">تفقد وتفعيل الحساب الآن</a>
       </div>
       <p style="color: #94a3b8; font-size: 13px; line-height: 1.6;">رمز الإحالة المعتمد: <code>{{referralCode}}</code></p>
     `, 'ar')
@@ -521,9 +521,9 @@ export const systemTemplates = [
     subject_en: 'Logistics: Bulletin Advertisement Approved & Published - Perplexta',
     subject_ar: 'تحديث لوجستي: تم اعتماد ونشر إعلانك بنجاح - بيربليكستا',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Advertisement Published</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Advertisement Published</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Identity profile verified. Your advertisement <strong>"{{adTitle}}"</strong> has been successfully approved and published on the Perplexta Bulletin Board.</p>
-      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #10b981; border-radius: 2px; margin: 25px 0;">
+      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #334155; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 13px; color: #64748b; margin-bottom: 8px;"><strong>Duration Terms:</strong> <span style="color: #0f172a;">{{durationDays}} Days</span></div>
         <div style="font-size: 13px; color: #64748b;"><strong>Expiration Date:</strong> <span style="color: #0f172a;">{{expiresAt}}</span></div>
       </div>
@@ -533,9 +533,9 @@ export const systemTemplates = [
       </div>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد ونشر الإعلان</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم اعتماد ونشر الإعلان</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم التحقق من الامتثال. تمت الموافقة على نشر إعلانك الموسوم بـ <strong>"{{adTitle}}"</strong> ونشره بنجاح في ساحة إعلانات بيربليكستا.</p>
-      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #10b981; border-radius: 2px; margin: 25px 0;">
+      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #334155; border-radius: 2px; margin: 25px 0;">
         <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;"><strong>مدة العرض النشط:</strong> <span style="color: #0f172a;">{{durationDays}} يوم</span></div>
         <div style="font-size: 14px; color: #64748b;"><strong>تاريخ انتهاء الصلاحية:</strong> <span style="color: #0f172a;">{{expiresAt}}</span></div>
       </div>
@@ -602,7 +602,7 @@ export const systemTemplates = [
     body_en: wrapper(`
       <h2 style="color: #0f172a; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">New Customer Inquiry</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">A potential customer <strong>{{senderName}}</strong> has initiated an inquiry regarding your advertisement: <strong>"{{adTitle}}"</strong>.</p>
-      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #10b981; font-size: 14px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
+      <div style="background-color: #f8fafc; padding: 25px; border-left: 3px solid #334155; font-size: 14px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
         <div style="font-weight: 700; color: #0f172a; margin-bottom: 8px;">Customer Inquiry Message:</div>
         "{{messageSnippet}}"
       </div>
@@ -614,7 +614,7 @@ export const systemTemplates = [
     body_ar: wrapper(`
       <h2 style="color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 25px;">استفسار زبون جديد</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">قام الزبون المحتمل <strong>{{senderName}}</strong> بإرسال استفسار مباشر بخصوص إعلانك الموسوم بـ: <strong>"{{adTitle}}"</strong>.</p>
-      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #10b981; font-size: 15px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
+      <div style="background-color: #f8fafc; padding: 25px; border-right: 3px solid #334155; font-size: 15px; font-family: sans-serif; margin: 25px 0; color: #334155; line-height: 1.8; border-radius: 2px;">
         <div style="font-weight: 700; color: #0f172a; margin-bottom: 8px;">محتوى رسالة الزبون:</div>
         "{{messageSnippet}}"
       </div>
@@ -629,7 +629,7 @@ export const systemTemplates = [
     subject_en: 'Billing Update: Advertisement Boost Activated - Perplexta',
     subject_ar: 'تحديث الحساب: تفعيل حزمة ترويج الإعلان المتقدمة - بيربليكستا',
     body_en: wrapper(`
-      <h2 style="color: #10b981; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Campaign Boost Activated</h2>
+      <h2 style="color: #334155; font-size: 22px; font-weight: 600; margin-bottom: 25px; letter-spacing: -0.5px;">Campaign Boost Activated</h2>
       <p style="color: #475569; font-size: 15px; line-height: 1.7; margin-bottom: 20px;">Operational adjustment. Your advertisement <strong>"{{adTitle}}"</strong> has been successfully boosted.</p>
       <div style="background-color: #f0fdf4; padding: 25px; border: 1px solid #dcfce7; border-radius: 2px; margin: 25px 0; color: #166534;">
         <div style="font-size: 13px; margin-bottom: 8px;"><strong>Boost Tier Class:</strong> <span style="font-weight: 700; color: #14532d;">{{boostTier}}</span></div>
@@ -639,7 +639,7 @@ export const systemTemplates = [
       <p style="color: #475569; font-size: 15px; line-height: 1.7;">Your boosted campaign will now receive priority placement, highlighted visual borders, and increased feed exposure.</p>
     `, 'en'),
     body_ar: wrapper(`
-      <h2 style="color: #10b981; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم تفعيل ترويج الحملة</h2>
+      <h2 style="color: #334155; font-size: 24px; font-weight: 700; margin-bottom: 25px;">تم تفعيل ترويج الحملة</h2>
       <p style="color: #475569; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">تم تأكيد المعاملة المالية لوجستياً. تم بنجاح تفعيل خيار الترويج الفائق لإعلانك: <strong>"{{adTitle}}"</strong>.</p>
       <div style="background-color: #f0fdf4; padding: 25px; border: 1px solid #dcfce7; border-radius: 2px; margin: 25px 0; color: #166534;">
         <div style="font-size: 14px; margin-bottom: 8px;"><strong>فئة الترويج النشط:</strong> <span style="font-weight: 700; color: #14532d;">{{boostTier}}</span></div>

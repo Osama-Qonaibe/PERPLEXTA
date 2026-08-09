@@ -1125,8 +1125,8 @@ export const AdsManagementView: React.FC<{
                       <AreaChart data={analyticsData.timeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="adminRevGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                            <stop offset="5%" stopColor="#334155" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#334155" stopOpacity={0.0} />
                           </linearGradient>
                           <linearGradient id="adminImpGrad" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
@@ -1150,7 +1150,7 @@ export const AdsManagementView: React.FC<{
                           type="monotone"
                           dataKey="revenue"
                           name={isRtl ? 'الإيرادات اليومية ($)' : 'Daily Revenue ($)'}
-                          stroke="#10b981"
+                          stroke="#334155"
                           strokeWidth={2}
                           fillOpacity={1}
                           fill="url(#adminRevGrad)"
@@ -1193,7 +1193,7 @@ export const AdsManagementView: React.FC<{
                           paddingAngle={5}
                           dataKey="value"
                         >
-                          <Cell fill="#10b981" />
+                          <Cell fill="#334155" />
                           <Cell fill="#6366f1" />
                         </Pie>
                         <Tooltip
@@ -1360,7 +1360,7 @@ export const AdsManagementView: React.FC<{
                         dataKey="revenue" 
                         name={isRtl ? 'إيرادات الهدايا' : 'Gift Revenue'} 
                         fill="rgba(16, 185, 129, 0.1)" 
-                        stroke="#10b981" 
+                        stroke="#334155" 
                         strokeWidth={2}
                       />
                       <Area 

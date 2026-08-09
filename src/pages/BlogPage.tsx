@@ -101,7 +101,7 @@ export const BlogPage: React.FC = () => {
   ];
 
   const categoryColors: Record<string, string> = {
-    All: '#10b981',
+    All: '#334155',
     News: '#3b82f6',
     Tech: '#a855f7',
     Updates: '#f97316',
@@ -507,7 +507,7 @@ export const BlogPage: React.FC = () => {
                   <div className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
                     {categories.map((cat) => {
                       const isSelected = selectedCategory === cat.id;
-                      const iconCol = categoryColors[cat.id] || '#10b981';
+                      const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <button
                           key={cat.id}
@@ -548,7 +548,7 @@ export const BlogPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
                         {categories.slice(mobileCategoryPage * 2, mobileCategoryPage * 2 + 2).map((cat) => {
                           const isSelected = selectedCategory === cat.id;
-                          const iconCol = categoryColors[cat.id] || '#10b981';
+                          const iconCol = categoryColors[cat.id] || '#334155';
                           return (
                             <button
                               key={cat.id}
@@ -634,7 +634,7 @@ export const BlogPage: React.FC = () => {
                   <div className="space-y-0.5">
                     {categories.map((cat) => {
                       const isSelected = selectedCategory === cat.id;
-                      const iconCol = categoryColors[cat.id] || '#10b981';
+                      const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <div
                           key={cat.id}
@@ -1721,7 +1721,7 @@ export const BlogPage: React.FC = () => {
 
                     {categories.map((cat) => {
                       const isSelected = selectedCategory === cat.id;
-                      const iconCol = categoryColors[cat.id] || '#10b981';
+                      const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <div
                           key={cat.id}

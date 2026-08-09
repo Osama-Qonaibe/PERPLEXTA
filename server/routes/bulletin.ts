@@ -959,7 +959,7 @@ router.get('/ads/:id/insights', async (req, res) => {
     ];
 
     const devices = [
-      { device: 'الهاتف المحمول / Mobile', percentage: 78, color: '#10b981' },
+      { device: 'الهاتف المحمول / Mobile', percentage: 78, color: '#334155' },
       { device: 'الكمبيوتر / Desktop', percentage: 18, color: '#3b82f6' },
       { device: 'أخرى / Tablet & Other', percentage: 4, color: '#f59e0b' }
     ];
@@ -2312,7 +2312,7 @@ router.get('/my-analytics', authenticateToken, async (req: any, res) => {
     ];
 
     const devices = [
-      { device: 'الهاتف المحمول / Mobile', percentage: 74, color: '#10b981' },
+      { device: 'الهاتف المحمول / Mobile', percentage: 74, color: '#334155' },
       { device: 'الكمبيوتر / Desktop', percentage: 21, color: '#6366f1' },
       { device: 'الأجهزة اللوحية / Tablet', percentage: 5, color: '#f59e0b' }
     ];

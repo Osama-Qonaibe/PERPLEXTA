@@ -155,7 +155,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
     annualPrice: parseFloat((p.annualPrice ?? p.priceAnnual ?? p.price_annual ?? p.annual_price ?? 0).toString()),
     descAr: p.descAr || p.desc_ar || '',
     descEn: p.descEn || p.desc_en || '',
-    color: p.color || '#10b981',
+    color: p.color || '#334155',
     planType: p.planType || p.plan_type || 'user',
     badge: p.badge || 'none',
     features: Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []),
@@ -163,10 +163,10 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
   }));
 
   const getPlanDetails = (planId: any) => {
-    if (!planId) return normalizedPlans[0] || { id: 'free', color: '#10b981', nameAr: 'مجاني', nameEn: 'Free', monthlyPrice: 0, annualPrice: 0, descAr: '', descEn: '', planType: 'user' };
+    if (!planId) return normalizedPlans[0] || { id: 'free', color: '#334155', nameAr: 'مجاني', nameEn: 'Free', monthlyPrice: 0, annualPrice: 0, descAr: '', descEn: '', planType: 'user' };
     return (
       normalizedPlans.find((p) => p.id.toString() === planId.toString()) ||
-      normalizedPlans[0] || { id: 'free', color: '#10b981', nameAr: 'مجاني', nameEn: 'Free', monthlyPrice: 0, annualPrice: 0, descAr: '', descEn: '', planType: 'user' }
+      normalizedPlans[0] || { id: 'free', color: '#334155', nameAr: 'مجاني', nameEn: 'Free', monthlyPrice: 0, annualPrice: 0, descAr: '', descEn: '', planType: 'user' }
     );
   };
 

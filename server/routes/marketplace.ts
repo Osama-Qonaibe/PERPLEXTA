@@ -606,7 +606,7 @@ async function notifySellerOfSale(item: any, lic: string, finalPrice: number, co
             sendEmail: true,
             emailBody: (user) => `
               <div style="font-family: sans-serif; padding: 20px; color: #111; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
-                <h2 style="color: #10B981; border-bottom: 2px solid #10B981; padding-bottom: 10px;">Great News, ${user.name || 'Seller'}!</h2>
+                <h2 style="color: #334155; border-bottom: 2px solid #334155; padding-bottom: 10px;">Great News, ${user.name || 'Seller'}!</h2>
                 <p>Your listed asset <strong>"${item.title_en}"</strong> has been purchased under the <strong>${lic.toUpperCase()}</strong> license.</p>
                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                   <p style="margin: 5px 0;"><strong>Product:</strong> ${item.title_en}</p>

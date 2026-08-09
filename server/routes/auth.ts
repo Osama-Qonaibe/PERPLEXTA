@@ -795,7 +795,7 @@ router.get("/google/callback", async (req, res) => {
               --radius-lg: 20px;
               --radius-md: 12px;
               --radius-sm: 6px;
-              --accent-500: #10b981;
+              --accent-500: #334155;
               --bg-dark: #09090b;
               --bg-panel: rgba(17, 17, 19, 0.9);
             }
@@ -877,7 +877,7 @@ router.get("/google/callback", async (req, res) => {
               font-weight: 400;
             }
             .btn {
-              background: #10b981;
+              background: #334155;
               color: white;
               border: none;
               padding: 1rem 2.5rem;
@@ -896,7 +896,7 @@ router.get("/google/callback", async (req, res) => {
               transform: translateY(-3px);
               box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6);
               filter: brightness(1.1);
-              background: #10b981;
+              background: #334155;
             }
             .btn:active {
               transform: translateY(-1px);
@@ -909,14 +909,14 @@ router.get("/google/callback", async (req, res) => {
               <div class="spinner-bg"></div>
               <div class="spinner-active"></div>
               <div class="spinner-icon">
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
               </div>
             </div>
             <h2 class="title">${successText}</h2>
-            <div class="status-badge" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: #10b981; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0.8;">
+            <div class="status-badge" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: #334155; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0.8;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               <span>${secureText}</span>
             </div>

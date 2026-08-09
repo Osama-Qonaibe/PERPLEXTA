@@ -393,17 +393,17 @@ export const SubscriptionPage: React.FC = () => {
               }`}
             >
               <div className="absolute inset-0 rounded-[var(--radius)] bg-accent/0 group-hover:bg-accent/[0.02] transition-colors duration-300 pointer-events-none" />
-              <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-theme group-hover:h-2" style={{ backgroundColor: plan.color || '#10b981' }}></div>
+              <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-theme group-hover:h-2" style={{ backgroundColor: plan.color || '#334155' }}></div>
               {plan.badge !== 'none' && (
                 <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
-                  <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#10b981' }}>
+                  <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#334155' }}>
                     {t(plan.badge)}
                   </span>
                 </div>
               )}
               <div className="mb-3 md:mb-4">
                 <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2 text-[var(--text-primary)]">
-                  <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#10b981' }}></span>
+                  <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#334155' }}></span>
                   {dir === 'rtl' ? plan.nameAr : plan.nameEn}
                 </h3>
                 <p className="text-[11px] md:text-sm text-[var(--text-secondary)] leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
@@ -414,7 +414,7 @@ export const SubscriptionPage: React.FC = () => {
                   <span className="text-xs text-[var(--text-muted)]">/ {billingCycle === 'annual' ? t('annual') : t('monthly')}</span>
                 </div>
                 {billingCycle === 'monthly' && getSavingPercentage(plan) > 0 ? (
-                  <div className="mt-1 text-[10px] md:text-xs font-medium" style={{ color: plan.color || '#10b981' }}>
+                  <div className="mt-1 text-[10px] md:text-xs font-medium" style={{ color: plan.color || '#334155' }}>
                     {dir === 'rtl' ? `وفر ${getSavingPercentage(plan)}% مع الدفع السنوي` : `Save ${getSavingPercentage(plan)}% with annual billing`}
                   </div>
                 ) : (
@@ -427,7 +427,7 @@ export const SubscriptionPage: React.FC = () => {
                   disabled={loading !== null || isActivePlan(plan.id)}
                   className={`py-2 md:py-3 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-theme shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-stripe` ? 'animate-pulse' : ''}`}
                   style={{ 
-                    backgroundColor: plan.color || '#10b981', 
+                    backgroundColor: plan.color || '#334155', 
                     boxShadow: isActivePlan(plan.id) ? `0 0 20px ${plan.color}30` : `0 4px 14px 0 ${plan.color}40`,
                     opacity: isActivePlan(plan.id) ? 0.9 : 1
                   }}
@@ -440,7 +440,7 @@ export const SubscriptionPage: React.FC = () => {
                   onClick={() => handlePayWithBalance(plan.id)}
                   disabled={loading !== null || isActivePlan(plan.id)}
                   className={`py-2 md:py-3 rounded-[var(--radius)] font-bold text-xs md:text-sm transition-theme border bg-transparent hover:bg-accent/5 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${loading === `${plan.id}-balance` ? 'animate-pulse' : ''}`}
-                  style={{ borderColor: plan.color || '#10b981', color: plan.color || '#10b981', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
+                  style={{ borderColor: plan.color || '#334155', color: plan.color || '#334155', opacity: isActivePlan(plan.id) ? 0.8 : 1 }}
                 >
                   {isActivePlan(plan.id) ? (dir === 'rtl' ? 'نشط' : 'Active') : (loading === `${plan.id}-balance` ? '...' : t('payWithBalance'))}
                 </button>
@@ -451,7 +451,7 @@ export const SubscriptionPage: React.FC = () => {
                 </p>
                 {plan.features.map((feature: any) => (
                   <div key={feature.id} className="flex items-start gap-2.5 md:gap-3">
-                    <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#10b981' }} />
+                    <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#334155' }} />
                     <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
                       {dir === 'rtl' ? feature.textAr : feature.textEn}
                     </span>
@@ -501,7 +501,7 @@ export const SubscriptionPage: React.FC = () => {
                             icon={icon}
                             label={label}
                             value={limitVal}
-                            color={plan.color || '#10b981'}
+                            color={plan.color || '#334155'}
                           />
                         );
                       });
@@ -605,7 +605,7 @@ export const SubscriptionPage: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }}
                 className="relative w-full max-w-md rounded-[var(--radius)] shadow-2xl overflow-hidden border p-5 md:p-8 text-center bg-[var(--bg-secondary)] border-[var(--border-main)]"
               >
-                <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: selectedPlanForModal?.color || '#10b981' }}></div>
+                <div className="absolute top-0 left-0 right-0 h-2" style={{ backgroundColor: selectedPlanForModal?.color || '#334155' }}></div>
                 <button 
                   onClick={() => {
                     if (resultModal === 'success') {
@@ -622,12 +622,12 @@ export const SubscriptionPage: React.FC = () => {
                 <div className="flex justify-center mb-5 md:mb-8">
                   <div 
                     className="w-16 h-16 md:w-20 md:h-20 rounded-[var(--radius)] flex items-center justify-center"
-                    style={{ backgroundColor: `${selectedPlanForModal?.color || '#10b981'}15`, color: selectedPlanForModal?.color || '#10b981' }}
+                    style={{ backgroundColor: `${selectedPlanForModal?.color || '#334155'}15`, color: selectedPlanForModal?.color || '#334155' }}
                   >
                     {resultModal === 'success' ? (
-                      <CheckCircle2 size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
+                      <CheckCircle2 size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#334155'}60)` }} />
                     ) : (
-                      <AlertCircle size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#10b981'}60)` }} />
+                      <AlertCircle size={32} className="md:w-10 md:h-10" style={{ filter: `drop-shadow(0 0 12px ${selectedPlanForModal?.color || '#334155'}60)` }} />
                     )}
                   </div>
                 </div>
@@ -643,7 +643,7 @@ export const SubscriptionPage: React.FC = () => {
                   >
                     <div 
                       className="flex items-center gap-2.5 text-xs md:text-sm font-black uppercase tracking-wider mb-2"
-                      style={{ color: selectedPlanForModal?.color || '#10b981' }}
+                      style={{ color: selectedPlanForModal?.color || '#334155' }}
                     >
                       <Loader2 size={16} className="animate-spin" />
                       <span>
@@ -659,7 +659,7 @@ export const SubscriptionPage: React.FC = () => {
                         animate={{ width: "0%" }}
                         transition={{ duration: 5, ease: "linear" }}
                         className="h-full"
-                        style={{ backgroundColor: selectedPlanForModal?.color || '#10b981' }}
+                        style={{ backgroundColor: selectedPlanForModal?.color || '#334155' }}
                       />
                     </div>
                   </div>
@@ -681,7 +681,7 @@ export const SubscriptionPage: React.FC = () => {
                     <button 
                       onClick={handleCopyLink}
                       className="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme text-white"
-                      style={{ backgroundColor: copied ? '#10b981' : selectedPlanForModal?.color || '#10b981' }}
+                      style={{ backgroundColor: copied ? '#334155' : selectedPlanForModal?.color || '#334155' }}
                     >
                       {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                     </button>
@@ -694,7 +694,7 @@ export const SubscriptionPage: React.FC = () => {
                   <button 
                     onClick={handleShare}
                     className="flex-1 py-3 md:py-4 rounded-[var(--radius)] text-white font-bold text-xs md:text-sm transition-theme shadow-lg flex items-center justify-center gap-2"
-                    style={{ backgroundColor: selectedPlanForModal?.color || '#10b981', boxShadow: `0 10px 20px -5px ${(selectedPlanForModal?.color || '#10b981')}40` }}
+                    style={{ backgroundColor: selectedPlanForModal?.color || '#334155', boxShadow: `0 10px 20px -5px ${(selectedPlanForModal?.color || '#334155')}40` }}
                   >
                     <Share2 size={18} />
                     {t('shareWithFriends')}
@@ -710,7 +710,7 @@ export const SubscriptionPage: React.FC = () => {
                   >
                     {resultModal === 'success' ? (
                       <>
-                        <CheckCircle2 size={16} style={{ color: selectedPlanForModal?.color || '#10b981' }} />
+                        <CheckCircle2 size={16} style={{ color: selectedPlanForModal?.color || '#334155' }} />
                         <span>{dir === 'rtl' ? 'الانتقال للرئيسية' : 'Go to Homepage'}</span>
                       </>
                     ) : (

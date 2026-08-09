@@ -164,16 +164,16 @@ export async function updateSystemSettings(settings: any) {
 
   // Prevent logo_url, favicon_url, or seo_image_url from being reset to NULL/empty if not supplied or if null/empty in partial updates
   const logo_url = (settings.logo_url !== undefined && settings.logo_url !== null && settings.logo_url !== '') 
-    ? normalizeMediaUrl(settings.logo_url) 
+    ? (settings.logo_url.startsWith('data:') ? settings.logo_url : normalizeMediaUrl(settings.logo_url)) 
     : existing.logo_url;
   const logo_light_url = (settings.logo_light_url !== undefined && settings.logo_light_url !== null && settings.logo_light_url !== '') 
-    ? normalizeMediaUrl(settings.logo_light_url) 
+    ? (settings.logo_light_url.startsWith('data:') ? settings.logo_light_url : normalizeMediaUrl(settings.logo_light_url)) 
     : existing.logo_light_url;
   const favicon_url = (settings.favicon_url !== undefined && settings.favicon_url !== null && settings.favicon_url !== '') 
-    ? normalizeMediaUrl(settings.favicon_url) 
+    ? (settings.favicon_url.startsWith('data:') ? settings.favicon_url : normalizeMediaUrl(settings.favicon_url)) 
     : existing.favicon_url;
   const seo_image_url = (settings.seo_image_url !== undefined && settings.seo_image_url !== null && settings.seo_image_url !== '') 
-    ? normalizeMediaUrl(settings.seo_image_url) 
+    ? (settings.seo_image_url.startsWith('data:') ? settings.seo_image_url : normalizeMediaUrl(settings.seo_image_url)) 
     : existing.seo_image_url;
   
   await pool.query(`
@@ -186,6 +186,7 @@ export async function updateSystemSettings(settings: any) {
       sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21,
       font_loading_config = $22, font_config_ar = $23, font_config_en = $24,
       updated_at = CURRENT_TIMESTAMP
+    WHERE id = $25
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
@@ -193,7 +194,8 @@ export async function updateSystemSettings(settings: any) {
     blocked_paths, seo_site_name_en || '', seo_site_name_ar || '',
     bulletin_ad_daily_price, live_gift_commission_percent,
     sidebar_ad_impression_price, sidebar_ad_click_price,
-    font_loading_config, font_config_ar, font_config_en
+    font_loading_config, font_config_ar, font_config_en,
+    existing.id
   ]);
   
   await clearSettingsCache();

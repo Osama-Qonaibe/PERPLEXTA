@@ -157,6 +157,9 @@
 }
 
 @layer utilities {
+  .dark .bg-accent { color: #000000 !important; }
+  .dark .bg-accent.text-white { color: #000000 !important; }
+  .dark .bg-accent .text-white { color: #000000 !important; }
   .btn-primary {
     @apply bg-accent text-white font-medium transition-all shadow-none;
     transition-duration: var(--ms-duration);
@@ -440,4 +443,22 @@ html, body, #root {
 body.layout-locked {
   overflow: hidden !important;
   overflow-anchor: none;
+}
+
+/* Perplexta Strict Button Contrast Protocol (Light Theme) */
+html:not(.dark) button.bg-black,
+html:not(.dark) button.bg-gray-900,
+html:not(.dark) button.bg-\[\#0f0f11\],
+html:not(.dark) a.bg-black,
+html:not(.dark) a.bg-gray-900,
+html:not(.dark) .btn-black {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+html:not(.dark) button.bg-black svg,
+html:not(.dark) button.bg-gray-900 svg,
+html:not(.dark) a.bg-black svg {
+  color: #000000 !important;
 }

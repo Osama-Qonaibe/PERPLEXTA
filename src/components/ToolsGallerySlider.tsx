@@ -30,7 +30,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
       case "image":
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c120f] to-[#121a16] flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
+            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:10px_10px]" />
             <svg className="w-10 h-10 text-accent/80 " viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="15" width="70" height="70" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <circle cx="50" cy="50" r="16" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2" />
@@ -43,7 +43,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
       case "video":
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c1012] to-[#12161a] flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
+            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:10px_10px]" />
             <svg className="w-10 h-10 text-accent/80 " viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="22" width="70" height="56" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <circle cx="35" cy="42" r="6" stroke="currentColor" strokeWidth="1.5" />
@@ -58,7 +58,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
       case "code":
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0e0e11] to-[#15151a] flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
+            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:10px_10px]" />
             <svg className="w-10 h-10 text-accent/80 " viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="18" width="70" height="64" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <path d="M15 32H85" stroke="currentColor" strokeWidth="1.5" className="opacity-30" />
@@ -75,7 +75,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
       case "canvas":
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#100d14] to-[#17141f] flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
+            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:10px_10px]" />
             <svg className="w-10 h-10 text-accent/80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="15" width="70" height="70" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <line x1="25" y1="50" x2="25" y2="50" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
@@ -92,7 +92,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
       default:
         return (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0c1315] to-[#12191c] flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#10b981_1px,transparent_1px),linear-gradient(to_bottom,#10b981_1px,transparent_1px)] bg-[size:10px_10px]" />
+            <div className="absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,#334155_1px,transparent_1px),linear-gradient(to_bottom,#334155_1px,transparent_1px)] bg-[size:10px_10px]" />
             <svg className="w-10 h-10 text-accent/80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="15" y="15" width="70" height="70" rx="4" stroke="currentColor" strokeWidth="1.5" className="opacity-40" />
               <circle cx="45" cy="45" r="14" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 1" />

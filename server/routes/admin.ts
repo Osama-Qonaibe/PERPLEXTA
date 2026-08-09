@@ -1674,7 +1674,7 @@ async function notifyUserAccountModification(
       sendEmail: true,
       emailBody: (user) => `
       <div style="font-family: sans-serif; background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #f1f5f9;">
-        <h2 style="color: #10b981; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleEn}</h2>
+        <h2 style="color: #334155; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleEn}</h2>
         <p style="color: #334155; font-size: 15px; line-height: 1.8;">Hello <strong>${user.name || 'Valued User'}</strong>,</p>
         <p style="color: #475569; font-size: 14px; line-height: 1.8;">${msgEn}</p>
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin: 20px 0;">
@@ -1684,7 +1684,7 @@ async function notifyUserAccountModification(
     `,
       emailBodyAr: (user) => `
       <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #f1f5f9;">
-        <h2 style="color: #10b981; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleAr}</h2>
+        <h2 style="color: #334155; font-size: 20px; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">${titleAr}</h2>
         <p style="color: #334155; font-size: 15px; line-height: 1.8;">مرحباً <strong>${user.name || 'عزيزنا المستخدم'}</strong>،</p>
         <p style="color: #475569; font-size: 14px; line-height: 1.8;">${msgAr}</p>
         <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin: 20px 0;">
@@ -1943,7 +1943,7 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
         emailBody: (user) => `
           <div style="font-family: 'Inter', sans-serif; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="text-align: center; margin-bottom: 25px;">
-              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
+              <span style="font-size: 24px; font-weight: 900; color: #334155;">Perplexta Platform</span>
             </div>
             <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
               Statement of Ledger Adjustment
@@ -1962,7 +1962,7 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
                 </tr>
                 <tr>
                   <td style="color: #64748b; padding: 6px 0;"><strong>Adjustment Value:</strong></td>
-                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: right; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
+                  <td style="color: ${isAdd ? '#334155' : '#ef4444'}; text-align: right; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
                 </tr>
                 <tr>
                   <td style="color: #64748b; padding: 6px 0;"><strong>Approved Reason:</strong></td>
@@ -1984,7 +1984,7 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
         emailBodyAr: (user) => `
           <div style="font-family: Tajawal, sans-serif; direction: rtl; text-align: right; background-color: #ffffff; padding: 30px; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="text-align: center; margin-bottom: 25px;">
-              <span style="font-size: 24px; font-weight: 900; color: #10b981;">Perplexta Platform</span>
+              <span style="font-size: 24px; font-weight: 900; color: #334155;">Perplexta Platform</span>
             </div>
             <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 20px;">
               تنبيه كشف الحساب المالي
@@ -2003,7 +2003,7 @@ router.post("/users/:id/balance", authenticateAdmin, async (req, res) => {
                 </tr>
                 <tr>
                   <td style="color: #64748b; padding: 6px 0;"><strong>القيمة المعدلة:</strong></td>
-                  <td style="color: ${isAdd ? '#10b981' : '#ef4444'}; text-align: left; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
+                  <td style="color: ${isAdd ? '#334155' : '#ef4444'}; text-align: left; font-size: 16px; font-weight: bold;">${formattedAmount}</td>
                 </tr>
                 <tr>
                   <td style="color: #64748b; padding: 6px 0;"><strong>السبب المعتمد:</strong></td>
@@ -3403,7 +3403,15 @@ router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), 
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
+    let imageUrl = normalizeMediaUrl(optResult.fileUrl);
+    try {
+      const filePath = path.join(process.cwd(), optResult.fileUrl.startsWith('/') ? optResult.fileUrl.slice(1) : optResult.fileUrl);
+      const fileBuffer = await fs.readFile(filePath);
+      const mime = optResult.format === 'webp' ? 'image/webp' : (req.file.mimetype || 'image/png');
+      imageUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
+    } catch (readErr) {
+      console.warn('[AssetUpload] Failed to convert image to base64 data URI, using URL fallback:', readErr);
+    }
     res.json({ success: true, imageUrl });
   } catch (error: any) {
     console.error('[AssetUpload] Upload failed:', error);
@@ -3417,7 +3425,15 @@ router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
+    let imageUrl = normalizeMediaUrl(optResult.fileUrl);
+    try {
+      const filePath = path.join(process.cwd(), optResult.fileUrl.startsWith('/') ? optResult.fileUrl.slice(1) : optResult.fileUrl);
+      const fileBuffer = await fs.readFile(filePath);
+      const mime = optResult.format === 'webp' ? 'image/webp' : (req.file.mimetype || 'image/png');
+      imageUrl = `data:${mime};base64,${fileBuffer.toString('base64')}`;
+    } catch (readErr) {
+      console.warn('[SEOImageUpload] Failed to convert image to base64 data URI, using URL fallback:', readErr);
+    }
     res.json({ success: true, imageUrl });
   } catch (error: any) {
     console.error('[SEOImageUpload] Upload failed:', error);
