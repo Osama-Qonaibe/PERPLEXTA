@@ -395,6 +395,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   securityClient = await connectToPool(securityPool, 'Security');
 
   try {
+    // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
+    await client.query('SELECT pg_advisory_lock(74635291)').catch((err: any) => {
+      console.warn('[Migrations] Advisory lock acquisition warning:', err.message);
+    });
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
         id SERIAL PRIMARY KEY,
@@ -2062,6 +2067,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     console.error('[CRITICAL] Database Migration failed:', err.message);
     if (process.env.NODE_ENV === 'production') throw err;
   } finally {
+    await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {});
     client.release();
     if (ledgerClient) ledgerClient.release();
     if (externalClient) externalClient.release();

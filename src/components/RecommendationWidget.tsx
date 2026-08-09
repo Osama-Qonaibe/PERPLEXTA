@@ -372,7 +372,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   onClick={() => handleItemClick(item)}
-                  className="group relative p-2.5 sm:p-3 rounded-xl bg-gray-50/60 dark:bg-gray-900/60 hover:bg-white dark:hover:bg-[#222225] border border-gray-200/80 dark:border-gray-800 hover:border-accent/50 transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md overflow-hidden"
+                  className="group relative p-2.5 sm:p-3 rounded-xl bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] border border-[var(--border-main)] hover:border-[var(--border-accent)] transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs overflow-hidden"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {mediaUrl ? (

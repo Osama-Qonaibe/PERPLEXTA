@@ -365,7 +365,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               to="/Studio"
               className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
                 location.pathname === '/Studio' 
-                  ? 'bg-accent/[0.04] border-accent/30 text-accent shadow-[0_0_15px_rgba(16,185,129,0.085)]' 
+                  ? 'bg-accent/[0.04] border-accent/30 text-accent' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
               }`}
               title={language === 'ar' ? 'استوديو بيربليكستا للمطورين' : 'Perplexta Developer Studio'}
@@ -432,9 +432,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
                 className={`flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-accent/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
               >
-                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-accent " : "text-gray-400 group-hover:text-accent group-hover:"}`} />
+                <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-accent" : "text-gray-400 group-hover:text-accent"}`} />
                 {unreadCount > 0 && (
-                  <span className={`absolute top-2 right-2 w-1 h-1 bg-pink-500 rounded-full border border-[var(--bg-primary)] shadow-[0_0_5px_rgba(236,72,153,0.5)]`}></span>
+                  <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-pink-500 rounded-full border border-[var(--bg-primary)]"></span>
                 )}
               </button>
 
@@ -495,7 +495,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1.5 flex-row-reverse">
                               {!notif.is_read && (
-                                <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                                <span className="w-1.5 h-1.5 bg-accent rounded-full shrink-0" />
                               )}
                               <h4 className={`text-[11px] sm:text-xs font-bold truncate transition-theme ${!notif.is_read ? 'text-accent' : 'text-[var(--text-primary)]'}`}>
                                 {language === 'ar' ? notif.title_ar : notif.title_en}

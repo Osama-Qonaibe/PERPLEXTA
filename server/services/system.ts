@@ -30,8 +30,11 @@ export async function getSystemSettings() {
     return await getCachedSystemSettings();
   } catch (err: any) {
     const errMsg = err.message || '';
-    if (errMsg.includes('relation "system_settings" does not exist')) {
-      console.log('[SystemSettings] system_settings table does not exist. Running migrations dynamically...');
+    if (errMsg.includes('relation "system_settings" does not exist') || 
+        errMsg.includes('logo_light_url') || 
+        errMsg.includes('blocked_paths') || 
+        errMsg.includes('font_loading_config')) {
+      console.log('[SystemSettings] Schema anomaly or missing column detected. Triggering database migrations...');
       try {
         const { runDatabaseMigrations } = await import('../db/migrations.js');
         await runDatabaseMigrations();
@@ -39,38 +42,6 @@ export async function getSystemSettings() {
         return getCachedSystemSettings();
       } catch (innerErr: any) {
         console.error('[SystemSettings] Dynamic migration running failed:', innerErr.message);
-      }
-    } else if (errMsg.includes('logo_light_url')) {
-      console.log('[SystemSettings] logo_light_url column seems to be missing. Attempting dynamic self-healing...');
-      try {
-        await pool.query('ALTER TABLE system_settings ADD COLUMN logo_light_url TEXT');
-        console.log('[SystemSettings] Successfully added logo_light_url dynamically!');
-        invalidateSystemSettingsCache();
-        return getCachedSystemSettings();
-      } catch (innerErr: any) {
-        console.error('[SystemSettings] Dynamic column addition failed:', innerErr.message);
-      }
-    } else if (errMsg.includes('blocked_paths')) {
-      console.log('[SystemSettings] blocked_paths column seems to be missing. Attempting dynamic self-healing...');
-      try {
-        await pool.query("ALTER TABLE system_settings ADD COLUMN blocked_paths TEXT DEFAULT ''");
-        console.log('[SystemSettings] Successfully added blocked_paths dynamically!');
-        invalidateSystemSettingsCache();
-        return getCachedSystemSettings();
-      } catch (innerErr: any) {
-        console.error('[SystemSettings] Dynamic blocked_paths column addition failed:', innerErr.message);
-      }
-    } else if (errMsg.includes('font_loading_config')) {
-      console.log('[SystemSettings] font_loading_config column seems to be missing. Attempting dynamic self-healing...');
-      try {
-        await pool.query("ALTER TABLE system_settings ADD COLUMN font_loading_config TEXT");
-        await pool.query("ALTER TABLE system_settings ADD COLUMN font_config_ar TEXT");
-        await pool.query("ALTER TABLE system_settings ADD COLUMN font_config_en TEXT");
-        console.log('[SystemSettings] Successfully added font config columns dynamically!');
-        invalidateSystemSettingsCache();
-        return getCachedSystemSettings();
-      } catch (innerErr: any) {
-        console.error('[SystemSettings] Dynamic font config column addition failed:', innerErr.message);
       }
     }
     throw err;

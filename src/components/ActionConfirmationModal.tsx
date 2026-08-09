@@ -64,29 +64,29 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
   // Color configurations based on variants
   const colorConfigs = {
     danger: {
-      accent: 'text-red-500 dark:text-red-400',
-      icon: <AlertTriangle size={20} className="text-red-500 animate-pulse shrink-0" />,
-      btnClass: 'bg-[#db6b7a] hover:bg-[#c95968] text-white shadow-[0_0_12px_rgba(219,107,122,0.25)]',
+      accent: 'text-[var(--fg-danger)]',
+      icon: <AlertTriangle size={20} className="text-[var(--fg-danger)] shrink-0" />,
+      btnClass: 'bg-[var(--bg-danger-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
     },
     success: {
-      accent: 'text-accent dark:text-accent',
-      icon: <CheckCircle size={20} className="text-accent shrink-0" />,
-      btnClass: 'bg-accent hover:bg-accent text-white shadow-[0_0_12px_rgba(16,185,129,0.25)]',
+      accent: 'text-[var(--fg-success)]',
+      icon: <CheckCircle size={20} className="text-[var(--fg-success)] shrink-0" />,
+      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
     },
     warning: {
-      accent: 'text-amber-500 dark:text-amber-400',
-      icon: <AlertTriangle size={20} className="text-amber-500 shrink-0" />,
-      btnClass: 'bg-amber-500 hover:bg-amber-600 text-white shadow-[0_0_12px_rgba(245,158,11,0.25)]',
+      accent: 'text-[var(--fg-attention)]',
+      icon: <AlertTriangle size={20} className="text-[var(--fg-attention)] shrink-0" />,
+      btnClass: 'bg-[var(--bg-attention-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
     },
     info: {
-      accent: 'text-blue-500 dark:text-blue-400',
-      icon: <Info size={20} className="text-blue-500 shrink-0" />,
-      btnClass: 'bg-blue-500 hover:bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.25)]',
+      accent: 'text-[var(--fg-info)]',
+      icon: <Info size={20} className="text-[var(--fg-info)] shrink-0" />,
+      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
     },
     purple: {
-      accent: 'text-purple-500 dark:text-purple-400',
-      icon: <AlertTriangle size={20} className="text-purple-500 shrink-0" />,
-      btnClass: 'bg-purple-500 hover:bg-purple-600 text-white shadow-[0_0_12px_rgba(168,85,247,0.25)]',
+      accent: 'text-[var(--text-primary)]',
+      icon: <AlertTriangle size={20} className="text-[var(--text-primary)] shrink-0" />,
+      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
     },
   }[variant];
 
@@ -108,11 +108,7 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
-              theme === 'dark'
-                ? 'bg-[#161618] border-zinc-800 text-gray-100'
-                : 'bg-white border-gray-150 text-gray-900'
-            }`}
+            className="relative max-w-sm w-full p-6 rounded-xl border border-[var(--border-main)] bg-[var(--surface-card)] text-[var(--text-primary)] shadow-2xl transition-theme z-10"
           >
             {/* Header / Title */}
             <h3 className={`text-base font-bold tracking-tight font-sans text-start flex items-center gap-2 ${colorConfigs.accent}`}>
@@ -122,29 +118,25 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
 
             {/* Description */}
             {currentDescription && (
-              <p className={`text-xs mt-2.5 font-sans leading-relaxed text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className="text-xs mt-2.5 font-sans leading-relaxed text-start text-[var(--text-secondary)]">
                 {currentDescription}
               </p>
             )}
 
-            {/* Optional extra content slot (e.g. previewing the deleted item details) */}
+            {/* Optional extra content slot */}
             {extraContent && (
               <div className="mt-4">
                 {extraContent}
               </div>
             )}
 
-            {/* Action buttons (RTL/LTR dynamic direction pairing) */}
+            {/* Action buttons */}
             <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={onClose}
-                className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme disabled:opacity-50 ${
-                  theme === 'dark'
-                    ? 'text-gray-400 hover:text-white hover:bg-[#252528]'
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
-                }`}
+                className="px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme disabled:opacity-50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)]"
               >
                 {currentCancelLabel}
               </button>

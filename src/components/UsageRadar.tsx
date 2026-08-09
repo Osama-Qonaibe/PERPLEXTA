@@ -153,27 +153,27 @@ export const UsageRadar: React.FC = () => {
                 </h3>
               </div>
 
-              {/* Status Badges Row */}
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                 <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/60 border border-white/5 backdrop-blur-md">
-                    <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "text-accent "} />
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-rose-500" : "text-accent"}`}>
-                      {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
-                    </span>
-                 </div>
-                 <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-gray-900/60 border border-white/5 backdrop-blur-md text-gray-400">
-                    <Clock size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                      {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'بدون فترة' : 'None') : (t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period)}
-                    </span>
-                 </div>
-                 {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
-                   <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-accent/10 border border-accent/20 backdrop-blur-md text-accent">
-                      <Calendar size={12} />
-                      <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
-                   </div>
-                 )}
-              </div>
+               {/* Status Badges Row */}
+               <div className="flex flex-wrap items-center justify-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+                     <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"} />
+                     <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"}`}>
+                       {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
+                     </span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-muted)]">
+                     <Clock size={14} />
+                     <span className="text-[9px] font-black uppercase tracking-widest">
+                       {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'بدون فترة' : 'None') : (t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period)}
+                     </span>
+                  </div>
+                  {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--bg-accent-muted)] border border-[var(--border-accent)] text-[var(--text-primary)]">
+                       <Calendar size={12} />
+                       <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
+                    </div>
+                  )}
+               </div>
            </div>
         </div>
       </div>

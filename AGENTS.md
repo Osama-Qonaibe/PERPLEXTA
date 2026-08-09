@@ -20,23 +20,27 @@ This project is governed by immutable architectural principles. Any developer or
 
 This identity serves as our compass. Every engineering decision—from the "Silent Failover" orchestrator to the zero-latency API key vault—is designed to uphold this "Professional Elite" standard.
 
-## 1. Theming & Dark Mode
-- **Engine**: Tailwind CSS v4 with class-based dark mode.
-- **Configuration**: `@variant dark (&:where(.dark, .dark *));` in `index.css`.
-- **Light Mode Vibe**: Clean "white paper" feel. Pure white backgrounds for main areas, very subtle gray borders (`border-gray-200` or `border-gray-100`).
-- **Dark Mode Vibe**: Deep, immersive dark (`bg-[#0f0f11]` for body, `bg-[#1a1a1c]` for elements), with subtle `border-gray-800/60` borders.
+## 1. Theming & Dark Mode System (Single Source of Truth)
+- **Engine**: Tailwind CSS v4 with unified CSS variables in `src/index.css`.
+- **Theme Manager**: `src/utils/ThemeSync.ts` toggles class/data-theme attributes only without JavaScript style overrides.
+- **Surface Architecture**:
+  - `bg-[var(--surface-page)]` for page backgrounds.
+  - `bg-[var(--surface-card)]` for cards and modals.
+  - `bg-[var(--surface-subtle)]` for secondary sections and inputs.
+  - `bg-[var(--surface-inset)]` for overlays and inset elements.
+- **Text & Borders**:
+  - `text-[var(--text-primary)]`, `text-[var(--text-secondary)]`, `text-[var(--text-muted)]`.
+  - `border-[var(--border-main)]`, `border-[var(--border-accent)]`.
 
-## 2. Button Engineering (Input Area & Toolbars)
-All interactive icon buttons must follow this exact structural pattern:
-- **Base**: `bg-transparent border border-transparent transition-all duration-300`
-- **Hover Background**: `hover:bg-gray-50 dark:hover:bg-gray-800`
-- **Rounding**: `rounded-[4px]`
-- **Size**: `w-10 h-10 flex items-center justify-center`
+## 2. Interactive States & Buttons
+All interactive elements use clean surface tokens and accent states:
+- **Base Button**: `px-4 py-2 rounded-[var(--radius)] font-bold transition-theme border border-[var(--border-main)]`
+- **Primary Action**: `bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90`
+- **Active Icon State**: `text-accent hover:bg-[var(--surface-subtle)]` without glowing drop-shadows.
 
-## 3. The "Emerald Glow" Pattern (Active/Hover States)
-To indicate that a tool is active, ready, or being hovered over, we use a specific Emerald Glow effect instead of solid backgrounds.
-- **Default Icon State**: `text-gray-400 transition-all duration-300`
-- **Hover/Active State**: `text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]`
+## 3. Brand & Status Colors
+- **Brand Identity**: Defined exclusively in `src/constants/brand.ts` and `src/index.css`.
+- **Status Colors**: Defined in `src/constants/semanticColors.ts` using standard WCAG-compliant status tokens (`--fg-success`, `--fg-danger`, `--fg-warning`, `--fg-info`).
 
 ## 4. Separators
 Vertical dividers between tool groups should be subtle and consistent:

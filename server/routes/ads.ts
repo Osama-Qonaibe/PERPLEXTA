@@ -13,31 +13,6 @@ let isAdsTableEnsured = false;
 export async function ensureAdsTable() {
   if (isAdsTableEnsured || !pool) return;
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS advertisements (
-        id SERIAL PRIMARY KEY,
-        title_ar VARCHAR(255) NOT NULL,
-        title_en VARCHAR(255) NOT NULL,
-        description_ar TEXT,
-        description_en TEXT,
-        image_url TEXT NOT NULL,
-        target_url TEXT NOT NULL,
-        sponsor_name VARCHAR(100),
-        badge_text_ar VARCHAR(50) DEFAULT 'مُموَّل',
-        badge_text_en VARCHAR(50) DEFAULT 'Sponsored',
-        position VARCHAR(50) DEFAULT 'sidebar',
-        format VARCHAR(50) DEFAULT 'sidebar',
-        video_url TEXT,
-        display_order INTEGER DEFAULT 0,
-        is_active BOOLEAN DEFAULT true,
-        click_count INTEGER DEFAULT 0,
-        impression_count INTEGER DEFAULT 0,
-        start_date TIMESTAMP,
-        end_date TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
     const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM advertisements');
     if (checkRes.rows[0].count === 0) {
       await pool.query(`

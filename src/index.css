@@ -283,6 +283,11 @@
   --radius-xl: var(--radius-lg);
   --radius-custom: var(--radius);
 
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-inset: var(--surface-inset);
+
   --color-base: var(--bg-base);
   --color-surface: var(--bg-surface);
   --color-input: var(--bg-input);
