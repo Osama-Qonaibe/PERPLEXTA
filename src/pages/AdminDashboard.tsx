@@ -12267,17 +12267,56 @@ const SystemSettingsView = ({
 
         const data = await response.json();
         if (data.success && data.imageUrl) {
-          if (type === "seo") setSeoImageUrl(data.imageUrl);
-          else if (type === "logo") setLogoBase64(data.imageUrl);
-          else if (type === "logo_light") setLogoLightBase64(data.imageUrl);
-          else if (type === "favicon") setFaviconBase64(data.imageUrl);
+          let updatedLogo = logoBase64;
+          let updatedLogoLight = logoLightBase64;
+          let updatedFavicon = faviconBase64;
+          let updatedSeo = seoImageUrl;
 
-          showToast(
-            dir === "rtl" 
-              ? "تم رفع الملف بنجاح" 
-              : "Asset uploaded successfully", 
-            "success"
-          );
+          if (type === "seo") { setSeoImageUrl(data.imageUrl); updatedSeo = data.imageUrl; }
+          else if (type === "logo") { setLogoBase64(data.imageUrl); updatedLogo = data.imageUrl; }
+          else if (type === "logo_light") { setLogoLightBase64(data.imageUrl); updatedLogoLight = data.imageUrl; }
+          else if (type === "favicon") { setFaviconBase64(data.imageUrl); updatedFavicon = data.imageUrl; }
+
+          try {
+            const saveRes = await fetch("/api/admin/settings", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                logo_url: updatedLogo,
+                logo_light_url: updatedLogoLight,
+                favicon_url: updatedFavicon,
+                seo_image_url: updatedSeo,
+              }),
+            });
+
+            if (saveRes.ok) {
+              setSiteSettings({
+                ...siteSettings,
+                logoBase64: updatedLogo,
+                logoLightBase64: updatedLogoLight,
+                faviconBase64: updatedFavicon,
+                seoImageUrl: updatedSeo,
+              });
+              showToast(
+                dir === "rtl" 
+                  ? "تم رفع وحفظ وتطبيق الشعار بنجاح في قاعدة البيانات!" 
+                  : "Logo uploaded, saved and applied successfully!", 
+                "success"
+              );
+            } else {
+              showToast(
+                dir === "rtl" 
+                  ? "تم رفع الملف، يرجى النقر على حفظ التغييرات" 
+                  : "Uploaded. Click Save to complete.", 
+                "success"
+              );
+            }
+          } catch (persistErr) {
+            console.error('[AssetUpload] Persistence error:', persistErr);
+          }
         } else {
           throw new Error("Upload response was unsuccessful");
         }

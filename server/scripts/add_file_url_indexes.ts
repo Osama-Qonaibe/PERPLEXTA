@@ -22,10 +22,6 @@ async function main() {
     { table: 'users', column: 'avatar', indexName: 'idx_users_avatar' },
     { table: 'bulletin_pages', column: 'avatar_url', indexName: 'idx_bulletin_pages_avatar_url' },
     { table: 'bulletin_pages', column: 'cover_url', indexName: 'idx_bulletin_pages_cover_url' },
-    { table: 'system_settings', column: 'logo_url', indexName: 'idx_system_settings_logo_url' },
-    { table: 'system_settings', column: 'logo_light_url', indexName: 'idx_system_settings_logo_light_url' },
-    { table: 'system_settings', column: 'seo_image_url', indexName: 'idx_system_settings_seo_image_url' },
-    { table: 'system_settings', column: 'favicon_url', indexName: 'idx_system_settings_favicon_url' },
   ];
 
   for (const { table, column, indexName } of indexes) {

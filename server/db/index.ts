@@ -68,10 +68,14 @@ export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) 
 
 export function createInternalPool(connectionString: string, max = 1, connectionTimeoutMillis = 5000) {
   const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
-  return new Pool({
+  const p = new Pool({
     connectionString: safeConnStr,
     ...getBasePoolConfig(max, connectionTimeoutMillis),
   });
+  p.on('error', (e: any) => {
+    console.error('[DB] Idle internal client error:', e?.message || e);
+  });
+  return p;
 }
 
 export function getLedgerPool() { return ledgerPool || pool; }
@@ -182,10 +186,10 @@ export async function initializePerplextaPools(
         ...getBasePoolConfig(finalSecurityMax, 5000),
       });
 
-      pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e.message));
-      if (ledgerPool   !== pool) ledgerPool.on('error',   (e: any) => console.error('[DB] Idle ledger client error:', e.message));
-      if (externalPool !== pool) externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e.message));
-      if (securityPool !== pool) securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e.message));
+      pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
+      if (ledgerPool   !== pool) ledgerPool.on('error',   (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
+      if (externalPool !== pool) externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
+      if (securityPool !== pool) securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
 
       currentCoreUrl = coreUrl; currentLedgerUrl = finalLedgerUrl;
       currentExternalUrl = finalExternalUrl; currentSecurityUrl = finalSecurityUrl;

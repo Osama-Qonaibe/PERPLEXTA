@@ -5,10 +5,9 @@ import helmet from 'helmet';
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
-import { globalLimiter, adminLimiter, authLimiter } from './middleware/rateLimit.js';
+import { globalLimiter, adminLimiter } from './middleware/rateLimit.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { uploadValidator } from './middleware/uploadValidator.js';
-import { getOrCreateSigningKeys } from './utils/keys.js';
 import { generateMarkdownForPage, estimateMarkdownTokens } from './utils/markdown-for-agents.js';
 import { getBaseUrl, getPreferredLanguage } from './utils/request.js';
 import { generateAuthMd } from './utils/auth-md.js';
@@ -812,13 +811,6 @@ import metricsRoutes from './routes/metrics.js';
 import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
-
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    console.log(`[API Request] ${req.method} ${req.path}`);
-  }
-  next();
-});
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);

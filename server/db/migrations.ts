@@ -2098,11 +2098,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
       await safeIndex(tx, 'bulletin_pages', 'avatar_url', 'idx_bulletin_pages_avatar_url');
       await safeIndex(tx, 'bulletin_pages', 'cover_url', 'idx_bulletin_pages_cover_url');
-
-      await safeIndex(tx, 'system_settings', 'logo_url', 'idx_system_settings_logo_url');
-      await safeIndex(tx, 'system_settings', 'logo_light_url', 'idx_system_settings_logo_light_url');
-      await safeIndex(tx, 'system_settings', 'seo_image_url', 'idx_system_settings_seo_image_url');
-      await safeIndex(tx, 'system_settings', 'favicon_url', 'idx_system_settings_favicon_url');
     });
 
     await runVersioned('v74_google_tool_connections', 'Creating google_tool_connections table', async (tx) => {
@@ -2144,6 +2139,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         quota_warning_threshold_low: { type: 'INTEGER', default: '50' },
         quota_warning_threshold_high: { type: 'INTEGER', default: '80' }
       });
+    });
+    await runVersioned('v78_drop_system_settings_logo_indexes', 'Dropping system_settings image indexes to support base64 logos', async (tx) => {
+      await tx.query(`DROP INDEX IF EXISTS idx_system_settings_logo_url`);
+      await tx.query(`DROP INDEX IF EXISTS idx_system_settings_logo_light_url`);
+      await tx.query(`DROP INDEX IF EXISTS idx_system_settings_seo_image_url`);
+      await tx.query(`DROP INDEX IF EXISTS idx_system_settings_favicon_url`);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');

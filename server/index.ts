@@ -1,5 +1,15 @@
 import 'dotenv/config';
 import { createServer } from 'http';
+
+process.on('uncaughtException', (err: any) => {
+  console.error('[Process] Uncaught Exception:', err?.message || err);
+  if (err?.stack) console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Process] Unhandled Promise Rejection:', reason?.message || reason);
+});
+
 import app from './app.js';
 import { initSocket } from './config/socket.js';
 import { initializePerplextaPools, synchronizePerplextaPoolsFromRegistry } from './db/index.js';
