@@ -1022,7 +1022,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                       
                       {editImage ? (
                         <div className="absolute inset-0 w-full h-full object-cover animate-fade-in">
-                          <img src={editImage ? editImage.split(',')[0].trim() : ''} className="w-full h-full object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
+                          <img src={editImage ? (editImage.startsWith('data:') ? editImage : editImage.split(',')[0].trim()) : ''} className="w-full h-full object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
                         </div>
                       ) : uploadingImage ? (
                         <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />

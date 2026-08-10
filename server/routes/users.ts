@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { getUserProfile, updateUserProfile, getUserUsage } from '../services/users.js';
@@ -12,7 +14,14 @@ router.post("/avatar", authenticateToken, upload.single('file'), handleMulterErr
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    const avatarUrl = normalizeMediaUrl(optResult.fileUrl);
+    
+    const optimizedPath = path.join(process.cwd(), optResult.fileUrl.replace(/^\//, ''));
+    const fileBuffer = await fs.readFile(optimizedPath);
+    const avatarUrl = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
+    
+    // Cleanup local files
+    await fs.unlink(req.file.path).catch(() => {});
+    await fs.unlink(optimizedPath).catch(() => {});
     const updated = await updateUserProfile(req.user.id, { avatar: avatarUrl });
     res.json({ success: true, url: avatarUrl, user: updated });
   } catch (error: any) {

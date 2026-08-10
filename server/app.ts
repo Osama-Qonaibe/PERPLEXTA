@@ -323,6 +323,7 @@ const mediaMimeTypes: Record<string, string> = {
 };
 
 async function checkIsPublicFile(filename: string): Promise<boolean> {
+  console.log('[checkIsPublicFile] Checking file:', filename);
   const cleanName = path.basename(filename.split('?')[0].replace(/^(\/)?(uploads\/)+/i, ''));
   const cacheKey = `public_ref:${cleanName}`;
   const now = Date.now();
@@ -340,7 +341,11 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
 
   if (filePermissionCache.has(cacheKey)) {
     const cached = filePermissionCache.get(cacheKey)!;
-    if (now < cached.expiresAt && cached.authorized) return true;
+    if (now < cached.expiresAt && cached.authorized) {
+      console.log('[checkIsPublicFile] Cache hit, authorized:', cacheKey);
+      return true;
+    }
+    console.log('[checkIsPublicFile] Cache expired or not authorized, deleting:', cacheKey);
     filePermissionCache.delete(cacheKey);
   }
 
@@ -351,6 +356,7 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
     );
     let isPublic = false;
     if (fileCheck.rows.length > 0) {
+      console.log('[checkIsPublicFile] Found file in user_files:', cleanName);
       const row = fileCheck.rows[0];
       const meta = row.metadata || {};
       if (
@@ -379,7 +385,10 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
       `, [pattern]);
 
       if (combinedCheck.rows[0]?.is_public) {
+        console.log('[checkIsPublicFile] Found file in public tables (e.g. system_settings):', cleanName);
         isPublic = true;
+      } else {
+        console.log('[checkIsPublicFile] File not found in any public tables:', cleanName);
       }
     }
 

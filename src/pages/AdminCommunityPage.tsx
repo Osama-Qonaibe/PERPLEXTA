@@ -29,16 +29,24 @@ export const AdminCommunityPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // New Article Form state
-  const [blogTitleEn, setBlogTitleEn] = useState('');
-  const [blogTitleAr, setBlogTitleAr] = useState('');
-  const [blogContentEn, setBlogContentEn] = useState('');
-  const [blogContentAr, setBlogContentAr] = useState('');
+  const [blogTitleEn, setBlogTitleEn] = useState(() => localStorage.getItem('draft_blogTitleEn') || '');
+  const [blogTitleAr, setBlogTitleAr] = useState(() => localStorage.getItem('draft_blogTitleAr') || '');
+  const [blogContentEn, setBlogContentEn] = useState(() => localStorage.getItem('draft_blogContentEn') || '');
+  const [blogContentAr, setBlogContentAr] = useState(() => localStorage.getItem('draft_blogContentAr') || '');
   const [blogCategoryEn, setBlogCategoryEn] = useState('');
   const [blogCategoryAr, setBlogCategoryAr] = useState('');
   const [blogImageUrl, setBlogImageUrl] = useState('');
   const [publishingArticle, setPublishingArticle] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('draft_blogTitleEn', blogTitleEn);
+    localStorage.setItem('draft_blogTitleAr', blogTitleAr);
+    localStorage.setItem('draft_blogContentEn', blogContentEn);
+    localStorage.setItem('draft_blogContentAr', blogContentAr);
+  }, [blogTitleEn, blogTitleAr, blogContentEn, blogContentAr]);
+
 
   // Edit Mode state
   const [editingArticleId, setEditingArticleId] = useState<number | null>(null);

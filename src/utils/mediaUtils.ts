@@ -178,17 +178,23 @@ export function getMediaUrl(url?: string | null): string {
 
   clean = clean.replace(/^https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i, '');
 
-  if (clean.includes(',')) {
-    clean = clean.split(',')[0].trim();
-  }
-
   if (
     clean.startsWith('http://') ||
     clean.startsWith('https://') ||
     clean.startsWith('blob:') ||
     clean.startsWith('data:')
   ) {
+    // If it's a data URL, do NOT split by comma, as base64 strings contain commas.
+    if (clean.startsWith('data:')) return clean;
+    
+    if (clean.includes(',')) {
+      clean = clean.split(',')[0].trim();
+    }
     return clean;
+  }
+
+  if (clean.includes(',')) {
+    clean = clean.split(',')[0].trim();
   }
 
   let resolved = '';

@@ -2134,6 +2134,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         font_config_en: { type: 'TEXT' }
       });
     });
+    await runVersioned('v76_ensure_email_notifications', 'Ensuring email_notifications column exists on users', async (tx) => {
+      await ensureColumnsBulk(tx, 'users', {
+        email_notifications: { type: 'BOOLEAN', default: 'true' }
+      });
+    });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
 
@@ -3557,10 +3562,15 @@ export async function verifySchemaIntegrity() {
     }
   };
 
-  const expectedSchema: Record<string, Record<string, { columns: string[]; repairCols?: Record<string, string> }>> = {
+  const expectedSchema: Record<string, Record<string, { columns: string[]; repairCols?: Record<string, string | { type: string; default?: any }> }>> = {
     core: {
       users: {
-        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications']
+        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications'],
+        repairCols: {
+          email_notifications: { type: 'BOOLEAN', default: 'true' },
+          avatar: { type: 'TEXT' },
+          referral_code: { type: 'VARCHAR(6)' }
+        }
       },
       chats: {
         columns: ['id', 'user_id', 'title', 'tool_id', 'context_summary', 'is_pinned', 'created_at', 'updated_at', 'tool']
@@ -3688,18 +3698,21 @@ export async function verifySchemaIntegrity() {
         for (const colName of spec.columns) {
           if (!activeCols.has(colName)) {
             report.passed = false;
+            const rCol = spec.repairCols?.[colName];
+            const expectedTypeStr = typeof rCol === 'string' ? rCol : (rCol ? `${rCol.type}${rCol.default !== undefined ? ' DEFAULT ' + rCol.default : ''}` : 'VARCHAR');
             report.missingColumns.push({
               db: groupName,
               table: tableName,
               column: colName,
-              expectedType: spec.repairCols?.[colName] || 'VARCHAR'
+              expectedType: expectedTypeStr
             });
             console.warn(`[Schema Integrity] Missing column: ${tableName}.${colName} in database group ${groupName}`);
 
-            if (spec.repairCols?.[colName]) {
+            if (rCol) {
               try {
+                const colConfig = typeof rCol === 'string' ? { type: rCol } : rCol;
                 await ensureColumnsBulk(targetPoolObj, tableName, {
-                  [colName]: { type: spec.repairCols[colName] }
+                  [colName]: colConfig
                 });
                 report.repairedColumns.push(`${tableName}.${colName}`);
                 console.log(`[Schema Integrity] Column ${tableName}.${colName} added successfully.`);

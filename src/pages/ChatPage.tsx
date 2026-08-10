@@ -4066,7 +4066,7 @@ export const ChatPage: React.FC = () => {
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState(() => {
-    return sessionStorage.getItem('draft_query') || '';
+    return localStorage.getItem('draft_query') || '';
   });
   const [isFocused, setIsFocused] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'fast' | 'thinking' | 'pro'>(() => {
@@ -4241,12 +4241,12 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (!query) {
-      sessionStorage.setItem('draft_query', '');
+      localStorage.setItem('draft_query', '');
       return;
     }
 
     const handler = setTimeout(() => {
-      sessionStorage.setItem('draft_query', query);
+      localStorage.setItem('draft_query', query);
     }, 500); 
 
     return () => {
@@ -4467,9 +4467,20 @@ export const ChatPage: React.FC = () => {
   }, [isGenerating]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState('');
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(() => { const cached = localStorage.getItem(`draft_edit_index_${routeChatId || 'new'}`); return cached ? parseInt(cached, 10) : null; });
+  const [editValue, setEditValue] = useState(() => localStorage.getItem(`draft_edit_value_${routeChatId || 'new'}`) || '');
   const [showPinnedModal, setShowPinnedModal] = useState(false);
+
+  useEffect(() => {
+    if (editingMessageIndex !== null) {
+      localStorage.setItem(`draft_edit_index_${routeChatId || 'new'}`, editingMessageIndex.toString());
+      localStorage.setItem(`draft_edit_value_${routeChatId || 'new'}`, editValue);
+    } else {
+      localStorage.removeItem(`draft_edit_index_${routeChatId || 'new'}`);
+      localStorage.removeItem(`draft_edit_value_${routeChatId || 'new'}`);
+    }
+  }, [editingMessageIndex, editValue, routeChatId]);
+
 
   const handleRegenerate = async (index: number) => {
     if (isGenerating) return;

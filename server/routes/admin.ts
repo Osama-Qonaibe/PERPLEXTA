@@ -3403,8 +3403,17 @@ router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), 
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
-    res.json({ success: true, imageUrl });
+    
+    // Read the optimized file into a base64 string to persist across container reboots
+    const optimizedPath = path.join(process.cwd(), optResult.fileUrl.replace(/^\//, ''));
+    const fileBuffer = await fs.readFile(optimizedPath);
+    const base64Str = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
+    
+    // Clean up local files
+    await fs.unlink(req.file.path).catch(() => {});
+    await fs.unlink(optimizedPath).catch(() => {});
+
+    res.json({ success: true, imageUrl: base64Str });
   } catch (error: any) {
     console.error('[AssetUpload] Upload failed:', error);
     res.status(500).json({ error: error.message || 'Image upload failed' });
@@ -3417,8 +3426,17 @@ router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
     }
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    const imageUrl = normalizeMediaUrl(optResult.fileUrl);
-    res.json({ success: true, imageUrl });
+    
+    // Read the optimized file into a base64 string to persist across container reboots
+    const optimizedPath = path.join(process.cwd(), optResult.fileUrl.replace(/^\//, ''));
+    const fileBuffer = await fs.readFile(optimizedPath);
+    const base64Str = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
+    
+    // Clean up local files
+    await fs.unlink(req.file.path).catch(() => {});
+    await fs.unlink(optimizedPath).catch(() => {});
+
+    res.json({ success: true, imageUrl: base64Str });
   } catch (error: any) {
     console.error('[SEOImageUpload] Upload failed:', error);
     res.status(500).json({ error: error.message || 'Image upload failed' });
