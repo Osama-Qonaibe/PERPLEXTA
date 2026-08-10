@@ -651,3 +651,23 @@ html:not(.dark) button.bg-gray-900 svg,
 html:not(.dark) a.bg-black svg {
   color: #000000 !important;
 }
+/* Admin Dashboard Mobile-First Overrides & Layout Logic */
+@media (max-width: 768px) {
+  /* Enforce vertical stacking for admin dashboard cards on small screens */
+  .admin-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+  
+  /* Refine banner/avatar overlap to prevent clipping on mobile/tablets */
+  .profile-banner-container {
+    padding-bottom: 3rem !important; /* Make room for the avatar to overlap */
+  }
+  
+  .profile-avatar-overlap {
+    position: relative;
+    margin-top: -3rem !important; /* Pull up avatar to overlap the banner */
+    z-index: 10;
+  }
+}

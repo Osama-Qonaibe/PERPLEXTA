@@ -9,6 +9,7 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "migrate:drop-forum": "tsx server/scripts/delete_forum_tables.ts",
+    "sync:metadata": "tsx server/scripts/sync_seo_metadata.ts",
     "clean": "rm -rf dist",
     "check:colors": "node scripts/check-color-governance.js",
     "lint": "tsc --noEmit"
@@ -26,6 +27,7 @@
     "@x402/express": "^2.14.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "cors": "^2.8.6",

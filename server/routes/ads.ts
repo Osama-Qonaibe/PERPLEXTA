@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs/promises';
+import path from 'path';
 import { pool } from '../db/index.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 import { Advertisement } from '../db/types.js';
@@ -7,6 +9,19 @@ import { formatDatabaseError } from '../utils/dbErrors.js';
 const router = express.Router();
 
 let isAdsTableEnsured = false;
+
+async function deleteLocalFileIfPresent(fileUrl?: string | null) {
+  if (!fileUrl || !fileUrl.startsWith('/uploads/')) return;
+  try {
+    const filename = path.basename(fileUrl);
+    const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
+    await fs.unlink(filePath).catch(() => {});
+    const altPath = path.join(process.cwd(), 'uploads', filename);
+    await fs.unlink(altPath).catch(() => {});
+  } catch (e) {
+    // ignore
+  }
+}
 
 /**
  * Seed data helper: ensures initial default advertisements exist in DB
@@ -310,6 +325,7 @@ router.post('/admin/create', authenticateAdmin, async (req, res) => {
       description_en,
       image_url,
       video_url,
+      poster_url,
       target_url,
       sponsor_name,
       badge_text_ar,
@@ -326,8 +342,8 @@ router.post('/admin/create', authenticateAdmin, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO advertisements 
-       (title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       (title_ar, title_en, description_ar, description_en, image_url, video_url, poster_url, target_url, sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [
         title_ar.trim(),
@@ -336,6 +352,7 @@ router.post('/admin/create', authenticateAdmin, async (req, res) => {
         description_en ? description_en.trim() : null,
         image_url.trim(),
         video_url ? video_url.trim() : null,
+        poster_url ? poster_url.trim() : null,
         target_url.trim(),
         sponsor_name ? sponsor_name.trim() : 'Sponsor',
         badge_text_ar ? badge_text_ar.trim() : 'مُموَّل',
@@ -368,6 +385,7 @@ router.put('/admin/update/:id', authenticateAdmin, async (req, res) => {
       description_en,
       image_url,
       video_url,
+      poster_url,
       target_url,
       sponsor_name,
       badge_text_ar,
@@ -381,10 +399,10 @@ router.put('/admin/update/:id', authenticateAdmin, async (req, res) => {
     const result = await pool.query(
       `UPDATE advertisements 
        SET title_ar = $1, title_en = $2, description_ar = $3, description_en = $4,
-           image_url = $5, video_url = $6, target_url = $7, sponsor_name = $8, badge_text_ar = $9,
-           badge_text_en = $10, position = $11, format = $12, display_order = $13, is_active = $14,
+           image_url = $5, video_url = $6, poster_url = $7, target_url = $8, sponsor_name = $9, badge_text_ar = $10,
+           badge_text_en = $11, position = $12, format = $13, display_order = $14, is_active = $15,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $15
+       WHERE id = $16
        RETURNING *`,
       [
         title_ar,
@@ -393,6 +411,7 @@ router.put('/admin/update/:id', authenticateAdmin, async (req, res) => {
         description_en || null,
         image_url,
         video_url ? video_url.trim() : null,
+        poster_url ? poster_url.trim() : null,
         target_url,
         sponsor_name || null,
         badge_text_ar || 'مُموَّل',
@@ -446,6 +465,13 @@ router.patch('/admin/toggle/:id', authenticateAdmin, async (req, res) => {
 router.delete('/admin/delete/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    const adRes = await pool.query('SELECT image_url, video_url, poster_url FROM advertisements WHERE id = $1', [id]);
+    if (adRes.rows.length > 0) {
+      const ad = adRes.rows[0];
+      await deleteLocalFileIfPresent(ad.image_url);
+      await deleteLocalFileIfPresent(ad.video_url);
+      await deleteLocalFileIfPresent(ad.poster_url);
+    }
     const result = await pool.query('DELETE FROM advertisements WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {
@@ -458,5 +484,33 @@ router.delete('/admin/delete/:id', authenticateAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to delete advertisement' });
   }
 });
+
+/**
+ * DELETE /api/admin/ads/bulk
+ * Bulk delete advertisements
+ */
+router.delete('/admin/bulk', authenticateAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'No ad IDs provided for bulk deletion' });
+    }
+
+    const adsRes = await pool.query('SELECT image_url, video_url, poster_url FROM advertisements WHERE id = ANY($1::int[])', [ids]);
+    for (const ad of adsRes.rows) {
+      await deleteLocalFileIfPresent(ad.image_url);
+      await deleteLocalFileIfPresent(ad.video_url);
+      await deleteLocalFileIfPresent(ad.poster_url);
+    }
+
+    const result = await pool.query('DELETE FROM advertisements WHERE id = ANY($1::int[]) RETURNING id', [ids]);
+    res.json({ success: true, deletedCount: result.rowCount });
+  } catch (error: any) {
+    console.error('[Admin Ads API] Bulk delete error:', error.message);
+    res.status(500).json({ error: 'Failed to bulk delete advertisements' });
+  }
+});
+
+
 
 export default router;

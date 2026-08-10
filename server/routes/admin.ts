@@ -11,7 +11,8 @@ import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { createNotification, logSystemActivity } from '../services/notifications.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
-import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic } from '../services/system.js';
+import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic, getMissingAssetReport } from '../services/system.js';
+import { syncAllContentSeoMetadata, auditContentSeoItems, syncSingleContentSeoItem, getSmartSeoSuggestion, applySmartSeoSuggestion } from '../services/seoSync.js';
 import { isSafeHost } from '../utils/helpers.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
@@ -3397,6 +3398,51 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/missing-assets-report", authenticateAdmin, async (req, res) => {
+  try {
+    const report = await getMissingAssetReport();
+    res.json({ success: true, ...report });
+  } catch (error: any) {
+    console.error('[Admin Missing Assets Report Error]:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate missing asset report.' });
+  }
+});
+
+router.delete("/missing-assets", authenticateAdmin, async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(503).json({ error: 'Database connection unavailable.' });
+    }
+    const { ids } = req.body;
+    let idsToDelete: number[] = [];
+
+    if (Array.isArray(ids) && ids.length > 0) {
+      idsToDelete = ids;
+    } else {
+      const report = await getMissingAssetReport();
+      idsToDelete = report.missingAssets.map((m: any) => m.id);
+    }
+
+    if (idsToDelete.length === 0) {
+      return res.json({ success: true, deletedCount: 0, message: 'No missing assets to purge.' });
+    }
+
+    const delRes = await pool.query(
+      'DELETE FROM user_files WHERE id = ANY($1::int[]) RETURNING id',
+      [idsToDelete]
+    );
+
+    res.json({
+      success: true,
+      deletedCount: delRes.rowCount || idsToDelete.length,
+      deletedIds: idsToDelete
+    });
+  } catch (error: any) {
+    console.error('[Admin Purge Missing Assets Error]:', error);
+    res.status(500).json({ error: error.message || 'Failed to purge missing assets.' });
+  }
+});
+
 router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
@@ -3462,6 +3508,103 @@ router.post("/settings/repair-assets", authenticateAdmin, async (req, res) => {
   } catch (error: any) {
     console.error('[Admin] Asset repair failed:', error);
     res.status(500).json({ error: error.message || 'Failed to repair system assets' });
+  }
+});
+
+router.post("/sync-metadata", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await syncAllContentSeoMetadata();
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Metadata sync failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to sync SEO metadata' });
+  }
+});
+
+router.post("/settings/sync-metadata", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await syncAllContentSeoMetadata();
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Metadata sync failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to sync SEO metadata' });
+  }
+});
+
+router.get("/seo-content-audit", authenticateAdmin, async (req, res) => {
+  try {
+    const auditData = await auditContentSeoItems();
+    res.json(auditData);
+  } catch (error: any) {
+    console.error('[Admin] SEO content audit failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate SEO content audit' });
+  }
+});
+
+import { runAdSeoIndexerJob } from '../services/tasks/adSeoIndexer.js';
+
+router.post("/ads/sync-metadata", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await runAdSeoIndexerJob();
+    if (result.success) {
+      res.json({ success: true, count: result.updatedCount });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to sync advertisement metadata' });
+    }
+  } catch (error: any) {
+    console.error('[Admin Ads API] Bulk sync metadata error:', error.message);
+    res.status(500).json({ error: 'Failed to sync advertisement metadata' });
+  }
+});
+
+router.post("/seo-content-audit/sync-item", authenticateAdmin, async (req, res) => {
+  try {
+    const { type, id } = req.body;
+    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    }
+    const result = await syncSingleContentSeoItem(type, parseInt(id, 10));
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Single SEO item sync failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to sync single SEO item' });
+  }
+});
+
+router.post("/seo-content-audit/suggest", authenticateAdmin, async (req, res) => {
+  try {
+    const { type, id } = req.body;
+    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    }
+    const suggestion = await getSmartSeoSuggestion(type, parseInt(id, 10));
+    res.json(suggestion);
+  } catch (error: any) {
+    console.error('[Admin] Smart SEO suggestion failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate Smart SEO suggestion' });
+  }
+});
+
+router.post("/seo-content-audit/apply", authenticateAdmin, async (req, res) => {
+  try {
+    const { type, id, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, slug, og_image_url } = req.body;
+    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    }
+    const result = await applySmartSeoSuggestion(type, parseInt(id, 10), {
+      meta_title_en,
+      meta_title_ar,
+      meta_description_en,
+      meta_description_ar,
+      keywords_en,
+      keywords_ar,
+      slug,
+      og_image_url
+    });
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Apply Smart SEO failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to apply Smart SEO update' });
   }
 });
 

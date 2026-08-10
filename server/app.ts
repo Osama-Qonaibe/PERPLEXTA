@@ -322,7 +322,6 @@ const mediaMimeTypes: Record<string, string> = {
 };
 
 async function checkIsPublicFile(filename: string): Promise<boolean> {
-  console.log('[checkIsPublicFile] Checking file:', filename);
   const cleanName = path.basename(filename.split('?')[0].replace(/^(\/)?(uploads\/)+/i, ''));
   const cacheKey = `public_ref:${cleanName}`;
   const now = Date.now();
@@ -341,10 +340,8 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
   if (filePermissionCache.has(cacheKey)) {
     const cached = filePermissionCache.get(cacheKey)!;
     if (now < cached.expiresAt && cached.authorized) {
-      console.log('[checkIsPublicFile] Cache hit, authorized:', cacheKey);
       return true;
     }
-    console.log('[checkIsPublicFile] Cache expired or not authorized, deleting:', cacheKey);
     filePermissionCache.delete(cacheKey);
   }
 
@@ -355,7 +352,6 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
     );
     let isPublic = false;
     if (fileCheck.rows.length > 0) {
-      console.log('[checkIsPublicFile] Found file in user_files:', cleanName);
       const row = fileCheck.rows[0];
       const meta = row.metadata || {};
       if (
@@ -384,10 +380,8 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
       `, [pattern]);
 
       if (combinedCheck.rows[0]?.is_public) {
-        console.log('[checkIsPublicFile] Found file in public tables (e.g. system_settings):', cleanName);
         isPublic = true;
       } else {
-        console.log('[checkIsPublicFile] File not found in any public tables:', cleanName);
       }
     }
 
@@ -410,7 +404,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const filename = path.basename(cleanRaw.split('?')[0]);
     const filePath = path.join(uploadsPath, filename);
 
-    console.log(`[Uploads] Requesting file: ${filename}, Full Path: ${filePath}`);
 
     let resolvedPath = path.resolve(filePath);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
@@ -420,7 +413,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     }
 
     if (!fs.existsSync(resolvedPath)) {
-      console.log(`[Uploads] File not found directly: ${filename}, searching for fallbacks...`);
       const ext = path.extname(filename);
       const nameWithoutExt = path.basename(filename, ext);
       const cleanBaseName = nameWithoutExt.replace(/(_opt|_optimized)+$/i, '');
@@ -440,7 +432,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       let foundFallback = false;
       for (const cand of candidates) {
         if (fs.existsSync(cand)) {
-          console.log(`[Uploads] Fallback found: ${cand}`);
           resolvedPath = cand;
           foundFallback = true;
           break;
@@ -453,7 +444,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         const isImageReq = /\.(webp|png|jpg|jpeg|gif|svg)$/i.test(filename) || filename.includes('_opt') || filename.includes('logo');
         
         if (isImageReq && fs.existsSync(defaultAppIcon)) {
-          console.log(`[Uploads] Serving default asset fallback for missing image: ${filename}`);
           resolvedPath = defaultAppIcon;
         } else {
           console.warn(`[Uploads] File not found: ${filename}`);
@@ -467,7 +457,6 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
     const mimeType = mediaMimeTypes[actualExt] || 'application/octet-stream';
 
     const serveFile = async (pathToSend: string) => {
-      console.log(`[Uploads] Serving file: ${pathToSend}, MIME: ${mimeType}`);
       const stat = fs.statSync(pathToSend);
       const mtime = stat.mtime.toUTCString();
 
@@ -828,6 +817,7 @@ import metricsRoutes from './routes/metrics.js';
 import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
+import aiRoutes from './routes/ai.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
@@ -968,6 +958,7 @@ app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/google-chat', googleChatRoutes);
+app.use('/api/ai', aiRoutes);
 
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';
@@ -1184,16 +1175,33 @@ async function injectSEOTags(
     const slug = normalizedPath.split('/blog/')[1];
     if (slug) {
       try {
-        const blogRes = await pool.query('SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE slug = $1', [slug]);
+        const blogRes = await pool.query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url FROM blog_articles WHERE slug = $1',
+          [slug]
+        );
         if (blogRes.rows.length > 0) {
           const article = blogRes.rows[0];
-          currentTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
-          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          if (article.image_url) {
-            imageUrl = validateImageUrl(article.image_url);
+          const customMetaTitle = preferredLang === 'ar' ? article.meta_title_ar : article.meta_title_en;
+          currentTitle = customMetaTitle || (preferredLang === 'ar' ? article.title_ar : article.title_en);
+
+          const customMetaDesc = preferredLang === 'ar' ? article.meta_description_ar : article.meta_description_en;
+          if (customMetaDesc) {
+            currentDesc = customMetaDesc;
+          } else {
+            let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
+            cleanContent = (cleanContent || '').replace(/[#*`_\[\]()]/g, '');
+            currentDesc = cleanContent.slice(0, 160).trim();
+            if (cleanContent.length > 160) currentDesc += '...';
+          }
+
+          const customKeywords = preferredLang === 'ar' ? article.keywords_ar : article.keywords_en;
+          if (customKeywords) {
+            currentKeywords = customKeywords;
+          }
+
+          const targetImg = article.og_image_url || article.image_url;
+          if (targetImg) {
+            imageUrl = validateImageUrl(targetImg);
           }
         }
       } catch (err) {
@@ -1201,20 +1209,37 @@ async function injectSEOTags(
       }
     }
   } else if (normalizedPath.startsWith('/marketplace/')) {
-    const itemIdStr = normalizedPath.split('/marketplace/')[1];
-    const itemId = parseInt(itemIdStr, 10);
-    if (!isNaN(itemId)) {
+    const itemParam = normalizedPath.split('/marketplace/')[1];
+    const itemId = parseInt(itemParam, 10);
+    if (itemParam) {
       try {
-        const marketRes = await pool.query('SELECT title_en, title_ar, description_en, description_ar, image_url FROM marketplace_items WHERE id = $1', [itemId]);
+        const marketRes = await pool.query(
+          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url FROM marketplace_items WHERE id = $1 OR slug = $2',
+          [isNaN(itemId) ? -1 : itemId, itemParam]
+        );
         if (marketRes.rows.length > 0) {
           const item = marketRes.rows[0];
-          currentTitle = preferredLang === 'ar' ? item.title_ar : item.title_en;
-          let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          if (item.image_url) {
-            imageUrl = validateImageUrl(item.image_url);
+          const customMetaTitle = preferredLang === 'ar' ? item.meta_title_ar : item.meta_title_en;
+          currentTitle = customMetaTitle || (preferredLang === 'ar' ? item.title_ar : item.title_en);
+
+          const customMetaDesc = preferredLang === 'ar' ? item.meta_description_ar : item.meta_description_en;
+          if (customMetaDesc) {
+            currentDesc = customMetaDesc;
+          } else {
+            let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
+            cleanContent = (cleanContent || '').replace(/[#*`_\[\]()]/g, '');
+            currentDesc = cleanContent.slice(0, 160).trim();
+            if (cleanContent.length > 160) currentDesc += '...';
+          }
+
+          const customKeywords = preferredLang === 'ar' ? item.keywords_ar : item.keywords_en;
+          if (customKeywords) {
+            currentKeywords = customKeywords;
+          }
+
+          const targetImg = item.og_image_url || item.image_url || item.preview_url;
+          if (targetImg) {
+            imageUrl = validateImageUrl(targetImg);
           }
         }
       } catch (err) {

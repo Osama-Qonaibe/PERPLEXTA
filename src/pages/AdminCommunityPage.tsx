@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, Plus, BookOpen, Trash2, Edit, ChevronRight, ShoppingBag, Monitor, ArrowLeft, FileText, Upload, Send } from 'lucide-react';
+import { ShieldCheck, Plus, BookOpen, Trash2, Edit, ChevronRight, ShoppingBag, Monitor, ArrowLeft, FileText, Upload, Send, MonitorSmartphone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { MarketplaceManagementView } from '../components/MarketplaceManagementView';
 import { ActionConfirmationModal } from '../components/ActionConfirmationModal';
 import { toast } from 'sonner';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { SmartMetaSuggestion } from '../components/SmartMetaSuggestion';
 
 interface Article {
   id: number;
@@ -36,6 +37,13 @@ export const AdminCommunityPage: React.FC = () => {
   const [blogCategoryEn, setBlogCategoryEn] = useState('');
   const [blogCategoryAr, setBlogCategoryAr] = useState('');
   const [blogImageUrl, setBlogImageUrl] = useState('');
+  
+  // SEO fields
+  const [metaTitleEn, setMetaTitleEn] = useState('');
+  const [metaDescriptionEn, setMetaDescriptionEn] = useState('');
+  const [metaTitleAr, setMetaTitleAr] = useState('');
+  const [metaDescriptionAr, setMetaDescriptionAr] = useState('');
+
   const [publishingArticle, setPublishingArticle] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -225,7 +233,11 @@ export const AdminCommunityPage: React.FC = () => {
           content_ar: blogContentAr.trim(),
           category_en: blogCategoryEn.trim() || 'Editorials',
           category_ar: blogCategoryAr.trim() || 'افتتاحيات وتحاليل',
-          image_url: blogImageUrl.trim()
+          image_url: blogImageUrl.trim(),
+          meta_title_en: metaTitleEn,
+          meta_description_en: metaDescriptionEn,
+          meta_title_ar: metaTitleAr,
+          meta_description_ar: metaDescriptionAr
         })
       });
 
@@ -301,6 +313,22 @@ export const AdminCommunityPage: React.FC = () => {
         <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
           {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
         </a>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-72px)] bg-[var(--bg-base)] text-center p-6 transition-theme">
+        <MonitorSmartphone size={64} className="text-gray-400 mb-6 drop-shadow-sm" />
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
+          {language === 'ar' ? 'غير متاح على الجوال' : 'Not Available on Mobile'}
+        </h2>
+        <p className="text-base text-gray-500 max-w-sm leading-relaxed">
+          {language === 'ar'
+            ? 'لوحة الإدارة مصممة للشاشات الكبيرة لضمان تجربة تحكم احترافية. يرجى فتح هذه الصفحة من جهاز كمبيوتر مكتبي.'
+            : 'The Admin Dashboard is optimized for larger screens to ensure a professional control experience. Please access this page from a desktop computer.'}
+        </p>
       </div>
     );
   }
@@ -532,14 +560,22 @@ export const AdminCommunityPage: React.FC = () => {
 
                   <div>
                     <label className="block text-[10px] font-mono uppercase text-gray-450 mb-2">{isRtl ? 'المحتوى بالإنجليزية' : 'Content (English)'}</label>
+                    <SmartMetaSuggestion 
+                      content={blogContentEn} 
+                      onApply={(t, d) => { setMetaTitleEn(t); setMetaDescriptionEn(d); }}
+                    />
                     <textarea
                       required
                       rows={6}
                       value={blogContentEn}
                       onChange={(e) => setBlogContentEn(e.target.value)}
                       placeholder="Full Markdown/HTML layout support for premium reports..."
-                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium mb-4"
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                        <input value={metaTitleEn} onChange={(e) => setMetaTitleEn(e.target.value)} placeholder="Meta Title (En)" className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] rounded-sm px-3 text-xs" />
+                        <input value={metaDescriptionEn} onChange={(e) => setMetaDescriptionEn(e.target.value)} placeholder="Meta Description (En)" className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] rounded-sm px-3 text-xs" />
+                    </div>
                   </div>
 
                   <div>
@@ -550,8 +586,12 @@ export const AdminCommunityPage: React.FC = () => {
                       value={blogContentAr}
                       onChange={(e) => setBlogContentAr(e.target.value)}
                       placeholder="دعم نصي متناسق مع اتجاه كتابة RTL للأبحاث والتحاليل..."
-                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent rounded-sm p-4 text-xs placeholder-gray-500 outline-none resize-none font-sans font-medium mb-4"
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                        <input value={metaTitleAr} onChange={(e) => setMetaTitleAr(e.target.value)} placeholder="Meta Title (Ar)" className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] rounded-sm px-3 text-xs" />
+                        <input value={metaDescriptionAr} onChange={(e) => setMetaDescriptionAr(e.target.value)} placeholder="Meta Description (Ar)" className="w-full h-10 bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] rounded-sm px-3 text-xs" />
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-2">

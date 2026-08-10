@@ -2006,42 +2006,6 @@ export const BulletinBoardPage: React.FC = () => {
                       <span>{isRtl ? 'نشر إعلان' : 'Publish Ad'}</span>
                     </button>
                   </div>
-
-                  {/* Search & Sort */}
-                  <div className="space-y-2 pt-1">
-                    <h4 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">{isRtl ? 'البحث والفلترة' : 'Search & Sort'}</h4>
-                    <form onSubmit={handleSearchSubmit} className="relative">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={isRtl ? 'ابحث عن منتج، صفحة...' : 'Search product...'}
-                        className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none"
-                      />
-                      <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    </form>
-
-                    {activeTab === 'board' && (
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none"
-                      >
-                        <option value="latest">{isRtl ? 'ترتيب حسب: الأحدث' : 'Sort: Latest'}</option>
-                        <option value="popular">{isRtl ? 'ترتيب حسب: الأكثر تفاعلاً' : 'Sort: Popular'}</option>
-                      </select>
-                    )}
-                  </div>
-
-                  {/* Mobile Drawer Recommendations Card */}
-                  <RecommendationWidget 
-                    variant="bulletin"
-                    filterType="bulletin" 
-                    limit={3} 
-                    title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
-                    subtitle={isRtl ? 'مقترحات إعلانية وفقاً لاهتماماتك' : 'Tailored ad recommendations'}
-                    className="p-3 mt-5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm"
-                  />
                 </div>
               </motion.div>
             </div>
@@ -2077,23 +2041,23 @@ export const BulletinBoardPage: React.FC = () => {
           </div>
         ) : activeTab === 'pages' && !selectedPageDetail ? (
           /* VIEW 2: DEDICATED ALL PAGES DIRECTORY VERTICAL FEED STREAM */
-          <div className="space-y-6 max-w-4xl mx-auto">
+          <div className="space-y-6 max-w-4xl mx-auto px-2 sm:px-0">
             {/* Header Bar with Back Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveTab('board')}
-                  className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs flex items-center gap-2 shadow transition-theme active:scale-95 shrink-0"
+                  className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition-theme active:scale-95 shrink-0"
                 >
                   {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
                   <span>{isRtl ? 'رجوع إلى خلاصة الإعلانات' : 'Back to Feed'}</span>
                 </button>
                 <div>
-                  <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2">
-                    <Building2 size={18} className="text-accent" />
+                  <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2 mt-2 sm:mt-0">
+                    <Building2 size={18} className="text-accent shrink-0" />
                     <span>{isRtl ? 'دليل كافة الصفحات التجارية الموثوقة' : 'All Verified Merchant Pages'}</span>
                   </h2>
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-[11px] text-gray-400 mt-0.5">
                     {isRtl ? 'موجز متصل لكافة الصفحات التجارية في فلسطين مع إمكانية التمرير والاستكشاف' : 'Continuous vertical feed of all verified merchant pages'}
                   </p>
                 </div>
@@ -2107,7 +2071,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }
                   setIsPageModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs shadow flex items-center gap-1.5 shrink-0"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs shadow flex items-center justify-center gap-1.5 shrink-0"
               >
                 <Plus size={15} />
                 <span>{isRtl ? 'أنشئ صفحتك التجارية' : 'Create Merchant Page'}</span>
@@ -2133,16 +2097,16 @@ export const BulletinBoardPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
                 {pagesList.map(page => (
                   <motion.div
                     key={page.id}
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-gray-800/80 overflow-hidden shadow-sm hover:shadow-md transition-theme space-y-4"
+                    className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-theme space-y-4"
                   >
                     {/* Cover Banner */}
-                    <div className="h-44 sm:h-56 w-full bg-gray-200 dark:bg-gray-800 relative cursor-pointer" onClick={() => handleOpenPageDetail(page.id)}>
+                    <div className="h-32 sm:h-52 w-full bg-gray-200 dark:bg-gray-800 relative cursor-pointer overflow-hidden rounded-t-3xl" onClick={() => handleOpenPageDetail(page.id)}>
                       <img src={getMediaUrl(page.cover_url)} alt={page.name} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                       <span className="absolute top-3 start-3 px-3 py-1 rounded-full bg-black/60 text-white text-[11px] font-bold backdrop-blur-md">
@@ -2151,20 +2115,20 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* Avatar & Header Info */}
-                    <div className="px-6 -mt-12 space-y-3">
+                    <div className="px-4 sm:px-6 -mt-12 sm:-mt-16 space-y-3 relative z-10">
                       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                        <div className="flex items-end gap-3 cursor-pointer" onClick={() => handleOpenPageDetail(page.id)}>
+                        <div className="flex items-end gap-3 cursor-pointer min-w-0" onClick={() => handleOpenPageDetail(page.id)}>
                           <img
                             src={getMediaUrl(page.avatar_url)}
                             alt={page.name}
-                            className="w-20 h-20 sm:w-22 sm:h-22 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-lg shrink-0"
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-xl shrink-0 bg-white dark:bg-gray-800"
                           />
                           <div className="mb-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <h3 className="text-base sm:text-lg font-extrabold truncate hover:text-accent transition-colors">{page.name}</h3>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <h3 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white truncate hover:text-accent transition-colors">{page.name}</h3>
                               <CheckCircle2 size={16} className="text-blue-500 shrink-0" />
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                               <span className="flex items-center gap-1"><MapPin size={12} className="text-accent" /> {page.city}</span>
                               <span>•</span>
                               <span>{page.followers_count} {isRtl ? 'متابع' : 'Followers'}</span>
@@ -2173,25 +2137,25 @@ export const BulletinBoardPage: React.FC = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pt-1 sm:pt-0 overflow-x-auto pb-1 sm:pb-0">
                           <button
                             onClick={() => handleToggleFollowPage(page.id)}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-theme flex items-center gap-1.5 shadow ${
+                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-theme flex items-center gap-1 shadow shrink-0 ${
                               page.user_is_following
                                 ? 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                                 : 'bg-accent text-white hover:bg-accent'
                             }`}
                           >
-                            {page.user_is_following ? <UserCheck size={15} /> : <UserPlus size={15} />}
-                            <span>{page.user_is_following ? (isRtl ? 'تتابعها' : 'Following') : (isRtl ? '+ متابعة' : '+ Follow')}</span>
+                            {page.user_is_following ? <UserCheck size={14} /> : <UserPlus size={14} />}
+                            <span>{page.user_is_following ? (isRtl ? 'متابع' : 'Following') : (isRtl ? 'متابعة' : '+ Follow')}</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenPageDetail(page.id)}
-                            className="px-4 py-2 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs flex items-center gap-1.5 shadow"
+                            className="px-3 py-2 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs flex items-center gap-1 shadow shrink-0"
                           >
                             <Globe size={14} />
-                            <span>{isRtl ? 'زيارة الصفحة والإعلانات' : 'Visit Page'}</span>
+                            <span>{isRtl ? 'زيارة' : 'Visit'}</span>
                           </button>
 
                           {page.whatsapp_number && (
@@ -2199,31 +2163,32 @@ export const BulletinBoardPage: React.FC = () => {
                               href={`https://wa.me/${page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800 font-bold text-xs flex items-center gap-1.5 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                              className="px-3 py-2 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 font-bold text-xs flex items-center gap-1 transition-theme shadow-sm shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }}
                               title={isRtl ? 'تواصل واتساب' : 'WhatsApp'}
                             >
-                              <Phone size={15} />
+                              <Phone size={14} />
+                              <span className="hidden sm:inline">واتساب</span>
                             </a>
                           )}
                         </div>
                       </div>
 
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed pt-1">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 leading-relaxed pt-1 line-clamp-3">
                         {page.description}
                       </p>
                     </div>
 
-                    <div className="px-6 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-xs text-gray-400">
+                    <div className="px-4 sm:px-6 pb-3 pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1.5">
                         <Tag size={13} className="text-accent" />
-                        <span>{page.ads_count || 0} {isRtl ? 'إعلان ومنشور نشط' : 'active ads'}</span>
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">{page.ads_count || 0} {isRtl ? 'إعلان نشط' : 'active ads'}</span>
                       </span>
 
                       <button
                         onClick={() => handleOpenPageDetail(page.id)}
                         className="text-accent font-bold hover:underline flex items-center gap-1 text-xs"
                       >
-                        <span>{isRtl ? 'استعراض المنشورات والمنتجات' : 'Browse Posts'}</span>
+                        <span>{isRtl ? 'استعراض المنتجات' : 'Browse'}</span>
                         {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
                       </button>
                     </div>

@@ -817,6 +817,12 @@ export interface Advertisement {
   is_active: boolean;
   click_count: number;
   impression_count: number;
+  meta_title_ar: string | null;
+  meta_title_en: string | null;
+  meta_description_ar: string | null;
+  meta_description_en: string | null;
+  keywords_ar: string | null;
+  keywords_en: string | null;
   start_date: Date | string | null;
   end_date: Date | string | null;
   created_at: Date | string;

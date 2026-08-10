@@ -440,3 +440,66 @@ export async function repairSystemAssetsDiagnostic() {
 }
 
 export const getAppName = (lang: 'en' | 'ar' = 'en') => lang === 'ar' ? cachedAppNameAr : cachedAppNameEn;
+
+export async function getMissingAssetReport() {
+  if (!pool) return { missingAssets: [], totalChecked: 0, missingCount: 0 };
+  const filesRes = await pool.query(`
+    SELECT id, user_id, chat_id, file_name, file_url, file_size, created_at 
+    FROM user_files 
+    ORDER BY created_at DESC
+  `);
+
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  const publicDir = path.join(process.cwd(), 'public');
+  const rootDir = process.cwd();
+
+  const missingAssets: any[] = [];
+  for (const fileRow of filesRes.rows) {
+    const fileUrl = fileRow.file_url;
+    if (!fileUrl) {
+      missingAssets.push({ ...fileRow, reason: 'Empty file URL' });
+      continue;
+    }
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      continue;
+    }
+
+    let filename = fileUrl;
+    if (filename.startsWith('/uploads/')) {
+      filename = filename.replace('/uploads/', '');
+    } else if (filename.startsWith('uploads/')) {
+      filename = filename.replace('uploads/', '');
+    } else if (filename.startsWith('/')) {
+      filename = filename.slice(1);
+    }
+
+    const possiblePaths = [
+      path.join(uploadDir, path.basename(filename)),
+      path.join(publicDir, fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl),
+      path.join(rootDir, fileUrl.startsWith('/') ? fileUrl.slice(1) : fileUrl),
+      path.join(uploadDir, filename)
+    ];
+
+    let found = false;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      missingAssets.push({
+        ...fileRow,
+        reason: 'File absent on disk storage'
+      });
+    }
+  }
+
+  return {
+    totalChecked: filesRes.rows.length,
+    missingCount: missingAssets.length,
+    missingAssets
+  };
+}
+

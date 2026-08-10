@@ -100,6 +100,7 @@ import {
   UserPlus,
   Sliders,
   Wrench,
+  MonitorSmartphone,
 } from "lucide-react";
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { NotificationThresholdsModal } from "../components/NotificationThresholdsModal";
@@ -109,6 +110,9 @@ import { AdsManagementView } from "./AdsManagementView";
 import { UserManagementView } from "./UserManagementView";
 import { AdminRateLimitMetricsView } from "./AdminRateLimitMetricsView";
 import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
+import { SeoCenterView } from "../components/SeoCenterView";
+import { AdminDiagnosticTool } from "../components/AdminDiagnosticTool";
+import { PagePreviewModal } from "../components/PagePreviewModal";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -121,6 +125,7 @@ const CommandCenterView = ({
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { token, language, socket, dir } = useAppContext();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<{
     monthlyRevenue: number;
     activeUsersToday: number;
@@ -502,6 +507,119 @@ const CommandCenterView = ({
             <p className="text-2xl font-bold">{kpi.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Quick Launchpad & SEO Operations Hub */}
+      <div className="p-5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] space-y-4 shadow-sm transition-theme">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Sparkles size={18} className="text-accent" />
+            <h2 className="text-sm font-black uppercase tracking-wider text-[var(--text-primary)]">
+              {language === 'ar' ? 'اختصارات الأقسام والعمليات السريعة' : 'Command Operations & Quick Launchpad'}
+            </h2>
+          </div>
+          <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
+            {language === 'ar' ? 'وصول فوري' : 'Direct Access'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <button
+            onClick={() => navigate('/admin/seo')}
+            className="p-3 rounded-md border border-accent/40 bg-accent/10 hover:bg-accent/20 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer shadow-sm hover:shadow"
+          >
+            <div className="p-2 rounded bg-accent/20 text-accent group-hover:scale-110 transition-transform">
+              <Globe size={18} />
+            </div>
+            <span className="text-xs font-bold text-accent leading-tight">
+              {language === 'ar' ? 'مركز السيو' : 'SEO Audit'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/orchestrator')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <Cpu size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'الموجّه الذكي' : 'Orchestrator'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/databases')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <Database size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'قواعد البيانات' : 'Databases'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/keys')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <Key size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'مفاتيح API' : 'API Keys'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/radar')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <ShieldCheck size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'رادار الأمان' : 'Security'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/finance')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <Landmark size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'المالية والدفتر' : 'Finance'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/plans')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <CreditCard size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'الاشتراكات' : 'Plans'}
+            </span>
+          </button>
+
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+          >
+            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+              <Users size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
+              {language === 'ar' ? 'المستخدمين' : 'Users'}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -12006,6 +12124,35 @@ const SystemSettingsView = ({
   } | null>(null);
   const [isCheckingAssets, setIsCheckingAssets] = useState(false);
   const [isRepairingAssets, setIsRepairingAssets] = useState(false);
+  const [isSyncingMetadata, setIsSyncingMetadata] = useState(false);
+
+  const handleSyncSeoMetadata = async () => {
+    setIsSyncingMetadata(true);
+    try {
+      const res = await fetch("/api/admin/sync-metadata", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const msg = language === "ar"
+          ? `تمت مزامنة البيانات الوصفية لـ SEO بنجاح. (تم تحديث ${data.totalUpdated} عنصر)`
+          : `SEO metadata sync complete. (${data.totalUpdated} items updated)`;
+        showToast(msg, "success");
+      } else {
+        throw new Error("Metadata sync failed");
+      }
+    } catch (err: any) {
+      showToast(
+        language === "ar"
+          ? "حدث خطأ أثناء مزامنة البيانات الوصفية لـ SEO"
+          : "Error synchronizing SEO metadata",
+        "error"
+      );
+    } finally {
+      setIsSyncingMetadata(false);
+    }
+  };
 
   const checkSystemAssetsDiagnostic = async () => {
     setIsCheckingAssets(true);
@@ -12053,6 +12200,60 @@ const SystemSettingsView = ({
       );
     } finally {
       setIsRepairingAssets(false);
+    }
+  };
+
+  const [missingAssetReport, setMissingAssetReport] = useState<any>(null);
+  const [isScanningMissingAssets, setIsScanningMissingAssets] = useState(false);
+  const [isPurgingMissingAssets, setIsPurgingMissingAssets] = useState(false);
+
+  const fetchMissingAssetReport = async () => {
+    setIsScanningMissingAssets(true);
+    try {
+      const res = await fetch("/api/admin/missing-assets-report", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMissingAssetReport(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch missing asset report:", err);
+    } finally {
+      setIsScanningMissingAssets(false);
+    }
+  };
+
+  const handlePurgeMissingAssets = async (ids?: number[]) => {
+    setIsPurgingMissingAssets(true);
+    try {
+      const res = await fetch("/api/admin/missing-assets", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(ids ? { ids } : {})
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(
+          language === "ar"
+            ? `تم تطهير وحذف ${data.deletedCount} سجل ملف مفقود بنجاح`
+            : `Successfully purged ${data.deletedCount} missing file records`,
+          "success"
+        );
+        fetchMissingAssetReport();
+      } else {
+        throw new Error("Purge failed");
+      }
+    } catch (err) {
+      showToast(
+        language === "ar" ? "فشل تطهير الملفات المفقودة" : "Failed to purge missing assets",
+        "error"
+      );
+    } finally {
+      setIsPurgingMissingAssets(false);
     }
   };
 
@@ -12811,16 +13012,28 @@ const SystemSettingsView = ({
             </div>
             <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
           </div>
-          <button
-            type="button"
-            onClick={checkSystemAssetsDiagnostic}
-            disabled={isCheckingAssets}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
-            title={language === "ar" ? "فحص سلامة ملفات الشعار والهوية" : "Scan system logo & asset files"}
-          >
-            <RefreshCw size={14} className={isCheckingAssets ? "animate-spin" : ""} />
-            <span>{language === "ar" ? "فحص السلامة" : "Scan Assets"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSyncSeoMetadata}
+              disabled={isSyncingMetadata}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium transition-colors border border-emerald-500/20"
+              title={language === "ar" ? "مزامنة العناوين والكلمات المفتاحية والوصف المفقود للمقالات والمنتجات" : "Sync missing SEO titles, descriptions, and keywords for blog & marketplace items"}
+            >
+              <RefreshCw size={14} className={isSyncingMetadata ? "animate-spin" : ""} />
+              <span>{language === "ar" ? "مزامنة SEO للمحتوى" : "Sync Content SEO"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={checkSystemAssetsDiagnostic}
+              disabled={isCheckingAssets}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+              title={language === "ar" ? "فحص سلامة ملفات الشعار والهوية" : "Scan system logo & asset files"}
+            >
+              <RefreshCw size={14} className={isCheckingAssets ? "animate-spin" : ""} />
+              <span>{language === "ar" ? "فحص السلامة" : "Scan Assets"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Orphaned Assets Warning Banner */}
@@ -12869,6 +13082,114 @@ const SystemSettingsView = ({
             </div>
           </div>
         )}
+
+        {/* Missing Asset Report Section */}
+        <div className="mb-8 p-5 rounded-xl border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 text-red-500">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-[var(--text-primary)]">
+                  {language === "ar" ? "تقرير الأصول المفقودة من السيرفر (Missing Asset Report)" : "Missing Asset Report (DB vs Disk Audit)"}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {language === "ar"
+                    ? "فحص وتقاطع جدول الملفات (user_files) مع التخزين الفعلي على السيرفر لاكتشاف أي ملفات مسجلة في القاعدة ومفقودة على القرص."
+                    : "Cross-references user_files table against actual file system storage to detect missing files."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchMissingAssetReport}
+                disabled={isScanningMissingAssets}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-xs font-bold transition-colors border border-accent/20"
+              >
+                <RefreshCw size={14} className={isScanningMissingAssets ? "animate-spin" : ""} />
+                <span>{language === "ar" ? "تشخيص وفحص المفقودات" : "Scan Missing Assets"}</span>
+              </button>
+              {missingAssetReport && missingAssetReport.missingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handlePurgeMissingAssets()}
+                  disabled={isPurgingMissingAssets}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
+                >
+                  <Trash2 size={14} />
+                  <span>{language === "ar" ? `تطهير الكل (${missingAssetReport.missingCount})` : `Purge All (${missingAssetReport.missingCount})`}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {missingAssetReport ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
+                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "إجمالي الملفات المفحوصة" : "Total Checked"}</div>
+                  <div className="font-bold text-base text-[var(--text-primary)] mt-1">{missingAssetReport.totalChecked}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
+                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "الملفات الموجودة سليمة" : "Existing on Disk"}</div>
+                  <div className="font-bold text-base text-emerald-500 mt-1">{missingAssetReport.existingCount}</div>
+                </div>
+                <div className={`col-span-2 p-3 rounded-lg border ${missingAssetReport.missingCount > 0 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'}`}>
+                  <div className="text-[10px] opacity-80">{language === "ar" ? "الملفات المفقودة (متطابقة بالسجل ومغيبة عن القرص)" : "Missing Assets Detected"}</div>
+                  <div className="font-bold text-base mt-1">{missingAssetReport.missingCount}</div>
+                </div>
+              </div>
+
+              {missingAssetReport.missingAssets && missingAssetReport.missingAssets.length > 0 ? (
+                <div className="border border-[var(--border-main)] rounded-lg overflow-hidden bg-[var(--bg-base)]">
+                  <table className="w-full text-start text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
+                        <th className="p-3 text-start">ID</th>
+                        <th className="p-3 text-start">{language === "ar" ? "اسم الملف" : "File Name"}</th>
+                        <th className="p-3 text-start">URL / Path</th>
+                        <th className="p-3 text-center">User ID</th>
+                        <th className="p-3 text-center">{language === "ar" ? "تاريخ الرفع" : "Uploaded At"}</th>
+                        <th className="p-3 text-center">{language === "ar" ? "الإجراء" : "Action"}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-main)]">
+                      {missingAssetReport.missingAssets.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-red-500/5 transition-colors">
+                          <td className="p-3 font-mono">#{item.id}</td>
+                          <td className="p-3 font-medium text-[var(--text-primary)]">{item.file_name || 'N/A'}</td>
+                          <td className="p-3 font-mono text-xs text-red-500 truncate max-w-[200px]" title={item.file_url}>{item.file_url}</td>
+                          <td className="p-3 text-center font-mono">{item.user_id || 'N/A'}</td>
+                          <td className="p-3 text-center text-[var(--text-muted)]">{new Date(item.created_at).toLocaleString()}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handlePurgeMissingAssets([item.id])}
+                              disabled={isPurgingMissingAssets}
+                              className="px-2.5 py-1 rounded bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[10px] font-bold transition-colors"
+                            >
+                              {language === "ar" ? "حذف السجل" : "Purge Record"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-emerald-500 font-medium bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                  {language === "ar" ? "✅ جميع الملفات المسجلة في قاعدة البيانات متوفرة وموجودة على القرص بسلام." : "✅ All database file records are fully synchronized and present on disk storage."}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-gray-400">
+              {language === "ar" ? "انقر على 'تشخيص وفحص المفقودات' لبدء مطابقة جدول الملفات مع التخزين الفعلي." : "Click 'Scan Missing Assets' to begin the cross-reference audit."}
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo Upload (Dark theme) */}
@@ -14835,7 +15156,8 @@ export const AdminDashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isRtl = language === "ar";
+  const [isRtl, setIsRtl] = useState(language === "ar");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isSupport = user?.role === "support";
   const path = location.pathname.split("/").pop() || "dashboard";
 
@@ -14987,6 +15309,8 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar" ? "التدقيق والامتثال" : "Compliance Audit Trail";
       case "referrals":
         return t("referralDashboard");
+      case "seo":
+        return language === "ar" ? "تدقيق الميتاداتا والسيو" : "SEO Audit & AI Population";
       case "metrics":
         return language === "ar" ? "مقاييس الأداء ورندر المكونات" : "Render & Latency Metrics";
       default:
@@ -15052,6 +15376,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "مراقبة وإحصاءات برنامج الإحالات والتحويلات"
           : "REFERRAL PROGRAM STATISTICS & CONVERSION INTELLIGENCE";
+      case "seo":
+        return language === "ar"
+          ? "مراقبة وتوليد الميتاداتا وفحص جاهزية محركات البحث"
+          : "METADATA AUDITING, AI GENERATION & REAL-TIME PROGRESS MONITORING";
       case "metrics":
         return language === "ar"
           ? "مراقبة زمن الانتقال وتتبع أداء المكونات برمجياً"
@@ -15095,6 +15423,8 @@ export const AdminDashboard: React.FC = () => {
         return <ShieldAlert size={28} className={iconClass} />;
       case "referrals":
         return <UserPlus size={28} className={iconClass} />;
+      case "seo":
+        return <Globe size={28} className={iconClass} />;
       default:
         return <Settings2 size={28} className={iconClass} />;
     }
@@ -15140,6 +15470,22 @@ export const AdminDashboard: React.FC = () => {
     : isDegraded 
     ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
     : 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]';
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-72px)] bg-[var(--bg-base)] text-center p-6 transition-theme">
+        <MonitorSmartphone size={64} className="text-gray-400 mb-6 drop-shadow-sm" />
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
+          {language === 'ar' ? 'غير متاح على الجوال' : 'Not Available on Mobile'}
+        </h2>
+        <p className="text-base text-gray-500 max-w-sm leading-relaxed">
+          {language === 'ar'
+            ? 'لوحة الإدارة مصممة للشاشات الكبيرة لضمان تجربة تحكم احترافية. يرجى فتح هذه الصفحة من جهاز كمبيوتر مكتبي.'
+            : 'The Admin Dashboard is optimized for larger screens to ensure a professional control experience. Please access this page from a desktop computer.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -15367,7 +15713,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
             path,
           )
             ? ""
@@ -15430,6 +15776,8 @@ export const AdminDashboard: React.FC = () => {
             <ReferralDashboardView theme={theme} t={t} dir={dir} />
           ) : path === "ads" ? (
             <AdsManagementView theme={theme} t={t} dir={dir} language={language} />
+          ) : path === "seo" ? (
+            <SeoCenterView theme={theme} t={t} dir={dir} language={language} showToast={showToast} />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <div className="mb-6 opacity-50">{getIcon()}</div>
@@ -15472,6 +15820,9 @@ export const AdminDashboard: React.FC = () => {
               {toast.message}
             </span>
           </motion.div>
+        )}
+        {previewUrl && (
+          <PagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
         )}
       </AnimatePresence>
     </motion.div>

@@ -492,6 +492,7 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
 
   const normImageUrl = normalizeUrl(image_url);
   const normVideoUrl = normalizeUrl(video_url);
+  const finalImageUrl = normImageUrl || (normVideoUrl ? '/uploads/default_video_poster.jpg' : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80');
 
   try {
     let authorName = req.user.name || 'مستخدم المنصة';
@@ -538,7 +539,7 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       authorAvatar,
       title.trim(),
       description.trim(),
-      normImageUrl,
+      finalImageUrl,
       whatsapp_number ? whatsapp_number.trim() : null,
       phone_number ? phone_number.trim() : null,
       normVideoUrl,

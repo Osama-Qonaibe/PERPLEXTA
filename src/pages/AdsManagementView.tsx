@@ -55,6 +55,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
+import { CustomVideoPlayer } from '../components/CustomVideoPlayer';
 import { extractVideoThumbnail, getRecommendedDimensions, compressAndResizeImage } from '../utils/mediaUtils';
 
 export interface AdItem {
@@ -63,8 +64,15 @@ export interface AdItem {
   title_en: string;
   description_ar: string | null;
   description_en: string | null;
+  meta_title_ar: string | null;
+  meta_title_en: string | null;
+  meta_description_ar: string | null;
+  meta_description_en: string | null;
+  keywords_ar: string | null;
+  keywords_en: string | null;
   image_url: string;
   video_url?: string;
+  poster_url?: string;
   target_url: string;
   sponsor_name: string | null;
   badge_text_ar: string | null;
@@ -146,13 +154,22 @@ export const AdsManagementView: React.FC<{
   const [isRoiLoading, setIsRoiLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isAuditLoading, setIsAuditLoading] = useState(false);
+  const [selectedAdIds, setSelectedAdIds] = useState<number[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title_ar: '',
     title_en: '',
     description_ar: '',
     description_en: '',
+    meta_title_ar: '',
+    meta_title_en: '',
+    meta_description_ar: '',
+    meta_description_en: '',
+    keywords_ar: '',
+    keywords_en: '',
     image_url: '',
     video_url: '',
+    poster_url: '',
     target_url: '',
     sponsor_name: '',
     badge_text_ar: 'مُموَّل',
@@ -659,8 +676,15 @@ export const AdsManagementView: React.FC<{
       title_en: '',
       description_ar: '',
       description_en: '',
+      meta_title_ar: '',
+      meta_title_en: '',
+      meta_description_ar: '',
+      meta_description_en: '',
+      keywords_ar: '',
+      keywords_en: '',
       image_url: '',
       video_url: '',
+      poster_url: '',
       target_url: '',
       sponsor_name: 'Sponsor',
       badge_text_ar: 'مُموَّل',
@@ -680,8 +704,15 @@ export const AdsManagementView: React.FC<{
       title_en: ad.title_en || '',
       description_ar: ad.description_ar || '',
       description_en: ad.description_en || '',
+      meta_title_ar: ad.meta_title_ar || '',
+      meta_title_en: ad.meta_title_en || '',
+      meta_description_ar: ad.meta_description_ar || '',
+      meta_description_en: ad.meta_description_en || '',
+      keywords_ar: ad.keywords_ar || '',
+      keywords_en: ad.keywords_en || '',
       image_url: ad.image_url || '',
       video_url: ad.video_url || '',
+      poster_url: ad.poster_url || '',
       target_url: ad.target_url || '',
       sponsor_name: ad.sponsor_name || '',
       badge_text_ar: ad.badge_text_ar || 'مُموَّل',
@@ -692,6 +723,91 @@ export const AdsManagementView: React.FC<{
       is_active: ad.is_active
     });
     setIsModalOpen(true);
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedAdIds.length === filteredAds.length) {
+      setSelectedAdIds([]);
+    } else {
+      setSelectedAdIds(filteredAds.map((a) => a.id));
+    }
+  };
+
+  const handleToggleSelectAd = (id: number) => {
+    setSelectedAdIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDeleteAds = async () => {
+    if (selectedAdIds.length === 0) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/ads/admin/bulk', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: selectedAdIds })
+      });
+
+      if (res.ok) {
+        toast.success(isRtl ? `تم حذف ${selectedAdIds.length} إعلان بنجاح` : `Successfully deleted ${selectedAdIds.length} ads`);
+        setSelectedAdIds([]);
+        setIsBulkDeleteModalOpen(false);
+        fetchAds();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || (isRtl ? 'فشل الحذف الجماعي للإعلانات' : 'Failed to bulk delete ads'));
+      }
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error(isRtl ? 'حدث خطأ أثناء الحذف الجماعي' : 'An error occurred during bulk deletion');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePosterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading(
+      isRtl ? 'جاري رفع صورة الغلاف المصغرة (Poster)...' : 'Uploading poster thumbnail...'
+    );
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const res = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formDataUpload
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const fileUrl = data.fileUrl || data.url || data.path;
+        if (fileUrl) {
+          setFormData((prev) => ({ ...prev, poster_url: fileUrl }));
+          toast.dismiss(toastId);
+          toast.success(isRtl ? 'تم رفع صورة الغلاف المصغرة بنجاح' : 'Poster thumbnail uploaded successfully');
+          return;
+        }
+      }
+      toast.dismiss(toastId);
+      toast.error(isRtl ? 'فشل رفع صورة الغلاف' : 'Poster upload failed');
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error(isRtl ? 'خطأ أثناء رفع صورة الغلاف' : 'Error during poster upload');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -817,7 +933,13 @@ export const AdsManagementView: React.FC<{
 
     const payload = {
       ...formData,
-      image_url: formData.image_url.trim() || (formData.video_url?.trim() ? '/uploads/default_video_poster.jpg' : '')
+      image_url: formData.image_url.trim() || (formData.video_url?.trim() ? '/uploads/default_video_poster.jpg' : ''),
+      meta_title_ar: formData.meta_title_ar.trim() || null,
+      meta_title_en: formData.meta_title_en.trim() || null,
+      meta_description_ar: formData.meta_description_ar.trim() || null,
+      meta_description_en: formData.meta_description_en.trim() || null,
+      keywords_ar: formData.keywords_ar.trim() || null,
+      keywords_en: formData.keywords_en.trim() || null,
     };
 
     setIsSubmitting(true);
@@ -2565,6 +2687,20 @@ export const AdsManagementView: React.FC<{
 
           {/* Ads List Table / Cards */}
           <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-lg overflow-hidden shadow-sm">
+            {selectedAdIds.length > 0 && (
+              <div className="p-3 bg-red-500/10 border-b border-red-500/20 flex items-center justify-between text-xs">
+                <span className="font-bold text-red-500">
+                  {isRtl ? `تم تحديد ${selectedAdIds.length} إعلان` : `${selectedAdIds.length} ads selected`}
+                </span>
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(true)}
+                  className="px-3 py-1 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 size={14} />
+                  <span>{isRtl ? 'حذف الإعلانات المحددة جماعياً' : 'Delete Selected Ads'}</span>
+                </button>
+              </div>
+            )}
             {isLoading ? (
               <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
                 <RefreshCw size={24} className="animate-spin text-accent" />
@@ -2580,6 +2716,14 @@ export const AdsManagementView: React.FC<{
                 <table className="w-full text-start text-xs border-collapse">
                   <thead>
                     <tr className="bg-[var(--bg-base)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
+                      <th className="p-3 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={filteredAds.length > 0 && selectedAdIds.length === filteredAds.length}
+                          onChange={handleToggleSelectAll}
+                          className="rounded accent-accent cursor-pointer"
+                        />
+                      </th>
                       <th className="p-3 text-start">{isRtl ? 'الإعلان' : 'Advertisement'}</th>
                       <th className="p-3 text-start">{isRtl ? 'الرابط المستهدف' : 'Target URL'}</th>
                       <th className="p-3 text-center">{isRtl ? 'المشاهدات' : 'Impressions'}</th>
@@ -2591,6 +2735,14 @@ export const AdsManagementView: React.FC<{
                   <tbody className="divide-y divide-[var(--border-main)]">
                     {filteredAds.map((ad) => (
                       <tr key={ad.id} className="hover:bg-[var(--bg-base)]/50 transition-colors">
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedAdIds.includes(ad.id)}
+                            onChange={() => handleToggleSelectAd(ad.id)}
+                            className="rounded accent-accent cursor-pointer"
+                          />
+                        </td>
                         <td className="p-3">
                           <div className="flex items-center gap-3">
                             <img
@@ -2791,6 +2943,76 @@ export const AdsManagementView: React.FC<{
                 </div>
               </div>
 
+              {/* SEO Meta Fields */}
+              <div className="bg-[var(--bg-base)] p-3 rounded-lg border border-[var(--border-main)] space-y-3">
+                <h4 className="text-xs font-bold text-accent">{isRtl ? 'إعدادات SEO' : 'SEO Settings'}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                      {isRtl ? 'Meta Title (AR)' : 'Meta Title (AR)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meta_title_ar}
+                      onChange={(e) => setFormData({ ...formData, meta_title_ar: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                      {isRtl ? 'Meta Title (EN)' : 'Meta Title (EN)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meta_title_en}
+                      onChange={(e) => setFormData({ ...formData, meta_title_en: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                      {isRtl ? 'Meta Description (AR)' : 'Meta Description (AR)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meta_description_ar}
+                      onChange={(e) => setFormData({ ...formData, meta_description_ar: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                      {isRtl ? 'Meta Description (EN)' : 'Meta Description (EN)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meta_description_en}
+                      onChange={(e) => setFormData({ ...formData, meta_description_en: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                      {isRtl ? 'الكلمات المفتاحية (Keywords - comma separated)' : 'Keywords (Comma separated)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.keywords_ar}
+                      onChange={(e) => setFormData({ ...formData, keywords_ar: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none mb-1"
+                      placeholder="AR Keywords..."
+                    />
+                    <input
+                      type="text"
+                      value={formData.keywords_en}
+                      onChange={(e) => setFormData({ ...formData, keywords_en: e.target.value })}
+                      className="w-full px-3 py-1.5 text-xs rounded bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                      placeholder="EN Keywords..."
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Image URL & File Upload */}
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 mb-1">
@@ -2859,6 +3081,33 @@ export const AdsManagementView: React.FC<{
                 )}
               </div>
 
+              {/* Poster Image URL & Upload */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 mb-1">
+                  {isRtl ? 'صورة الغلاف المصغرة للفيديو / البوستر (اختياري - Poster URL)' : 'Video Poster / Thumbnail URL (Optional)'}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.poster_url || ''}
+                    onChange={(e) => setFormData({ ...formData, poster_url: e.target.value })}
+                    className="flex-1 px-3 py-1.5 text-xs rounded bg-[var(--bg-base)] border border-[var(--border-main)] text-[var(--text-primary)] focus:border-accent focus:outline-none"
+                    placeholder="https://... or /uploads/poster.jpg"
+                  />
+                  <label className="px-3 py-1.5 rounded bg-accent/10 border border-accent/30 text-accent text-xs font-bold cursor-pointer hover:bg-accent/20 transition-colors flex items-center gap-1 shrink-0">
+                    <Upload size={14} />
+                    <span>{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'رفع بوستر' : 'Upload Poster')}</span>
+                    <input type="file" accept="image/*" onChange={handlePosterUpload} className="hidden" />
+                  </label>
+                </div>
+                {formData.poster_url && (
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-accent font-medium">
+                    <CheckCircle2 size={12} className="shrink-0" />
+                    <span>{isRtl ? 'تم تحديد صورة الغلاف المصغرة بنجاح' : 'Poster thumbnail attached'}</span>
+                  </div>
+                )}
+              </div>
+
               {/* Media Live Player Preview inside Modal */}
               {(formData.video_url || formData.image_url) && (
                 <div className="p-3 bg-black/40 rounded-xl border border-gray-800 space-y-2">
@@ -2867,13 +3116,12 @@ export const AdsManagementView: React.FC<{
                   </span>
                   
                   {formData.video_url ? (
-                    <MediaFormatPlayer
-                      url={getMediaUrl(formData.video_url)}
-                      adFormat={formData.format}
-                      posterUrl={getMediaUrl(formData.image_url)}
+                    <CustomVideoPlayer
+                      src={getMediaUrl(formData.video_url)}
+                      poster={formData.poster_url ? getMediaUrl(formData.poster_url) : (formData.image_url ? getMediaUrl(formData.image_url) : undefined)}
                       title={formData.title_ar || 'Ad Video Preview'}
                       isRtl={isRtl}
-                      className={formData.format === 'story' || formData.format === 'reel' ? 'max-h-[320px] mx-auto' : ''}
+                      className={formData.format === 'story' || formData.format === 'reel' ? 'max-h-[320px] mx-auto' : 'h-48'}
                     />
                   ) : (
                     <div className="relative w-full h-32 rounded-lg border border-gray-700 overflow-hidden bg-black">
@@ -3019,6 +3267,38 @@ export const AdsManagementView: React.FC<{
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <h3 className="font-bold text-base text-[var(--text-primary)]">
+              {isRtl ? 'تأكيد الحذف الجماعي للإعلانات' : 'Confirm Bulk Ad Deletion'}
+            </h3>
+            <p className="text-xs text-gray-400">
+              {isRtl
+                ? `هل أنت متأكد من حذف ${selectedAdIds.length} إعلان نهائياً من قاعدة البيانات وخوادم التخزين؟ لا يمكن التراجع عن هذا الإجراء.`
+                : `Are you sure you want to permanently delete ${selectedAdIds.length} ads from the database and storage server? This action cannot be undone.`}
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="px-4 py-2 rounded text-xs font-bold bg-gray-500/10 hover:bg-gray-500/20 text-gray-300 transition-colors"
+              >
+                {isRtl ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleBulkDeleteAds}
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 size={14} />
+                <span>{isSubmitting ? (isRtl ? 'جاري الحذف...' : 'Deleting...') : (isRtl ? 'تأكيد الحذف النهائي' : 'Confirm Delete')}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

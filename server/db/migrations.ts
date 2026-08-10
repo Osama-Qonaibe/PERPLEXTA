@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getSecurityPool, initializePerplextaPools, createInternalPool } from './index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
+import { syncAllContentSeoMetadata } from '../services/seoSync.js';
 
 /**
  * TABLE_POOL_REGISTRY: Single Source of Truth for Database Table Allocation
@@ -2146,6 +2147,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`DROP INDEX IF EXISTS idx_system_settings_seo_image_url`);
       await tx.query(`DROP INDEX IF EXISTS idx_system_settings_favicon_url`);
     });
+    await runVersioned('v79_sync_content_seo_metadata', 'Syncing missing SEO metadata for blog_articles and marketplace_items', async () => {
+      await syncAllContentSeoMetadata().catch((err) => {
+        console.warn('[Migrations] Non-fatal SEO metadata sync warning:', err.message || err);
+      });
+    });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
 
@@ -2979,6 +2985,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         description_ar TEXT,
         description_en TEXT,
         image_url TEXT NOT NULL,
+        video_url TEXT,
+        poster_url TEXT,
         target_url TEXT NOT NULL,
         sponsor_name VARCHAR(100),
         badge_text_ar VARCHAR(50) DEFAULT 'مُموَّل',
@@ -2986,6 +2994,12 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         position VARCHAR(50) DEFAULT 'sidebar',
         display_order INTEGER DEFAULT 0,
         is_active BOOLEAN DEFAULT true,
+        meta_title_ar VARCHAR(255),
+        meta_title_en VARCHAR(255),
+        meta_description_ar TEXT,
+        meta_description_en TEXT,
+        keywords_ar TEXT,
+        keywords_en TEXT,
         click_count INTEGER DEFAULT 0,
         impression_count INTEGER DEFAULT 0,
         start_date TIMESTAMP,
@@ -3640,6 +3654,13 @@ export async function verifySchemaIntegrity() {
       },
       google_tool_connections: {
         columns: ['id', 'user_id', 'tool_id', 'is_connected', 'config', 'access_token', 'refresh_token', 'expires_at', 'scopes', 'last_connected_at', 'created_at', 'updated_at']
+      },
+      advertisements: {
+        columns: ['id', 'title_ar', 'title_en', 'description_ar', 'description_en', 'image_url', 'video_url', 'poster_url', 'target_url', 'sponsor_name', 'badge_text_ar', 'badge_text_en', 'position', 'format', 'display_order', 'is_active', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'keywords_ar', 'keywords_en', 'click_count', 'impression_count', 'start_date', 'end_date', 'created_at', 'updated_at'],
+        repairCols: {
+          video_url: { type: 'TEXT' },
+          poster_url: { type: 'TEXT' }
+        }
       }
     },
     ledger: {

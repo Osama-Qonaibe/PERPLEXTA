@@ -17,6 +17,7 @@ export const cronTracker: Record<string, CronJobInfo> = {
   databaseHeartbeat: { lastRun: new Date(Date.now() - 2 * 60000).toISOString(), status: 'success', error: null },
   expiredTokensCleanup: { lastRun: new Date(Date.now() - 3.5 * 360000) .toISOString(), status: 'success', error: null },
   subscriptionAudit: { lastRun: new Date(Date.now() - 5 * 3600000).toISOString(), status: 'success', error: null },
+  dailySeoScan: { lastRun: new Date(Date.now() - 6 * 3600000).toISOString(), status: 'success', error: null },
   memoryCompaction: { lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), status: 'success', error: null },
   monthlyLedgerCleanup: { lastRun: new Date(Date.now() - 15 * 24 * 3600000).toISOString(), status: 'success', error: null },
 };
@@ -194,6 +195,20 @@ export function initCronJobs() {
     } catch (err: any) {
       console.error('[Cron] Subscription check failed:', err);
       cronTracker.subscriptionAudit = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
+    }
+  });
+
+  cron.schedule('0 2 * * *', async () => {
+    console.log('[Cron] 🔍 Running daily automated SEO metadata scan for missing content fields...');
+    cronTracker.dailySeoScan = { lastRun: new Date().toISOString(), status: 'running', error: null };
+    try {
+      const { syncAllContentSeoMetadata } = await import('../services/seoSync.js');
+      const result = await syncAllContentSeoMetadata();
+      console.log('[Cron] Daily SEO metadata routine completed successfully:', result);
+      cronTracker.dailySeoScan = { lastRun: new Date().toISOString(), status: 'success', error: null };
+    } catch (err: any) {
+      console.error('[Cron] Daily SEO metadata routine failed:', err.message);
+      cronTracker.dailySeoScan = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
     }
   });
 
