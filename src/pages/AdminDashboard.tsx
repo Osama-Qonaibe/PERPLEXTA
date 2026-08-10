@@ -98,8 +98,10 @@ import {
   Megaphone,
   FastForward,
   UserPlus,
+  Sliders,
 } from "lucide-react";
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
+import { NotificationThresholdsModal } from "../components/NotificationThresholdsModal";
 import { validateToolRoutePricing } from "../utils/orchestratorValidator";
 import { ReferralDashboardView } from "./ReferralDashboardView";
 import { AdsManagementView } from "./AdsManagementView";
@@ -10834,6 +10836,65 @@ const MemoryCenterView = ({
   const [toastMsg, setToastMsg] = useState<string>("");
   const [isSuccessToast, setIsSuccessToast] = useState<boolean>(false);
 
+  const [lowThreshold, setLowThreshold] = useState<number>(50);
+  const [highThreshold, setHighThreshold] = useState<number>(80);
+  const [isThresholdModalOpen, setIsThresholdModalOpen] = useState<boolean>(false);
+
+  const fetchSystemThresholds = async () => {
+    try {
+      const res = await fetch("/api/system/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.quota_warning_threshold_low === 'number') {
+          setLowThreshold(data.quota_warning_threshold_low);
+        }
+        if (typeof data.quota_warning_threshold_high === 'number') {
+          setHighThreshold(data.quota_warning_threshold_high);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom thresholds:", err);
+    }
+  };
+
+  const handleSaveThresholds = async (low: number, high: number) => {
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          quota_warning_threshold_low: low,
+          quota_warning_threshold_high: high,
+        }),
+      });
+      if (res.ok) {
+        setLowThreshold(low);
+        setHighThreshold(high);
+        setToastMsg(
+          language === "ar"
+            ? "تم تحديث عتبات التنبيهات المخصصة بنجاح!"
+            : "Custom notification thresholds updated successfully!"
+        );
+        setIsSuccessToast(true);
+        setTimeout(() => setToastMsg(""), 4000);
+      } else {
+        const data = await res.json();
+        setToastMsg(data.error || "Failed to update thresholds");
+        setIsSuccessToast(false);
+        setTimeout(() => setToastMsg(""), 4000);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Failed to update thresholds");
+      setIsSuccessToast(false);
+      setTimeout(() => setToastMsg(""), 4000);
+    }
+  };
+
   const bufferTrendData = useMemo(() => {
     const currentCount = systemStats?.totalMemories || 25;
     return [
@@ -10950,6 +11011,7 @@ const MemoryCenterView = ({
   useEffect(() => {
     if (!token) return;
     fetchStats();
+    fetchSystemThresholds();
     const intervalId = setInterval(() => {
       fetchStats();
     }, refreshInterval * 1000);
@@ -11209,13 +11271,38 @@ const MemoryCenterView = ({
             </div>
           </div>
 
-          {/* Notification Alert System for 50% & 80% Thresholds & Token Spike Alerts */}
+          {/* Notification Alert System for Custom Percentage Thresholds & Token Spike Alerts */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#121214] border border-[var(--border)] font-sans">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded bg-accent/15 text-accent">
+                <Sliders size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-gray-900 dark:text-white block">
+                  {language === "ar" ? "عتبات التنبيهات والإشعارات المخصصة" : "Configurable Trigger Thresholds"}
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {language === "ar"
+                    ? `العتبات الحالية: الأولية ${lowThreshold}% | الحرج ${highThreshold}%`
+                    : `Active Triggers: Low ${lowThreshold}% | High ${highThreshold}%`}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsThresholdModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Sliders size={14} />
+              <span>{language === "ar" ? "تعديل العتبات المخصصة" : "Configure Thresholds"}</span>
+            </button>
+          </div>
+
           {(() => {
             const bufferLimit = diagnosticsData?.bufferLimit || 50;
             const currentCount = systemStats?.totalMemories || 25;
             const bufferUsagePercent = Math.round((currentCount / bufferLimit) * 100);
 
-            if (bufferUsagePercent >= 80) {
+            if (bufferUsagePercent >= highThreshold) {
               return (
                 <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
                   <div className="flex items-start gap-3">
@@ -11226,8 +11313,8 @@ const MemoryCenterView = ({
                       <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                         <span>
                           {language === "ar"
-                            ? "تحذير حرج: تجاوز استهلاك الذاكرة عتبة 80%!"
-                            : "CRITICAL ALERT: Memory Buffer Exceeded 80% Capacity!"}
+                            ? `تحذير حرج: تجاوز استهلاك الذاكرة عتبة ${highThreshold}% المخصصة!`
+                            : `CRITICAL ALERT: Memory Buffer Exceeded Custom ${highThreshold}% Capacity!`}
                         </span>
                         <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-mono font-bold">
                           {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
@@ -11258,7 +11345,7 @@ const MemoryCenterView = ({
               );
             }
 
-            if (bufferUsagePercent >= 50) {
+            if (bufferUsagePercent >= lowThreshold) {
               return (
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
                   <div className="flex items-start gap-3">
@@ -11269,8 +11356,8 @@ const MemoryCenterView = ({
                       <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                         <span>
                           {language === "ar"
-                            ? "إشعار تنبيه: استهلاك الذاكرة وصل إلى 50%"
-                            : "WARNING: Memory Buffer Reached 50% Capacity"}
+                            ? `إشعار تنبيه: استهلاك الذاكرة وصل إلى عتبة ${lowThreshold}% المخصصة`
+                            : `WARNING: Memory Buffer Reached Custom ${lowThreshold}% Capacity`}
                         </span>
                         <span className="text-[10px] bg-amber-500/30 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded font-mono font-bold">
                           {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
@@ -11830,6 +11917,17 @@ const MemoryCenterView = ({
           </div>
         )}
       </div>
+
+      {/* Notification Thresholds Configuration Modal */}
+      <NotificationThresholdsModal
+        isOpen={isThresholdModalOpen}
+        onClose={() => setIsThresholdModalOpen(false)}
+        currentLow={lowThreshold}
+        currentHigh={highThreshold}
+        onSave={handleSaveThresholds}
+        language={language as "ar" | "en"}
+        theme={theme as "dark" | "light"}
+      />
     </div>
   );
 };

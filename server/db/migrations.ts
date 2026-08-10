@@ -2139,6 +2139,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         email_notifications: { type: 'BOOLEAN', default: 'true' }
       });
     });
+    await runVersioned('v77_custom_thresholds', 'Adding custom quota notification warning thresholds to system_settings', async (tx) => {
+      await ensureColumnsBulk(tx, 'system_settings', {
+        quota_warning_threshold_low: { type: 'INTEGER', default: '50' },
+        quota_warning_threshold_high: { type: 'INTEGER', default: '80' }
+      });
+    });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
 
@@ -2726,6 +2732,8 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         sidebar_ad_impression_price NUMERIC(10,4) DEFAULT 0.0100,
         sidebar_ad_click_price NUMERIC(10,2) DEFAULT 0.10,
         memory_limit_per_user INTEGER DEFAULT 50,
+        quota_warning_threshold_low INTEGER DEFAULT 50,
+        quota_warning_threshold_high INTEGER DEFAULT 80,
         require_2fa_for_economy BOOLEAN DEFAULT false,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -3591,7 +3599,7 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'metadata', 'created_at', 'updated_at']
       },
       system_settings: {
-        columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en']
+        columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high']
       },
       bulletin_ads: {
         columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button']

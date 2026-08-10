@@ -110,6 +110,14 @@ export async function updateSystemSettings(settings: any) {
   const sidebar_ad_impression_price = settings.sidebar_ad_impression_price !== undefined ? settings.sidebar_ad_impression_price : (existing.sidebar_ad_impression_price || 0.0100);
   const sidebar_ad_click_price = settings.sidebar_ad_click_price !== undefined ? settings.sidebar_ad_click_price : (existing.sidebar_ad_click_price || 0.10);
 
+  const quota_warning_threshold_low = settings.quota_warning_threshold_low !== undefined 
+    ? Number(settings.quota_warning_threshold_low) 
+    : (existing?.quota_warning_threshold_low ?? 50);
+
+  const quota_warning_threshold_high = settings.quota_warning_threshold_high !== undefined 
+    ? Number(settings.quota_warning_threshold_high) 
+    : (existing?.quota_warning_threshold_high ?? 80);
+
   let font_loading_config = settings.font_loading_config !== undefined 
     ? (typeof settings.font_loading_config === 'object' ? JSON.stringify(settings.font_loading_config) : settings.font_loading_config)
     : existing.font_loading_config;
@@ -167,8 +175,9 @@ export async function updateSystemSettings(settings: any) {
       bulletin_ad_daily_price = $18, live_gift_commission_percent = $19, 
       sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21,
       font_loading_config = $22, font_config_ar = $23, font_config_en = $24,
+      quota_warning_threshold_low = $25, quota_warning_threshold_high = $26,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $25
+    WHERE id = $27
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
@@ -177,6 +186,7 @@ export async function updateSystemSettings(settings: any) {
     bulletin_ad_daily_price, live_gift_commission_percent,
     sidebar_ad_impression_price, sidebar_ad_click_price,
     font_loading_config, font_config_ar, font_config_en,
+    quota_warning_threshold_low, quota_warning_threshold_high,
     existing.id
   ]);
   

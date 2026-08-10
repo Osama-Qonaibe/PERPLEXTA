@@ -50,7 +50,6 @@ export const SettingsPage: React.FC = () => {
 
   // Reference trackers for performance optimization
   const hasFetchedProfile = useRef(false);
-  const hasFetchedMemories = useRef(false);
 
   const getAuthHeaders = useCallback(() => ({
     'Authorization': `Bearer ${token}`,
@@ -170,7 +169,6 @@ export const SettingsPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setMemories(data);
-        hasFetchedMemories.current = true;
       }
     } catch (error) {
       handleApiError(error, 'Failed to fetch memories');
@@ -180,7 +178,7 @@ export const SettingsPage: React.FC = () => {
   }, [token, getAuthHeaders, handleApiError]);
 
   useEffect(() => {
-    if (activeTab === 'memory' && !hasFetchedMemories.current) {
+    if (activeTab === 'memory') {
       fetchMemories();
     }
   }, [activeTab, fetchMemories]);
@@ -393,6 +391,7 @@ export const SettingsPage: React.FC = () => {
                    onUpdate={handleUpdateMemory}
                    onDelete={handleDeleteMemory}
                    onPrune={handlePruneMemory}
+                   onRefresh={fetchMemories}
                    dir={dir}
                    theme={theme}
                    stickyOffset={80}

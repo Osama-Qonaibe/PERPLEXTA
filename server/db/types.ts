@@ -263,6 +263,8 @@ export interface SystemSettings {
   paypal_last_verified_at: Date | string | null;
   image_prompt_pref_threshold: number;
   memory_limit_per_user: number;
+  quota_warning_threshold_low?: number;
+  quota_warning_threshold_high?: number;
   updated_at: Date | string;
 }
 

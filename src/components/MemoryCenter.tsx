@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles, MessageSquare } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Check, Loader2, Info, User, AlertTriangle, Sparkles, MessageSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
@@ -8,7 +9,7 @@ interface Memory {
   id: number;
   fact: string;
   category: string;
-  source: 'user' | 'ai';
+  source: 'user' | 'ai' | 'consolidated';
   created_at: string;
   updated_at: string;
   chat_id?: number | string;
@@ -22,6 +23,7 @@ interface MemoryCenterProps {
   onUpdate: (id: number, fact: string, category?: string) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onPrune?: () => Promise<void>;
+  onRefresh?: () => void;
   dir: 'rtl' | 'ltr';
   theme: 'dark' | 'light' | 'system';
   stickyOffset?: number;
@@ -34,6 +36,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   onUpdate, 
   onDelete, 
   onPrune,
+  onRefresh,
   dir, 
   theme,
   stickyOffset = 0
@@ -56,6 +59,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
     { id: 'technical', label: t('technical') },
     { id: 'preference', label: t('preference') },
     { id: 'project', label: t('project') },
+    { id: 'identity', label: t('identity') },
+    { id: 'professional', label: t('professional') },
     { id: 'general', label: t('general') },
   ];
 
@@ -125,13 +130,25 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                 : 'Facts and preferences the assistant has learned about you.'}
             </p>
           </div>
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-accent text-white hover:bg-accent rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-none group w-full sm:w-auto ml-auto"
-          >
-            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            {t('addFact')}
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto ml-auto">
+            {onRefresh && (
+              <button 
+                onClick={onRefresh}
+                disabled={isLoading}
+                title={dir === 'rtl' ? 'مزامنة وتحديث الذاكرة' : 'Sync & Refresh Memory'}
+                className="flex items-center justify-center p-2.5 md:p-2.5 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] hover:border-accent/40 text-[var(--text-primary)] transition-theme"
+              >
+                <RefreshCw size={16} className={isLoading ? 'animate-spin text-accent' : ''} />
+              </button>
+            )}
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-accent text-white hover:bg-accent rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-none group w-full sm:w-auto"
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              {t('addFact')}
+            </button>
+          </div>
         </div>
 
         {/* Category Filter - Fixed Elite Horizontal Scroll */}
@@ -346,6 +363,11 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                           <User size={10} />
                           {dir === 'rtl' ? 'بواسطة المستخدم' : 'User Added'}
                         </span>
+                      ) : memory.source === 'consolidated' ? (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-500 text-[10px] font-bold uppercase tracking-wider">
+                          <Sparkles size={10} />
+                          {dir === 'rtl' ? 'ملخص مدمج' : 'Consolidated Summary'}
+                        </span>
                       ) : (
                         <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent/10 text-accent text-[10px] font-bold uppercase tracking-wider">
                           <BrainCircuit size={10} />
@@ -379,8 +401,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       {memory.chat_id && (
                         <>
                           <span className="mx-1 text-gray-300 dark:text-gray-700">•</span>
-                          <a 
-                            href={`/chat/${memory.chat_id}`}
+                          <Link 
+                            to={`/chat/${memory.chat_id}`}
                             className="inline-flex items-center gap-1 text-accent hover:text-accent font-bold transition-theme hover:underline"
                             title={dir === 'rtl' ? 'انتقال إلى المحادثة المصدر' : 'Go to source thread'}
                           >
@@ -389,7 +411,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                               {dir === 'rtl' ? 'المصدر: ' : 'Source: '}
                               "{memory.chat_title || `#${memory.chat_id}`}"
                             </span>
-                          </a>
+                          </Link>
                         </>
                       )}
                     </p>

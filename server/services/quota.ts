@@ -1,6 +1,7 @@
 import { pool } from '../db/index.js';
 import { createNotification } from './notifications.js';
 import { io } from '../config/socket.js';
+import { getCachedSystemSettings } from '../db/queries.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -218,7 +219,24 @@ async function evaluateAndNotify(
   userId: number, toolId: string, usage: number, limit: number, period: 'daily' | 'monthly'
 ) {
   const pct = (usage / limit) * 100;
-  const threshold = pct >= 100 ? 100 : pct >= 80 ? 80 : pct >= 50 ? 50 : 0;
+  
+  let lowThreshold = 50;
+  let highThreshold = 80;
+  try {
+    const sysSettings = await getCachedSystemSettings();
+    if (sysSettings) {
+      if (typeof sysSettings.quota_warning_threshold_low === 'number' && sysSettings.quota_warning_threshold_low > 0) {
+        lowThreshold = sysSettings.quota_warning_threshold_low;
+      }
+      if (typeof sysSettings.quota_warning_threshold_high === 'number' && sysSettings.quota_warning_threshold_high > 0) {
+        highThreshold = sysSettings.quota_warning_threshold_high;
+      }
+    }
+  } catch (e) {
+    // fallback to defaults
+  }
+
+  const threshold = pct >= 100 ? 100 : pct >= highThreshold ? highThreshold : pct >= lowThreshold ? lowThreshold : 0;
   if (!threshold) return;
 
   const warningType = `quota_warning_${toolId}_${period}_${threshold}`;
@@ -242,13 +260,13 @@ async function evaluateAndNotify(
       mEn: `You have fully consumed your ${pEn} quota for "${nameEn}" (${usage}/${limit}). Further requests will be charged from your digital wallet. Upgrade your plan to continue uninterrupted.`,
       mAr: `لقد استنفدت حدك ${pAr} الكامل لأداة "${nameAr}" (${usage}/${limit}). سيتم خصم الطلبات الإضافية من محفظتك الرقمية. قم بترقية باقتك للاستمرار دون انقطاع.`,
     },
-    80: {
+    [highThreshold]: {
       tEn: `⚠️ Urgent Quota Limit Notice: ${pctStr} Expended`,
       tAr: `⚠️ تنبيه هام ومستعجل: تم استهلاك ${pctStr} من الحدود`,
       mEn: `Action Advised: You are rapidly approaching full capacity with ${pctStr} of your ${pEn} limit spent for "${nameEn}". Upgrade your tier or recharge your wallet to avoid interruptions.`,
       mAr: `إجراء موصى به: أنت تقترب من السعة الكاملة بنسبة ${pctStr} من حدك ${pAr} لأداة "${nameAr}". قم بترقية حسابك أو أعد شحن محفظتك لتجنب الانقطاع.`,
     },
-    50: {
+    [lowThreshold]: {
       tEn: `ℹ️ Quota Status Alert: ${pctStr} Consumed`,
       tAr: `ℹ️ تنبيه استهلاك الحدود: تم استخدام ${pctStr}`,
       mEn: `You have consumed ${pctStr} of your ${pEn} quota for "${nameEn}". Invite colleagues with your referral code or explore premium tiers to keep your workflow uninterrupted.`,
@@ -256,7 +274,8 @@ async function evaluateAndNotify(
     },
   };
 
-  const { tEn, tAr, mEn, mAr } = messages[threshold];
+  const selectedMsg = messages[threshold] || messages[lowThreshold] || messages[100];
+  const { tEn, tAr, mEn, mAr } = selectedMsg;
   await createNotification(userId, warningType, tEn, tAr, mEn, mAr, { tool_id: toolId, usage, limit, period, threshold, pct });
 
   io?.to(`user_${userId}`).emit('quota_warning', { toolId, usage, limit, period, threshold, pct: Math.round(pct) });
