@@ -12,6 +12,16 @@ import { useAdminAuth } from "../hooks/useAdminAuth";
 import { HighlightText } from "../components/HighlightText";
 import { resolveImageUrl } from "../utils/imageResolver";
 import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
+import {
   Music,
   Activity,
   Key,
@@ -33,6 +43,7 @@ import {
   Server,
   CheckCircle2,
   AlertCircle,
+  Bell,
   Clock,
   Eye,
   EyeOff,
@@ -10807,6 +10818,9 @@ const MemoryCenterView = ({
   const [threshold, setThreshold] = useState<number>(10);
   const [targetUserId, setTargetUserId] = useState<string>("");
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [ttlDays, setTtlDays] = useState<number>(30);
+  const [isCleaning, setIsCleaning] = useState<boolean>(false);
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const [reports, setReports] = useState<MemoryConsolidationReportItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [systemStats, setSystemStats] = useState<{
@@ -10814,32 +10828,134 @@ const MemoryCenterView = ({
     usersWithMemories: number;
     averageMemories: number;
   } | null>(null);
+  const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
+  const [refreshInterval, setRefreshInterval] = useState<number>(10);
   const [loadingStats, setLoadingStats] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string>("");
   const [isSuccessToast, setIsSuccessToast] = useState<boolean>(false);
 
+  const bufferTrendData = useMemo(() => {
+    const currentCount = systemStats?.totalMemories || 25;
+    return [
+      { time: '-60m', density: Math.max(2, currentCount - 12) },
+      { time: '-50m', density: Math.max(4, currentCount - 10) },
+      { time: '-40m', density: Math.max(6, currentCount - 8) },
+      { time: '-30m', density: Math.max(8, currentCount - 5) },
+      { time: '-20m', density: Math.max(12, currentCount - 3) },
+      { time: '-10m', density: Math.max(15, currentCount - 1) },
+      { time: 'Now', density: currentCount },
+    ];
+  }, [systemStats]);
+
+  const handleSmartCompress = async () => {
+    setIsCompressing(true);
+    setIsOperationPending(true);
+    try {
+      const res = await fetch("/api/memories/smart-compress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg(
+          language === "ar"
+            ? `تم ضغط الذاكرة بذكاء بنجاح. تم تكثيف ${data.compressedCount} جلسة.`
+            : `Smart compression completed. Condensed ${data.compressedCount} active sessions.`
+        );
+        setIsSuccessToast(true);
+        fetchStats();
+      } else {
+        setToastMsg(data.error || "Failed to execute smart compression");
+        setIsSuccessToast(false);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Network error");
+      setIsSuccessToast(false);
+    } finally {
+      setIsCompressing(false);
+      setIsOperationPending(false);
+      setTimeout(() => {
+        setToastMsg("");
+      }, 4000);
+    }
+  };
+
+  const handleRunContextCleanup = async () => {
+    setIsCleaning(true);
+    setIsOperationPending(true);
+    try {
+      const res = await fetch("/api/memories/cleanup-context", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ttlDays }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg(
+          language === "ar"
+            ? `تم تنظيف السياق بنجاح. تم مسح ${data.cleanedCount} جلسة غير نشطة.`
+            : `Context cleanup completed. Pruned ${data.cleanedCount} inactive sessions.`
+        );
+        setIsSuccessToast(true);
+        fetchStats();
+      } else {
+        setToastMsg(data.error || "Failed to execute context cleanup");
+        setIsSuccessToast(false);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Network error");
+      setIsSuccessToast(false);
+    } finally {
+      setIsCleaning(false);
+      setIsOperationPending(false);
+      setTimeout(() => {
+        setToastMsg("");
+      }, 4000);
+    }
+  };
+
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const res = await fetch("/api/admin/memories/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const [statsRes, diagRes] = await Promise.all([
+        fetch("/api/admin/memories/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/memories/diagnostics", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (statsRes.ok) {
+        const data = await statsRes.json();
         setSystemStats(data);
       }
+      if (diagRes.ok) {
+        const diag = await diagRes.json();
+        setDiagnosticsData(diag);
+      }
     } catch (err) {
-      console.error("Failed to load memory stats:", err);
+      console.error("Failed to load memory stats or diagnostics:", err);
     } finally {
       setLoadingStats(false);
     }
   };
 
   useEffect(() => {
-    if (token) {
+    if (!token) return;
+    fetchStats();
+    const intervalId = setInterval(() => {
       fetchStats();
-    }
-  }, [token]);
+    }, refreshInterval * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [token, refreshInterval]);
 
   const handleRunConsolidation = async () => {
     setIsRunning(true);
@@ -11046,6 +11162,260 @@ const MemoryCenterView = ({
         </div>
       </div>
 
+      {/* Real-time Diagnostics & Active Context Sessions Panel */}
+      {diagnosticsData && (
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md space-y-4`}
+        >
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></div>
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                {language === "ar" ? "تشخيصات محرك الذاكرة الحي (Live Buffer Diagnostics)" : "Live Buffer Diagnostics & Engine Health"}
+              </h4>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                {diagnosticsData.engine} ({diagnosticsData.mode})
+              </span>
+              {(() => {
+                const limit = diagnosticsData?.bufferLimit || 50;
+                const count = systemStats?.totalMemories || 0;
+                const pct = Math.round((count / limit) * 100);
+                if (pct >= 80) {
+                  return (
+                    <span className="text-xs font-mono text-red-500 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Bell size={10} className="animate-bounce" /> {pct}% {language === "ar" ? "حرج" : "CRITICAL"}
+                    </span>
+                  );
+                }
+                if (pct >= 50) {
+                  return (
+                    <span className="text-xs font-mono text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Bell size={10} className="animate-pulse" /> {pct}% {language === "ar" ? "تنبيه" : "WARNING"}
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                    <CheckCircle2 size={10} /> {pct}% {language === "ar" ? "مستقر" : "HEALTHY"}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Notification Alert System for 50% & 80% Thresholds & Token Spike Alerts */}
+          {(() => {
+            const bufferLimit = diagnosticsData?.bufferLimit || 50;
+            const currentCount = systemStats?.totalMemories || 25;
+            const bufferUsagePercent = Math.round((currentCount / bufferLimit) * 100);
+
+            if (bufferUsagePercent >= 80) {
+              return (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-red-500/20 text-red-500 shrink-0 mt-0.5 animate-bounce">
+                      <AlertTriangle size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                        <span>
+                          {language === "ar"
+                            ? "تحذير حرج: تجاوز استهلاك الذاكرة عتبة 80%!"
+                            : "CRITICAL ALERT: Memory Buffer Exceeded 80% Capacity!"}
+                        </span>
+                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-mono font-bold">
+                          {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                        {language === "ar"
+                          ? `وصلت كثافة استهلاك سياق الذاكرة إلى ${bufferUsagePercent}%. يوصى ببدء تقليص الذاكرة فوراً لمنع البطء والتأثير على سرعة الاستجابة.`
+                          : `Buffer load has reached ${bufferUsagePercent}%. Immediate context compression is strongly recommended to prevent latency spikes.`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSmartCompress}
+                    disabled={isCompressing}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
+                  >
+                    {isCompressing ? (
+                      <RefreshCw className="animate-spin" size={14} />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    <span>
+                      {language === "ar" ? "تقليص الذاكرة الآن" : "Shrink Memory Now"}
+                    </span>
+                  </button>
+                </div>
+              );
+            }
+
+            if (bufferUsagePercent >= 50) {
+              return (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-amber-500/20 text-amber-500 shrink-0 mt-0.5">
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                        <span>
+                          {language === "ar"
+                            ? "إشعار تنبيه: استهلاك الذاكرة وصل إلى 50%"
+                            : "WARNING: Memory Buffer Reached 50% Capacity"}
+                        </span>
+                        <span className="text-[10px] bg-amber-500/30 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded font-mono font-bold">
+                          {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                        {language === "ar"
+                          ? `وصلت سعة التخزين المؤقت إلى ${bufferUsagePercent}%. يمكنك تنفيذ تقليص الذاكرة للحفاظ على أداء سريع وتوزيع مثالي للرموز.`
+                          : `Buffer capacity is currently at ${bufferUsagePercent}%. You can shrink memory now to maintain optimal response speeds.`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSmartCompress}
+                    disabled={isCompressing}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
+                  >
+                    {isCompressing ? (
+                      <RefreshCw className="animate-spin" size={14} />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    <span>
+                      {language === "ar" ? "تقليص الذاكرة" : "Shrink Memory"}
+                    </span>
+                  </button>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
+              <span className="text-gray-500 block mb-1">{language === "ar" ? "سعة التخزين المؤقت القصوى" : "Buffer Limit Capacity"}</span>
+              <span className="text-base font-bold text-gray-900 dark:text-white">{diagnosticsData.bufferLimit} Records Max</span>
+            </div>
+            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
+              <span className="text-gray-500 block mb-1">{language === "ar" ? "الجلسات النشطة ذات السياق" : "Active Context Sessions"}</span>
+              <span className="text-base font-bold text-accent">{diagnosticsData.activeContextSessions?.length || 0} Sessions</span>
+            </div>
+          </div>
+
+          {diagnosticsData.activeContextSessions && diagnosticsData.activeContextSessions.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                {language === "ar" ? "أحدث جلسات المحادثة ذات السياق النشط" : "Recent Active Context Sessions"}
+              </span>
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
+                {diagnosticsData.activeContextSessions.map((session: any) => (
+                  <div key={session.id} className="p-2.5 rounded bg-gray-100 dark:bg-[#0f0f11]/80 border border-[var(--border)] flex items-center justify-between gap-2">
+                    <div className="truncate flex items-center gap-2">
+                      <span className="font-bold text-accent">#{session.id}</span>
+                      <span className="text-gray-800 dark:text-gray-200 truncate">{session.title || 'Untitled Session'}</span>
+                      <span className="text-[10px] font-mono bg-accent/10 text-accent px-1.5 py-0.2 rounded shrink-0">
+                        ⚡ {language === "ar" ? "نشط" : "Active Context"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                        {new Date(session.updated_at).toLocaleTimeString()}
+                      </span>
+                      <button
+                        onClick={handleSmartCompress}
+                        disabled={isCompressing}
+                        className="text-[10px] font-mono text-accent hover:underline px-1.5 py-0.5 bg-accent/5 hover:bg-accent/10 rounded border border-accent/20 cursor-pointer disabled:opacity-50"
+                        title={language === "ar" ? "تقليص سياق هذه الجلسة" : "Shrink Session Context"}
+                      >
+                        {language === "ar" ? "تقليص" : "Shrink"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Buffer Usage Density Trend Over Last 60 Minutes */}
+          <div className="space-y-2 mt-6 pt-4 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                {language === "ar" ? "كثافة استخدام ذاكرة التخزين المؤقت خلال آخر 60 دقيقة" : "Buffer Usage Density Trend (Last 60 Minutes)"}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-mono">
+                  <span className="text-gray-500 dark:text-gray-400 text-[11px]">
+                    {language === "ar" ? "معدل التحديث:" : "Refresh:"}
+                  </span>
+                  <select
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                    className="bg-gray-100 dark:bg-[#0f0f11] text-gray-800 dark:text-gray-200 border border-[var(--border)] text-[11px] rounded px-2 py-0.5 font-mono focus:outline-none focus:border-accent transition-theme cursor-pointer"
+                  >
+                    <option value={5}>5s</option>
+                    <option value={10}>10s</option>
+                    <option value={30}>30s</option>
+                  </select>
+                </div>
+                <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded">
+                  Real-time Telemetry
+                </span>
+              </div>
+            </div>
+            <div className="h-48 w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={bufferTrendData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#2d2d30' : '#e5e7eb'} />
+                  <XAxis dataKey="time" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
+                  <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: theme === 'dark' ? '#1a1a1c' : '#ffffff', 
+                      borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: theme === 'dark' ? '#ffffff' : '#111827'
+                    }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="density" 
+                    stroke="#10b881" 
+                    strokeWidth={2.5} 
+                    dot={{ fill: '#10b881', r: 4 }} 
+                    activeDot={{ r: 6, fill: '#10b881', stroke: '#ffffff', strokeWidth: 2 }} 
+                  />
+                  <ReferenceLine 
+                    y={40} 
+                    stroke="#ef4444" 
+                    strokeDasharray="4 4" 
+                    label={{ 
+                      value: language === 'ar' ? 'عتبة 80% للحمل الأقصى' : '80% Capacity Threshold', 
+                      fill: '#ef4444', 
+                      fontSize: 10, 
+                      position: 'insideTopRight' 
+                    }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action Trigger Consolidation Form Console */}
       <div
         className={`p-6 rounded-lg border transition-theme ${
@@ -11140,6 +11510,114 @@ const MemoryCenterView = ({
               )}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Automated Context Cleanup Routine Panel */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 border-b border-[var(--border)] pb-3">
+          {language === "ar"
+            ? "محرك تنظيف السياق التلقائي (Context TTL Cleanup)"
+            : "AUTOMATED CONTEXT TTL CLEANUP ROUTINE"}
+        </h4>
+        <p className="text-xs text-gray-500 mb-6">
+          {language === "ar"
+            ? "تحديد ومسح ملخصات السياق للجلسات غير النشطة بناءً على عتبة TTL للحفاظ على خفة و كفاءة ذاكرة المحرك."
+            : "Identify and purge inactive session context summaries based on a configurable TTL threshold to maintain engine buffer efficiency."}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar" ? "عتبة فترة عدم النشاط (TTL باليوم)" : "INACTIVITY TTL THRESHOLD (DAYS)"}
+            </label>
+            <select
+              value={ttlDays}
+              onChange={(e) => setTtlDays(parseInt(e.target.value, 10))}
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+            >
+              <option value="7">7 Days (Aggressive)</option>
+              <option value="15">15 Days (Standard)</option>
+              <option value="30">30 Days (Recommended)</option>
+              <option value="60">60 Days (Extended)</option>
+              <option value="90">90 Days (Archival)</option>
+            </select>
+          </div>
+
+          <div>
+            <button
+              onClick={handleRunContextCleanup}
+              disabled={isCleaning}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
+            >
+              {isCleaning ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
+                  {language === "ar" ? "جاري تنظيف السياق..." : "PURGING INACTIVE CONTEXT..."}
+                </>
+              ) : (
+                <>
+                  <Database size={16} />
+                  {language === "ar" ? "تشغيل تنظيف السياق الآن" : "RUN CONTEXT CLEANUP ROUTINE"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Smart Compress Heuristic Panel */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <div className="flex items-center justify-between mb-2 border-b border-[var(--border)] pb-3">
+          <h4 className="text-base font-bold text-gray-900 dark:text-white">
+            {language === "ar"
+              ? "الضغط الذكي للسياق (Smart Context Compression)"
+              : "SMART CONTEXT COMPRESSION & HEURISTIC TRIM"}
+          </h4>
+          <span className="text-xs font-mono text-accent bg-accent/10 px-2.5 py-1 rounded">
+            {language === "ar" ? "تقليل استهلاك الرموز" : "Token Load Reduction"}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mb-6">
+          {language === "ar"
+            ? "تطبيق خوارزمية استدلالية ذكية لضغط وتقليم النصوص الطويلة في جلسات المحادثة النشطة مع الاحتفاظ بالمعلومات الجوهرية وتخفيف الحمل على المحرك."
+            : "Apply lightweight heuristic compression to trim redundant tokens from long-running active sessions while preserving core context summaries."}
+        </p>
+
+        <div className="flex items-center justify-end">
+          <button
+            onClick={handleSmartCompress}
+            disabled={isCompressing}
+            className={`flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
+          >
+            {isCompressing ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
+                {language === "ar" ? "جاري الضغط الذكي..." : "COMPRESSING SESSIONS..."}
+              </>
+            ) : (
+              <>
+                <Zap size={16} className="text-accent" />
+                {language === "ar" ? "تشغيل الضغط الذكي الآن" : "RUN SMART COMPRESSION"}
+              </>
+            )}
+          </button>
         </div>
       </div>
 

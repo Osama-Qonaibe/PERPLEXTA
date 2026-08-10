@@ -2170,7 +2170,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  const fetchWithRetry = async (url: string, options: any = {}, retries = 5, backoff = 1000): Promise<any> => {
+  const fetchWithRetry = async (url: string, options: any = {}, retries = 2, backoff = 300): Promise<any> => {
     try {
       const res = await fetch(url, options);
       if (!res.ok) {
@@ -2183,7 +2183,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return await res.json();
     } catch (err) {
       if (retries > 0) {
-
         await new Promise(resolve => setTimeout(resolve, backoff));
         return fetchWithRetry(url, options, retries - 1, backoff * 1.5);
       }
@@ -2194,10 +2193,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isAuthReady) {
-
         completeBoot(true);
       }
-    }, 8000); 
+    }, 2000); 
     return () => clearTimeout(timer);
   }, [isAuthReady]);
 
@@ -2210,7 +2208,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const data = await fetchWithRetry(`/api/user/me?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` }
-      });
+      }, 1, 300);
 
       const userProfile = data.user || (data.email ? data : null);
 

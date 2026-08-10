@@ -1,8 +1,46 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { getUserMemories, addMemory, updateMemory, deleteMemory, pruneMemories } from '../services/memory.js';
+import { getUserMemories, addMemory, updateMemory, deleteMemory, pruneMemories, getMemoryDiagnostics, runContextCleanup, smartCompressMemoryContext } from '../services/memory.js';
+
 
 const router = express.Router();
+
+router.get("/diagnostics", authenticateToken, async (req: any, res) => {
+  try {
+    const isAdmin = req.user.role === 'admin';
+    const diagnostics = await getMemoryDiagnostics(req.user.id, isAdmin);
+    res.json(diagnostics);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to fetch memory diagnostics' });
+  }
+});
+
+router.post("/smart-compress", authenticateToken, async (req: any, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required for smart compression' });
+    }
+    const result = await smartCompressMemoryContext();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to run smart compression' });
+  }
+});
+
+router.post("/cleanup-context", authenticateToken, async (req: any, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required for context cleanup' });
+    }
+    const ttlDays = req.body.ttlDays ? parseInt(req.body.ttlDays, 10) : 30;
+    const result = await runContextCleanup(ttlDays);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to run context cleanup' });
+  }
+});
+
+
 
 router.get("/", authenticateToken, async (req: any, res) => {
   try {

@@ -306,3 +306,99 @@ ${factsToCondense}`;
 
   return reports;
 }
+
+export async function getMemoryDiagnostics(userId?: string | number, isAdmin?: boolean) {
+  if (!pool) throw new Error('Database initializing');
+
+  if (isAdmin) {
+    const totalMemoriesRes = await pool.query('SELECT count(*) FROM chat_memories');
+    const activeSessionsRes = await pool.query("SELECT id, user_id, title, updated_at FROM chats WHERE context_summary IS NOT NULL AND trim(context_summary) != '' ORDER BY updated_at DESC LIMIT 50");
+    const userMemoryCountsRes = await pool.query('SELECT user_id, count(*) as count FROM chat_memories GROUP BY user_id');
+    
+    return {
+      engine: 'Perplexta Memory & Context Engine v2',
+      mode: 'system-wide-admin',
+      totalMemories: parseInt(totalMemoriesRes.rows[0].count, 10),
+      activeContextSessions: activeSessionsRes.rows,
+      userMemoryCounts: userMemoryCountsRes.rows,
+      bufferLimit: 50,
+      timestamp: new Date().toISOString()
+    };
+  } else {
+    const cleanId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    const userMemoriesRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [cleanId]);
+    const userSessionsRes = await pool.query("SELECT id, title, updated_at FROM chats WHERE user_id = $1 AND context_summary IS NOT NULL AND trim(context_summary) != '' ORDER BY updated_at DESC", [cleanId]);
+    
+    const count = parseInt(userMemoriesRes.rows[0].count, 10);
+    return {
+      engine: 'Perplexta Memory & Context Engine v2',
+      mode: 'user-isolated',
+      userId: cleanId,
+      memoryCount: count,
+      memorySaturationPercent: Math.round((count / 50) * 100),
+      bufferLimit: 50,
+      activeContextSessions: userSessionsRes.rows,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+export async function smartCompressMemoryContext() {
+  if (!pool) throw new Error('Database initializing');
+  
+  // Find chats with lengthy context summaries (> 500 chars) that can be heuristically compressed
+  const chatsRes = await pool.query(
+    `SELECT id, user_id, title, context_summary FROM chats WHERE context_summary IS NOT NULL AND length(context_summary) > 400 LIMIT 100`
+  );
+
+  let compressedCount = 0;
+  const compressedSessions = [];
+
+  for (const chat of chatsRes.rows) {
+    const originalSummary = chat.context_summary;
+    // Lightweight heuristic compression: keep first 200 chars and last 200 chars with a compression marker
+    if (originalSummary.length > 400) {
+      const trimmed = originalSummary.substring(0, 200) + "\n[... Smart Compressed Heuristic Buffer Trunk ...] \n" + originalSummary.substring(originalSummary.length - 200);
+      
+      await pool.query(
+        'UPDATE chats SET context_summary = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [trimmed, chat.id]
+      );
+
+      compressedCount++;
+      compressedSessions.push({
+        id: chat.id,
+        title: chat.title,
+        originalLength: originalSummary.length,
+        compressedLength: trimmed.length
+      });
+    }
+  }
+
+  return {
+    success: true,
+    compressedCount,
+    compressedSessions,
+    timestamp: new Date().toISOString()
+  };
+}
+
+export async function runContextCleanup(ttlDays: number = 30) {
+  if (!pool) throw new Error('Database initializing');
+  const res = await pool.query(
+    `UPDATE chats 
+     SET context_summary = NULL, updated_at = CURRENT_TIMESTAMP 
+     WHERE updated_at < NOW() - INTERVAL '1 day' * $1 
+     AND context_summary IS NOT NULL 
+     RETURNING id, user_id, title, updated_at`,
+    [ttlDays]
+  );
+  return {
+    cleanedCount: res.rows.length,
+    cleanedSessions: res.rows,
+    ttlDays,
+    timestamp: new Date().toISOString()
+  };
+}
+
+

@@ -152,11 +152,17 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
         </div>
 
         {/* Memory Capacity Indicator */}
-        <div className={`p-4 md:p-6 rounded-[var(--radius)] border transition-theme ${
-          isLimitReached 
-            ? 'bg-amber-500/5 border-amber-500/30'
-            : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm'
-        }`}>
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          key={memoryCount}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className={`p-4 md:p-6 rounded-[var(--radius)] border transition-theme ${
+            isLimitReached 
+              ? 'bg-amber-500/5 border-amber-500/30'
+              : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <div className="flex items-center gap-2.5 md:gap-3">
               <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center ${
@@ -166,9 +172,15 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               </div>
               <div>
                 <h3 className="font-bold text-xs md:text-sm text-[var(--text-primary)]">{t('memoryCapacity')}</h3>
-                <p className="text-[9px] md:text-[10px] text-[var(--text-muted)]">
+                <motion.p 
+                  key={memoryCount}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-[9px] md:text-[10px] text-[var(--text-muted)]"
+                >
                   {memoryCount} / {MEMORY_LIMIT} {dir === 'rtl' ? 'حقائق' : 'facts'}
-                </p>
+                </motion.p>
               </div>
             </div>
             
@@ -185,11 +197,13 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           </div>
 
           <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-theme ease-out rounded-full ${
+            <motion.div 
+              className={`h-full rounded-full ${
                 isLimitReached ? 'bg-amber-500' : 'bg-accent'
               }`}
-              style={{ width: `${usagePercentage}%` }}
+              initial={{ width: 0 }}
+              animate={{ width: `${usagePercentage}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
 
@@ -203,7 +217,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* Auto-update Indicator */}
