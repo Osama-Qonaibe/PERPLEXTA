@@ -207,7 +207,13 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       <img 
                         src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
                         alt="Logo" 
-                        className="w-full h-full object-cover block" 
+                        className="w-full h-full object-cover block"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (target.src !== '/app-assets/icon.png') {
+                            target.src = '/app-assets/icon.png';
+                          }
+                        }}
                       />
                     </motion.div>
                   ) : (

@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
 import { getEconomySettings, updateEconomySettings } from './wallet.js';
@@ -13,12 +15,65 @@ export async function clearSettingsCache() {
   invalidateSystemSettingsCache();
 }
 
+export async function ensurePersistentSystemAssets(settings: any) {
+  if (!settings) return;
+  try {
+    const uploadsDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const fields = [
+      { key: 'logo_url', name: 'logo' },
+      { key: 'logo_light_url', name: 'logo_light' },
+      { key: 'favicon_url', name: 'favicon' },
+      { key: 'seo_image_url', name: 'seo_image' }
+    ];
+
+    for (const field of fields) {
+      const val = settings[field.key];
+      if (!val || typeof val !== 'string') continue;
+
+      if (val.startsWith('data:image/')) {
+        try {
+          const match = val.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+          if (match) {
+            const rawExt = match[1].toLowerCase();
+            const ext = rawExt === 'jpeg' ? 'jpg' : (rawExt === 'svg+xml' ? 'svg' : rawExt);
+            const buffer = Buffer.from(match[2], 'base64');
+            const filename = `system_${field.name}.${ext}`;
+            const targetPath = path.join(uploadsDir, filename);
+            await fs.promises.writeFile(targetPath, buffer);
+            console.log(`[SystemAssets] Hard-wrote persistent base64 asset to disk: ${filename}`);
+          }
+        } catch (e: any) {
+          console.error(`[SystemAssets] Error writing base64 asset for ${field.key}:`, e.message);
+        }
+      } else if (val.startsWith('/uploads/') || val.startsWith('uploads/')) {
+        const cleanName = path.basename(val.split('?')[0]);
+        const targetPath = path.join(uploadsDir, cleanName);
+        if (!fs.existsSync(targetPath)) {
+          console.warn(`[SystemAssets] Asset file missing from disk: ${cleanName}, restoring persistent fallback...`);
+          const defaultAppIcon = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
+          if (fs.existsSync(defaultAppIcon)) {
+            await fs.promises.copyFile(defaultAppIcon, targetPath).catch(() => {});
+            console.log(`[SystemAssets] Created persistent disk fallback for missing asset: ${cleanName}`);
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('[SystemAssets] Error ensuring persistent assets:', err.message);
+  }
+}
+
 export async function refreshCachedAppName() {
   try {
     const settings = await getCachedSystemSettings();
     if (settings) {
       cachedAppNameEn = settings.site_name_en || '';
       cachedAppNameAr = settings.site_name_ar || '';
+      ensurePersistentSystemAssets(settings).catch(() => {});
     }
   } catch (e) {
     console.error('[System] Failed to refresh cached app name:', e);
@@ -27,7 +82,11 @@ export async function refreshCachedAppName() {
 
 export async function getSystemSettings() {
   try {
-    return await getCachedSystemSettings();
+    const settings = await getCachedSystemSettings();
+    if (settings) {
+      ensurePersistentSystemAssets(settings).catch(() => {});
+    }
+    return settings;
   } catch (err: any) {
     const errMsg = err.message || '';
     if (errMsg.includes('relation "system_settings" does not exist') || 
@@ -192,7 +251,192 @@ export async function updateSystemSettings(settings: any) {
   
   await clearSettingsCache();
   await refreshCachedAppName();
+  await ensurePersistentSystemAssets({ logo_url, logo_light_url, favicon_url, seo_image_url });
   return { success: true };
+}
+
+export async function checkSystemAssetsDiagnostic() {
+  const settings = await getCachedSystemSettings();
+  if (!settings) {
+    return {
+      hasOrphanedAssets: false,
+      assets: [],
+      orphanedKeys: []
+    };
+  }
+
+  const assetsToCheck = [
+    { key: 'logo_url', label: 'Dark Logo (الشعار)' },
+    { key: 'logo_light_url', label: 'Light Logo (الشعار الفاتح)' },
+    { key: 'favicon_url', label: 'Favicon (أيقونة الموقع)' },
+    { key: 'seo_image_url', label: 'SEO Cover Image (صورة المشاركة)' }
+  ];
+
+  const results: Array<{
+    key: string;
+    label: string;
+    url: string | null;
+    exists: boolean;
+    isOrphaned: boolean;
+    reason?: string;
+  }> = [];
+
+  let hasOrphaned = false;
+
+  for (const item of assetsToCheck) {
+    const url = settings[item.key];
+    if (!url || typeof url !== 'string' || !url.trim()) {
+      results.push({
+        key: item.key,
+        label: item.label,
+        url: null,
+        exists: true,
+        isOrphaned: false
+      });
+      continue;
+    }
+
+    if (url.startsWith('data:image/')) {
+      results.push({
+        key: item.key,
+        label: item.label,
+        url: 'data:image/... (Embedded Base64)',
+        exists: true,
+        isOrphaned: false
+      });
+      continue;
+    }
+
+    if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+      const cleanPath = url.split('?')[0].replace(/^\//, '');
+      const absPath = path.join(process.cwd(), cleanPath);
+      let fileExists = false;
+      try {
+        await fs.promises.access(absPath);
+        fileExists = true;
+      } catch {
+        fileExists = false;
+      }
+
+      if (!fileExists) {
+        hasOrphaned = true;
+        results.push({
+          key: item.key,
+          label: item.label,
+          url,
+          exists: false,
+          isOrphaned: true,
+          reason: `File missing from server storage disk (${cleanPath})`
+        });
+      } else {
+        results.push({
+          key: item.key,
+          label: item.label,
+          url,
+          exists: true,
+          isOrphaned: false
+        });
+      }
+    } else {
+      results.push({
+        key: item.key,
+        label: item.label,
+        url,
+        exists: true,
+        isOrphaned: false
+      });
+    }
+  }
+
+  return {
+    hasOrphanedAssets: hasOrphaned,
+    assets: results,
+    orphanedKeys: results.filter(r => r.isOrphaned).map(r => r.key)
+  };
+}
+
+export async function repairSystemAssetsDiagnostic() {
+  const settings = await getCachedSystemSettings();
+  if (!settings) {
+    return { success: false, message: 'System settings not found' };
+  }
+
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const defaultIconPath = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
+  const fallbackIconExists = fs.existsSync(defaultIconPath);
+
+  const assetsToCheck = [
+    { key: 'logo_url', defaultName: 'system_logo.png' },
+    { key: 'logo_light_url', defaultName: 'system_logo_light.png' },
+    { key: 'favicon_url', defaultName: 'system_favicon.png' },
+    { key: 'seo_image_url', defaultName: 'system_seo.png' }
+  ];
+
+  const updates: Record<string, string> = {};
+  let repairedCount = 0;
+
+  for (const item of assetsToCheck) {
+    const url = settings[item.key];
+    if (!url || typeof url !== 'string' || !url.trim()) continue;
+
+    if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+      const cleanPath = url.split('?')[0].replace(/^\//, '');
+      const absPath = path.join(process.cwd(), cleanPath);
+      let fileExists = false;
+      try {
+        await fs.promises.access(absPath);
+        fileExists = true;
+      } catch {
+        fileExists = false;
+      }
+
+      if (!fileExists) {
+        if (fallbackIconExists) {
+          await fs.promises.copyFile(defaultIconPath, absPath).catch(() => {});
+          console.log(`[AssetRepair] Restored missing disk file for ${item.key}: ${cleanPath}`);
+          repairedCount++;
+        } else {
+          const newPath = `/uploads/${item.defaultName}`;
+          const newAbs = path.join(uploadsDir, item.defaultName);
+          const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+          await fs.promises.writeFile(newAbs, tinyPng).catch(() => {});
+          updates[item.key] = newPath;
+          repairedCount++;
+        }
+      }
+    } else if (url.startsWith('data:image/')) {
+      const match = url.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (match) {
+        const rawExt = match[1].toLowerCase();
+        const ext = rawExt === 'jpeg' ? 'jpg' : (rawExt === 'svg+xml' ? 'svg' : rawExt);
+        const buffer = Buffer.from(match[2], 'base64');
+        const filename = `system_${item.key}.${ext}`;
+        const targetPath = path.join(uploadsDir, filename);
+        await fs.promises.writeFile(targetPath, buffer).catch(() => {});
+        repairedCount++;
+      }
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const setClause = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
+    const values = Object.values(updates);
+    await pool.query(`UPDATE system_settings SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = (SELECT id FROM system_settings ORDER BY id ASC LIMIT 1)`, values);
+  }
+
+  await clearSettingsCache();
+  await refreshCachedAppName();
+  const diagnosticAfter = await checkSystemAssetsDiagnostic();
+
+  return {
+    success: true,
+    repairedCount,
+    diagnostic: diagnosticAfter
+  };
 }
 
 export const getAppName = (lang: 'en' | 'ar' = 'en') => lang === 'ar' ? cachedAppNameAr : cachedAppNameEn;

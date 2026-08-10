@@ -11,7 +11,7 @@ import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { createNotification, logSystemActivity } from '../services/notifications.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
-import { getSystemSettings, updateSystemSettings } from '../services/system.js';
+import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic } from '../services/system.js';
 import { isSafeHost } from '../utils/helpers.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
@@ -3409,11 +3409,12 @@ router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), 
     const fileBuffer = await fs.readFile(optimizedPath);
     const base64Str = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
     
-    // Clean up local files
-    await fs.unlink(req.file.path).catch(() => {});
-    await fs.unlink(optimizedPath).catch(() => {});
+    // Clean up temporary raw upload file if distinct from the optimized output file
+    if (req.file.path && path.resolve(req.file.path) !== path.resolve(optimizedPath)) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
 
-    res.json({ success: true, imageUrl: base64Str });
+    res.json({ success: true, imageUrl: base64Str, fileUrl: optResult.fileUrl });
   } catch (error: any) {
     console.error('[AssetUpload] Upload failed:', error);
     res.status(500).json({ error: error.message || 'Image upload failed' });
@@ -3432,14 +3433,35 @@ router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file
     const fileBuffer = await fs.readFile(optimizedPath);
     const base64Str = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
     
-    // Clean up local files
-    await fs.unlink(req.file.path).catch(() => {});
-    await fs.unlink(optimizedPath).catch(() => {});
+    // Clean up temporary raw upload file if distinct from the optimized output file
+    if (req.file.path && path.resolve(req.file.path) !== path.resolve(optimizedPath)) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
 
-    res.json({ success: true, imageUrl: base64Str });
+    res.json({ success: true, imageUrl: base64Str, fileUrl: optResult.fileUrl });
   } catch (error: any) {
     console.error('[SEOImageUpload] Upload failed:', error);
     res.status(500).json({ error: error.message || 'Image upload failed' });
+  }
+});
+
+router.get("/settings/check-assets", authenticateAdmin, async (req, res) => {
+  try {
+    const diagnostic = await checkSystemAssetsDiagnostic();
+    res.json(diagnostic);
+  } catch (error: any) {
+    console.error('[Admin] Asset diagnostic check failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to check system assets' });
+  }
+});
+
+router.post("/settings/repair-assets", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await repairSystemAssetsDiagnostic();
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Asset repair failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to repair system assets' });
   }
 });
 

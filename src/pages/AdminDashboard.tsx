@@ -99,6 +99,7 @@ import {
   FastForward,
   UserPlus,
   Sliders,
+  Wrench,
 } from "lucide-react";
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { NotificationThresholdsModal } from "../components/NotificationThresholdsModal";
@@ -11990,6 +11991,71 @@ const SystemSettingsView = ({
 
   const [clearingCache, setClearingCache] = useState<string | null>(null);
 
+  // --- DIAGNOSTIC HELPER FOR SYSTEM SETTINGS & ORPHANED LOGO ASSETS ---
+  const [orphanedAssetsState, setOrphanedAssetsState] = useState<{
+    hasOrphanedAssets: boolean;
+    assets: Array<{
+      key: string;
+      label: string;
+      url: string | null;
+      exists: boolean;
+      isOrphaned: boolean;
+      reason?: string;
+    }>;
+    orphanedKeys: string[];
+  } | null>(null);
+  const [isCheckingAssets, setIsCheckingAssets] = useState(false);
+  const [isRepairingAssets, setIsRepairingAssets] = useState(false);
+
+  const checkSystemAssetsDiagnostic = async () => {
+    setIsCheckingAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/check-assets", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrphanedAssetsState(data);
+      }
+    } catch (err) {
+      console.error("Failed to run system asset diagnostic check:", err);
+    } finally {
+      setIsCheckingAssets(false);
+    }
+  };
+
+  const handleRepairOrphanedAssets = async () => {
+    setIsRepairingAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/repair-assets", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(
+          language === "ar"
+            ? "تم إصلاح الشعار والملفات المفقودة بنجاح"
+            : "Orphaned assets repaired and restored successfully",
+          "success"
+        );
+        fetchSettings();
+        checkSystemAssetsDiagnostic();
+      } else {
+        throw new Error("Repair request failed");
+      }
+    } catch (err) {
+      showToast(
+        language === "ar"
+          ? "حدث خطأ أثناء إصلاح الملفات المفقودة"
+          : "Failed to repair orphaned assets",
+        "error"
+      );
+    } finally {
+      setIsRepairingAssets(false);
+    }
+  };
+
   const handleClearCache = async (target: string) => {
     setClearingCache(target);
     try {
@@ -12166,67 +12232,69 @@ const SystemSettingsView = ({
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch("/api/admin/settings", {
-          headers: { Authorization: `Bearer ${token}` },
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSiteName(data.site_name_en || "");
+        setSiteNameAr(data.site_name_ar || "");
+        const seoSiteNameEnVal = data.seo_site_name_en || "";
+        const seoSiteNameArVal = data.seo_site_name_ar || "";
+        setSeoSiteNameEn(seoSiteNameEnVal);
+        setSeoSiteNameAr(seoSiteNameArVal);
+
+        setSiteDescription(data.site_description_en || "");
+        setSiteDescriptionAr(data.site_description_ar || "");
+        const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
+        const seoArVal = data.seo_description_ar || "";
+        const kwsEnVal = data.keywords_en || "";
+        const kwsArVal = data.keywords_ar || "";
+
+        setSeoDescriptionEn(seoEnVal);
+        setSeoDescriptionAr(seoArVal);
+        setKeywordsEn(kwsEnVal);
+        setKeywordsAr(kwsArVal);
+        setGoogleAnalyticsId(data.google_analytics_id || "");
+        setGoogleSiteVerification(data.google_site_verification || "");
+        setBlockedPaths(data.blocked_paths || "");
+        setLogoBase64(data.logo_url || null);
+        setLogoLightBase64(data.logo_light_url || null);
+        setFaviconBase64(data.favicon_url || null);
+        setSeoImageUrl(data.seo_image_url || null);
+
+        setSiteSettings({
+          ...siteSettings,
+          siteName: data.site_name_en || "",
+          siteNameAr: data.site_name_ar || "",
+          seoSiteNameEn: seoSiteNameEnVal,
+          seoSiteNameAr: seoSiteNameArVal,
+          siteDescription: data.site_description_en || "",
+          siteDescriptionAr: data.site_description_ar || "",
+          seoDescriptionEn: seoEnVal,
+          seoDescriptionAr: seoArVal,
+          keywordsEn: kwsEnVal,
+          keywordsAr: kwsArVal,
+          googleAnalyticsId: data.google_analytics_id || "",
+          logoBase64: data.logo_url || null,
+          logoLightBase64: data.logo_light_url || null,
+          faviconBase64: data.favicon_url || null,
+          seoImageUrl: data.seo_image_url || null,
+          blocked_paths: data.blocked_paths || "",
         });
-        if (res.ok) {
-          const data = await res.json();
-          setSiteName(data.site_name_en || "");
-          setSiteNameAr(data.site_name_ar || "");
-          const seoSiteNameEnVal = data.seo_site_name_en || "";
-          const seoSiteNameArVal = data.seo_site_name_ar || "";
-          setSeoSiteNameEn(seoSiteNameEnVal);
-          setSeoSiteNameAr(seoSiteNameArVal);
-
-          setSiteDescription(data.site_description_en || "");
-          setSiteDescriptionAr(data.site_description_ar || "");
-          const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
-          const seoArVal = data.seo_description_ar || "";
-          const kwsEnVal = data.keywords_en || "";
-          const kwsArVal = data.keywords_ar || "";
-
-          setSeoDescriptionEn(seoEnVal);
-          setSeoDescriptionAr(seoArVal);
-          setKeywordsEn(kwsEnVal);
-          setKeywordsAr(kwsArVal);
-          setGoogleAnalyticsId(data.google_analytics_id || "");
-          setGoogleSiteVerification(data.google_site_verification || "");
-          setBlockedPaths(data.blocked_paths || "");
-          setLogoBase64(data.logo_url || null);
-          setLogoLightBase64(data.logo_light_url || null);
-          setFaviconBase64(data.favicon_url || null);
-          setSeoImageUrl(data.seo_image_url || null);
-
-          setSiteSettings({
-            ...siteSettings,
-            siteName: data.site_name_en || "",
-            siteNameAr: data.site_name_ar || "",
-            seoSiteNameEn: seoSiteNameEnVal,
-            seoSiteNameAr: seoSiteNameArVal,
-            siteDescription: data.site_description_en || "",
-            siteDescriptionAr: data.site_description_ar || "",
-            seoDescriptionEn: seoEnVal,
-            seoDescriptionAr: seoArVal,
-            keywordsEn: kwsEnVal,
-            keywordsAr: kwsArVal,
-            googleAnalyticsId: data.google_analytics_id || "",
-            logoBase64: data.logo_url || null,
-            logoLightBase64: data.logo_light_url || null,
-            faviconBase64: data.favicon_url || null,
-            seoImageUrl: data.seo_image_url || null,
-            blocked_paths: data.blocked_paths || "",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching settings:", error);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
+  };
+
+  useEffect(() => {
     if (token) {
       fetchSettings();
       fetchRouteSeoList();
+      checkSystemAssetsDiagnostic();
     }
   }, [token]);
 
@@ -12736,12 +12804,71 @@ const SystemSettingsView = ({
       <div
         className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
       >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-purple-500/10 text-purple-500">
-            <ImageIcon size={24} />
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-purple-500/10 text-purple-500">
+              <ImageIcon size={24} />
+            </div>
+            <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
           </div>
-          <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
+          <button
+            type="button"
+            onClick={checkSystemAssetsDiagnostic}
+            disabled={isCheckingAssets}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+            title={language === "ar" ? "فحص سلامة ملفات الشعار والهوية" : "Scan system logo & asset files"}
+          >
+            <RefreshCw size={14} className={isCheckingAssets ? "animate-spin" : ""} />
+            <span>{language === "ar" ? "فحص السلامة" : "Scan Assets"}</span>
+          </button>
         </div>
+
+        {/* Orphaned Assets Warning Banner */}
+        {orphanedAssetsState?.hasOrphanedAssets && (
+          <div className="mb-6 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2 flex-wrap">
+                  <span>{language === "ar" ? "تحذير: ملف الهوية مفقود من السيرفر (Orphaned Asset Detected)" : "Warning: Orphaned Asset Detected"}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 font-mono text-amber-800 dark:text-amber-300">
+                    {orphanedAssetsState.orphanedKeys.join(", ")}
+                  </span>
+                </h4>
+                <p className="text-xs text-amber-700/90 dark:text-amber-300/80 mt-1">
+                  {language === "ar"
+                    ? "تم اكتشاف أن رابط الشعار أو الهوية يشير إلى ملف غير موجود على سيرفر التخزين. انقر على زر 'إصلاح' لاستعادة الشعار وإنشاء الملف تلقائياً."
+                    : "The logo or asset URL in system settings references a non-existent file on the server. Click 'Repair' to restore and re-create the missing asset automatically."}
+                </p>
+                <div className="mt-2 space-y-1">
+                  {orphanedAssetsState.assets.filter(a => a.isOrphaned).map(a => (
+                    <div key={a.key} className="text-xs font-mono text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      <span className="font-semibold text-amber-900 dark:text-amber-200">• {a.label}:</span>
+                      <span className="underline opacity-90">{a.url}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRepairOrphanedAssets}
+                disabled={isRepairingAssets}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isRepairingAssets ? (
+                  <RefreshCw className="animate-spin" size={14} />
+                ) : (
+                  <Wrench size={14} />
+                )}
+                <span>{language === "ar" ? "إصلاح (Repair)" : "Repair Asset"}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo Upload (Dark theme) */}

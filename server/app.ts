@@ -423,13 +423,20 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       console.log(`[Uploads] File not found directly: ${filename}, searching for fallbacks...`);
       const ext = path.extname(filename);
       const nameWithoutExt = path.basename(filename, ext);
-      const candidates = [
-        path.join(uploadsPath, `${nameWithoutExt}_opt.webp`),
-        path.join(uploadsPath, `${nameWithoutExt}.webp`),
+      const cleanBaseName = nameWithoutExt.replace(/(_opt|_optimized)+$/i, '');
+
+      const candidates = Array.from(new Set([
+        path.join(uploadsPath, `${cleanBaseName}_opt.webp`),
+        path.join(uploadsPath, `${cleanBaseName}.webp`),
+        path.join(uploadsPath, `${cleanBaseName}.png`),
+        path.join(uploadsPath, `${cleanBaseName}.jpg`),
+        path.join(uploadsPath, `${cleanBaseName}.jpeg`),
+        path.join(uploadsPath, `${cleanBaseName}.gif`),
+        path.join(uploadsPath, `${cleanBaseName}.svg`),
         path.join(uploadsPath, `${nameWithoutExt}.png`),
         path.join(uploadsPath, `${nameWithoutExt}.jpg`),
-        path.join(uploadsPath, `${nameWithoutExt}.jpeg`),
-      ];
+      ]));
+
       let foundFallback = false;
       for (const cand of candidates) {
         if (fs.existsSync(cand)) {
@@ -439,10 +446,20 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
           break;
         }
       }
+
       if (!foundFallback) {
-        console.warn(`[Uploads] File not found: ${filename}`);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        return res.status(404).json({ error: 'File not found' });
+        // Check if there is a default platform asset fallback for image/logo requests
+        const defaultAppIcon = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
+        const isImageReq = /\.(webp|png|jpg|jpeg|gif|svg)$/i.test(filename) || filename.includes('_opt') || filename.includes('logo');
+        
+        if (isImageReq && fs.existsSync(defaultAppIcon)) {
+          console.log(`[Uploads] Serving default asset fallback for missing image: ${filename}`);
+          resolvedPath = defaultAppIcon;
+        } else {
+          console.warn(`[Uploads] File not found: ${filename}`);
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          return res.status(404).json({ error: 'File not found' });
+        }
       }
     }
 
