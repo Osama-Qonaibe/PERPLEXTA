@@ -3659,7 +3659,20 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'title_ar', 'title_en', 'description_ar', 'description_en', 'image_url', 'video_url', 'poster_url', 'target_url', 'sponsor_name', 'badge_text_ar', 'badge_text_en', 'position', 'format', 'display_order', 'is_active', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'keywords_ar', 'keywords_en', 'click_count', 'impression_count', 'start_date', 'end_date', 'created_at', 'updated_at'],
         repairCols: {
           video_url: { type: 'TEXT' },
-          poster_url: { type: 'TEXT' }
+          poster_url: { type: 'TEXT' },
+          format: { type: 'VARCHAR(50)', default: "'sidebar'" },
+          meta_title_ar: { type: 'VARCHAR(255)' },
+          meta_title_en: { type: 'VARCHAR(255)' },
+          meta_description_ar: { type: 'TEXT' },
+          meta_description_en: { type: 'TEXT' },
+          keywords_ar: { type: 'TEXT' },
+          keywords_en: { type: 'TEXT' },
+          click_count: { type: 'INTEGER', default: 0 },
+          impression_count: { type: 'INTEGER', default: 0 },
+          start_date: { type: 'TIMESTAMP' },
+          end_date: { type: 'TIMESTAMP' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       }
     },
