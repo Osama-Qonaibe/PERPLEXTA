@@ -35,17 +35,6 @@ app.use((req, res, next) => {
   if (!req.path.startsWith('/api/')) {
     return next();
   }
-
-  // Pre-flight check: If core pool is null, the system is in Degraded Mode or still initializing.
-  if (pool === null) {
-    res.setHeader('Retry-After', '5');
-    return res.status(503).json({
-      error: 'Service Unavailable',
-      message: 'The database is currently offline or initializing. Please retry in a few seconds.',
-      code: 'DB_OFFLINE'
-    });
-  }
-
   const isBackpressureSaturated = (p: any) => {
     if (!p) return false;
     const maxPool = p.options?.max || 20;
@@ -185,7 +174,7 @@ app.use(cors({
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
       return callback(null, origin);
     }
-    if (origin.endsWith('.run.app') || origin.endsWith('.aistudio.google')) {
+    if (origin.endsWith('.run.app')) {
       return callback(null, origin);
     }
     callback(new Error('CORS Policy: Origin not permitted. Configure CORS_ALLOWED_ORIGINS in .env if needed.'));
@@ -492,7 +481,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
       const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav'].includes(actualExt);
       if (isMedia) {
-        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
       } else {
         res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
       }

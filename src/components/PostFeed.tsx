@@ -81,7 +81,6 @@ export interface PostFeedProps {
   onDeleteAd?: (ad: BulletinAd) => void;
   onToggleSave?: (ad: BulletinAd) => void;
   onReportAd?: (ad: BulletinAd) => void;
-  onOpenReelFeed?: (adId?: number) => void;
 }
 
 export const PostFeed: React.FC<PostFeedProps> = ({
@@ -115,7 +114,6 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   onDeleteAd,
   onToggleSave,
   onReportAd,
-  onOpenReelFeed,
   replyToCommentId,
   setReplyToCommentId
 }) => {
@@ -408,22 +406,14 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   </span>
                 )}
                 {ad.ad_format && ad.ad_format !== 'post' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (ad.ad_format === 'reel' && onOpenReelFeed) {
-                        onOpenReelFeed(ad.id);
-                      }
-                    }}
-                    className={`px-2 py-0.5 rounded-full border text-[10px] font-black flex items-center gap-1 shadow-sm transition-transform active:scale-95 ${
-                      ad.ad_format === 'reel' 
-                        ? 'bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 cursor-pointer' 
-                        : 'bg-accent/10 border-accent/30 text-accent dark:text-accent'
-                    }`}
-                  >
+                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black flex items-center gap-1 shadow-sm ${
+                    ad.ad_format === 'reel' 
+                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400' 
+                      : 'bg-accent/10 border-accent/30 text-accent dark:text-accent'
+                  }`}>
                     {ad.ad_format === 'reel' ? <Clapperboard size={11} className="text-purple-500" /> : <Camera size={11} className="text-accent" />}
                     <span>{ad.ad_format === 'reel' ? (isRtl ? 'ريلز' : 'Reel') : (isRtl ? 'قصة' : 'Story')}</span>
-                  </button>
+                  </span>
                 )}
                 {ad.is_boosted && (
                   <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-gray-500/10 to-amber-500/20 border border-amber-500/40 text-amber-500 dark:text-amber-400 text-[10px] font-black flex items-center gap-1 shadow-sm">

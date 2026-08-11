@@ -17,11 +17,8 @@ import { createServer as createViteServer } from 'vite';
 import { runDatabaseMigrations, setIo, verifySchemaIntegrity } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
-import { ensureAdsSeedData } from './routes/ads.js';
-import { ensureBulletinSeedData } from './routes/bulletin.js';
 import { initCronJobs } from './jobs/cron.js';
 import { validateRequiredSecrets } from './utils/validateSecrets.js';
-import { initUploadsMonitor } from './services/uploadsMonitorService.js';
 
 const PORT = 3000;
 const MAX_DB_ATTEMPTS = 3;
@@ -46,8 +43,6 @@ async function initDatabase(): Promise<boolean> {
       await verifySchemaIntegrity();
       await syncSystemTemplates();
       await refreshCachedAppName();
-      await ensureAdsSeedData();
-      await ensureBulletinSeedData();
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -100,10 +95,8 @@ async function startServer() {
     if (dbReady) {
       setIo(ioInstance);
       initCronJobs();
-      initUploadsMonitor();
       console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
     } else {
-      initUploadsMonitor();
       console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');
     }
   } catch (err) {
