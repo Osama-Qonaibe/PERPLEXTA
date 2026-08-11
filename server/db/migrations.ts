@@ -181,20 +181,6 @@ async function connectToPool(poolObj: PgPool | null, name: string): Promise<PgPo
   }
 }
 
-async function safeQueryClient(clientObj: PgPoolClient | null, fallbackClient: PgPoolClient, queryText: string, params?: any[]): Promise<any> {
-  const target = clientObj || fallbackClient;
-  try {
-    return await target.query(queryText, params);
-  } catch (err: any) {
-    const msg = err?.message || String(err);
-    if (/not queryable|connection error|terminated unexpectedly|ECONNRESET|ETIMEDOUT|closed/i.test(msg) && target !== fallbackClient) {
-      console.warn(`[Migrations] Client encountered connection error ("${msg}"). Falling back to fallbackClient.`);
-      return await fallbackClient.query(queryText, params);
-    }
-    throw err;
-  }
-}
-
 async function tableExists(poolObj: QueryClient, tableName: string): Promise<boolean> {
   try {
     const result = await poolObj.query(
@@ -545,8 +531,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_migration_security_audit_created_at ON migration_security_audit(created_at)`);
 
+    const activeSecurityClient = securityClient || client;
     try {
-      const checkSecTable = await safeQueryClient(securityClient, client, `
+      const checkSecTable = await activeSecurityClient.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_name = 'token_blacklist'
@@ -554,7 +541,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
       if (!checkSecTable.rows[0].exists) {
         console.log('[Migrations] token_blacklist table does not exist on active security database. Initializing...');
-        await safeQueryClient(securityClient, client, `
+        await activeSecurityClient.query(`
           CREATE TABLE IF NOT EXISTS token_blacklist (
             id SERIAL PRIMARY KEY,
             token TEXT UNIQUE NOT NULL,
@@ -563,7 +550,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           )
         `);
 
-        await safeQueryClient(securityClient, client, `
+        await activeSecurityClient.query(`
           CREATE TABLE IF NOT EXISTS security_alerts (
             id SERIAL PRIMARY KEY,
             user_id INTEGER,
@@ -578,7 +565,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
           )
         `);
 
-        await safeQueryClient(securityClient, client, `
+        await activeSecurityClient.query(`
           CREATE TABLE IF NOT EXISTS admin_audit_logs (
             id SERIAL PRIMARY KEY,
             admin_id INTEGER,
@@ -1103,7 +1090,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
       await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS password_resets_pkey ON password_resets(id)`);
 
-      await safeQueryClient(securityClient, client, `
+      const sTarget = securityClient || client;
+      await sTarget.query(`
         CREATE TABLE IF NOT EXISTS token_blacklist (
           id SERIAL PRIMARY KEY,
           token TEXT UNIQUE NOT NULL,
@@ -1114,7 +1102,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v12_token_blacklist_security_hardening', 'Hardening token_blacklist indexes', async (tx) => {
-      await safeQueryClient(securityClient, client, `
+      const sTarget = securityClient || client;
+
+      await sTarget.query(`
         CREATE TABLE IF NOT EXISTS token_blacklist (
           id SERIAL PRIMARY KEY,
           token TEXT UNIQUE NOT NULL,
@@ -1123,9 +1113,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         )
       `);
 
-      await safeQueryClient(securityClient, client, `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)`);
-      await safeQueryClient(securityClient, client, `CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)`);
-      await safeQueryClient(securityClient, client, `CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at)`);
+      await sTarget.query(`CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_pkey ON token_blacklist(id)`);
+      await sTarget.query(`CREATE UNIQUE INDEX IF NOT EXISTS token_blacklist_token_key ON token_blacklist(token)`);
+      await sTarget.query(`CREATE INDEX IF NOT EXISTS idx_token_blacklist_active_expires ON token_blacklist(expires_at)`);
     });
 
     await runVersioned('v13_payment_gateways_expansion', 'Adding payment gateway fields', async (tx, ledgerTx) => {
@@ -1554,7 +1544,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v38_admin_audit_logs', 'Creating admin_audit_logs table', async (tx) => {
-      await safeQueryClient(securityClient, client, `
+      const activeSecurityClient = securityClient || client;
+      await activeSecurityClient.query(`
         CREATE TABLE IF NOT EXISTS admin_audit_logs (
           id SERIAL PRIMARY KEY,
           admin_id INTEGER,

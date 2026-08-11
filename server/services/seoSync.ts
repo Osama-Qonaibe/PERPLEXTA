@@ -153,7 +153,7 @@ Generate JSON with:
 6. keywords_ar: 8-10 high-performing comma-separated keywords in Arabic optimized with content similarity and trending search data`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
