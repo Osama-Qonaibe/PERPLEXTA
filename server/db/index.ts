@@ -66,6 +66,32 @@ export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) 
   };
 }
 
+function patchPoolQuery(p: any) {
+  if (!p || p._queryPatched) return p;
+  const originalQuery = p.query.bind(p);
+  p.query = async function(text: any, params: any) {
+    const maxRetries = 2;
+    let delay = 500;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await originalQuery(text, params);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        const isTransient = /Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection|closed|SSL/i.test(msg);
+        if (isTransient && attempt < maxRetries) {
+          console.warn(`[DB] Transient connection error ("${msg}"). Retrying query (attempt ${attempt}/${maxRetries})...`);
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+          continue;
+        }
+        throw err;
+      }
+    }
+  };
+  p._queryPatched = true;
+  return p;
+}
+
 export function createInternalPool(connectionString: string, max = 1, connectionTimeoutMillis = 5000) {
   const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
   const p = new Pool({
@@ -75,7 +101,7 @@ export function createInternalPool(connectionString: string, max = 1, connection
   p.on('error', (e: any) => {
     console.error('[DB] Idle internal client error:', e?.message || e);
   });
-  return p;
+  return patchPoolQuery(p);
 }
 
 export function getLedgerPool() { return ledgerPool || pool; }
@@ -169,22 +195,22 @@ export async function initializePerplextaPools(
     const ssl = getSslConfig(); // single call, used for all pools below
 
     try {
-      pool = new Pool({
+      pool = patchPoolQuery(new Pool({
         connectionString: coreUrl,
         ...getBasePoolConfig(finalCoreMax, 10000),
-      });
-      ledgerPool = finalLedgerUrl === coreUrl ? pool : new Pool({
+      }));
+      ledgerPool = finalLedgerUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalLedgerUrl,
         ...getBasePoolConfig(finalLedgerMax, 5000),
-      });
-      externalPool = finalExternalUrl === coreUrl ? pool : new Pool({
+      }));
+      externalPool = finalExternalUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalExternalUrl,
         ...getBasePoolConfig(finalExternalMax, 5000),
-      });
-      securityPool = finalSecurityUrl === coreUrl ? pool : new Pool({
+      }));
+      securityPool = finalSecurityUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalSecurityUrl,
         ...getBasePoolConfig(finalSecurityMax, 5000),
-      });
+      }));
 
       pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
       if (ledgerPool   !== pool) ledgerPool.on('error',   (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));

@@ -7,13 +7,13 @@ import { VersionManager } from './utils/versionManager';
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
-// Unregister legacy service workers to eliminate caching conflicts and image loading issues
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister();
-    }
-  }).catch(() => {});
+// Register Service Worker for app shell precaching and offline support
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('[PWA] Service Worker registration failed:', err);
+    });
+  });
 }
 
 // Silence non-critical console calls in production to prevent telemetry / token leakage.

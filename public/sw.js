@@ -1,17 +1,23 @@
-const CACHE_NAME = 'perplexta-pwa-v8';
+const SHELL_CACHE = 'perplexta-shell-v9';
+const API_CACHE = 'perplexta-api-v1';
+
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/manifest.webmanifest',
   '/app-assets/pwa-192x192.png',
-  '/app-assets/pwa-512x512.png'
+  '/app-assets/pwa-512x512.png',
+  'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+    caches.open(SHELL_CACHE).then((cache) => {
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Failed to precache some static assets:', err);
+      });
     }).then(() => self.skipWaiting())
   );
 });
@@ -21,7 +27,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== SHELL_CACHE && cacheName !== API_CACHE) {
+            console.log('[SW] Deleting legacy cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -33,54 +40,76 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // CRITICAL: NEVER intercept or modify API requests, file uploads, media, or dynamic images.
-  // Using event.respondWith(fetch(event.request)) satisfies PWA audit rules without caching media/images.
+  // Bypass non-GET requests (POST, PUT, DELETE, etc.) and file uploads/streaming/ws
   if (
-    url.pathname.startsWith('/api/') || 
+    event.request.method !== 'GET' ||
     url.pathname.startsWith('/uploads/') || 
     url.pathname.includes('/uploads/') ||
-    event.request.destination === 'image' ||
-    /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i.test(url.pathname) ||
-    url.hostname.includes('unsplash.com') ||
-    url.hostname.includes('googleusercontent.com') ||
-    url.hostname.includes('githubusercontent.com')
+    url.pathname.startsWith('/socket.io/')
   ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Navigation requests (HTML pages) -> NetworkFirst with offline index.html fallback
-  if (event.request.mode === 'navigate') {
+  // Handle GET API requests with Stale-While-Revalidate strategy
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html');
+      caches.open(API_CACHE).then(async (cache) => {
+        const cachedResponse = await cache.match(event.request);
+        
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch((err) => {
+            console.warn('[SW] Background API revalidation failed:', url.pathname, err);
+            return cachedResponse;
+          });
+
+        return cachedResponse || fetchPromise;
       })
     );
     return;
   }
 
-  // Non-GET requests: direct fetch
-  if (event.request.method !== 'GET') {
-    event.respondWith(fetch(event.request));
+  // Navigation requests (HTML SPA shell) -> Stale-while-revalidate with offline /index.html fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.open(SHELL_CACHE).then(async (cache) => {
+        const cachedHtml = await cache.match('/index.html') || await cache.match('/');
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put('/index.html', networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedHtml);
+
+        return fetchPromise.catch(() => cachedHtml);
+      })
+    );
     return;
   }
 
-  // Core static assets (js, css bundles)
+  // Application Shell Assets (CSS, JS, Fonts, App Assets) -> Stale-While-Revalidate
   event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          return cachedResponse || fetch(event.request);
-        });
-      })
+    caches.open(SHELL_CACHE).then(async (cache) => {
+      const cachedAsset = await cache.match(event.request);
+
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedAsset);
+
+      return cachedAsset || fetchPromise;
+    })
   );
 });

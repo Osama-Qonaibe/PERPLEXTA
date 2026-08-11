@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Sparkles, Languages, Monitor, Briefcase, Zap, Target, BookOpen, Code2, LayoutGrid } from 'lucide-react';
+import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Sparkles, Languages, Monitor, Briefcase, Zap, Target, BookOpen, Code2, LayoutGrid, Archive } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { ThemeToggleButton } from './ThemeToggleButton';
+import { StoryArchive } from './StoryArchive';
 
 interface AccountSettingsProps {
   user: any;
@@ -17,7 +18,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'profile' | 'preferences'>('profile');
+  const [activeCategory, setActiveCategory] = useState<'profile' | 'preferences' | 'archive'>('profile');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t, token, setIsOperationPending, language, setLanguage, setTheme } = useAppContext();
 
@@ -174,6 +175,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const navItems = [
     { id: 'profile', icon: <User size={18} />, label: t('profile') },
     { id: 'preferences', icon: <Monitor size={18} />, label: t('preferences') },
+    { id: 'archive', icon: <Archive size={18} />, label: dir === 'rtl' ? 'الأرشيف' : 'Archive' },
   ];
 
   const kycStatus = user.kyc_status === 'verified' ? t('verified') : (user.kyc_status === 'pending' ? t('kycPending') : t('kycNone'));
@@ -399,6 +401,19 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
             </div>
           </motion.div>
         )}
+      
+        {activeCategory === 'archive' && (
+          <motion.div
+            key="archive"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar"
+          >
+            <StoryArchive dir={dir} token={token} showToast={showToast} />
+          </motion.div>
+        )}
+
       </AnimatePresence>
     </div>
   );

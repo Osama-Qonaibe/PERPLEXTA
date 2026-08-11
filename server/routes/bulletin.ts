@@ -524,12 +524,14 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       parsedHashtags = hashtags;
     }
 
+    const expiresAt = validFormat === 'story' ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+
     const insertRes = await pool.query(`
       INSERT INTO bulletin_ads (
         user_id, page_id, location_city, author_name, author_avatar, title, description, image_url,
         whatsapp_number, phone_number, video_url, target_url, hashtags, category, price_paid, duration_days, status,
-        feeling, is_ai_generated, tagged_users, has_whatsapp_button, audience, ad_format, quick_questions
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 0, 0, 'approved', $15, $16, $17, $18, $19, $20, $21)
+        feeling, is_ai_generated, tagged_users, has_whatsapp_button, audience, ad_format, quick_questions, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 0, 0, 'approved', $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *
     `, [
       userId,
@@ -552,7 +554,8 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       has_whatsapp_button || false,
       validAudience,
       validFormat,
-      JSON.stringify((quick_questions || []).filter(Boolean))
+      JSON.stringify((quick_questions || []).filter(Boolean)),
+      expiresAt
     ]);
 
     const createdAd = insertRes.rows[0];
@@ -579,6 +582,117 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     console.error('[Bulletin API] Error creating ad:', error.message);
     res.status(500).json({ error: error.message || 'فشل نشر المنشور' });
+  }
+});
+
+/**
+ * GET /api/bulletin/stories
+ * Fetch active non-expired user & page stories (valid for 24h)
+ */
+router.get('/stories', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.*,
+        u.name as u_name, u.avatar as u_avatar,
+        bp.name as page_name, bp.avatar_url as page_avatar
+      FROM bulletin_ads b
+      LEFT JOIN users u ON b.user_id = u.id
+      LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
+      WHERE b.status = 'approved'
+        AND b.ad_format = 'story'
+        AND (b.expires_at IS NULL OR b.expires_at > NOW())
+        AND b.created_at > NOW() - INTERVAL '24 hours'
+      ORDER BY b.created_at DESC
+      LIMIT 40
+    `);
+
+    res.json({
+      success: true,
+      stories: result.rows
+    });
+  } catch (error: any) {
+    console.error('[Bulletin API] Error fetching stories:', error.message);
+    res.status(500).json({ error: 'Failed to fetch stories' });
+  }
+});
+
+/**
+ * POST /api/bulletin/stories
+ * Direct simple story creation (expires in 24 hours)
+ */
+router.post('/stories', authenticateToken, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const { title, description, image_url, video_url, page_id } = req.body;
+
+    if (!image_url && !video_url) {
+      return res.status(400).json({ error: 'يرجى تقديم صورة أو فيديو للقصة' });
+    }
+
+    let authorName = req.user.name || 'مستخدم المنصة';
+    let authorAvatar = req.user.avatar || null;
+    let validPageId: number | null = null;
+
+    if (page_id) {
+      const pageRes = await pool.query('SELECT id, name, avatar_url FROM bulletin_pages WHERE id = $1', [page_id]);
+      if (pageRes.rows.length > 0) {
+        validPageId = pageRes.rows[0].id;
+        authorName = pageRes.rows[0].name;
+        authorAvatar = pageRes.rows[0].avatar_url;
+      }
+    } else {
+      const userRes = await pool.query('SELECT name, avatar FROM users WHERE id = $1', [userId]);
+      if (userRes.rows.length > 0) {
+        authorName = userRes.rows[0].name || authorName;
+        authorAvatar = userRes.rows[0].avatar || authorAvatar;
+      }
+    }
+
+    const storyTitle = (title || description || 'قصة جديدة').trim();
+    const storyDesc = (description || storyTitle).trim();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const finalImageUrl = image_url || (video_url ? '/uploads/default_video_poster.jpg' : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80');
+
+    const insertRes = await pool.query(`
+      INSERT INTO bulletin_ads (
+        user_id, page_id, author_name, author_avatar, title, description,
+        image_url, video_url, category, status, ad_format, expires_at, created_at, location_city
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'عام / General', 'approved', 'story', $9, NOW(), 'فلسطين')
+      RETURNING *
+    `, [
+      userId,
+      validPageId,
+      authorName,
+      authorAvatar,
+      storyTitle,
+      storyDesc,
+      finalImageUrl,
+      video_url || null,
+      expiresAt
+    ]);
+
+    const createdStory = insertRes.rows[0];
+
+    try {
+      await createNotification(
+        userId,
+        'bulletin_ad',
+        'Story Published',
+        'تم نشر القصة بنجاح! 📸',
+        `Your story "${storyTitle}" is live for 24 hours.`,
+        `تم نشر قصتك بنجاح وستختفي تلقائياً بعد 24 ساعة.`,
+        { ad_id: createdStory.id }
+      );
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      message: 'تم نشر القصة بنجاح!',
+      story: createdStory
+    });
+  } catch (error: any) {
+    console.error('[Bulletin API] Error publishing story:', error.message);
+    res.status(500).json({ error: error.message || 'فشل نشر القصة' });
   }
 });
 
@@ -2231,7 +2345,13 @@ router.post('/ads/:id/click', async (req, res) => {
 router.post('/ads/:id/share', async (req, res) => {
   try {
     const adId = parseInt(req.params.id);
-    await pool.query('UPDATE bulletin_ads SET shares_count = shares_count + 1 WHERE id = $1', [adId]);
+    const updateRes = await pool.query('UPDATE bulletin_ads SET shares_count = shares_count + 1 WHERE id = $1 RETURNING shares_count', [adId]);
+    
+    if (updateRes.rows.length > 0) {
+      const newCount = updateRes.rows[0].shares_count;
+      io.emit('reel_share_update', { reelId: adId, count: newCount });
+    }
+
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: 'Share tracking failed' });
@@ -2701,7 +2821,7 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
       return res.status(404).json({ error: 'الإعلان غير موجود' });
     }
 
-    if (adRes.rows[0].user_id !== userId && !req.user.is_admin) {
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا الإعلان' });
     }
 
@@ -2791,7 +2911,7 @@ router.delete('/ads/:id', authenticateToken, async (req: any, res) => {
       return res.status(404).json({ error: 'الإعلان غير موجود' });
     }
 
-    if (adRes.rows[0].user_id !== userId && !req.user.is_admin) {
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'ليس لديك صلاحية لحذف هذا الإعلان' });
     }
 
@@ -2801,6 +2921,34 @@ router.delete('/ads/:id', authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     console.error('[Bulletin API] Delete ad error:', error.message);
     res.status(500).json({ error: 'فشل حذف الإعلان' });
+  }
+});
+
+
+/**
+ * Reshare an expired story
+ */
+router.post('/stories/:id/reshare', authenticateToken, async (req: any, res) => {
+  try {
+    const storyId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const adRes = await pool.query('SELECT * FROM bulletin_ads WHERE id = $1 AND ad_format = \'story\'', [storyId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'القصة غير موجودة' });
+    }
+    if (adRes.rows[0].user_id !== userId) {
+      return res.status(403).json({ error: 'ليس لديك صلاحية' });
+    }
+    
+    await pool.query(
+      'UPDATE bulletin_ads SET created_at = NOW(), expires_at = NOW() + INTERVAL \'1 day\' WHERE id = $1',
+      [storyId]
+    );
+    
+    res.json({ success: true, message: 'تمت إعادة نشر القصة' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'حدث خطأ' });
   }
 });
 

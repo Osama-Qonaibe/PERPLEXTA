@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import {
@@ -23,6 +23,10 @@ import { AdInsightsTab } from '../components/AdInsightsTab';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
+import { ReelsFeed } from '../components/ReelsFeed';
+import { ReelUploadModal } from '../components/ReelUploadModal';
+import { StoryUploadModal } from '../components/StoryUploadModal';
+import { StoryViewerModal } from '../components/StoryViewerModal';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { SOCIAL_COLORS } from '../constants/socialColors';
 
@@ -146,7 +150,9 @@ export const BulletinBoardPage: React.FC = () => {
   const { language, user, token, setIsAuthModalOpen, theme } = useAppContext();
   const isRtl = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'board' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>('board');
+  const [activeTab, setActiveTab] = useState<'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>('board');
+  const [activeReelModalId, setActiveReelModalId] = useState<number | null>(null);
+  const [isReelUploadModalOpen, setIsReelUploadModalOpen] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   const [messagingAdId, setMessagingAdId] = useState<number | null>(null);
@@ -155,6 +161,10 @@ export const BulletinBoardPage: React.FC = () => {
   const [ads, setAds] = useState<BulletinAd[]>([]);
   const [myAds, setMyAds] = useState<BulletinAd[]>([]);
   const [savedAds, setSavedAds] = useState<BulletinAd[]>([]);
+  const [stories, setStories] = useState<any[]>([]);
+  const [isStoryViewerOpen, setIsStoryViewerOpen] = useState(false);
+  const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+  const [previewingVideoStoryId, setPreviewingVideoStoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingSaved, setLoadingSaved] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -478,6 +488,7 @@ export const BulletinBoardPage: React.FC = () => {
   ];
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const storyPressTimerRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const handleSendLiveComment = (e: React.FormEvent) => {
@@ -616,6 +627,7 @@ export const BulletinBoardPage: React.FC = () => {
 
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
   const [isAdModalOpen, setIsAdModalOpen] = useState<boolean>(false);
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState<boolean>(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [editingAdId, setEditingAdId] = useState<number | null>(null);
   const [isSubmittingAd, setIsSubmittingAd] = useState<boolean>(false);
@@ -794,6 +806,22 @@ export const BulletinBoardPage: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
 
 
+  const handleStoryViewed = async (storyId: number) => {
+    try {
+      const response = await fetch(`/api/bulletin/ads/${storyId}/impression`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        setStories(prev => prev.map(s => s.id === storyId ? { ...s, impressions_count: (Number(s.impressions_count) || 0) + 1 } : s));
+      }
+    } catch (err) {
+      // silent error
+    }
+  };
+
   const fetchAds = async (pageNum = 1, append = false) => {
     if (append) {
       setLoadingMoreAds(true);
@@ -815,6 +843,14 @@ export const BulletinBoardPage: React.FC = () => {
       const res = await fetch(`/api/bulletin/ads?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+
+      if (res.status === 503) {
+        toast.error(isRtl ? 'النظام قيد التشغيل، يرجى المحاولة بعد لحظات' : 'System initializing, please retry in a moment');
+        return;
+      }
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
       const data = await res.json();
       if (data.success) {
         const fetchedAds: BulletinAd[] = data.ads || [];
@@ -850,6 +886,22 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
+  const fetchStories = async () => {
+    try {
+      const res = await fetch('/api/bulletin/stories', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.status === 503) return;
+      if (!res.ok) throw new Error('Failed to fetch stories');
+      const data = await res.json();
+      if (data.success) {
+        setStories(data.stories || []);
+      }
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    }
+  };
+
   const handleLoadMoreAds = () => {
     if (loading || loadingMoreAds) return;
     const nextPage = adPage + 1;
@@ -867,6 +919,9 @@ export const BulletinBoardPage: React.FC = () => {
       const res = await fetch(`/api/bulletin/pages?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+      
+      if (res.status === 503) return;
+      if (!res.ok) throw new Error('Failed to fetch pages');
       const data = await res.json();
       if (data.success) {
         setPagesList(data.pages || []);
@@ -894,7 +949,7 @@ export const BulletinBoardPage: React.FC = () => {
   const fetchMyAds = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/bulletin/my-ads', {
+      const res = await fetch('/api/bulletin/ads/my', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -957,6 +1012,7 @@ export const BulletinBoardPage: React.FC = () => {
   useEffect(() => {
     sessionStorage.removeItem('perplexta_bulletin_scroll_y');
     fetchAds();
+    fetchStories();
     fetchPages();
   }, [selectedCategory, selectedCity, sortBy, selectedAudienceFilter]);
 
@@ -1613,6 +1669,58 @@ export const BulletinBoardPage: React.FC = () => {
     xhr.send(formDataUpload);
   };
 
+  const handleReelFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!token) {
+      toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
+      return;
+    }
+
+    if (!file.type.startsWith('video/')) {
+      toast.error(isRtl ? 'يرجى اختيار مقطع فيديو فقط لرفع الريلز القياسي (9:16)' : 'Please select a video file for standard Reels (9:16)');
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(isRtl ? 'حجم فيديو الريلز كبير جداً (الحد الأقصى 100MB)' : 'Reel video file is too large (max 100MB)');
+      return;
+    }
+
+    setAdFormData(prev => ({ ...prev, ad_format: 'reel' }));
+
+    const localUrl = URL.createObjectURL(file);
+    const tempVideo = document.createElement('video');
+    tempVideo.preload = 'metadata';
+    tempVideo.src = localUrl;
+
+    tempVideo.onloadedmetadata = () => {
+      const w = tempVideo.videoWidth || 1080;
+      const h = tempVideo.videoHeight || 1920;
+      const d = tempVideo.duration || 0;
+
+      const isVertical = h >= w;
+
+      if (!isVertical || d > 90) {
+        toast.info(
+          isRtl
+            ? 'المقطع غير رأسي (9:16) أو يتجاوز 90 ثانية. تم فتح أداة التعديل لقص الضبط القياسي تلقائياً!'
+            : 'Video is non-vertical (9:16) or exceeds 90s. Trimmer opened for automatic 9:16 framing!'
+        );
+        setTrimmerVideoUrl(localUrl);
+        setIsTrimmerModalOpen(true);
+      } else {
+        toast.success(isRtl ? 'تم التحقق من المقطع: قياس رأسي عالمي 9:16 جاهز للنشر كـ Reels!' : 'Validated: International 9:16 vertical Reel ready!');
+        handleVideoFileUpload(e);
+      }
+    };
+
+    tempVideo.onerror = () => {
+      handleVideoFileUpload(e);
+    };
+  };
+
   const handleCreatePage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
@@ -1704,6 +1812,38 @@ export const BulletinBoardPage: React.FC = () => {
       (inq.sender_phone && inq.sender_phone.toLowerCase().includes(term))
     );
   });
+
+  // ---------------------------------------------------------
+  // STORY GROUPING LOGIC (Facebook Style)
+  // ---------------------------------------------------------
+  const orderedStories = useMemo(() => {
+    const groups: { [key: string]: any[] } = {};
+    stories.forEach((story: any) => {
+      // Group by page_id if it's a merchant story, otherwise by user_id
+      const key = story.page_id ? `page-${story.page_id}` : `user-${story.author_id || story.user_id}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(story);
+    });
+
+    const result: any[] = [];
+    Object.values(groups).forEach(group => {
+      // Sort stories in each group by date (latest first)
+      const sorted = [...group].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // Limit to 10 stories per user/page as requested
+      result.push(...sorted.slice(0, 10));
+    });
+    return result;
+  }, [stories]);
+
+  const representativeStories = useMemo(() => {
+    const seen = new Set();
+    return orderedStories.filter((story: any) => {
+      const key = story.page_id ? `page-${story.page_id}` : `user-${story.author_id || story.user_id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [orderedStories]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme pb-20">
@@ -1904,7 +2044,6 @@ export const BulletinBoardPage: React.FC = () => {
                       <span>{isRtl ? 'الرئيسية والإعلانات العامة' : 'Global Feed'}</span>
                     </button>
 
-                    {/* Added Marketplace and Blog links directly in Bulletin Board sidebar per user request */}
                     <button
                       onClick={() => { navigate('/marketplace'); setIsMobileSidebarOpen(false); }}
                       className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
@@ -1979,6 +2118,24 @@ export const BulletinBoardPage: React.FC = () => {
                       <BarChart2 size={16} className={`transition-theme ${activeTab === 'analytics' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
                       <span>{isRtl ? 'تحليلات الأداء' : 'Performance Analytics'}</span>
                     </button>
+
+                    <button
+                      onClick={() => {
+                        if (!token) { setIsAuthModalOpen(true); return; }
+                        setSelectedPageDetail(null);
+                        setActiveTab('saved');
+                        setIsMobileSidebarOpen(false);
+                        fetchSavedAds();
+                      }}
+                      className={`group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme ${
+                        activeTab === 'saved' && !selectedPageDetail
+                          ? 'bg-accent dark:bg-accent/10 text-accent dark:text-accent shadow-sm border border-accent dark:border-accent/20'
+                          : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60'
+                      }`}
+                    >
+                      <Bookmark size={16} className={`transition-theme ${activeTab === 'saved' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
+                      <span>{isRtl ? 'المحفوظات' : 'Saved Items'}</span>
+                    </button>
                   </div>
 
                   {/* Quick Action Buttons */}
@@ -2038,6 +2195,52 @@ export const BulletinBoardPage: React.FC = () => {
             </div>
 
             <UserAdAnalyticsView />
+          </div>
+        ) : activeTab === 'reels' ? (
+          /* VIEW REELS: FULL SCREEN VERTICAL SWIPEABLE REELS FEED STREAM */
+          <div className="space-y-4 max-w-4xl mx-auto px-1 sm:px-0">
+            {/* Reels Top Action Bar */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm">
+              <button
+                onClick={() => setActiveTab('board')}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-theme shadow-sm"
+              >
+                {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+              </button>
+
+              <div className="flex items-center justify-center">
+                <Clapperboard size={24} className="text-purple-500 drop-shadow-sm" />
+              </div>
+
+              <label className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-purple-500/20 transition-all active:scale-95 cursor-pointer flex items-center justify-center">
+                <Plus size={22} strokeWidth={3} />
+                <input 
+                  type="file" 
+                  accept="video/*" 
+                  className="hidden" 
+                  onChange={handleReelFileUpload} 
+                />
+              </label>
+            </div>
+
+            {/* Reels Feed Component */}
+            <ReelsFeed
+              ads={ads}
+              isRtl={isRtl}
+              token={token}
+              user={user}
+              onToggleLike={handleToggleLike}
+              onMessageAdvertiser={handleMessageAdvertiser}
+              onShare={handleShareAd}
+              onOpenPageDetail={handleOpenPageDetail}
+              onUploadReelClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'video/*';
+                input.onchange = (e: any) => handleReelFileUpload(e);
+                input.click();
+              }}
+            />
           </div>
         ) : activeTab === 'pages' && !selectedPageDetail ? (
           /* VIEW 2: DEDICATED ALL PAGES DIRECTORY VERTICAL FEED STREAM */
@@ -2272,7 +2475,6 @@ export const BulletinBoardPage: React.FC = () => {
                   </span>
                 </button>
 
-                {/* Added Marketplace and Blog links directly in Bulletin Board sidebar per user request */}
                 <button
                   onClick={() => navigate('/marketplace')}
                   className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
@@ -2997,87 +3199,122 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
 
                     {/* Stories / Reels Highlights Carousel Bar (Facebook Native 9:16 Style) */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-2">
-                      <div className="flex items-center justify-between px-1">
-                        <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <Sparkles size={14} className="text-accent animate-pulse" />
-                          <span>{isRtl ? 'قصص وأبرز ريلز الصفحات التجارية' : 'Page Stories & Highlights'}</span>
-                        </h3>
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-2">
+                      <div className="flex items-center gap-6 px-1">
                         <button
-                          onClick={() => setActiveTab('pages')}
-                          className="text-[11px] font-bold text-accent hover:underline"
+                          onClick={() => setActiveTab('board')}
+                          className={`text-xs font-black transition-all flex items-center gap-1.5 ${activeTab === 'board' ? 'text-accent border-b-2 border-accent pb-1' : 'text-gray-400 hover:text-gray-600'}`}
                         >
-                          {isRtl ? 'استعراض الكل' : 'View All'}
+                          <Camera size={14} />
+                          {isRtl ? 'قصص' : 'Stories'}
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('reels')}
+                          className={`text-xs font-black transition-all flex items-center gap-1.5 ${(activeTab as string) === 'reels' ? 'text-accent border-b-2 border-accent pb-1' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          <Clapperboard size={14} />
+                          {isRtl ? 'ريلز' : 'Reels'}
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none pb-1 pt-1">
-                        {/* Tile 1: Create Story (Facebook Native Avatar + Floating Button Style) */}
+                      <div className="flex items-center gap-3 overflow-x-auto scrollbar-none pb-2 pt-1 px-1">
+                        {/* Tile 1: Create Story */}
                         <div
                           onClick={() => {
                             if (!token) {
                               toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
                               return;
                             }
-                            setIsAdModalOpen(true);
+                            setIsStoryModalOpen(true);
                           }}
-                          className="relative w-26 h-42 sm:w-30 sm:h-48 rounded-2xl overflow-hidden bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-gray-800 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-theme flex flex-col justify-between"
+                          className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-white dark:bg-[#1c1c1e] border border-gray-200 dark:border-zinc-800 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-center items-center"
                         >
-                          {/* Upper Avatar Background */}
-                          <div className="relative w-full h-[72%] overflow-hidden bg-gray-200 dark:bg-zinc-800">
+                          <div className="relative w-full h-full overflow-hidden bg-gray-100 dark:bg-zinc-900 flex flex-col justify-center items-center">
                             <img
                               src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                               alt={user?.name || 'User'}
-                              className="w-full h-full object-cover transition-theme"
+                              className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500 opacity-60"
                             />
-                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                          </div>
-
-                          {/* Center Floating (+) Button */}
-                          <div className="absolute top-[65%] start-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-accent text-white border-2 border-white dark:border-[#1f1f23] flex items-center justify-center shadow-md transition-theme">
-                            <Plus size={18} className="stroke-[3]" />
-                          </div>
-
-                          {/* Bottom Text Area */}
-                          <div className="h-[28%] bg-white dark:bg-[#1f1f23] flex items-center justify-center px-1 pt-1">
-                            <span className="text-[10px] font-extrabold text-gray-900 dark:text-gray-100 text-center truncate">
-                              {isRtl ? 'إنشاء قصة' : 'Create Story'}
-                            </span>
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                            
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                              <div className="w-10 h-10 rounded-full bg-blue-600 text-white border-[3px] border-white dark:border-[#1c1c1e] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                                <Plus size={24} className="stroke-[3]" />
+                              </div>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Merchant Pages Stories (9:16 Aspect Ratio) */}
-                        {pagesList.slice(0, 10).map((page) => (
-                          <div
-                            key={page.id}
-                            onClick={() => handleOpenPageDetail(page.id)}
-                            className="relative w-26 h-42 sm:w-30 sm:h-48 rounded-2xl overflow-hidden bg-gray-900 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-theme p-2 flex flex-col justify-between border border-gray-200/50 dark:border-gray-800/80"
-                          >
-                            <img
-                              src={getMediaUrl(page.cover_url || page.avatar_url)}
-                              alt={page.name}
-                              className="absolute inset-0 w-full h-full object-cover transition-theme opacity-85"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/30" />
-                            
-                            {/* Story Ring Avatar */}
-                            <div className="relative z-10 w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-gray-500/10 via-teal-400 to-blue-500 shadow-md">
+                        {/* User & Merchant Stories */}
+                        {representativeStories.map((story: any) => {
+                          // Find index in orderedStories for the viewer
+                          const viewerStartIndex = orderedStories.findIndex((s: any) => s.id === story.id);
+                          
+                          return (
+                            <div
+                              key={story.id}
+                              onClick={() => {
+                                if (previewingVideoStoryId === story.id) return;
+                                setSelectedStoryIndex(viewerStartIndex);
+                                setIsStoryViewerOpen(true);
+                              }}
+                              className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-zinc-900 shrink-0 cursor-pointer group shadow-md hover:shadow-xl transition-all duration-500 p-3 flex flex-col justify-between border border-white/5 dark:border-white/10"
+                            >
                               <img
-                                src={getMediaUrl(page.avatar_url)}
-                                alt={page.name}
-                                className="w-full h-full rounded-full object-cover border border-black"
+                                src={getMediaUrl(story.image_url)}
+                                alt={story.title}
+                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 opacity-90 group-hover:scale-110 group-hover:opacity-100"
                               />
-                            </div>
+                              
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/20" />
+                              
+                              {/* Video icon if it's a video story */}
+                              {story.video_url && (
+                                <div className="absolute top-3 end-3 bg-black/40 p-1.5 rounded-full backdrop-blur-md z-20 border border-white/10 shadow-lg">
+                                  <Video size={12} className="text-white" />
+                                </div>
+                              )}
 
-                            <div className="relative z-10 min-w-0">
-                              <div className="flex items-center gap-1">
-                                <p className="text-[11px] font-extrabold text-white truncate drop-shadow">{page.name}</p>
-                                <CheckCircle2 size={11} className="text-blue-400 shrink-0" />
+                              {/* Story Ring Avatar */}
+                              <div 
+                                className="relative z-10 w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-xl transition-transform group-hover:scale-110"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  storyPressTimerRef.current = setTimeout(() => {
+                                    if ("vibrate" in navigator) navigator.vibrate([40]);
+                                    setPreviewingVideoStoryId(story.id);
+                                  }, 400);
+                                }}
+                                onPointerUp={(e) => {
+                                  if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
+                                  if (previewingVideoStoryId === story.id) {
+                                    e.stopPropagation();
+                                    setPreviewingVideoStoryId(null);
+                                  }
+                                }}
+                                onPointerLeave={() => {
+                                  if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
+                                  setPreviewingVideoStoryId(null);
+                                }}
+                              >
+                                <img
+                                  src={getMediaUrl(story.author_avatar)}
+                                  alt={story.author_name}
+                                  className="w-full h-full rounded-full object-cover border-2 border-black"
+                                />
                               </div>
-                              <p className="text-[9px] text-gray-300 truncate">{page.city}</p>
+
+                              <div className="relative z-10 min-w-0 flex flex-col">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] font-black text-white truncate drop-shadow-lg">
+                                    {story.page_id ? story.page_name : story.author_name}
+                                  </span>
+                                  {story.page_id && <CheckCircle2 size={10} className="text-blue-400 fill-blue-400/20 shrink-0" />}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -3141,47 +3378,20 @@ export const BulletinBoardPage: React.FC = () => {
                           />
                         </label>
 
-                        <label className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-purple-500/10 hover:text-purple-500 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!token) {
+                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
+                              return;
+                            }
+                            setIsReelUploadModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-purple-500/10 hover:text-purple-500 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer"
+                        >
                           <Clapperboard size={15} className="text-purple-500 shrink-0" />
                           <span>{isRtl ? 'ريلز' : 'Reels'}</span>
-                          <input 
-                            type="file" 
-                            accept="video/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (!token) {
-                                toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                                return;
-                              }
-                              handleVideoFileUpload(e);
-                              setAdFormData(prev => ({ ...prev, ad_format: 'reel' }));
-                              setIsAdModalOpen(true);
-                            }} 
-                          />
-                        </label>
-
-                        <label className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-accent/10 hover:text-accent font-bold transition-theme text-accent whitespace-nowrap cursor-pointer">
-                          <Camera size={15} className="text-accent shrink-0" />
-                          <span>{isRtl ? 'قصة' : 'Story'}</span>
-                          <input 
-                            type="file" 
-                            accept="image/*,video/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (!token) {
-                                toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                                return;
-                              }
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.type.startsWith('image/')) handleImageFileUpload(e);
-                                else handleVideoFileUpload(e);
-                                setAdFormData(prev => ({ ...prev, ad_format: 'story' }));
-                                setIsAdModalOpen(true);
-                              }
-                            }} 
-                          />
-                        </label>
+                        </button>
                       </div>
                     </div>
 
@@ -3192,6 +3402,10 @@ export const BulletinBoardPage: React.FC = () => {
                       hasMore={hasMoreAds}
                       loadingMore={loadingMoreAds}
                       onLoadMore={handleLoadMoreAds}
+                      onOpenReelFeed={(adId) => {
+                        if (adId) setActiveReelModalId(adId);
+                        setActiveTab('reels');
+                      }}
                       isRtl={isRtl}
                       token={token}
                       user={user}
@@ -3243,6 +3457,26 @@ export const BulletinBoardPage: React.FC = () => {
                       onEditAd={handleEditAd}
                       onDeleteAd={handleDeleteAd}
                       onToggleSave={handleToggleSave}
+                    />
+                  </div>
+                )}
+
+                {/* ========================================================== */}
+                {/* TAB: REELS & VERTICAL SHORT VIDEOS (9:16 FULL-SCREEN FEED) */}
+                {/* ========================================================== */}
+                {(activeTab as string) === 'reels' && (
+                  <div className="w-full h-[calc(100dvh-110px)] md:h-[88vh] bg-black rounded-2xl md:rounded-3xl overflow-hidden border border-gray-800/80 shadow-2xl relative">
+                    <ReelsFeed
+                      ads={ads}
+                      isRtl={isRtl}
+                      token={token}
+                      user={user}
+                      onToggleLike={handleToggleLike}
+                      onMessageAdvertiser={handleMessageAdvertiser}
+                      onShare={handleShareAd}
+                      onOpenPageDetail={handleOpenPageDetail}
+                      onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
+                      onUploadReelClick={() => setIsReelUploadModalOpen(true)}
                     />
                   </div>
                 )}
@@ -5513,50 +5747,30 @@ export const BulletinBoardPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* FIXED BOTTOM NAVIGATION BAR (Facebook Mobile UI/UX Pattern) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800/80 flex items-center justify-around py-1.5 px-2 shadow-2xl">
+      {/* FIXED BOTTOM NAVIGATION BAR (Professional Mobile UI/UX) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800/80 flex items-center justify-between py-2 px-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)]">
         {/* Tab 1: Home / Feed */}
         <button
           type="button"
           onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
+          className={`flex flex-col items-center gap-1 transition-all duration-300 active:scale-90 ${
             activeTab === 'board' && !selectedPageDetail
-              ? 'text-accent font-extrabold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
+              ? 'text-accent'
+              : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <Megaphone size={19} className={activeTab === 'board' && !selectedPageDetail ? 'fill-accent' : ''} />
-          <span className="text-[10px]">{isRtl ? 'الرئيسية' : 'Feed'}</span>
+          <div className="relative">
+            <Megaphone size={22} className={activeTab === 'board' && !selectedPageDetail ? 'fill-accent/10' : ''} />
+            {activeTab === 'board' && !selectedPageDetail && (
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+            )}
+          </div>
+          <span className={`text-[9px] font-bold ${activeTab === 'board' && !selectedPageDetail ? 'opacity-100' : 'opacity-80'}`}>
+            {isRtl ? 'الرئيسية' : 'Feed'}
+          </span>
         </button>
 
-        {/* Tab 2: Pages / Directory */}
-        <button
-          type="button"
-          onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
-            activeTab === 'pages'
-              ? 'text-accent font-extrabold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
-          }`}
-        >
-          <Building2 size={19} className={activeTab === 'pages' ? 'fill-accent' : ''} />
-          <span className="text-[10px]">{isRtl ? 'الصفحات' : 'Pages'}</span>
-        </button>
-
-        {/* Tab 3: Quick Add Post (+) Floating Action Button (FAB) */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!token) { setIsAuthModalOpen(true); return; }
-            setIsAdModalOpen(true);
-          }}
-          className="relative flex flex-col items-center justify-center w-12 h-12 -mt-6 rounded-full bg-accent text-white shadow-xl shadow-none  transition-theme border-3 border-white dark:border-[#18181b] z-50 hover:bg-accent"
-          title={isRtl ? 'إضافة منشور جديد' : 'Create Post'}
-        >
-          <Plus size={24} className="stroke-[3]" />
-        </button>
-
-        {/* Tab 4: Messages / Inquiries */}
+        {/* Tab 2: Messages */}
         <button
           type="button"
           onClick={() => {
@@ -5564,52 +5778,124 @@ export const BulletinBoardPage: React.FC = () => {
             setSelectedPageDetail(null);
             setActiveTab('inquiries');
           }}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative transition-theme ${
+          className={`flex flex-col items-center gap-1 transition-all duration-300 active:scale-90 ${
             activeTab === 'inquiries'
-              ? 'text-accent font-extrabold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
+              ? 'text-accent'
+              : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <div className="relative">
-            <MessageSquare size={19} className={activeTab === 'inquiries' ? 'fill-accent' : ''} />
+            <MessageSquare size={22} className={activeTab === 'inquiries' ? 'fill-accent/10' : ''} />
             {inquiriesList.length > 0 && (
-              <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#18181b]">
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
                 {inquiriesList.length}
               </span>
             )}
+            {activeTab === 'inquiries' && (
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+            )}
           </div>
-          <span className="text-[10px]">{isRtl ? 'الرسائل' : 'Messages'}</span>
+          <span className={`text-[9px] font-bold ${activeTab === 'inquiries' ? 'opacity-100' : 'opacity-80'}`}>
+            {isRtl ? 'الرسائل' : 'Messages'}
+          </span>
         </button>
 
-        {/* Tab 5: Saved Posts */}
+        {/* Tab 3: Quick Add (+) - Centered */}
+        <div className="relative -top-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (!token) { setIsAuthModalOpen(true); return; }
+              setIsAdModalOpen(true);
+            }}
+            className="flex items-center justify-center w-14 h-14 rounded-2xl bg-accent text-white shadow-[0_8px_20px_rgba(var(--accent-rgb),0.3)] transition-all duration-300 active:scale-95 hover:brightness-110 border-4 border-white dark:border-[#18181b]"
+            title={isRtl ? 'إضافة منشور جديد' : 'Create Post'}
+          >
+            <Plus size={28} className="stroke-[2.5]" />
+          </button>
+        </div>
+
+        {/* Tab 4: Pages */}
         <button
           type="button"
-          onClick={() => {
-            if (!token) { setIsAuthModalOpen(true); return; }
-            setSelectedPageDetail(null);
-            setActiveTab('saved');
-            fetchSavedAds();
-          }}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-theme ${
-            activeTab === 'saved'
-              ? 'text-accent font-extrabold'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium'
+          onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
+          className={`flex flex-col items-center gap-1 transition-all duration-300 active:scale-90 ${
+            activeTab === 'pages'
+              ? 'text-accent'
+              : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <Bookmark size={19} className={activeTab === 'saved' ? 'fill-accent' : ''} />
-          <span className="text-[10px]">{isRtl ? 'المحفوظات' : 'Saved'}</span>
+          <div className="relative">
+            <Building2 size={22} className={activeTab === 'pages' ? 'fill-accent/10' : ''} />
+            {activeTab === 'pages' && (
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+            )}
+          </div>
+          <span className={`text-[9px] font-bold ${activeTab === 'pages' ? 'opacity-100' : 'opacity-80'}`}>
+            {isRtl ? 'الصفحات' : 'Pages'}
+          </span>
         </button>
 
-        {/* Tab 6: Menu / Filters */}
+        {/* Tab 5: Menu */}
         <button
           type="button"
           onClick={() => setIsMobileSidebarOpen(true)}
-          className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium transition-theme"
+          className={`flex flex-col items-center gap-1 transition-all duration-300 active:scale-90 ${
+            isMobileSidebarOpen
+              ? 'text-accent'
+              : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+          }`}
         >
-          <SlidersHorizontal size={19} />
-          <span className="text-[10px]">{isRtl ? 'القائمة' : 'Menu'}</span>
+          <div className="relative">
+            <SlidersHorizontal size={22} />
+            {isMobileSidebarOpen && (
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+            )}
+          </div>
+          <span className={`text-[9px] font-bold ${isMobileSidebarOpen ? 'opacity-100' : 'opacity-80'}`}>
+            {isRtl ? 'القائمة' : 'Menu'}
+          </span>
         </button>
       </nav>
+
+      {/* Specialized 9:16 Reel Upload Modal */}
+      <ReelUploadModal
+        isOpen={isReelUploadModalOpen}
+        onClose={() => setIsReelUploadModalOpen(false)}
+        isRtl={isRtl}
+        token={token}
+        onUploadSuccess={(newReel) => {
+          fetchAds();
+          if (activeTab === 'my_ads') fetchMyAds();
+        }}
+      />
+
+      {/* Story Upload Modal */}
+      <StoryUploadModal
+        isOpen={isStoryModalOpen}
+        onClose={() => setIsStoryModalOpen(false)}
+        isRtl={isRtl}
+        token={token}
+        user={user}
+        userPages={myPagesList}
+        onStoryCreated={(newStory) => {
+          fetchStories();
+        }}
+      />
+
+      <StoryViewerModal
+        isOpen={isStoryViewerOpen}
+        onClose={() => {
+          setIsStoryViewerOpen(false);
+          setPreviewingVideoStoryId(null);
+        }}
+        stories={orderedStories}
+        initialStoryIndex={selectedStoryIndex}
+        currentUser={user}
+        isRtl={isRtl}
+        onStoryViewed={handleStoryViewed}
+        onStoryDeleted={() => fetchStories()}
+      />
 
       {/* Video Trimmer Modal */}
       <VideoTrimmerModal
@@ -5626,6 +5912,81 @@ export const BulletinBoardPage: React.FC = () => {
           toast.success(isRtl ? 'تم تطبيق إعدادات وقص الفيديو بنجاح!' : 'Video trimming & format settings applied successfully!');
         }}
       />
+
+      {/* FULL-SCREEN REELS MODAL OVERLAY WHEN CLICKED FROM FEED */}
+      <AnimatePresence>
+        {activeReelModalId !== null && (
+          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-2 sm:p-4">
+            <button
+              onClick={() => setActiveReelModalId(null)}
+              className="absolute top-4 end-4 z-50 p-2.5 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold border border-white/20 transition-theme shadow-lg"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-full max-w-md h-full max-h-[92vh] my-auto">
+              <ReelsFeed
+                ads={ads}
+                initialAdId={activeReelModalId}
+                isRtl={isRtl}
+                token={token}
+                user={user}
+                onToggleLike={handleToggleLike}
+                onMessageAdvertiser={handleMessageAdvertiser}
+                onShare={handleShareAd}
+                onOpenPageDetail={handleOpenPageDetail}
+                onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
+                onUploadReelClick={() => setIsReelUploadModalOpen(true)}
+              />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Story Peek Overlay (Floating Long-press Preview) */}
+      <AnimatePresence>
+        {previewingVideoStoryId && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed inset-0 z-[1000] pointer-events-none flex items-center justify-center p-6"
+          >
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="relative w-full max-w-[280px] aspect-[9/16] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white/20 z-10 bg-black">
+              {stories.find(s => s.id === previewingVideoStoryId)?.video_url ? (
+                <video
+                  src={getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.video_url)}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.image_url)}
+                  className="w-full h-full object-cover"
+                />
+              )}
+              <div className="absolute top-4 start-4 flex items-center gap-2 bg-black/20 backdrop-blur-md p-1.5 pr-3 rounded-full">
+                <img 
+                  src={getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.author_avatar)} 
+                  className="w-8 h-8 rounded-full border border-white/50 object-cover"
+                />
+                <div className="flex flex-col">
+                  <span className="text-white text-[11px] font-bold drop-shadow-md leading-none">
+                    {stories.find(s => s.id === previewingVideoStoryId)?.author_name}
+                  </span>
+                  <span className="text-white/60 text-[9px] drop-shadow-md">
+                    {isRtl ? 'معاينة سريعة' : 'Quick Preview'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
