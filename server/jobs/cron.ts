@@ -20,6 +20,7 @@ export const cronTracker: Record<string, CronJobInfo> = {
   dailySeoScan: { lastRun: new Date(Date.now() - 6 * 3600000).toISOString(), status: 'success', error: null },
   memoryCompaction: { lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), status: 'success', error: null },
   monthlyLedgerCleanup: { lastRun: new Date(Date.now() - 15 * 24 * 3600000).toISOString(), status: 'success', error: null },
+  storyPurge: { lastRun: new Date(Date.now() - 3600000).toISOString(), status: 'success', error: null },
 };
 
 async function cleanupOrphanedPhysicalFiles() {
@@ -121,6 +122,67 @@ async function purgeGeneratedFilesOlderThan24Hours() {
   }
 }
 
+async function purgeExpiredStories() {
+  console.log('[Cron] 🎬 Starting automated purge of expired stories (older than 24h)...');
+  cronTracker.storyPurge = { lastRun: new Date().toISOString(), status: 'running', error: null };
+  try {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    
+    // 1. Find expired stories
+    const result = await pool.query(
+      `SELECT id, image_url, video_url FROM bulletin_ads 
+       WHERE ad_format = 'story' 
+       AND (expires_at < CURRENT_TIMESTAMP OR created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours')`
+    );
+
+    if (result.rows.length === 0) {
+      console.log('[Cron] No expired stories found for purging.');
+      cronTracker.storyPurge = { lastRun: new Date().toISOString(), status: 'success', error: null };
+      return;
+    }
+
+    console.log(`[Cron] Found ${result.rows.length} expired stories to purge.`);
+
+    let purgedFilesCount = 0;
+    for (const row of result.rows) {
+      const filesToPurge = [row.image_url, row.video_url].filter(Boolean);
+      
+      for (let fileUrl of filesToPurge) {
+        if (!fileUrl) continue;
+        
+        let filename = fileUrl;
+        if (filename.startsWith('/uploads/')) {
+          filename = filename.replace('/uploads/', '');
+        } else if (filename.includes('/uploads/')) {
+          filename = filename.split('/uploads/')[1];
+        } else if (filename.startsWith('http')) {
+          continue; 
+        }
+
+        const filePath = path.join(uploadDir, filename);
+        try {
+          await fs.unlink(filePath).catch(() => {});
+          purgedFilesCount++;
+        } catch (err: any) {
+        }
+      }
+    }
+
+    // 2. Delete from database
+    const deleteRes = await pool.query(
+      `DELETE FROM bulletin_ads 
+       WHERE ad_format = 'story' 
+       AND (expires_at < CURRENT_TIMESTAMP OR created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours')`
+    );
+
+    console.log(`[Cron] Story purge complete: Removed ${deleteRes.rowCount} database records and attempted to delete ${purgedFilesCount} file assets.`);
+    cronTracker.storyPurge = { lastRun: new Date().toISOString(), status: 'success', error: null };
+  } catch (err: any) {
+    console.error('[Cron] Expired stories purge failed:', err.message);
+    cronTracker.storyPurge = { lastRun: new Date().toISOString(), status: 'error', error: err.message };
+  }
+}
+
 export function initCronJobs() {
   cron.schedule('0 3 * * *', async () => {
     console.log('[Cron] 🕒 Running daily system maintenance...');
@@ -131,6 +193,7 @@ export function initCronJobs() {
       console.log('[Cron] API keys usage reset completed.');
       
       await purgeGeneratedFilesOlderThan24Hours();
+      await purgeExpiredStories();
 
       await cleanupOrphanedPhysicalFiles();
       cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'success', error: null };

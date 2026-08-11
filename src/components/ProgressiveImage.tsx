@@ -28,7 +28,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     }
   }, [src]);
 
-  const activeSrc = isError ? (placeholderSrc || src) : src;
+  const fallbackImage = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80';
+  const activeSrc = isError ? (placeholderSrc || fallbackImage) : src;
 
   return (
     <div className={`relative overflow-hidden bg-gray-100 dark:bg-gray-900 ${wrapperClassName}`}>

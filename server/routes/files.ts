@@ -72,6 +72,9 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     let imageMetadata: any = {};
     let processedFileSize = size;
 
+    const videoExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'wmv', 'flv', '3gp'];
+    const isVideoExtension = videoExtensions.some(ext => originalname.toLowerCase().endsWith('.' + ext));
+
     if (mimetype.startsWith('image/')) {
       try {
         console.log(`[File Router] Optimizing uploaded image with sharp: ${originalname}`);
@@ -88,10 +91,11 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
       } catch (imgErr: any) {
         console.error('[File Router] Sharp image optimization error:', imgErr.message);
       }
-    } else if (mimetype.startsWith('video/')) {
+    } else if (mimetype.startsWith('video/') || isVideoExtension) {
       try {
-        console.log(`[File Router] Processing uploaded video with FFmpeg: ${originalname}`);
-        const result = await processUploadedVideo(filePath, path.dirname(filePath), 'pvid');
+        const maxDuration = req.query.maxDuration ? parseInt(req.query.maxDuration as string, 10) : undefined;
+        console.log(`[File Router] Processing uploaded video with FFmpeg: ${originalname}${maxDuration ? ` (Max duration: ${maxDuration}s)` : ''}`);
+        const result = await processUploadedVideo(filePath, path.dirname(filePath), 'pvid', maxDuration);
         if (result.success && result.processedVideoUrl) {
           finalFilename = result.processedVideoUrl.replace('/uploads/', '');
           if (result.fileSize) processedFileSize = result.fileSize;
@@ -113,19 +117,20 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
       }
     }
 
-    const extractedText = await extractTextFromFile(filePath, mimetype, originalname);
+    const currentFilePath = path.join(path.dirname(filePath), finalFilename);
+    const extractedText = await extractTextFromFile(currentFilePath, mimetype, originalname);
     
     let forensic = null;
     if (mimetype === 'application/pdf') {
       try {
-        const fileBuffer = await fs.readFile(filePath);
+        const fileBuffer = await fs.readFile(currentFilePath);
         forensic = forensicScanPDF(fileBuffer);
       } catch (err: any) {
         console.error('[PDF Bridge Ingest] File forensic scan failed:', err.message);
       }
     }
 
-    const isPublicMedia = mimetype.startsWith('image/') || mimetype.startsWith('video/') || mimetype.startsWith('audio/');
+    const isPublicMedia = mimetype.startsWith('image/') || mimetype.startsWith('video/') || mimetype.startsWith('audio/') || isVideoExtension;
     const file = await saveFileMetadata(userId, {
       file_name: originalname,
       file_url: finalFilename,
@@ -156,6 +161,7 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
         bitrate: videoMetadata.bitrate,
         fileSize: processedFileSize
       }, 
+      url: fileUrl,
       fileUrl, 
       thumbnailUrl,
       resolution: videoMetadata.resolution,

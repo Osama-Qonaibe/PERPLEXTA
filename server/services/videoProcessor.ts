@@ -36,7 +36,8 @@ export interface VideoProcessingResult {
 export async function processUploadedVideo(
   inputFilePath: string,
   outputDir: string,
-  fileNamePrefix: string = 'vid'
+  fileNamePrefix: string = 'vid',
+  maxDuration?: number
 ): Promise<VideoProcessingResult> {
   return new Promise((resolve) => {
     if (!fs.existsSync(inputFilePath)) {
@@ -92,7 +93,7 @@ export async function processUploadedVideo(
         })
         .on('end', () => {
           // Now process video transcoding and standardization
-          ffmpeg(inputFilePath)
+          let command = ffmpeg(inputFilePath)
             .outputOptions([
               '-c:v libx264',
               '-preset medium',
@@ -102,7 +103,15 @@ export async function processUploadedVideo(
               '-movflags +faststart',
               '-pix_fmt yuv420p',
               '-vf scale=trunc(iw/2)*2:trunc(ih/2)*2' // ensure even dimensions for h264
-            ])
+            ]);
+
+          // Apply trimming if requested
+          if (maxDuration && videoDuration > maxDuration) {
+            console.log(`[VideoProcessor] Trimming video from ${videoDuration}s to ${maxDuration}s`);
+            command = command.setDuration(maxDuration);
+          }
+
+          command
             .toFormat('mp4')
             .save(outputVideoPath)
             .on('end', () => {
@@ -117,7 +126,7 @@ export async function processUploadedVideo(
                 success: true,
                 processedVideoUrl: `/uploads/${outputFileName}`,
                 thumbnailUrl: `/uploads/${outputThumbName}`,
-                duration: Math.round(videoDuration),
+                duration: maxDuration && videoDuration > maxDuration ? maxDuration : Math.round(videoDuration),
                 width: videoWidth,
                 height: videoHeight,
                 resolution: resolutionStr,
