@@ -492,7 +492,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
       const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav'].includes(actualExt);
       if (isMedia) {
-        res.setHeader('Cache-Control', 'public, no-cache, must-revalidate');
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
       } else {
         res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
       }

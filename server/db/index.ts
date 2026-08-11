@@ -60,7 +60,7 @@ function validateDatabaseUrl(url: any, name: string) {
 export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) {
   return {
     ssl: getSslConfig(),
-    idleTimeoutMillis: 30000,
+    idleTimeoutMillis: 60000,
     connectionTimeoutMillis,
     max,
   };
