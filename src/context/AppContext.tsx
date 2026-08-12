@@ -2628,43 +2628,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch('/api/settings');
-        if (res.ok) {
-          const data = await res.json();
-          const newSettings: SiteSettings = {
-            siteName: data.site_name_en || '',
-            siteNameAr: data.site_name_ar || '',
-            seoSiteNameEn: data.seo_site_name_en || '',
-            seoSiteNameAr: data.seo_site_name_ar || '',
-            siteDescription: data.site_description_en || '',
-            siteDescriptionAr: data.site_description_ar || '',
-            logoBase64: data.logo_url || null,
-            logoLightBase64: data.logo_light_url || null,
-            faviconBase64: data.favicon_url || null,
-            seoDescriptionEn: data.seo_description_en || '',
-            seoDescriptionAr: data.seo_description_ar || '',
-            keywordsEn: data.keywords_en || '',
-            keywordsAr: data.keywords_ar || '',
-            googleAnalyticsId: data.google_analytics_id || '',
-            googleSiteVerification: data.google_site_verification || '',
-            seoImageUrl: data.seo_image_url || null,
-            blocked_paths: data.blocked_paths || '',
-            fontLoadingConfig: data.font_loading_config ? (typeof data.font_loading_config === 'string' ? JSON.parse(data.font_loading_config) : data.font_loading_config) : null,
-            fontConfigAr: data.font_config_ar ? (typeof data.font_config_ar === 'string' ? JSON.parse(data.font_config_ar) : data.font_config_ar) : null,
-            fontConfigEn: data.font_config_en ? (typeof data.font_config_en === 'string' ? JSON.parse(data.font_config_en) : data.font_config_en) : null,
-          };
-          setSiteSettings(newSettings);
-        }
-      } catch (err) {
-        console.warn('[AppContext] Failed to fetch live site settings:', err);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
     localStorage.setItem('site_settings', JSON.stringify(siteSettings));
   }, [siteSettings]);
 

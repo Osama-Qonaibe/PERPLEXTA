@@ -149,6 +149,7 @@ export async function updateSystemSettings(settings: any) {
   const live_gift_commission_percent = settings.live_gift_commission_percent !== undefined ? settings.live_gift_commission_percent : (existing.live_gift_commission_percent || 30);
   const sidebar_ad_impression_price = settings.sidebar_ad_impression_price !== undefined ? settings.sidebar_ad_impression_price : (existing.sidebar_ad_impression_price || 0.0100);
   const sidebar_ad_click_price = settings.sidebar_ad_click_price !== undefined ? settings.sidebar_ad_click_price : (existing.sidebar_ad_click_price || 0.10);
+  const sidebar_ads_enabled = settings.sidebar_ads_enabled !== undefined ? Boolean(settings.sidebar_ads_enabled) : (existing?.sidebar_ads_enabled ?? true);
 
   const quota_warning_threshold_low = settings.quota_warning_threshold_low !== undefined 
     ? Number(settings.quota_warning_threshold_low) 
@@ -213,18 +214,18 @@ export async function updateSystemSettings(settings: any) {
       google_analytics_id = $9, google_site_verification = $10, logo_url = $11, logo_light_url = $12, favicon_url = $13, seo_image_url = $14,
       blocked_paths = $15, seo_site_name_en = $16, seo_site_name_ar = $17, 
       bulletin_ad_daily_price = $18, live_gift_commission_percent = $19, 
-      sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21,
-      font_loading_config = $22, font_config_ar = $23, font_config_en = $24,
-      quota_warning_threshold_low = $25, quota_warning_threshold_high = $26,
+      sidebar_ad_impression_price = $20, sidebar_ad_click_price = $21, sidebar_ads_enabled = $22,
+      font_loading_config = $23, font_config_ar = $24, font_config_en = $25,
+      quota_warning_threshold_low = $26, quota_warning_threshold_high = $27,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $27
+    WHERE id = $28
   `, [
     site_name_en, site_name_ar, site_description_en, site_description_ar,
     seo_description_en || '', seo_description_ar || '', keywords_en || '', keywords_ar || '',
     google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
     blocked_paths, seo_site_name_en || '', seo_site_name_ar || '',
     bulletin_ad_daily_price, live_gift_commission_percent,
-    sidebar_ad_impression_price, sidebar_ad_click_price,
+    sidebar_ad_impression_price, sidebar_ad_click_price, sidebar_ads_enabled,
     font_loading_config, font_config_ar, font_config_en,
     quota_warning_threshold_low, quota_warning_threshold_high,
     existing.id

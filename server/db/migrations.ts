@@ -851,6 +851,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         live_gift_commission_percent: { type: 'INTEGER', default: '30' },
         sidebar_ad_impression_price: { type: 'NUMERIC(10,4)', default: '0.0100' },
         sidebar_ad_click_price: { type: 'NUMERIC(10,2)', default: '0.10' },
+        sidebar_ads_enabled: { type: 'BOOLEAN', default: 'true' },
         require_2fa_for_economy: { type: 'BOOLEAN', default: 'false' }
       });
 
@@ -2747,6 +2748,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         live_gift_commission_percent INTEGER DEFAULT 30,
         sidebar_ad_impression_price NUMERIC(10,4) DEFAULT 0.0100,
         sidebar_ad_click_price NUMERIC(10,2) DEFAULT 0.10,
+        sidebar_ads_enabled BOOLEAN DEFAULT TRUE,
         memory_limit_per_user INTEGER DEFAULT 50,
         quota_warning_threshold_low INTEGER DEFAULT 50,
         quota_warning_threshold_high INTEGER DEFAULT 80,

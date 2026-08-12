@@ -322,6 +322,21 @@ router.get("/health", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.post("/reconnect-pool", authenticateAdmin, async (req, res) => {
+  const { poolName } = req.body;
+  if (!poolName || !['core', 'ledger', 'external', 'security'].includes(poolName)) {
+    return res.status(400).json({ error: 'Invalid pool name specified' });
+  }
+  try {
+    const { forceReconnectPool } = await import('../db/index.js');
+    await forceReconnectPool(poolName);
+    res.json({ success: true, message: `Pool '${poolName}' reconnected successfully.` });
+  } catch (error: any) {
+    console.error(`[AdminRouter] Force reconnect for '${poolName}' failed:`, error);
+    res.status(500).json({ error: error.message || 'Reconnection failed' });
+  }
+});
+
 router.get("/pulse", authenticateAdmin, async (req, res) => {
   try {
     const health = await getServerHealth();
@@ -3834,7 +3849,8 @@ router.get("/economy/settings", authenticateAdmin, async (req, res) => {
       bulletin_ad_daily_price: settings.bulletin_ad_daily_price,
       live_gift_commission_percent: settings.live_gift_commission_percent,
       sidebar_ad_impression_price: settings.sidebar_ad_impression_price,
-      sidebar_ad_click_price: settings.sidebar_ad_click_price
+      sidebar_ad_click_price: settings.sidebar_ad_click_price,
+      sidebar_ads_enabled: settings.sidebar_ads_enabled ?? true
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch economy settings' });
@@ -3948,7 +3964,7 @@ router.get("/economy/audit", authenticateAdmin, async (req, res) => {
 router.put("/economy/settings", authenticateAdmin, async (req, res) => {
   try {
     const adminId = (req as any).user.id;
-    const { bulletin_ad_daily_price, live_gift_commission_percent, sidebar_ad_impression_price, sidebar_ad_click_price } = req.body;
+    const { bulletin_ad_daily_price, live_gift_commission_percent, sidebar_ad_impression_price, sidebar_ad_click_price, sidebar_ads_enabled } = req.body;
     
     const oldSettings = await getSystemSettings();
     
@@ -3956,7 +3972,8 @@ router.put("/economy/settings", authenticateAdmin, async (req, res) => {
       bulletin_ad_daily_price,
       live_gift_commission_percent,
       sidebar_ad_impression_price,
-      sidebar_ad_click_price
+      sidebar_ad_click_price,
+      sidebar_ads_enabled
     });
 
     const fields = [

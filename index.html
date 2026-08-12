@@ -53,119 +53,37 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/app-assets/og-image.png" />
 
-    <script>
-      (function() {
-        try {
-          var savedLang = localStorage.getItem('language') || 'en';
-          document.documentElement.setAttribute('lang', savedLang);
-          document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
-          document.title = savedLang === 'ar' ? 'بيربليكستا - منصة التحليل والذكاء الاصطناعي الفاخر والمستقل' : 'Perplexta Platform - Professional Elite AI Platform';
-
-          // Language-specific dynamic font loading setup
-          var isAr = savedLang === 'ar';
-          var fontUrl = isAr 
-            ? 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap'
-            : 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
-          var linkId = isAr ? 'font-stylesheet-tajawal' : 'font-stylesheet-space-grotesk';
-          if (!document.getElementById(linkId)) {
-            var fontLink = document.createElement('link');
-            fontLink.id = linkId;
-            fontLink.rel = 'stylesheet';
-            fontLink.href = fontUrl;
-            document.head.appendChild(fontLink);
-          }
-
-          var savedTheme = localStorage.getItem('perplexta_theme') || localStorage.getItem('theme');
-          var isDark = false;
-          if (savedTheme === 'dark') {
-            isDark = true;
-          } else if (savedTheme === 'light') {
-            isDark = false;
-          } else {
-            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          }
-          
-          var meta = document.getElementById('theme-color-meta');
-          var root = document.documentElement;
-          
-          if (isDark) {
-            root.classList.add('dark');
-            root.classList.remove('light');
-            root.style.setProperty('--pwa-theme-color', '#000000');
-            root.style.setProperty('--pwa-bg-color', '#000000');
-            root.style.backgroundColor = '#000000';
-            root.style.color = '#ffffff';
-            if (meta) meta.setAttribute('content', '#000000');
-          } else {
-            root.classList.add('light');
-            root.classList.remove('dark');
-            root.style.setProperty('--pwa-theme-color', '#ffffff');
-            root.style.setProperty('--pwa-bg-color', '#ffffff');
-            root.style.backgroundColor = '#ffffff';
-            root.style.color = '#000000';
-            if (meta) meta.setAttribute('content', '#ffffff');
-          }
-        } catch (e) {
-          document.documentElement.classList.add('dark');
-          document.documentElement.style.backgroundColor = '#000000';
-          document.documentElement.style.color = '#ffffff';
-        }
-      })();
-    </script>
-    <link rel="manifest" href="/manifest.json" type="application/manifest+json" />
-    <link rel="alternate" type="application/manifest+json" href="/manifest.webmanifest" />
+    <script src="/init-theme.js"></script>
+    <link rel="manifest" href="/manifest.json" />
   </head>
   <body class="layout-locked">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- WebMCP & PWA Analytics -->
+    <!-- Deferred Script Loader for Non-Essential Third-Party Analytics & WebMCP -->
     <script>
       (function() {
-        // 1. WebMCP Tooling
-        if (typeof navigator !== "undefined" && navigator.modelContext) {
-          navigator.modelContext.provideContext({
-            tools: [
-              {
-                name: "search",
-                description: "Search Perplexta platform content",
-                inputSchema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
-                execute: async ({ query }) => fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json())
-              },
-              {
-                name: "get_models",
-                description: "Get active AI models",
-                inputSchema: { type: "object", properties: {} },
-                execute: async () => fetch("/api/models").then(r => r.json())
-              }
-            ]
+        function loadDeferredScripts() {
+          const deferredScripts = [
+            '/telemetry.js'
+          ];
+          deferredScripts.forEach(function(src) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
           });
         }
 
-        // 2. PWA Launch & Performance Intelligence
-        try {
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(function() {
+            setTimeout(loadDeferredScripts, 1500);
+          }, { timeout: 4000 });
+        } else {
           window.addEventListener('load', function() {
-            setTimeout(function() {
-              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-              const sessionKey = 'perplexta_init_' + new Date().toISOString().split('T')[0];
-              if (sessionStorage.getItem(sessionKey)) return;
-
-              const nav = performance.getEntriesByType('navigation')[0];
-              const paint = performance.getEntriesByType('paint');
-              const timing = {
-                load: nav ? nav.loadEventEnd : 0,
-                dom: nav ? nav.domContentLoadedEventEnd : 0,
-                fcp: (paint.find(p => p.name === 'first-contentful-paint') || {}).startTime || 0
-              };
-
-              fetch('/api/system/launch-telemetry', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: isStandalone ? 'standalone' : 'browser', timing, ts: new Date().toISOString() }),
-                keepalive: true
-              }).then(() => sessionStorage.setItem(sessionKey, '1')).catch(() => {});
-            }, 3000);
+            setTimeout(loadDeferredScripts, 2000);
           });
-        } catch (e) {}
+        }
       })();
     </script>
   </body>

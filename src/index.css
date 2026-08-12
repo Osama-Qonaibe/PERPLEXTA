@@ -450,11 +450,25 @@ html, body, #root {
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  overflow-anchor: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-sans, "Space Grotesk", "Tajawal", sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Anti-Jitter & Strict Layout Freeze Protocol */
+*, *::before, *::after {
+  overflow-anchor: none;
+}
+
+body {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

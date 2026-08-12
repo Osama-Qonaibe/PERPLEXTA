@@ -5,6 +5,7 @@ import { pool } from '../db/index.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 import { Advertisement } from '../db/types.js';
 import { formatDatabaseError } from '../utils/dbErrors.js';
+import { getCachedSystemSettings } from '../db/queries.js';
 
 const router = express.Router();
 
@@ -66,9 +67,6 @@ export async function ensureAdsSeedData() {
         )
       `);
       console.log('[Ads API] 📢 Default sample advertisements created and seeded.');
-    } else {
-      // Ensure default/existing sidebar ads are active so UI never shows empty state
-      await pool.query(`UPDATE advertisements SET is_active = true WHERE position = 'sidebar' AND (is_active = false OR is_active IS NULL)`);
     }
     isAdsTableEnsured = true;
   } catch (err: any) {
@@ -104,6 +102,12 @@ async function verifyImageUrl(url?: string | null): Promise<string> {
 router.get('/', async (req, res) => {
   try {
     const position = (req.query.position as string) || 'sidebar';
+    if (position === 'sidebar') {
+      const settings = await getCachedSystemSettings().catch(() => null);
+      if (settings && settings.sidebar_ads_enabled === false) {
+        return res.json({ success: true, ads: [] });
+      }
+    }
     const result = await pool.query(
       `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
               sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active, 
@@ -118,48 +122,6 @@ router.get('/', async (req, res) => {
       if (ad.image_url) {
         ad.image_url = await verifyImageUrl(ad.image_url);
       }
-    }
-    if (ads.length === 0 && position === 'sidebar') {
-      ads = [
-        {
-          id: 9991,
-          title_ar: 'حزمة الذكاء الاصطناعي السيادي الاحترافية',
-          title_en: 'Sovereign AI Elite Infrastructure Suite',
-          description_ar: 'استمتع بقوة نماذج Anthropic وDeepSeek بدون حدود وبأعلى سرعة مع حماية تشفير كاملة.',
-          description_en: 'Experience unlimited power with Anthropic and DeepSeek models with zero latency and full encryption.',
-          image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
-          target_url: '/subscription',
-          sponsor_name: 'Perplexta Enterprise',
-          badge_text_ar: 'مُموَّل',
-          badge_text_en: 'Sponsored',
-          position: 'sidebar',
-          format: 'sidebar',
-          display_order: 1,
-          is_active: true,
-          click_count: 0,
-          impression_count: 0,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 9992,
-          title_ar: 'متجر الأدوات والمحركات المتقدمة',
-          title_en: 'Elite Software & AI Marketplace',
-          description_ar: 'اكتشف خطط التحليل الفني، مطالبات الذكاء الاصطناعي، والحلول البرمجية الجاهزة للتداول والأنظمة.',
-          description_en: 'Discover technical analysis workflows, AI prompts, and enterprise code bases ready for deployment.',
-          image_url: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=600&q=80',
-          target_url: '/marketplace',
-          sponsor_name: 'Supercool Devs',
-          badge_text_ar: 'مُموَّل',
-          badge_text_en: 'Sponsored',
-          position: 'sidebar',
-          format: 'sidebar',
-          display_order: 2,
-          is_active: true,
-          click_count: 0,
-          impression_count: 0,
-          created_at: new Date().toISOString()
-        }
-      ];
     }
     res.json({ success: true, ads });
   } catch (error: any) {

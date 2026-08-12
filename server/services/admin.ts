@@ -1,4 +1,4 @@
-import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synchronizePerplextaPoolsFromRegistry } from '../db/index.js';
+import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synchronizePerplextaPoolsFromRegistry, getPoolMetrics } from '../db/index.js';
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
@@ -278,33 +278,37 @@ export async function getServerHealth() {
   try {
     const start = Date.now();
     await pool.query('SELECT 1');
-    dbStatus.core = { status: 'connected', latencyMs: Date.now() - start };
+    const metrics = getPoolMetrics(pool, 'core');
+    dbStatus.core = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
   } catch (err: any) {
-    dbStatus.core = { status: 'disconnected', error: err.message };
+    dbStatus.core = { status: 'disconnected', error: err.message, ...getPoolMetrics(pool, 'core') };
   }
 
   try {
     const start = Date.now();
     await (ledgerPool || pool).query('SELECT 1');
-    dbStatus.ledger = { status: 'connected', latencyMs: Date.now() - start };
+    const metrics = getPoolMetrics(ledgerPool || pool, 'ledger');
+    dbStatus.ledger = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
   } catch (err: any) {
-    dbStatus.ledger = { status: 'disconnected', error: err.message };
+    dbStatus.ledger = { status: 'disconnected', error: err.message, ...getPoolMetrics(ledgerPool || pool, 'ledger') };
   }
 
   try {
     const start = Date.now();
     await (externalPool || pool).query('SELECT 1');
-    dbStatus.external = { status: 'connected', latencyMs: Date.now() - start };
+    const metrics = getPoolMetrics(externalPool || pool, 'external');
+    dbStatus.external = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
   } catch (err: any) {
-    dbStatus.external = { status: 'disconnected', error: err.message };
+    dbStatus.external = { status: 'disconnected', error: err.message, ...getPoolMetrics(externalPool || pool, 'external') };
   }
 
   try {
     const start = Date.now();
     await (securityPool || pool).query('SELECT 1');
-    dbStatus.security = { status: 'connected', latencyMs: Date.now() - start };
+    const metrics = getPoolMetrics(securityPool || pool, 'security');
+    dbStatus.security = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
   } catch (err: any) {
-    dbStatus.security = { status: 'disconnected', error: err.message };
+    dbStatus.security = { status: 'disconnected', error: err.message, ...getPoolMetrics(securityPool || pool, 'security') };
   }
 
   return {

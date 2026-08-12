@@ -144,7 +144,40 @@ const CommandCenterView = ({
   const [apiHealth, setApiHealth] = useState<any[]>([]);
   const [serverHealth, setServerHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [reconnectingPool, setReconnectingPool] = useState<string | null>(null);
   const hasFetched = useRef(false);
+
+  const handleForceReconnect = async (poolName: string) => {
+    try {
+      setReconnectingPool(poolName);
+      const res = await fetch('/api/admin/reconnect-pool', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ poolName })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Reconnect failed');
+      }
+      
+      const healthRes = await fetch("/api/admin/health", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (healthRes.ok) {
+        setServerHealth(await healthRes.json());
+      }
+    } catch (err: any) {
+      console.error('Failed to force reconnect pool:', err);
+      alert(err.message || 'Failed to reconnect pool');
+    } finally {
+      setReconnectingPool(null);
+    }
+  };
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -762,10 +795,38 @@ const CommandCenterView = ({
                     <span className="font-semibold text-[var(--text-main)] uppercase">{dbId}</span>
                   </div>
                   {isConnected && (
-                    <div className="flex justify-between">
-                      <span>Latency:</span>
-                      <span className="text-accent font-semibold">{dbInfo.latencyMs}ms</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <span>Latency:</span>
+                        <span className="text-accent font-semibold">{dbInfo.latencyMs}ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Active / Max:</span>
+                        <span className="text-[var(--text-main)] font-semibold">{dbInfo.active ?? 0} / {dbInfo.max ?? 20}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Idle / Waiting:</span>
+                        <span className="text-[var(--text-main)] font-semibold">{dbInfo.idle ?? 0} / {dbInfo.waiting ?? 0}</span>
+                      </div>
+                      {dbInfo.connection_leak_risk && (
+                        <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-1">
+                            ⚠️ {language === 'ar' ? 'خطر تسريب الاتصال!' : 'Connection Leak Risk!'}
+                          </span>
+                          <button
+                            disabled={reconnectingPool !== null}
+                            onClick={() => handleForceReconnect(dbId)}
+                            className="w-full py-1 rounded-[var(--radius)] text-[9px] font-black border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 active:scale-[0.98] transition-all uppercase tracking-wider flex items-center justify-center gap-1"
+                          >
+                            {reconnectingPool === dbId ? (
+                              <span className="animate-spin h-3 w-3 border-2 border-amber-500 border-t-transparent rounded-full" />
+                            ) : (
+                              language === 'ar' ? 'إعادة اتصال إجباري' : 'Force Reconnect'
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                   {!isConnected && !isLoading && (
                     <div className="text-red-500 font-semibold truncate leading-normal" title={dbInfo.error}>

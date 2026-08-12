@@ -114,6 +114,7 @@ export const AdsManagementView: React.FC<{
     live_gift_commission_percent: 10,
     sidebar_ad_impression_price: 0.01,
     sidebar_ad_click_price: 0.10,
+    sidebar_ads_enabled: true,
     require_2fa_for_economy: false
   });
   const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
@@ -1465,7 +1466,10 @@ export const AdsManagementView: React.FC<{
                           fontSize: '11px',
                           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                         }}
-                        labelFormatter={(label) => new Date(label).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        labelFormatter={(label) => {
+                          if (!label || (typeof label !== 'string' && typeof label !== 'number')) return '';
+                          return new Date(label).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                        }}
                       />
                       <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                       <Bar 
@@ -2143,6 +2147,34 @@ export const AdsManagementView: React.FC<{
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Sidebar Master Control */}
+            <div className="pt-6 border-t border-[var(--border-main)] flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+                  <Monitor size={24} />
+                </div>
+                <div>
+                  <h4 className="font-black text-sm text-[var(--text-primary)]">
+                    {isRtl ? 'حالة الشريط الجانبي (تحكم إداري كامل)' : 'Sidebar Master Control'}
+                  </h4>
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1 max-w-md">
+                    {isRtl 
+                      ? 'عند تعطيل الشريط الجانبي، سيتم إيقاف عرض الإعلانات والعناصر الجانبية بالكامل في واجهة المستخدم فوراً وعدم خروجها عن السيطرة.' 
+                      : 'When disabled, sidebar ads and sponsored panels are fully hidden across the application under strict admin control.'}
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={economySettings.sidebar_ads_enabled ?? true}
+                  onChange={(e) => setEconomySettings({ ...economySettings, sidebar_ads_enabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+              </label>
             </div>
 
             {/* 2FA Security Control */}

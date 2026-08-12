@@ -23,7 +23,21 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(rootDir, 'src'),
+        'react': path.resolve(rootDir, 'node_modules/react'),
+        'react-dom': path.resolve(rootDir, 'node_modules/react-dom'),
       },
+    },
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'lucide-react',
+        'motion',
+        '@tanstack/react-query',
+        'recharts',
+        'd3',
+      ],
     },
     server: {
       host: '0.0.0.0',

@@ -14,7 +14,7 @@ import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 import wellKnownRouter from './routes/well-known.js';
 
-import { pool, ledgerPool, externalPool, securityPool } from './db/index.js';
+import { pool, ledgerPool, externalPool, securityPool, getPoolMetrics } from './db/index.js';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
 import { getCachedRouteSeo, getCachedAllActiveRouteSeo } from './db/queries.js';
 
@@ -275,7 +275,6 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
 app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
 app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
 app.get('/sw.js', serveStaticResource('sw.js'));
-app.get('/registerSW.js', serveStaticResource('registerSW.js'));
 
 app.use(wellKnownRouter);
 
@@ -719,48 +718,19 @@ app.use('/api', csrfProtection);
 app.get('/api/health', (req, res) => res.json({
   status: 'ok',
   pools: {
-    core: getPoolMetrics(pool),
-    ledger: getPoolMetrics(ledgerPool),
-    external: getPoolMetrics(externalPool),
-    security: getPoolMetrics(securityPool)
+    core: getPoolMetrics(pool, 'core'),
+    ledger: getPoolMetrics(ledgerPool, 'ledger'),
+    external: getPoolMetrics(externalPool, 'external'),
+    security: getPoolMetrics(securityPool, 'security')
   }
 }));
 
-function getPoolMetrics(p: any) {
-  if (!p) {
-    return {
-      total: 0,
-      idle: 0,
-      active: 0,
-      waiting: 0,
-      max: 0,
-      saturated: false,
-      available: false
-    };
-  }
-  const total = p.totalCount ?? 0;
-  const idle = p.idleCount ?? 0;
-  const waiting = p.waitingCount ?? 0;
-  const max = p.options?.max ?? 20;
-  const active = Math.max(0, total - idle);
-  const saturated = total >= max && waiting > 15;
-  return {
-    total,
-    idle,
-    active,
-    waiting,
-    max,
-    saturated,
-    available: true
-  };
-}
-
 app.get(['/api/diagnostics/db', '/api/health/db', '/api/db-health'], (req, res) => {
   const pools = {
-    core: getPoolMetrics(pool),
-    ledger: getPoolMetrics(ledgerPool),
-    external: getPoolMetrics(externalPool),
-    security: getPoolMetrics(securityPool)
+    core: getPoolMetrics(pool, 'core'),
+    ledger: getPoolMetrics(ledgerPool, 'ledger'),
+    external: getPoolMetrics(externalPool, 'external'),
+    security: getPoolMetrics(securityPool, 'security')
   };
   const isSaturated = Object.values(pools).some(p => p.saturated);
 
@@ -1460,7 +1430,7 @@ if (process.env.NODE_ENV === "production") {
     maxAge: '1y',
     index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js') || filePath.includes('workbox-')) {
+      if (filePath.endsWith('sw.js') || filePath.includes('workbox-')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');

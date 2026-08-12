@@ -7,24 +7,43 @@ import { PwaProvider } from './context/PwaContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
-// Lazy-loaded page components for optimal bundle splitting & instantaneous initial startup
-const ChatPage = React.lazy(() => import('./pages/ChatPage').then(m => ({ default: m.ChatPage })));
-const RewardsPage = React.lazy(() => import('./pages/RewardsPage').then(m => ({ default: m.RewardsPage })));
-const SubscriptionPage = React.lazy(() => import('./pages/SubscriptionPage').then(m => ({ default: m.SubscriptionPage })));
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const Terms = React.lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
-const Privacy = React.lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
-const About = React.lazy(() => import('./pages/About').then(m => ({ default: m.About })));
-const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
-const BulletinBoardPage = React.lazy(() => import('./pages/BulletinBoardPage').then(m => ({ default: m.BulletinBoardPage })));
-const BlogPage = React.lazy(() => import('./pages/BlogPage').then(m => ({ default: m.BlogPage })));
-const AdminCommunityPage = React.lazy(() => import('./pages/AdminCommunityPage').then(m => ({ default: m.AdminCommunityPage })));
-const MarketplacePage = React.lazy(() => import('./pages/MarketplacePage').then(m => ({ default: m.MarketplacePage })));
-const GoogleHubPage = React.lazy(() => import('./pages/GoogleHubPage'));
-const SharedSnapshotPage = React.lazy(() => import('./pages/SharedSnapshotPage').then(m => ({ default: m.SharedSnapshotPage })));
-const RecommendationsPage = React.lazy(() => import('./pages/RecommendationsPage').then(m => ({ default: m.RecommendationsPage })));
-const StudioPage = React.lazy(() => import('./pages/StudioPage').then(m => ({ default: m.StudioPage })));
+// Lazy-loaded page components with robust retry wrapper to prevent dynamic import fetch failures
+const lazyRetry = (factory: () => Promise<any>, name?: string) =>
+  React.lazy(() =>
+    factory()
+      .then((m) => (name ? { default: m[name] } : m))
+      .catch((err) => {
+        return new Promise<any>((resolve, reject) => {
+          setTimeout(() => {
+            factory()
+              .then((m) => resolve(name ? { default: m[name] } : m))
+              .catch((retryErr) => {
+                console.error('Chunk retry failed permanently, reloading page...', retryErr);
+                window.location.reload();
+                reject(retryErr);
+              });
+          }, 1500);
+        });
+      })
+  );
+
+const ChatPage = lazyRetry(() => import('./pages/ChatPage'), 'ChatPage');
+const RewardsPage = lazyRetry(() => import('./pages/RewardsPage'), 'RewardsPage');
+const SubscriptionPage = lazyRetry(() => import('./pages/SubscriptionPage'), 'SubscriptionPage');
+const SettingsPage = lazyRetry(() => import('./pages/SettingsPage'), 'SettingsPage');
+const AdminDashboard = lazyRetry(() => import('./pages/AdminDashboard'), 'AdminDashboard');
+const Terms = lazyRetry(() => import('./pages/Terms'), 'Terms');
+const Privacy = lazyRetry(() => import('./pages/Privacy'), 'Privacy');
+const About = lazyRetry(() => import('./pages/About'), 'About');
+const ResetPasswordPage = lazyRetry(() => import('./pages/ResetPasswordPage'), 'ResetPasswordPage');
+const BulletinBoardPage = lazyRetry(() => import('./pages/BulletinBoardPage'), 'BulletinBoardPage');
+const BlogPage = lazyRetry(() => import('./pages/BlogPage'), 'BlogPage');
+const AdminCommunityPage = lazyRetry(() => import('./pages/AdminCommunityPage'), 'AdminCommunityPage');
+const MarketplacePage = lazyRetry(() => import('./pages/MarketplacePage'), 'MarketplacePage');
+const GoogleHubPage = lazyRetry(() => import('./pages/GoogleHubPage'));
+const SharedSnapshotPage = lazyRetry(() => import('./pages/SharedSnapshotPage'), 'SharedSnapshotPage');
+const RecommendationsPage = lazyRetry(() => import('./pages/RecommendationsPage'), 'RecommendationsPage');
+const StudioPage = lazyRetry(() => import('./pages/StudioPage'), 'StudioPage');
 import { IncentiveCard } from './components/IncentiveCard';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -32,6 +51,7 @@ import { Toaster } from 'sonner';
 import { motion } from 'motion/react';
 import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { resolveImageUrl } from './utils/imageResolver';
+import { GlobalLoadingOverlay } from "./components/GlobalLoadingOverlay";
 import { InactivityWarningModal } from './components/InactivityWarningModal';
 import { ServiceUpdateToast } from './components/ServiceUpdateToast';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
@@ -224,6 +244,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <IncentiveCard />
       <UpgradePromptModal />
       <InactivityWarningModal />
+      <GlobalLoadingOverlay />
       <ServiceUpdateToast />
       <PwaInstallBanner />
       <PwaInstallSuccessService />

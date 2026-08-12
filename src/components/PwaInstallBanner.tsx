@@ -263,8 +263,8 @@ export const PwaInstallBanner: React.FC = () => {
                       ? 'استخدم قائمة المتصفح لإضافة التطبيق إلى الشاشة الرئيسية:'
                       : 'Use your browser options menu to install the application:'
                     : isAr
-                    ? 'قم بالتثبيت عبر شريط العنوان في المتصفح:'
-                    : 'Use your browser address bar or menu to install the desktop app:'}
+                    ? 'انقر على أيقونة التثبيت في شريط عنوان المتصفح أو افتح قائمة الخيارات:'
+                    : 'Click the install icon in your browser address bar or use the browser menu:'}
                 </p>
 
                 <div className="w-full space-y-3 mt-2 text-right rtl:text-right ltr:text-left">
@@ -299,6 +299,13 @@ export const PwaInstallBanner: React.FC = () => {
                             <span>{isAr ? 'في الزاوية العليا للمتصفح' : 'In top-right corner of browser'}</span>
                           </div>
                         </>
+                      ) : mobilePlatform === 'desktop' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'انقر على أيقونة التثبيت في شريط العنوان' : 'Click Install Icon in Address Bar'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'أو افتح قائمة متصفحك (⋮)' : 'Or open browser menu (⋮)'}</span>
+                          </div>
+                        </>
                       ) : (
                         <>
                           <span className="font-bold">{isAr ? 'افتح قائمة المتصفح (⋮ أو ≡)' : 'Open Browser Menu (⋮ or ≡)'}</span>
@@ -323,6 +330,14 @@ export const PwaInstallBanner: React.FC = () => {
                           <span className="font-bold">{isAr ? 'اختر "الإضافة إلى الشاشة الرئيسية"' : 'Select "Add to Home Screen"'}</span>
                           <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                             <span>{isAr ? 'من قائمة الخيارات المتاحة' : 'From the actions list'}</span>
+                            <PlusSquare size={13} className="text-accent inline" />
+                          </div>
+                        </>
+                      ) : mobilePlatform === 'desktop' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" (Install App)' : 'Select "Install App"'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'لتشغيل التطبيق في نافذة مستقلة' : 'To run in standalone desktop window'}</span>
                             <PlusSquare size={13} className="text-accent inline" />
                           </div>
                         </>
