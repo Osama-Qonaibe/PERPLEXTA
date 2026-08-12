@@ -408,72 +408,15 @@ router.post("/launch-telemetry", (req, res) => {
   }
 });
 
+import { validatePwa } from '../../scripts/validate-pwa.js';
+
 router.get("/validate-manifest", (req, res) => {
   try {
-    const manifestPath = path.resolve(process.cwd(), 'public', 'manifest.json');
-    if (!fs.existsSync(manifestPath)) {
-      return res.status(404).json({ success: false, error: 'manifest.json not found' });
-    }
-
-    const content = fs.readFileSync(manifestPath, 'utf-8');
-    const manifest = JSON.parse(content);
-
-    const checks: { passed: string[]; warnings: string[]; errors: string[] } = {
-      passed: [],
-      warnings: [],
-      errors: []
-    };
-
-    // 1. Name & Short name
-    if (typeof manifest.name === 'string' && manifest.name.trim().length > 0) {
-      checks.passed.push(`'name' is present: "${manifest.name}"`);
-    } else {
-      checks.errors.push(`'name' field is missing or empty`);
-    }
-
-    if (typeof manifest.short_name === 'string' && manifest.short_name.trim().length > 0) {
-      checks.passed.push(`'short_name' is present: "${manifest.short_name}"`);
-    } else {
-      checks.errors.push(`'short_name' field is missing or empty`);
-    }
-
-    // 2. start_url & display
-    if (typeof manifest.start_url === 'string' && manifest.start_url.trim().length > 0) {
-      checks.passed.push(`'start_url' is present: "${manifest.start_url}"`);
-    } else {
-      checks.errors.push(`'start_url' is missing`);
-    }
-
-    const validDisplays = ['standalone', 'fullscreen', 'minimal-ui', 'browser'];
-    if (validDisplays.includes(manifest.display)) {
-      checks.passed.push(`'display' mode is valid: "${manifest.display}"`);
-    } else {
-      checks.errors.push(`'display' mode "${manifest.display}" is invalid`);
-    }
-
-    // 3. Icons
-    let has192 = false;
-    let has512 = false;
-    if (Array.isArray(manifest.icons) && manifest.icons.length > 0) {
-      manifest.icons.forEach((icon: any) => {
-        if (icon.sizes && icon.sizes.includes('192x192')) has192 = true;
-        if (icon.sizes && icon.sizes.includes('512x512')) has512 = true;
-      });
-      if (has192) checks.passed.push('Required 192x192 icon present');
-      else checks.errors.push('Missing 192x192 icon');
-
-      if (has512) checks.passed.push('Required 512x512 icon present');
-      else checks.errors.push('Missing 512x512 icon');
-    } else {
-      checks.errors.push('Missing or empty icons array');
-    }
-
-    const isValid = checks.errors.length === 0;
-
+    const { isValid, results, manifest } = validatePwa();
     res.json({
       success: isValid,
       valid: isValid,
-      checks,
+      checks: results,
       manifest
     });
   } catch (error: any) {

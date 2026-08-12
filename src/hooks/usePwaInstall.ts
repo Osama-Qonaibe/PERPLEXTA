@@ -2,35 +2,82 @@ import { useState, useEffect, useCallback } from 'react';
 import { safeStorageGet, safeStorageSet } from '../utils/safeStorage';
 
 export type PwaInstallState = 'idle' | 'installing' | 'installed' | 'dismissed';
+export type MobilePlatform = 'ios-safari' | 'ios-other' | 'android-chrome' | 'android-other' | 'desktop';
 
 export interface UsePwaInstallReturn {
   installState: PwaInstallState;
   canInstall: boolean;
   isStandalone: boolean;
+  isIos: boolean;
   isIosSafari: boolean;
+  isAndroid: boolean;
+  isAndroidChrome: boolean;
+  mobilePlatform: MobilePlatform;
+  dismissCount: number;
   promptInstall: () => Promise<boolean>;
   openApp: () => void;
   dismissBanner: () => void;
+  resetDismissals: () => void;
   resetState: () => void;
 }
 
 const STORAGE_DISMISSED_KEY = 'perplexta_pwa_dismissed';
+const STORAGE_DISMISS_COUNT_KEY = 'perplexta_pwa_dismiss_count';
 const STORAGE_INSTALLED_KEY = 'perplexta_pwa_installed';
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * Calculates required cooldown period in ms based on dismissal count.
+ * 1st dismissal: 24h
+ * 2nd dismissal: 3 days (72h)
+ * 3+ dismissals: 7 days (168h)
+ */
+export function getDismissCooldownMs(count: number): number {
+  if (count <= 1) return 24 * 60 * 60 * 1000;
+  if (count === 2) return 3 * 24 * 60 * 60 * 1000;
+  return 7 * 24 * 60 * 60 * 1000;
+}
 
 export function usePwaInstall(): UsePwaInstallReturn {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [installState, setInstallState] = useState<PwaInstallState>('idle');
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
+  const [isIos, setIsIos] = useState<boolean>(false);
   const [isIosSafari, setIsIosSafari] = useState<boolean>(false);
+  const [isAndroid, setIsAndroid] = useState<boolean>(false);
+  const [isAndroidChrome, setIsAndroidChrome] = useState<boolean>(false);
+  const [mobilePlatform, setMobilePlatform] = useState<MobilePlatform>('desktop');
+  const [dismissCount, setDismissCount] = useState<number>(0);
 
-  // Check standalone mode and iOS environment
+  // Detect browser, mobile OS & standalone mode
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent) || 
+    const ua = window.navigator.userAgent.toLowerCase();
+    
+    // Check iOS
+    const iosDevice = /iphone|ipad|ipod/.test(ua) || 
       (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    
+    const isOtherIosBrowser = /crios|fxios|edgios|opti|focus/i.test(ua);
+    const iosSafari = iosDevice && /safari/i.test(ua) && !isOtherIosBrowser;
+
+    // Check Android
+    const androidDevice = /android/i.test(ua);
+    const isOtherAndroidBrowser = /samsungbrowser|firefox|opr|edga/i.test(ua);
+    const androidChrome = androidDevice && /chrome/i.test(ua) && !isOtherAndroidBrowser;
+
+    // Determine platform taxonomy
+    let platform: MobilePlatform = 'desktop';
+    if (iosSafari) platform = 'ios-safari';
+    else if (iosDevice) platform = 'ios-other';
+    else if (androidChrome) platform = 'android-chrome';
+    else if (androidDevice) platform = 'android-other';
+
+    setIsIos(iosDevice);
+    setIsIosSafari(iosSafari);
+    setIsAndroid(androidDevice);
+    setIsAndroidChrome(androidChrome);
+    setMobilePlatform(platform);
 
     const checkStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -38,9 +85,21 @@ export function usePwaInstall(): UsePwaInstallReturn {
       document.referrer.includes('android-app://');
 
     setIsStandalone(checkStandalone);
-    setIsIosSafari(isIosDevice && !checkStandalone);
 
-    // Check if previously installed
+    // Read dismissal metrics & cooldown
+    const savedCount = parseInt(safeStorageGet(STORAGE_DISMISS_COUNT_KEY) || '0', 10);
+    setDismissCount(savedCount);
+
+    const lastDismissedTime = safeStorageGet(STORAGE_DISMISSED_KEY);
+    if (lastDismissedTime && !checkStandalone) {
+      const elapsed = Date.now() - Number(lastDismissedTime);
+      const cooldownMs = getDismissCooldownMs(savedCount);
+      if (elapsed < cooldownMs) {
+        setInstallState('dismissed');
+      }
+    }
+
+    // Check if marked as installed
     const wasInstalled = safeStorageGet(STORAGE_INSTALLED_KEY) === 'true';
     if (checkStandalone || wasInstalled) {
       setInstallState('installed');
@@ -54,9 +113,13 @@ export function usePwaInstall(): UsePwaInstallReturn {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Only set to idle if not already marked as installed
       if (safeStorageGet(STORAGE_INSTALLED_KEY) !== 'true') {
-        setInstallState('idle');
+        const lastDismissedTime = safeStorageGet(STORAGE_DISMISSED_KEY);
+        const savedCount = parseInt(safeStorageGet(STORAGE_DISMISS_COUNT_KEY) || '0', 10);
+        const elapsed = lastDismissedTime ? Date.now() - Number(lastDismissedTime) : Infinity;
+        if (elapsed >= getDismissCooldownMs(savedCount)) {
+          setInstallState('idle');
+        }
       }
     };
 
@@ -111,10 +174,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
   const openApp = useCallback(() => {
     if (typeof window === 'undefined') return;
 
-    // Try opening standalone window or focus existing app scope
     const currentUrl = window.location.href;
-    
-    // Attempt launching standalone window
     const pwaWindow = window.open(
       currentUrl,
       '_blank',
@@ -122,15 +182,27 @@ export function usePwaInstall(): UsePwaInstallReturn {
     );
 
     if (!pwaWindow) {
-      // Fallback: reload or redirect to origin
       window.location.href = currentUrl;
     }
   }, []);
 
-  // Dismiss banner with cooldown (remind me later after 24 hours)
+  // Dismiss banner with progressive cooldown and counter
   const dismissBanner = useCallback(() => {
+    const currentCount = parseInt(safeStorageGet(STORAGE_DISMISS_COUNT_KEY) || '0', 10);
+    const nextCount = currentCount + 1;
+
     setInstallState('dismissed');
+    setDismissCount(nextCount);
+    safeStorageSet(STORAGE_DISMISS_COUNT_KEY, nextCount.toString());
     safeStorageSet(STORAGE_DISMISSED_KEY, Date.now().toString());
+  }, []);
+
+  // Reset dismissal history
+  const resetDismissals = useCallback(() => {
+    setDismissCount(0);
+    safeStorageSet(STORAGE_DISMISS_COUNT_KEY, '0');
+    safeStorageSet(STORAGE_DISMISSED_KEY, '');
+    setInstallState('idle');
   }, []);
 
   // Reset state (e.g. for testing or retry)
@@ -138,17 +210,22 @@ export function usePwaInstall(): UsePwaInstallReturn {
     setInstallState('idle');
   }, []);
 
-  // Active for web users who have not installed or launched standalone mode
   const canInstall = !isStandalone && installState !== 'installed';
 
   return {
     installState,
     canInstall,
     isStandalone,
+    isIos,
     isIosSafari,
+    isAndroid,
+    isAndroidChrome,
+    mobilePlatform,
+    dismissCount,
     promptInstall,
     openApp,
     dismissBanner,
+    resetDismissals,
     resetState,
   };
 }

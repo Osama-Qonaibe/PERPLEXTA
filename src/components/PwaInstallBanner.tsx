@@ -2,22 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { usePwaContext } from '../context/PwaContext';
 import { resolveImageUrl } from '../utils/imageResolver';
-import { safeStorageGet } from '@/utils/safeStorage';
+import { safeStorageGet } from '../utils/safeStorage';
 import { motion, AnimatePresence } from 'motion/react';
-import { Smartphone, Download, X, Share2, PlusSquare, Sparkles, Check, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
+import { Smartphone, Download, X, Share2, PlusSquare, Sparkles, Check, ExternalLink, Loader2, CheckCircle2, Monitor } from 'lucide-react';
 
 export const PwaInstallBanner: React.FC = () => {
-  const { 
-    siteSettings, 
-    language, 
-    theme 
-  } = useAppContext();
+  const { siteSettings, language, theme } = useAppContext();
 
   const {
     installState,
     canInstall,
     isStandalone,
-    isIosSafari,
+    mobilePlatform,
+    dismissCount,
     promptInstall,
     openApp,
     dismissBanner
@@ -27,22 +24,26 @@ export const PwaInstallBanner: React.FC = () => {
   const isAr = language === 'ar';
 
   const [isVisible, setIsVisible] = useState(false);
-  const [showIosGuide, setShowIosGuide] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check dismissal cooldown (suppress for 24 hours when user clicks Remind me later)
-    const dismissedTime = safeStorageGet('perplexta_pwa_dismissed');
-    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-    const isCooldownActive = dismissedTime && (Date.now() - Number(dismissedTime) < twentyFourHoursMs);
+    // Check dismissal cooldown from storage
+    const lastDismissedTime = safeStorageGet('perplexta_pwa_dismissed');
+    const savedCount = parseInt(safeStorageGet('perplexta_pwa_dismiss_count') || '0', 10);
+    
+    let cooldownMs = 24 * 60 * 60 * 1000;
+    if (savedCount === 2) cooldownMs = 3 * 24 * 60 * 60 * 1000;
+    else if (savedCount >= 3) cooldownMs = 7 * 24 * 60 * 60 * 1000;
+
+    const isCooldownActive = lastDismissedTime && (Date.now() - Number(lastDismissedTime) < cooldownMs);
 
     if (isStandalone || isCooldownActive || installState === 'dismissed') {
       setIsVisible(false);
       return;
     }
 
-    // Show banner if canInstall or if installed (to give option to open app)
     if (canInstall || installState === 'installed') {
       const timer = setTimeout(() => {
         setIsVisible(true);
@@ -55,13 +56,12 @@ export const PwaInstallBanner: React.FC = () => {
     if (installState === 'installed') {
       openApp();
     } else if (canInstall) {
-      if (isIosSafari) {
-        setShowIosGuide(true);
+      if (mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other') {
+        setShowGuideModal(true);
       } else {
         const success = await promptInstall();
         if (!success) {
-          // If native prompt wasn't triggered directly, show the step-by-step installation guide
-          setShowIosGuide(true);
+          setShowGuideModal(true);
         }
       }
     }
@@ -78,13 +78,13 @@ export const PwaInstallBanner: React.FC = () => {
     ? (siteSettings?.siteNameAr || siteSettings?.siteName || 'PERPLEXTA')
     : (siteSettings?.siteName || 'PERPLEXTA');
 
-  if (!isVisible && !showIosGuide) return null;
+  if (!isVisible && !showGuideModal) return null;
 
   return (
     <>
       {/* Floating Bottom PWA Install & Launch Banner */}
       <AnimatePresence>
-        {isVisible && !showIosGuide && (
+        {isVisible && !showGuideModal && (
           <motion.div
             initial={{ opacity: 0, y: 60, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -127,7 +127,7 @@ export const PwaInstallBanner: React.FC = () => {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6 rtl:pr-0 rtl:pl-6">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-extrabold text-sm tracking-tight truncate">
                       {siteName}
                     </h4>
@@ -146,7 +146,7 @@ export const PwaInstallBanner: React.FC = () => {
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
                     {installState === 'installed'
                       ? isAr
-                        ? 'تم تثبيت التطبيق بنجاح! يمكنك الآن فتحه واستخدامه بتجربة مستقلاًّ بالكامل.'
+                        ? 'تم تثبيت التطبيق بنجاح! يمكنك الآن فتحه واستخدامه بتجربة مستقلة بالكامل.'
                         : 'App installed successfully! Launch it now for a full native experience.'
                       : isAr
                       ? 'ثبّت التطبيق على جهازك للحصول على أداء أسرع ووصول فوري دون الحاجة لفتح المتصفح.'
@@ -202,7 +202,7 @@ export const PwaInstallBanner: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className={`absolute top-0 ltr:right-0 rtl:left-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer`}
+                  className="absolute top-0 ltr:right-0 rtl:left-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
                   aria-label="Close"
                 >
                   <X size={16} />
@@ -213,9 +213,9 @@ export const PwaInstallBanner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Step-by-Step Installation Instruction Modal */}
+      {/* Tailored Step-by-Step Platform Installation Modal */}
       <AnimatePresence>
-        {showIosGuide && (
+        {showGuideModal && (
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, y: 100 }}
@@ -230,7 +230,7 @@ export const PwaInstallBanner: React.FC = () => {
             >
               <button
                 type="button"
-                onClick={() => setShowIosGuide(false)}
+                onClick={() => setShowGuideModal(false)}
                 className="absolute top-4 ltr:right-4 rtl:left-4 p-1 rounded-full bg-gray-500/10 text-gray-400 hover:text-gray-200 cursor-pointer"
               >
                 <X size={18} />
@@ -238,7 +238,7 @@ export const PwaInstallBanner: React.FC = () => {
 
               <div className="flex flex-col items-center text-center gap-3">
                 <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-3">
-                  <Smartphone size={28} />
+                  {mobilePlatform === 'desktop' ? <Monitor size={28} /> : <Smartphone size={28} />}
                 </div>
 
                 <h3 className="text-base font-extrabold">
@@ -246,85 +246,102 @@ export const PwaInstallBanner: React.FC = () => {
                 </h3>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {isIosSafari
-                    ? (isAr
-                        ? 'اتبع الخطوتين أدناه لإضافة التطبيق في Safari على iPhone:'
-                        : 'Follow these simple steps in Safari to add the app:')
-                    : (isAr
-                        ? 'قم بالضغط على خيارات المتصفح وتثبيت التطبيق مباشرة:'
-                        : 'Use your browser menu to install the app on your home screen:')}
+                  {mobilePlatform === 'ios-safari'
+                    ? isAr
+                      ? 'اتبع الخطوات التالية في متصفح Safari لإنشاء اختصار على الشاشة الرئيسية:'
+                      : 'Follow these steps in Safari to add the app to your Home Screen:'
+                    : mobilePlatform === 'ios-other'
+                    ? isAr
+                      ? 'افتح الصفحة في متصفح Safari للتمكن من التثبيت المباشر:'
+                      : 'For best results on iOS, open this page in Safari or use the Share menu:'
+                    : mobilePlatform === 'android-chrome'
+                    ? isAr
+                      ? 'قم بالتثبيت المباشر من قائمة Chrome على Android:'
+                      : 'Use Chrome options to add the app to your home screen:'
+                    : mobilePlatform === 'android-other'
+                    ? isAr
+                      ? 'استخدم قائمة المتصفح لإضافة التطبيق إلى الشاشة الرئيسية:'
+                      : 'Use your browser options menu to install the application:'
+                    : isAr
+                    ? 'قم بالتثبيت عبر شريط العنوان في المتصفح:'
+                    : 'Use your browser address bar or menu to install the desktop app:'}
                 </p>
 
                 <div className="w-full space-y-3 mt-2 text-right rtl:text-right ltr:text-left">
-                  {isIosSafari ? (
-                    <>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                          1
-                        </div>
-                        <div className="text-xs">
+                  {/* Step 1 */}
+                  <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                    isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                      1
+                    </div>
+                    <div className="text-xs flex-1">
+                      {mobilePlatform === 'ios-safari' ? (
+                        <>
                           <span className="font-bold">{isAr ? 'اضغط زر المشاركة' : 'Tap Share Icon'}</span>
                           <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'في أسفل المتصفح' : 'At the bottom of Safari'}</span>
+                            <span>{isAr ? 'في شريط Safari الأسفل' : 'At bottom of Safari'}</span>
                             <Share2 size={13} className="text-blue-400 inline" />
                           </div>
-                        </div>
-                      </div>
+                        </>
+                      ) : mobilePlatform === 'ios-other' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'افتح في Safari أو اضغط مشاركة' : 'Open in Safari or Tap Share'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'يدعم Safari التثبيت الكامل' : 'Safari provides native iOS PWA support'}</span>
+                            <Share2 size={13} className="text-blue-400 inline" />
+                          </div>
+                        </>
+                      ) : mobilePlatform === 'android-chrome' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'افتح قائمة Chrome (⋮)' : 'Tap Chrome Menu (⋮)'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'في الزاوية العليا للمتصفح' : 'In top-right corner of browser'}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold">{isAr ? 'افتح قائمة المتصفح (⋮ أو ≡)' : 'Open Browser Menu (⋮ or ≡)'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'في أعلى أو أسفل الشاشة' : 'In top or bottom navigation bar'}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                          2
-                        </div>
-                        <div className="text-xs">
+                  {/* Step 2 */}
+                  <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                    isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                      2
+                    </div>
+                    <div className="text-xs flex-1">
+                      {mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other' ? (
+                        <>
                           <span className="font-bold">{isAr ? 'اختر "الإضافة إلى الشاشة الرئيسية"' : 'Select "Add to Home Screen"'}</span>
                           <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'من قائمة الخيارات' : 'From the action menu'}</span>
+                            <span>{isAr ? 'من قائمة الخيارات المتاحة' : 'From the actions list'}</span>
                             <PlusSquare size={13} className="text-accent inline" />
                           </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                          1
-                        </div>
-                        <div className="text-xs">
-                          <span className="font-bold">{isAr ? 'افتح قائمة المتصفح (⋮)' : 'Open Browser Menu (⋮)'}</span>
-                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'في أعلى أو أسفل الشاشة' : 'In top or bottom bar'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                          2
-                        </div>
-                        <div className="text-xs">
-                          <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" أو "الإضافة للشاشة الرئيسية"' : 'Select "Install App" or "Add to Home Screen"'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" أو "إضافة للشاشة"' : 'Select "Install App" or "Add to Home Screen"'}</span>
                           <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                             <PlusSquare size={13} className="text-accent inline" />
                           </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => {
-                    setShowIosGuide(false);
+                    setShowGuideModal(false);
                     handleClose();
                   }}
                   className="w-full mt-4 py-2.5 rounded-xl bg-accent text-black font-extrabold text-xs cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.3)]"
@@ -339,4 +356,3 @@ export const PwaInstallBanner: React.FC = () => {
     </>
   );
 };
-
