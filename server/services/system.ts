@@ -81,30 +81,11 @@ export async function refreshCachedAppName() {
 }
 
 export async function getSystemSettings() {
-  try {
-    const settings = await getCachedSystemSettings();
-    if (settings) {
-      ensurePersistentSystemAssets(settings).catch(() => {});
-    }
-    return settings;
-  } catch (err: any) {
-    const errMsg = err.message || '';
-    if (errMsg.includes('relation "system_settings" does not exist') || 
-        errMsg.includes('logo_light_url') || 
-        errMsg.includes('blocked_paths') || 
-        errMsg.includes('font_loading_config')) {
-      console.log('[SystemSettings] Schema anomaly or missing column detected. Triggering database migrations...');
-      try {
-        const { runDatabaseMigrations } = await import('../db/migrations.js');
-        await runDatabaseMigrations();
-        invalidateSystemSettingsCache();
-        return getCachedSystemSettings();
-      } catch (innerErr: any) {
-        console.error('[SystemSettings] Dynamic migration running failed:', innerErr.message);
-      }
-    }
-    throw err;
+  const settings = await getCachedSystemSettings();
+  if (settings) {
+    ensurePersistentSystemAssets(settings).catch(() => {});
   }
+  return settings;
 }
 
 export async function updateSystemSettings(settings: any) {

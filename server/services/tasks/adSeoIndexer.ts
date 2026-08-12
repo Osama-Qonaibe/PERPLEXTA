@@ -6,29 +6,8 @@ import * as cheerio from 'cheerio';
  * Validates the schema, ensuring the columns exist in advertisements.
  */
 async function ensureSchema() {
-  console.log('[AdSeoIndexer] Verifying schema constraints for advertisements...');
-  const checkColumns = async (table: string, cols: string[]) => {
-    for (const col of cols) {
-      const res = await pool.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = $1 AND column_name = $2
-      `, [table, col]);
-      if (res.rows.length === 0) {
-        console.log(`[AdSeoIndexer] Column ${col} missing in ${table}, adding...`);
-        await pool.query(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`);
-      }
-    }
-  };
-
-  await checkColumns('advertisements', [
-    'meta_title_en',
-    'meta_title_ar',
-    'meta_description_en',
-    'meta_description_ar',
-    'keywords_en',
-    'keywords_ar'
-  ]);
+  // Schema is verified and managed at startup via runDatabaseMigrations
+  return;
 }
 
 /**

@@ -19,12 +19,6 @@ export const SubscriptionPage: React.FC = () => {
   const { t, dir, plans, plansLoaded, payWithBalance, stripeCheckout, user, balance, balanceUSD, refreshUser, setIsAuthModalOpen, isMobile, token } = useAppContext();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isMobile) {
-      navigate('/');
-    }
-  }, [isMobile, navigate]);
-
   const [isVerifying, setIsVerifying] = React.useState(false);
 
   useEffect(() => {

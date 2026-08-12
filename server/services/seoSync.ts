@@ -195,27 +195,8 @@ Generate JSON with:
 }
 
 async function ensureTableColumns(client: any, tableName: string, columns: Record<string, string>) {
-  const tableCheck = await client.query(
-    `SELECT table_name FROM information_schema.tables WHERE table_name = $1`,
-    [tableName]
-  );
-  if (tableCheck.rows.length === 0) {
-    console.warn(`[SEOSync] Table "${tableName}" does not exist. Skipping column checks.`);
-    return;
-  }
-
-  const existingRes = await client.query(
-    `SELECT column_name FROM information_schema.columns WHERE table_name = $1`,
-    [tableName]
-  );
-  const existingSet = new Set(existingRes.rows.map((r: any) => r.column_name));
-
-  for (const [col, colType] of Object.entries(columns)) {
-    if (!existingSet.has(col)) {
-      console.log(`[SEOSync] Adding missing column "${col}" (${colType}) to "${tableName}"...`);
-      await client.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${col} ${colType}`);
-    }
-  }
+  // Table schema and columns are initialized during server boot via runDatabaseMigrations
+  return;
 }
 
 export async function syncBlogArticlesMetadata() {

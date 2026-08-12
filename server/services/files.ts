@@ -20,8 +20,6 @@ export async function saveFileMetadata(userId: string, data: {
 }) {
   if (!pool) throw new Error('Database initializing');
 
-  await pool.query('ALTER TABLE user_files ADD COLUMN IF NOT EXISTS file_version INTEGER DEFAULT 1').catch(() => {});
-
   const existing = await pool.query(
     'SELECT id, file_version FROM user_files WHERE user_id = $1 AND file_url = $2 LIMIT 1',
     [userId, data.file_url]

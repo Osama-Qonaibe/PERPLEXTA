@@ -5,7 +5,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 const rootDir = process.cwd();
 const SRC_DIR = path.join(rootDir, 'src');

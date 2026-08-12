@@ -5,6 +5,7 @@ import type { VitePWAOptions } from 'vite-plugin-pwa';
  * Defines versioned caching strategies for static assets, images, API routes, and user uploads.
  */
 export const pwaConfig: Partial<VitePWAOptions> = {
+  strategies: 'generateSW',
   registerType: 'autoUpdate',
   injectRegister: 'script-defer',
   includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'app-assets/*.png'],
@@ -69,12 +70,31 @@ export const pwaConfig: Partial<VitePWAOptions> = {
     clientsClaim: true,
     skipWaiting: true,
     navigateFallback: '/index.html',
-    navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+    navigateFallbackDenylist: [
+      /^\/api\//i,
+      /^\/v1\//i,
+      /^\/uploads\//i,
+      /^\/socket\.io\//i,
+      /^\/health$/i,
+      /^\/\.well-known\//i,
+      /^\/sw\.js$/i,
+      /^\/workbox-.*\.js$/i,
+      /^\/manifest.*/i,
+      /^\/robots\.txt$/i,
+      /^\/sitemap\.xml$/i,
+    ],
+    globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2,json}'],
+    globIgnores: [
+      '**/uploads/**',
+      '**/api/**',
+      '**/sw.js',
+      '**/workbox-*.js',
+      '**/manifest*.json',
+    ],
     runtimeCaching: [
       {
         // NetworkFirst strategy for API routes to always ensure dynamic data freshness
-        urlPattern: /^\/api\/.*/i,
+        urlPattern: /^\/(?:api|v1)\/.*/i,
         handler: 'NetworkFirst',
         options: {
           cacheName: 'perplexta-api-cache-v1',

@@ -103,7 +103,6 @@ async function verifyImageUrl(url?: string | null): Promise<string> {
  */
 router.get('/', async (req, res) => {
   try {
-    await ensureAdsSeedData();
     const position = (req.query.position as string) || 'sidebar';
     const result = await pool.query(
       `SELECT id, title_ar, title_en, description_ar, description_en, image_url, video_url, target_url, 
