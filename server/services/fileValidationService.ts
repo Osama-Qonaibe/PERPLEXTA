@@ -175,7 +175,6 @@ export async function auditFilePipeline(): Promise<FileAuditReport> {
               EXISTS(SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1) OR
               EXISTS(SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1) OR
               EXISTS(SELECT 1 FROM advertisements WHERE image_url LIKE $1) OR
-              EXISTS(SELECT 1 FROM forum_posts WHERE image_url LIKE $1) OR
               EXISTS(SELECT 1 FROM users WHERE avatar LIKE $1) OR
               EXISTS(SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1)
             ) AS is_ref

@@ -73,7 +73,7 @@ export const PwaInstallBanner: React.FC = () => {
   };
 
   const rawLogo = siteSettings?.logoBase64 || siteSettings?.logoLightBase64;
-  const logoUrl = rawLogo ? resolveImageUrl(rawLogo) : '/icon.png';
+  const logoUrl = rawLogo ? resolveImageUrl(rawLogo) : '/app-assets/icon.png';
   const siteName = isAr
     ? (siteSettings?.siteNameAr || siteSettings?.siteName || 'PERPLEXTA')
     : (siteSettings?.siteName || 'PERPLEXTA');

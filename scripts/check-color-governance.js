@@ -7,9 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SRC_DIR = path.join(__dirname, '..', 'src');
+const rootDir = process.cwd();
+const SRC_DIR = path.join(rootDir, 'src');
 
 const HARDCODED_EMERALD_BRAND_REGEX = /text-emerald-\d+|bg-emerald-\d+|border-emerald-\d+/g;
 

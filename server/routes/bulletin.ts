@@ -22,7 +22,6 @@ export async function ensureBulletinSeedData() {
       "UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%'",
       "UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
       "UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
-      "UPDATE forum_posts SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
       "UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%'",
       "UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%'"
     ];
