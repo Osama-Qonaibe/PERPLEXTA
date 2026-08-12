@@ -131,22 +131,24 @@ app.use((req, res, next) => {
 app.use((req: any, res: any, next: any) => {
   const isDev = process.env.NODE_ENV !== 'production';
   
-  const scriptSrcDirectives = isDev
-    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.googletagmanager.com", "https://*.stripe.com", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://apis.google.com"]
-    : [
-        "'self'",
-        `'nonce-${res.locals.nonce}'`,
-        "'unsafe-inline'",
-        "https://www.googletagmanager.com",
-        "https://*.stripe.com",
-        "https://*.googleapis.com",
-        "https://*.firebaseapp.com",
-        "https://apis.google.com"
-      ];
+  const scriptSrcDirectives = [
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    "https://www.googletagmanager.com",
+    "https://*.stripe.com",
+    "https://*.googleapis.com",
+    "https://*.firebaseapp.com",
+    "https://apis.google.com",
+    "https://*.google.com",
+    "https://*.gstatic.com"
+  ];
 
   const cspDirectives: any = {
     defaultSrc: ["'self'"],
     scriptSrc: scriptSrcDirectives,
+    scriptSrcElem: scriptSrcDirectives,
+    scriptSrcAttr: ["'self'", "'unsafe-inline'"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
