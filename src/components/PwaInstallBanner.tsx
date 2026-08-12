@@ -56,13 +56,12 @@ export const PwaInstallBanner: React.FC = () => {
     if (installState === 'installed') {
       openApp();
     } else if (canInstall) {
-      if (mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other') {
+      const isManual = mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other' || mobilePlatform === 'android-other';
+      if (isManual) {
         setShowGuideModal(true);
       } else {
-        const success = await promptInstall();
-        if (!success) {
-          setShowGuideModal(true);
-        }
+        // Native supported platform (desktop or android-chrome): triggers prompt
+        await promptInstall();
       }
     }
   };
@@ -215,7 +214,7 @@ export const PwaInstallBanner: React.FC = () => {
 
       {/* Tailored Step-by-Step Platform Installation Modal */}
       <AnimatePresence>
-        {showGuideModal && (
+        {showGuideModal && mobilePlatform !== 'desktop' && mobilePlatform !== 'android-chrome' && (
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, y: 100 }}

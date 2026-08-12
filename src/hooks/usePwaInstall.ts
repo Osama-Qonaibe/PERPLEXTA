@@ -14,6 +14,7 @@ export interface UsePwaInstallReturn {
   isAndroidChrome: boolean;
   mobilePlatform: MobilePlatform;
   dismissCount: number;
+  hasPrompt: boolean;
   promptInstall: () => Promise<boolean>;
   openApp: () => void;
   dismissBanner: () => void;
@@ -210,7 +211,11 @@ export function usePwaInstall(): UsePwaInstallReturn {
     setInstallState('idle');
   }, []);
 
-  const canInstall = !isStandalone && installState !== 'installed';
+  const hasPrompt = deferredPrompt !== null;
+  const isNativeSupported = mobilePlatform === 'desktop' || mobilePlatform === 'android-chrome';
+  const canInstall = !isStandalone && installState !== 'installed' && (
+    isNativeSupported ? hasPrompt : (mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other' || mobilePlatform === 'android-other')
+  );
 
   return {
     installState,
@@ -222,6 +227,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
     isAndroidChrome,
     mobilePlatform,
     dismissCount,
+    hasPrompt,
     promptInstall,
     openApp,
     dismissBanner,
