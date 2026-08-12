@@ -127,7 +127,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
     }
   }, []);
 
-  // Dismiss banner with cooldown
+  // Dismiss banner with cooldown (remind me later after 24 hours)
   const dismissBanner = useCallback(() => {
     setInstallState('dismissed');
     safeStorageSet(STORAGE_DISMISSED_KEY, Date.now().toString());
@@ -138,7 +138,8 @@ export function usePwaInstall(): UsePwaInstallReturn {
     setInstallState('idle');
   }, []);
 
-  const canInstall = Boolean(deferredPrompt) || isIosSafari;
+  // Active for web users who have not installed or launched standalone mode
+  const canInstall = !isStandalone && installState !== 'installed';
 
   return {
     installState,

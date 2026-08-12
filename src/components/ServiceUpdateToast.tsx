@@ -6,11 +6,15 @@ export const ServiceUpdateToast: React.FC = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const handleManualMismatch = () => {
+    const handleUpdate = () => {
       setVisible(true);
     };
-    window.addEventListener('pwa-version-mismatch', handleManualMismatch);
-    return () => window.removeEventListener('pwa-version-mismatch', handleManualMismatch);
+    window.addEventListener('pwa-version-mismatch', handleUpdate);
+    window.addEventListener('service-worker-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('pwa-version-mismatch', handleUpdate);
+      window.removeEventListener('service-worker-updated', handleUpdate);
+    };
   }, []);
 
   const close = () => {

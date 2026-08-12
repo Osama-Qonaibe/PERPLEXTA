@@ -32,10 +32,10 @@ export const PwaInstallBanner: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check dismissal cooldown (suppress for 3 days after user dismisses)
+    // Check dismissal cooldown (suppress for 24 hours when user clicks Remind me later)
     const dismissedTime = safeStorageGet('perplexta_pwa_dismissed');
-    const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-    const isCooldownActive = dismissedTime && (Date.now() - Number(dismissedTime) < threeDaysMs);
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+    const isCooldownActive = dismissedTime && (Date.now() - Number(dismissedTime) < twentyFourHoursMs);
 
     if (isStandalone || isCooldownActive || installState === 'dismissed') {
       setIsVisible(false);
@@ -58,7 +58,11 @@ export const PwaInstallBanner: React.FC = () => {
       if (isIosSafari) {
         setShowIosGuide(true);
       } else {
-        await promptInstall();
+        const success = await promptInstall();
+        if (!success) {
+          // If native prompt wasn't triggered directly, show the step-by-step installation guide
+          setShowIosGuide(true);
+        }
       }
     }
   };
@@ -183,13 +187,13 @@ export const PwaInstallBanner: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleClose}
-                      className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                      className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
                         isDark
                           ? 'bg-gray-800/80 border-gray-700/80 text-gray-300 hover:bg-gray-700'
                           : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {isAr ? 'لاحقاً' : 'Later'}
+                      {isAr ? 'ذكرني لاحقاً' : 'Remind me later'}
                     </button>
                   </div>
                 </div>
@@ -209,7 +213,7 @@ export const PwaInstallBanner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* iOS Installation Instruction Modal */}
+      {/* Step-by-Step Installation Instruction Modal */}
       <AnimatePresence>
         {showIosGuide && (
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -233,50 +237,88 @@ export const PwaInstallBanner: React.FC = () => {
               </button>
 
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-3 ">
+                <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-3">
                   <Smartphone size={28} />
                 </div>
 
                 <h3 className="text-base font-extrabold">
-                  {isAr ? `تثبيت ${siteName} على iPhone` : `Install ${siteName} on iPhone`}
+                  {isAr ? `تثبيت ${siteName} على جهازك` : `Install ${siteName} on Your Device`}
                 </h3>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {isAr
-                    ? 'اتبع الخطوتين البسيطتين أدناه لإضافة التطبيق إلى الشاشة الرئيسية:'
-                    : 'Follow these simple steps to add the app to your Home Screen:'}
+                  {isIosSafari
+                    ? (isAr
+                        ? 'اتبع الخطوتين أدناه لإضافة التطبيق في Safari على iPhone:'
+                        : 'Follow these simple steps in Safari to add the app:')
+                    : (isAr
+                        ? 'قم بالضغط على خيارات المتصفح وتثبيت التطبيق مباشرة:'
+                        : 'Use your browser menu to install the app on your home screen:')}
                 </p>
 
                 <div className="w-full space-y-3 mt-2 text-right rtl:text-right ltr:text-left">
-                  <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                    isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                      1
-                    </div>
-                    <div className="text-xs">
-                      <span className="font-bold">{isAr ? 'اضغط زر المشاركة' : 'Tap Share Icon'}</span>
-                      <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                        <span>{isAr ? 'في أسفل المتصفح' : 'At the bottom of Safari'}</span>
-                        <Share2 size={13} className="text-blue-400 inline" />
+                  {isIosSafari ? (
+                    <>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                          1
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold">{isAr ? 'اضغط زر المشاركة' : 'Tap Share Icon'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'في أسفل المتصفح' : 'At the bottom of Safari'}</span>
+                            <Share2 size={13} className="text-blue-400 inline" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                    isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
-                      2
-                    </div>
-                    <div className="text-xs">
-                      <span className="font-bold">{isAr ? 'اختر "الإضافة إلى الشاشة الرئيسية"' : 'Select "Add to Home Screen"'}</span>
-                      <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                        <span>{isAr ? 'من قائمة الخيارات' : 'From the action menu'}</span>
-                        <PlusSquare size={13} className="text-accent inline" />
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                          2
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold">{isAr ? 'اختر "الإضافة إلى الشاشة الرئيسية"' : 'Select "Add to Home Screen"'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'من قائمة الخيارات' : 'From the action menu'}</span>
+                            <PlusSquare size={13} className="text-accent inline" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                          1
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold">{isAr ? 'افتح قائمة المتصفح (⋮)' : 'Open Browser Menu (⋮)'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'في أعلى أو أسفل الشاشة' : 'In top or bottom bar'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                        isDark ? 'bg-gray-800/50 border-gray-700/60' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="w-8 h-8 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                          2
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" أو "الإضافة للشاشة الرئيسية"' : 'Select "Install App" or "Add to Home Screen"'}</span>
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <PlusSquare size={13} className="text-accent inline" />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <button

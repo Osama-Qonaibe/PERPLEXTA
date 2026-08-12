@@ -10,7 +10,23 @@ VersionManager.initAutoCheck();
 // Register Service Worker for app shell precaching and offline support
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    // Listen for controller changes when a new Service Worker takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.dispatchEvent(new CustomEvent('service-worker-updated'));
+    });
+
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.dispatchEvent(new CustomEvent('service-worker-updated'));
+            }
+          });
+        }
+      });
+    }).catch((err) => {
       console.warn('[PWA] Service Worker registration failed:', err);
     });
   });

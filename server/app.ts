@@ -232,6 +232,28 @@ const distPath = path.join(process.cwd(), 'dist');
 
 const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   return (req: express.Request, res: express.Response) => {
+    // Determine the actual file to serve
+    const distFile = path.join(distPath, fileName);
+    const publicFile = path.join(publicPath, fileName);
+    
+    let fileToServe: string | null = null;
+    if (fs.existsSync(distFile)) {
+      fileToServe = distFile;
+    } else if (fs.existsSync(publicFile)) {
+      fileToServe = publicFile;
+    } else if (fallbackFileName) {
+      const distFallback = path.join(distPath, fallbackFileName);
+      const publicFallback = path.join(publicPath, fallbackFileName);
+      if (fs.existsSync(distFallback)) fileToServe = distFallback;
+      else if (fs.existsSync(publicFallback)) fileToServe = publicFallback;
+    }
+
+    if (!fileToServe) {
+      console.error(`[Static Resource] FAILED to serve ${fileName}. Dist: ${distFile}, Public: ${publicFile}`);
+      return res.status(404).type('text/plain').send('Not Found');
+    }
+
+    // Set correct headers
     if (fileName.endsWith('.webmanifest') || fileName.endsWith('.json')) {
       res.type('application/manifest+json');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -240,18 +262,11 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
     } else if (fileName.endsWith('.js')) {
       res.type('application/javascript');
       res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
-    const distFile = path.join(distPath, fileName);
-    const publicFile = path.join(publicPath, fileName);
-    if (fs.existsSync(distFile)) return res.sendFile(distFile);
-    if (fs.existsSync(publicFile)) return res.sendFile(publicFile);
-    if (fallbackFileName) {
-      const distFallback = path.join(distPath, fallbackFileName);
-      const publicFallback = path.join(publicPath, fallbackFileName);
-      if (fs.existsSync(distFallback)) return res.sendFile(distFallback);
-      if (fs.existsSync(publicFallback)) return res.sendFile(publicFallback);
-    }
-    res.status(404).type('text/plain').send('Not Found');
+    
+    console.log(`[Static Resource] Serving ${fileName} from ${fileToServe}`);
+    return res.sendFile(fileToServe);
   };
 };
 
@@ -417,6 +432,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
 
     let resolvedPath = path.resolve(filePath);
+    console.log(`[Uploads] Request: ${filename}. Path: ${resolvedPath}. Exists: ${fs.existsSync(resolvedPath)}`);
     if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
       console.warn(`[Uploads] Path traversal attempt blocked: ${filename}`);
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

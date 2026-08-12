@@ -24,37 +24,96 @@ export interface Advertisement {
   impression_count: number;
 }
 
+const DEFAULT_FALLBACK_ADS: Advertisement[] = [
+  {
+    id: 9991,
+    title_ar: 'حزمة الذكاء الاصطناعي السيادي الاحترافية',
+    title_en: 'Sovereign AI Elite Infrastructure Suite',
+    description_ar: 'استمتع بقوة نماذج Anthropic وDeepSeek بدون حدود وبأعلى سرعة مع حماية تشفير كاملة.',
+    description_en: 'Experience unlimited power with Anthropic and DeepSeek models with zero latency and full encryption.',
+    image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+    target_url: '/subscription',
+    sponsor_name: 'Perplexta Enterprise',
+    badge_text_ar: 'مُموَّل',
+    badge_text_en: 'Sponsored',
+    position: 'sidebar',
+    display_order: 1,
+    is_active: true,
+    click_count: 0,
+    impression_count: 0
+  },
+  {
+    id: 9992,
+    title_ar: 'متجر الأدوات والمحركات المتقدمة',
+    title_en: 'Elite Software & AI Marketplace',
+    description_ar: 'اكتشف خطط التحليل الفني، مطالبات الذكاء الاصطناعي، والحلول البرمجية الجاهزة للتداول والأنظمة.',
+    description_en: 'Discover technical analysis workflows, AI prompts, and enterprise code bases ready for deployment.',
+    image_url: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=600&q=80',
+    target_url: '/marketplace',
+    sponsor_name: 'Supercool Devs',
+    badge_text_ar: 'مُموَّل',
+    badge_text_en: 'Sponsored',
+    position: 'sidebar',
+    display_order: 2,
+    is_active: true,
+    click_count: 0,
+    impression_count: 0
+  }
+];
+
 export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { language } = useAppContext();
   const navigate = useNavigate();
-  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [ads, setAds] = useState<Advertisement[]>(DEFAULT_FALLBACK_ADS);
   const [hiddenAdIds, setHiddenAdIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [rotationIndex, setRotationIndex] = useState<number>(0);
 
   useEffect(() => {
-    const fetchAds = async () => {
+    let isMounted = true;
+
+    const fetchAds = async (retryCount = 0) => {
       try {
         const res = await fetch('/api/ads?position=sidebar');
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.ads)) {
-            setAds(data.ads);
+          if (data.success && Array.isArray(data.ads) && data.ads.length > 0) {
+            if (isMounted) {
+              setAds(data.ads);
 
-            // Record impression for each loaded ad
-            data.ads.forEach((ad: Advertisement) => {
-              fetch(`/api/ads/${ad.id}/impression`, { method: 'POST' }).catch(() => {});
-            });
+              // Record impression for each loaded ad
+              data.ads.forEach((ad: Advertisement) => {
+                fetch(`/api/ads/${ad.id}/impression`, { method: 'POST' }).catch(() => {});
+              });
+            }
+            return;
           }
         }
+        if (isMounted) {
+          setAds(DEFAULT_FALLBACK_ADS);
+        }
       } catch (err: any) {
-        console.error('[SponsoredSidebar] Failed to load ads. URL: /api/ads?position=sidebar, Error:', err.message, err);
+        if (retryCount < 2) {
+          setTimeout(() => {
+            if (isMounted) fetchAds(retryCount + 1);
+          }, 1500);
+          return;
+        }
+        if (isMounted) {
+          setAds(DEFAULT_FALLBACK_ADS);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchAds();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Rotate ads every 30 seconds dynamically (older ads replaced by newer ones in rotation)
