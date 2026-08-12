@@ -273,7 +273,7 @@ export const Terms: React.FC = () => {
         </section>
 
         {/* Legal Acknowledgment Card */}
-        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(16,185,129,0.03)] space-y-6 relative overflow-hidden group">
+        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(156,163,175,0.03)] space-y-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl group-hover:bg-accent/10 transition-theme" />
           <h2 className="text-2xl font-black text-accent ">{isAr ? "إقرار قانوني بموافقة المعرفة الصفرية" : "Legal Zero-Knowledge Acknowledgment"}</h2>
           <p className="text-sm md:text-base leading-relaxed text-gray-800 dark:text-gray-200 font-semibold font-sans">
@@ -306,7 +306,7 @@ export const Terms: React.FC = () => {
                 </p>
               </div>
               <div>
-                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]">
                   {isAr ? "نشطة" : "ACTIVE"}
                 </span>
               </div>

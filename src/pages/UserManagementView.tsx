@@ -892,7 +892,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
         isDark ? 'bg-[#161618] border-gray-800' : 'bg-white border-gray-200 shadow-sm'
       }`}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+          <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(156,163,175,0.15)]">
             <Users size={24} />
           </div>
           <div>
@@ -981,7 +981,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(156,163,175,0.3)]"
           >
             <UserPlus size={16} />
             <span>{isRtl ? 'إضافة مستخدم جديد' : 'Add New Explorer'}</span>
@@ -1982,7 +1982,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       <button
                         type="submit"
                         disabled={isUpdating}
-                        className="w-full py-2.5 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        className="w-full py-2.5 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs transition-all shadow-[0_0_15px_rgba(156,163,175,0.2)]"
                       >
                         {isRtl ? 'تأكيد التسوية وتسجيل الحركة' : 'Execute Ledger Transaction'}
                       </button>
@@ -2127,7 +2127,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                               key={p.id}
                               className={`p-4 rounded-xl border flex flex-col justify-between space-y-3 transition-all ${
                                 isCurrent
-                                  ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                  ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(156,163,175,0.15)]'
                                   : isDark
                                   ? 'border-gray-800 bg-[#0f0f11] hover:border-gray-700'
                                   : 'border-gray-200 bg-white hover:border-gray-300'
@@ -2198,7 +2198,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                 className={`w-full py-2.5 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
                                   isCurrent
                                     ? 'bg-accent/20 text-accent cursor-default border border-accent/30'
-                                    : 'bg-accent hover:bg-accent text-black shadow-[0_0_15px_rgba(16,185,129,0.25)]'
+                                    : 'bg-accent hover:bg-accent text-black shadow-[0_0_15px_rgba(156,163,175,0.25)]'
                                 }`}
                               >
                                 {isCurrent ? (
@@ -2371,7 +2371,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs shadow-[0_0_15px_rgba(156,163,175,0.3)]"
                   >
                     {isRtl ? 'إنشاء الحساب' : 'Create User'}
                   </button>
@@ -2458,7 +2458,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                   <button
                     type="submit"
                     disabled={isSendingEmail}
-                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-black font-black text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(156,163,175,0.3)]"
                   >
                     <Send size={14} />
                     <span>{isSendingEmail ? (isRtl ? 'جاري الإرسال...' : 'Sending...') : (isRtl ? 'إرسال الرسالة' : 'Send Email')}</span>

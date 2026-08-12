@@ -472,7 +472,7 @@ export const BlogPage: React.FC = () => {
                         onClick={() => setSelectedCategory('All')}
                         className={`px-3 h-9 rounded-[4px] border flex items-center gap-1.5 transition-theme text-xs font-black ${
                           isThemeDark
-                            ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                            ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95 shadow-[0_0_8px_rgba(156,163,175,0.15)]'
                             : 'border-accent/20 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95'
                         }`}
                         title={isRtl ? 'الرجوع للمقالات الرئيسية' : 'Back to main articles'}
@@ -590,7 +590,7 @@ export const BlogPage: React.FC = () => {
                           key={page}
                           className={`h-1 rounded-full transition-theme ${
                             mobileCategoryPage === page
-                              ? 'w-3.5 bg-accent shadow-[0_0_8px_rgba(16,185,129,0.65)]'
+                              ? 'w-3.5 bg-accent shadow-[0_0_8px_rgba(156,163,175,0.65)]'
                               : 'w-1 bg-gray-305 dark:bg-gray-800/80'
                           }`}
                         />
@@ -805,8 +805,8 @@ export const BlogPage: React.FC = () => {
                                     type="button"
                                     className={`w-full py-1.5 rounded-[4px] text-[10px] font-bold flex items-center justify-center gap-1 border transition-theme ${
                                       isThemeDark
-                                        ? 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/15 hover:border-accent/35 hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                                        : 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/10 hover:border-accent/25 hover:shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                                        ? 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/15 hover:border-accent/35 hover:shadow-[0_0_8px_rgba(156,163,175,0.4)]'
+                                        : 'bg-accent/5 border-accent/15 text-accent hover:bg-accent/10 hover:border-accent/25 hover:shadow-[0_0_8px_rgba(156,163,175,0.15)]'
                                     }`}
                                   >
                                     <span>{isRtl ? 'قراءة تقرير الجودة' : 'Read Analytical Insight'}</span>
@@ -1067,7 +1067,7 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsShareOpen(true)}
-                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-accent/15 bg-accent/10 hover:bg-accent/15 text-accent rounded-[4px] hover:shadow-[0_0_8px_rgba(16,185,129,0.25)] transition-theme font-bold text-[10px] cursor-pointer select-none"
+                      className="w-full h-9 px-3 flex items-center justify-center gap-1.5 border border-accent/15 bg-accent/10 hover:bg-accent/15 text-accent rounded-[4px] hover:shadow-[0_0_8px_rgba(156,163,175,0.25)] transition-theme font-bold text-[10px] cursor-pointer select-none"
                     >
                       <Share2 size={11} className="text-accent" />
                       <span>{isRtl ? 'مشاركة وتعميم المقال' : 'Share & Distribute'}</span>
@@ -1163,7 +1163,7 @@ export const BlogPage: React.FC = () => {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                       <div 
-                        className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                        className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
                         style={{ width: `${readingProgress}%` }}
                       />
                     </div>
@@ -1400,7 +1400,7 @@ export const BlogPage: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
                   <div 
-                    className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.85)] transition-theme rounded-full"
+                    className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
                     style={{ width: `${readingProgress}%` }}
                   />
                 </div>
@@ -1842,7 +1842,7 @@ export const BlogPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
                     <BookOpen size={24} />
                   </div>
                   <div className={`flex flex-col gap-1 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
@@ -1873,7 +1873,7 @@ export const BlogPage: React.FC = () => {
                       localStorage.setItem('hide_blog_ad', 'true');
                       toast.success(language === 'ar' ? 'تم تسجيل بريدك بنجاح لتلقي نشرة النخبة!' : 'Successfully subscribed to Elite Insights!');
                     }}
-                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-accent text-black hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-[4px] text-xs font-black uppercase bg-accent text-black hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(156,163,175,0.3)] flex items-center justify-center gap-1.5"
                   >
                     <span>{language === 'ar' ? 'انضمام فوري' : 'Subscribe Now'}</span>
                     <ArrowRight size={14} className={language === 'ar' ? 'rotate-180' : ''} />

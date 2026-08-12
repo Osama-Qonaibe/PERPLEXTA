@@ -282,7 +282,7 @@ export const SubscriptionPage: React.FC = () => {
               onClick={() => setBillingCycle('monthly')}
               className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-theme ${
                 billingCycle === 'monthly' 
-                  ? 'bg-accent text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
+                  ? 'bg-accent text-white shadow-[0_0_15px_rgba(156,163,175,0.4)]' 
                   : 'text-[var(--text-secondary)] hover:text-accent'
               }`}
             >
@@ -292,7 +292,7 @@ export const SubscriptionPage: React.FC = () => {
               onClick={() => setBillingCycle('annual')}
               className={`px-5 md:px-7 py-2 rounded-[var(--radius)] text-xs font-black uppercase tracking-widest transition-theme ${
                 billingCycle === 'annual' 
-                  ? 'bg-accent text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
+                  ? 'bg-accent text-white shadow-[0_0_15px_rgba(156,163,175,0.4)]' 
                   : 'text-[var(--text-secondary)] hover:text-accent'
               }`}
             >
@@ -311,7 +311,7 @@ export const SubscriptionPage: React.FC = () => {
             onClick={() => setActiveTab('user')}
             className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-theme flex items-center justify-center gap-2 ${
               activeTab === 'user'
-                ? 'bg-accent/15 border border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                ? 'bg-accent/15 border border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]'
                 : 'text-[var(--text-secondary)] hover:text-accent'
             }`}
           >
@@ -324,7 +324,7 @@ export const SubscriptionPage: React.FC = () => {
             onClick={() => setActiveTab('developer')}
             className={`flex-1 px-5 py-2.5 rounded-[var(--radius)] text-xs font-black uppercase tracking-wider transition-theme flex items-center justify-center gap-2 ${
               activeTab === 'developer'
-                ? 'bg-accent/15 border border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                ? 'bg-accent/15 border border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]'
                 : 'text-[var(--text-secondary)] hover:text-accent'
             }`}
           >
@@ -369,7 +369,7 @@ export const SubscriptionPage: React.FC = () => {
             </div>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-2 rounded-[var(--radius)] bg-accent/10 border border-accent/20 text-accent font-bold text-xs hover:bg-accent/20 hover:scale-105 transition-theme shadow-[0_0_15px_rgba(16,185,129,0.1)] active:scale-95"
+              className="px-6 py-2 rounded-[var(--radius)] bg-accent/10 border border-accent/20 text-accent font-bold text-xs hover:bg-accent/20 hover:scale-105 transition-theme shadow-[0_0_15px_rgba(156,163,175,0.1)] active:scale-95"
             >
               {dir === 'rtl' ? 'العودة لمساحة العمل' : 'Return to Workspace'}
             </button>
@@ -382,7 +382,7 @@ export const SubscriptionPage: React.FC = () => {
               key={plan.id} 
               className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
                 isActivePlan(plan.id) 
-                  ? 'ring-2 ring-accent-500/50 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
+                  ? 'ring-2 ring-accent-500/50 shadow-[0_0_30px_rgba(156,163,175,0.15)]' 
                   : 'hover:border-accent/30'
               }`}
             >

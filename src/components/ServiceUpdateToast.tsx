@@ -34,7 +34,7 @@ export const ServiceUpdateToast: React.FC = () => {
           exit={{ opacity: 0, scale: 0.95 }}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-2rem)] max-w-md"
         >
-          <div className="bg-[#1a1a1c] border border-accent/30 shadow-[0_0_20px_rgba(16,185,129,0.15)] rounded-xl p-4 flex items-center gap-4">
+          <div className="bg-[#1a1a1c] border border-accent/30 shadow-[0_0_20px_rgba(156,163,175,0.15)] rounded-xl p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 border border-accent/20">
               <Sparkles className="w-6 h-6 text-accent " />
             </div>

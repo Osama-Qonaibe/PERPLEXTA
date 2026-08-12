@@ -154,7 +154,7 @@ export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible 
             <span className={`w-[3px] h-[18px] sm:h-[22px] opacity-80 animate-pulse inline-block rounded-sm self-center transition-theme ${
               isFullyTyped 
                 ? 'bg-gray-950 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_12px_rgba(255,255,255,0.9)]' 
-                : 'bg-accent dark:bg-accent shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                : 'bg-accent dark:bg-accent shadow-[0_0_8px_rgba(156,163,175,0.7)]'
             }`} />
           </div>
         </motion.div>

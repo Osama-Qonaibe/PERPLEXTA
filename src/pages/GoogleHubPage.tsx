@@ -334,7 +334,7 @@ const GoogleHubPage: React.FC = () => {
       case 'connected':
         return (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.8)]" />
             <span className="text-[9px] font-black uppercase tracking-wider text-accent">
               {isRtl ? 'متصل' : 'Connected'}
             </span>
@@ -447,7 +447,7 @@ const GoogleHubPage: React.FC = () => {
               title={isRtl ? 'إدارة أمان الحساب' : 'Account Security Management'}
             >
               <Shield size={18} className="group-hover:" />
-              <div className="absolute -top-1 -end-1 w-2 h-2 bg-accent rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <div className="absolute -top-1 -end-1 w-2 h-2 bg-accent rounded-full border-2 border-[var(--bg-main)] shadow-[0_0_8px_rgba(156,163,175,0.5)]" />
             </button>
             <button 
               className="w-9 h-9 flex items-center justify-center rounded-[4px] border border-[var(--border-main)] text-gray-400 hover:text-accent hover: transition-theme cursor-pointer"
@@ -532,7 +532,7 @@ const GoogleHubPage: React.FC = () => {
                         tabIndex={tool.available ? 0 : -1}
                         className={`w-full relative p-5 rounded-[var(--radius)] border text-start transition-theme group cursor-pointer ${
                           tool.available 
-                            ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/50 hover:shadow-[0_10px_20px_rgba(16,185,129,0.08)]'
+                            ? 'bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/50 hover:shadow-[0_10px_20px_rgba(156,163,175,0.08)]'
                             : 'bg-gray-50/50 dark:bg-gray-900/20 border-dashed border-gray-200 dark:border-gray-800 opacity-60 grayscale cursor-not-allowed'
                         }`}
                       >
@@ -563,7 +563,7 @@ const GoogleHubPage: React.FC = () => {
                               <motion.div 
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 bg-accent text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 bg-accent text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-[var(--bg-secondary)] shadow-[0_0_10px_rgba(156,163,175,0.5)]"
                               >
                                 {tool.unreadCount}
                               </motion.div>
@@ -644,7 +644,7 @@ const GoogleHubPage: React.FC = () => {
                         initial={{ width: 0 }}
                         animate={{ width: '8%' }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="h-full bg-accent rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                        className="h-full bg-accent rounded-full shadow-[0_0_8px_rgba(156,163,175,0.5)]" 
                       />
                     </div>
                   </motion.div>
@@ -655,7 +655,7 @@ const GoogleHubPage: React.FC = () => {
                   >
                     <p className="text-[10px] text-gray-500 mb-1">{isRtl ? 'أمان الواجهة' : 'API Security'}</p>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                      <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)]" />
                       <span className="text-sm font-bold">{isRtl ? 'مؤمن بالكامل' : 'Fully Secured'}</span>
                     </div>
                     <p className="text-[10px] text-gray-400 mt-2">SSL v3 / OAuth 2.0</p>

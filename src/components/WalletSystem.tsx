@@ -658,7 +658,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             {/* Header Area */}
             <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
               <div className="flex items-center gap-6">
-                <div className="w-14 h-14 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(16,185,129,0.15)] border border-accent/30">
+                <div className="w-14 h-14 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(156,163,175,0.15)] border border-accent/30">
                   <Wallet size={28} strokeWidth={1} />
                 </div>
                 <div className="space-y-1 text-center md:text-left rtl:md:text-right">
@@ -728,7 +728,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                     {dir === 'rtl' ? 'حالة ميزان الدفاتر' : 'Ledger Integrity'}
                   </p>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                    <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(156,163,175,0.8)]" />
                     <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">Verified (AES-256)</p>
                   </div>
                </div>
@@ -768,7 +768,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 {active && (
                    <motion.div 
                      layoutId="activeTabGlow"
-                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-[0_0_15px_rgba(16,185,129,0.8)]"
+                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent shadow-[0_0_15px_rgba(156,163,175,0.8)]"
                      transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
                    />
                 )}
@@ -901,7 +901,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                         onClick={() => setDepositMethod(m.id as any)}
                         className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-theme relative overflow-hidden group ${
                           depositMethod === m.id
-                            ? 'bg-accent/10 border-accent text-accent  shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]'
+                            ? 'bg-accent/10 border-accent text-accent  shadow-[inset_0_0_8px_rgba(156,163,175,0.1)]'
                             : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-accent/40 hover:text-[var(--text-primary)]'
                         }`}
                       >
@@ -1352,7 +1352,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                             animate={{ 
                               width: depositProgressStep === 1 ? '33%' : depositProgressStep === 2 ? '66%' : '100%' 
                             }}
-                            className="h-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                            className="h-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.8)]"
                             transition={{ duration: 0.15 }}
                           />
                         </div>
@@ -1481,7 +1481,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           onClick={() => setWithdrawMethod(m.id as any)}
                           className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-theme relative overflow-hidden group ${
                             withdrawMethod === m.id
-                              ? 'bg-accent/10 border-accent text-accent  shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]'
+                              ? 'bg-accent/10 border-accent text-accent  shadow-[inset_0_0_8px_rgba(156,163,175,0.1)]'
                               : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-accent/40 hover:text-[var(--text-primary)]'
                           }`}
                         >
@@ -1835,7 +1835,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 initial={{ scale: 0.95, y: 15 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 15 }}
-                className="bg-[#121215] border border-gray-800/80 rounded-[8px] max-w-lg w-full p-6 md:p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.15)] relative overflow-hidden"
+                className="bg-[#121215] border border-gray-800/80 rounded-[8px] max-w-lg w-full p-6 md:p-8 text-center shadow-[0_0_50px_rgba(156,163,175,0.15)] relative overflow-hidden"
               >
                 {/* Background glow circle */}
                 <div className="absolute -top-24 -left-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />

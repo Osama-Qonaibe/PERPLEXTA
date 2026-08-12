@@ -333,7 +333,7 @@ export const SettingsPage: React.FC = () => {
         {/* Sticky Page Header */}
         <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            <div className="w-12 h-12 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(156,163,175,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}
             </div>
             <div className="flex flex-col">
@@ -421,7 +421,7 @@ export const SettingsPage: React.FC = () => {
                 ? 'bg-accent/10 border-accent/20 text-accent' 
                 : 'bg-red-500/10 border-red-500/20 text-red-500'
             }`}
-            style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(16,185,129,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
+            style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(156,163,175,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
           >
             <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
             <span className="font-bold text-sm tracking-tight">

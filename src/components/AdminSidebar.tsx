@@ -55,7 +55,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
               className={({ isActive }) =>
               `group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
                 isActive
-                  ? 'bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(16,185,129,0.05)]'
+                  ? 'bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
               }`
             }

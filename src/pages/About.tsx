@@ -483,7 +483,7 @@ export const About: React.FC = () => {
         </section>
 
         {/* Why PERPLEXTA */}
-        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(16,185,129,0.03)] space-y-6 relative overflow-hidden group">
+        <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(156,163,175,0.03)] space-y-6 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl group-hover:bg-accent/10 transition-theme" />
           <h2 className="text-2xl font-black text-accent ">
             {isAr ? "لماذا بيربليكستا؟" : "Why PERPLEXTA?"}
@@ -549,7 +549,7 @@ export const About: React.FC = () => {
                 </p>
               </div>
               <div>
-                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]">
                   {isAr ? "نشطة" : "ACTIVE"}
                 </span>
               </div>
@@ -863,7 +863,7 @@ export const About: React.FC = () => {
                               e.stopPropagation();
                               toggleCard(i);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-gray-500/5 hover:bg-accent/10 dark:bg-gray-800/30 dark:hover:bg-accent/15 border border-gray-200 dark:border-gray-800 hover:border-accent/30 dark:hover:border-accent/45 text-[var(--text-primary)] hover:text-accent text-[10px] font-black uppercase tracking-wider transition-theme cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(16,185,129,0.2)] select-none"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-gray-500/5 hover:bg-accent/10 dark:bg-gray-800/30 dark:hover:bg-accent/15 border border-gray-200 dark:border-gray-800 hover:border-accent/30 dark:hover:border-accent/45 text-[var(--text-primary)] hover:text-accent text-[10px] font-black uppercase tracking-wider transition-theme cursor-pointer shadow-sm hover:shadow-[0_0_12px_rgba(156,163,175,0.2)] select-none"
                           >
                             <span>{isAr ? "▲ عرض أقل" : "▲ Show Less"}</span>
                           </button>

@@ -450,8 +450,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             <motion.div
                               key={chat.id}
                               animate={streamingChatId === chat.id ? {
-                                backgroundColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.06)", "rgba(16,185,129,0)"],
-                                borderColor: ["rgba(16,185,129,0)", "rgba(16,185,129,0.25)", "rgba(16,185,129,0)"]
+                                backgroundColor: ["rgba(156,163,175,0)", "rgba(156,163,175,0.06)", "rgba(156,163,175,0)"],
+                                borderColor: ["rgba(156,163,175,0)", "rgba(156,163,175,0.25)", "rgba(156,163,175,0)"]
                               } : {}}
                               transition={{
                                 duration: 1.5,
@@ -460,7 +460,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               }}
                               className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-theme group relative border rounded-[4px] ${
                                 isActive 
-                                  ? 'text-accent bg-transparent border-transparent' 
+                                  ? 'text-[var(--text-primary)] bg-gray-500/5 border-gray-500/15 shadow-[0_0_8px_rgba(156,163,175,0.05)]' 
                                   : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border-transparent'
                               }`}
                             >

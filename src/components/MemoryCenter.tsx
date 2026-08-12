@@ -159,7 +159,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
               onClick={() => setFilterCategory(cat.id)}
               className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-theme border ${
                 filterCategory === cat.id
-                  ? 'bg-accent text-white border-accent shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                  ? 'bg-accent text-white border-accent shadow-[0_0_15px_rgba(156,163,175,0.4)]'
                   : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-accent/30'
               }`}
             >

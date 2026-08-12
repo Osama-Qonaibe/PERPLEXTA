@@ -374,7 +374,7 @@ authenticateAgent();`;
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 bg-accent/10 border border-accent/20 text-accent px-6 py-3 rounded-[4px] backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.15)] flex items-center gap-2"
+            className="fixed bottom-6 right-6 z-50 bg-accent/10 border border-accent/20 text-accent px-6 py-3 rounded-[4px] backdrop-blur-md shadow-[0_0_20px_rgba(156,163,175,0.15)] flex items-center gap-2"
           >
             <ShieldCheck size={16} />
             <span className="text-sm font-bold">{localToast}</span>
@@ -706,14 +706,14 @@ authenticateAgent();`;
                 <button
                   type="button"
                   onClick={() => setMcpMode('server')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'server' ? 'bg-accent text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'server' ? 'bg-accent text-black shadow-[0_0_8px_rgba(156,163,175,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'تشخيص الخادم المحلي' : 'Local Server Diagnostic'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMcpMode('federation')}
-                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'federation' ? 'bg-accent text-black shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                  className={`text-[10px] font-bold px-3 py-1 rounded-[2px] cursor-pointer transition-theme ${mcpMode === 'federation' ? 'bg-accent text-black shadow-[0_0_8px_rgba(156,163,175,0.4)]' : 'text-gray-400 hover:text-white'}`}
                 >
                   {isAr ? 'الترابط الفيدرالي الخارجي' : 'External Federation'}
                 </button>

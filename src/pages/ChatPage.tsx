@@ -169,7 +169,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-accent/40 w-full ${currentRatioClass}`}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(156,163,175,0.22)] hover:border-accent/40 w-full ${currentRatioClass}`}
         >
           <img 
             src={srcVal}
@@ -284,7 +284,7 @@ const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?:
                   transition={{ type: 'spring', damping: 28, stiffness: 220 }}
                   className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center transition-shadow duration-500 bg-black/40 rounded-[4px]"
                   style={{
-                    boxShadow: '0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 50px rgba(16,185,129,0.06)'
+                    boxShadow: '0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 50px rgba(156,163,175,0.06)'
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -427,9 +427,9 @@ const VideoGenerationPlaceholder = ({
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-3.5 w-full my-4 items-start">
         <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(156,163,175,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
         >
-          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
+          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
 
           <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-accent/10'} backdrop-blur-sm z-10`}>
             <div className="flex items-center gap-1.5">
@@ -478,7 +478,7 @@ const VideoGenerationPlaceholder = ({
 
               <div className={`h-1.5 w-full ${isFailed ? 'bg-rose-950/40 border-rose-900/30' : 'bg-zinc-900 border-zinc-800'} rounded-full overflow-hidden border p-0.5`}>
                 <motion.div 
-                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-accent shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}
+                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-accent shadow-[0_0_8px_rgba(156,163,175,0.6)]'}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${progressValue}%` }}
                   transition={{ duration: 0.15, ease: 'easeOut' }}
@@ -645,7 +645,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(16,185,129,0.22)] hover:border-accent/40 w-full ${currentRatioClass} bg-black/40`}
+          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(156,163,175,0.22)] hover:border-accent/40 w-full ${currentRatioClass} bg-black/40`}
         >
           {providerMeta.isValid && (
             <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-accent/10 text-[8px] font-mono text-accent z-10 transition-theme hover:border-accent/30 flex items-center gap-1`}>
@@ -700,7 +700,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
 
           <div className="absolute bottom-0 inset-x-0 h-1 bg-zinc-900/40 backdrop-blur-xs z-10 overflow-hidden pointer-events-none">
             <div 
-              className="h-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.6)] transition-theme" 
+              className="h-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.6)] transition-theme" 
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -867,7 +867,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                   className="flex-1 h-1.5 bg-zinc-950/80 rounded-full cursor-pointer relative overflow-hidden"
                 >
                   <div 
-                    className="h-full bg-accent transition-theme shadow-[0_5px_10px_rgba(16,185,129,0.3)]" 
+                    className="h-full bg-accent transition-theme shadow-[0_5px_10px_rgba(156,163,175,0.3)]" 
                     style={{ width: `${previewProgress}%` }}
                   />
                 </div>
@@ -1273,7 +1273,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-theme">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-[#1a1a1c]/40 border-b border-gray-100 dark:border-gray-800/40 rounded-t-md">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.5)]" />
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
 
@@ -1364,7 +1364,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <div className="relative">
              <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full" />
-             <div className="relative w-20 h-20 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+             <div className="relative w-20 h-20 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(156,163,175,0.1)]">
                   <Volume2 size={32} />
              </div>
           </div>
@@ -1384,7 +1384,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
           <button 
             onClick={() => downloadFile(codeContent)}
-            className="flex items-center gap-2 px-8 py-3 bg-accent text-white hover:bg-accent rounded-sm text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(16,185,129,0.3)] group-hover:shadow-[0_15px_35px_rgba(16,185,129,0.4)]"
+            className="flex items-center gap-2 px-8 py-3 bg-accent text-white hover:bg-accent rounded-sm text-[11px] font-black uppercase tracking-[0.1em] transition-theme active:scale-95 shadow-[0_10px_25px_rgba(156,163,175,0.3)] group-hover:shadow-[0_15px_35px_rgba(156,163,175,0.4)]"
           >
             <Download size={14} />
             {dir === 'rtl' ? 'تنزيل فوري' : 'INSTANT DOWNLOAD'}
@@ -2407,7 +2407,7 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
   return (
     <div className="mt-8 pt-6 border-t border-[var(--border-main)]" id="follow-ups-container">
       <div className="flex items-center gap-2 mb-4 px-0">
-        <Sparkles size={14} className="text-accent shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+        <Sparkles size={14} className="text-accent shadow-[0_0_10px_rgba(156,163,175,0.4)]" />
         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-accent">
           {dir === 'rtl' ? 'استكمال البحث' : 'FURTHER EXPLORATION'}
         </span>
@@ -2420,7 +2420,7 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
             id={`follow-up-${idx}`}
             className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-accent/40 hover:bg-accent/[0.03] transition-theme text-start relative overflow-hidden rounded-md flex-row"
           >
-            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-accent group-hover:border-accent/50 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme shrink-0 order-first">
+            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-accent group-hover:border-accent/50 group-hover:shadow-[0_0_8px_rgba(156,163,175,0.3)] transition-theme shrink-0 order-first">
                <Plus size={14} className="group-hover:scale-110 transition-transform" />
             </div>
             <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-accent transition-theme flex-1 min-w-0 leading-tight">
@@ -2985,7 +2985,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="w-20 h-20 rounded-full border-2 border-t-accent-500 border-r-accent-500/30 border-b-accent-500/10 border-l-transparent shadow-[0_0_30px_rgba(16,185,129,0.15)]" 
+                  className="w-20 h-20 rounded-full border-2 border-t-accent-500 border-r-accent-500/30 border-b-accent-500/10 border-l-transparent shadow-[0_0_30px_rgba(156,163,175,0.15)]" 
                 />
                 <div className="absolute w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center backdrop-blur-sm">
                   <span className="text-[11px] font-mono font-black text-accent">
@@ -3013,7 +3013,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <div className="flex flex-col items-center gap-4">
               <button 
                 onClick={handlePlayPause}
-                className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border-2 border-accent/40 hover:border-accent hover:bg-accent/30 text-accent shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
+                className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border-2 border-accent/40 hover:border-accent hover:bg-accent/30 text-accent shadow-[0_0_40px_rgba(156,163,175,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
                 title={isPlaying ? (dir === 'rtl' ? 'إيقاف مؤقت' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
               >
                 {isPlaying ? (
@@ -3048,7 +3048,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-accent/70 rounded-full transition-theme shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  className="w-1 bg-accent/70 rounded-full transition-theme shadow-[0_0_8px_rgba(156,163,175,0.4)]"
                 />
               );
             } else if (status === 'rendering' || status === 'idle') {
@@ -3065,7 +3065,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     ease: "easeInOut",
                     delay: i * 0.05 
                   }}
-                  className="w-1 bg-accent/60 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                  className="w-1 bg-accent/60 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.3)]"
                 />
               );
             } else {
@@ -3075,7 +3075,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={i}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-accent/40 rounded-full transition-theme shadow-[0_0_4px_rgba(16,185,129,0.1)]"
+                  className="w-1 bg-accent/40 rounded-full transition-theme shadow-[0_0_4px_rgba(156,163,175,0.1)]"
                 />
               );
             }
@@ -3103,7 +3103,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           >
             <div 
               style={{ width: `${(currentTime / mixDuration) * 100}%` }}
-              className="absolute left-0 top-0 h-full bg-accent rounded-full shadow-[0_0_10px_rgba(16,185,129,0.7)]"
+              className="absolute left-0 top-0 h-full bg-accent rounded-full shadow-[0_0_10px_rgba(156,163,175,0.7)]"
             />
             {}
             <div 
@@ -3461,7 +3461,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 type="button"
                 onClick={handleGenerateLyria}
                 disabled={isLyriaGenerating || !lyriaPrompt.trim()}
-                className={`py-2.5 px-5 rounded-[4px] bg-accent text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-theme hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
+                className={`py-2.5 px-5 rounded-[4px] bg-accent text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-theme hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(156,163,175,0.3)] hover:scale-[1.02] active:scale-[0.98] ${
                   isLyriaGenerating ? 'animate-pulse' : ''
                 }`}
               >
@@ -3599,7 +3599,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-accent rounded-full blur-md opacity-20" />
-                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-accent'}`} />
+                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(156,163,175,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-accent'}`} />
                 </div>
                 <div className="flex flex-col">
                   <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 ${isPending ? 'text-amber-500' : 'text-accent glow-accent'}`}>
@@ -3617,7 +3617,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                      {dir === 'rtl' ? 'حالة العمل' : 'COMPILATION'}
                    </span>
                     <div className="flex items-center gap-2">
-                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-accent'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]`} />
+                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-accent'} animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)]`} />
                      <span className={`text-[10px] font-black uppercase ${isPending ? 'text-amber-400' : 'text-accent'}`}>
                        {isPending ? (dir === 'rtl' ? 'في الانتظار' : 'QUEUED') : (dir === 'rtl' ? 'مكتمل' : 'RESOLVED')}
                      </span>
@@ -3754,7 +3754,7 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
     </div>
 
     <div className="flex items-start gap-4 relative z-10">
-      <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+      <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
         <Settings size={24} className="animate-spin-slow" />
       </div>
       <div className="flex-1">
@@ -3820,7 +3820,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
       </div>
 
       <div className="flex items-start gap-4 relative z-10">
-        <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <div className="w-12 h-12 rounded-md bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
           <Zap size={24} className="animate-pulse" />
         </div>
         <div className="flex-1">
@@ -3898,7 +3898,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
               navigate('/subscription');
             }
           }}
-          className="flex-1 bg-accent hover:bg-accent text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:translate-y-[-2px] active:translate-y-0"
+          className="flex-1 bg-accent hover:bg-accent text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(156,163,175,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}
         </button>
@@ -4060,7 +4060,7 @@ const toolbarVariants = {
 export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile,
-    siteSettings, setIsOperationPending, isAuthReady,
+    siteSettings, isAuthReady,
     refreshUser, balance, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt
   } = useAppContext();
   const { id: routeChatId } = useParams();
@@ -4350,10 +4350,6 @@ export const ChatPage: React.FC = () => {
       setIsAnalyzingForensic(false);
     }
   };
-
-  useEffect(() => {
-    setIsOperationPending(isGenerating || query.length > 100);
-  }, [isGenerating, query, setIsOperationPending]);
 
   const lastDispatchedStateRef = useRef<{ isGenerating: boolean; chatId: string | null }>({ isGenerating: false, chatId: null });
 
@@ -6043,7 +6039,7 @@ export const ChatPage: React.FC = () => {
                   }}
                   className={`text-[7px] md:text-[9px] font-bold transition-theme pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-[var(--radius)] ${
                     audioSettings.vocalType === v.id 
-                      ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
+                      ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]' 
                       : 'text-gray-400/30 hover:text-gray-200'
                   }`}
                 >
@@ -6234,7 +6230,7 @@ export const ChatPage: React.FC = () => {
         <motion.div 
           className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
             isFocused 
-              ? 'border-accent/40 shadow-[0_0_0_4px_rgba(16,185,129,0.03)]' 
+              ? 'border-accent/40 shadow-[0_0_0_4px_rgba(156,163,175,0.03)]' 
               : ''
           }`}
         >
@@ -6484,7 +6480,7 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               disabled={isInputDisabled}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]'}`}
+              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(156,163,175,0.1)]'}`}
             >
               <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-theme" />
               <Paperclip size={18} className="md:w-5 md:h-5 text-accent hidden group-hover:block transition-theme " />
@@ -6506,7 +6502,7 @@ export const ChatPage: React.FC = () => {
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'tool'
-                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]' 
                       : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-accent hover:bg-accent/5'
                 }`}
               >
@@ -6571,7 +6567,7 @@ export const ChatPage: React.FC = () => {
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'model'
-                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]' 
                       : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)]'
                 }`}
               >
@@ -6603,7 +6599,7 @@ export const ChatPage: React.FC = () => {
                         <span>{model.label}</span>
                       </div>
                       {selectedModel === model.id && activeDropdown === 'model' && (
-                        <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
                       )}
                     </button>
                   ))}
@@ -6622,7 +6618,7 @@ export const ChatPage: React.FC = () => {
                   ? 'opacity-30 cursor-not-allowed border-transparent rounded-[4px]' 
                   : isRecording
                     ? 'rounded-[18px_18px_0px_18px] bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0)] hover:shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0)] hover:shadow-[0_0_12px_rgba(156,163,175,0.2)]'
               }`}
             >
               {isRecording ? (
@@ -6742,7 +6738,7 @@ export const ChatPage: React.FC = () => {
                  </button>
                  <button 
                    onClick={handleThreadRename}
-                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase bg-accent text-white hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(16,185,129,0.3)]"
+                   className="flex-1 py-1.5 rounded-sm text-xs font-bold uppercase bg-accent text-white hover:bg-accent transition-theme shadow-[0_5px_15px_rgba(156,163,175,0.3)]"
                  >
                    {dir === 'rtl' ? 'حفظ' : 'Save'}
                  </button>
@@ -6804,7 +6800,7 @@ export const ChatPage: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: -8 }}
                     transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="sticky top-0 z-30 bg-[var(--bg-base)] border-b border-[var(--border-main)]"
+                    className="sticky top-0 z-30 bg-[var(--bg-base)]"
                   >
 
                     {isChatMessagesLoading && (
@@ -6814,7 +6810,7 @@ export const ChatPage: React.FC = () => {
                     )}
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)] flex-shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)] flex-shrink-0" />
                   <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-accent truncate max-w-[120px] md:max-w-[300px] font-mono">
                     {dir === 'rtl' ? 'نشط' : 'Active'}
                   </h2>
@@ -6827,7 +6823,7 @@ export const ChatPage: React.FC = () => {
                   >
                     <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-accent " : "transition-theme"} />
                     {messages.filter(m => m.is_pinned).length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-accent text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(16,185,129,0.6)]">
+                      <span className="absolute -top-1 -right-1 bg-accent text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(156,163,175,0.6)]">
                         {messages.filter(m => m.is_pinned).length}
                       </span>
                     )}
@@ -7142,7 +7138,7 @@ export const ChatPage: React.FC = () => {
                                   </div>
 
                                   {msg.is_pinned && (
-                                    <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
+                                    <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.1)] shrink-0 scale-90">
                                       <Pin size={8} className="text-accent" />
                                       <span className="text-[7px] font-black uppercase text-accent/80 tracking-tighter">Pinned</span>
                                     </div>
@@ -7249,7 +7245,7 @@ export const ChatPage: React.FC = () => {
                         ) : (
                           <>
                             {msg.is_pinned && (
-                              <div className="absolute -top-4 -start-2 flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] z-10 scale-75 md:scale-90 origin-top-left">
+                              <div className="absolute -top-4 -start-2 flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.1)] z-10 scale-75 md:scale-90 origin-top-left">
                                 <Pin size={10} className="text-accent" />
                                 <span className="text-[9px] font-black uppercase text-accent tracking-tighter">Pinned Response</span>
                               </div>
@@ -7381,7 +7377,7 @@ export const ChatPage: React.FC = () => {
                         <motion.button 
                           
                           onClick={() => handleFeedback(msg.id!, msg.feedback === 1 ? 0 : 1)}
-                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-accent hover:'}`}
+                          className={`w-7 h-7 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-theme ${msg.feedback === 1 ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.3)]' : 'bg-transparent border border-transparent hover:bg-[var(--bg-overlay)] text-[var(--text-muted)] hover:text-accent hover:'}`}
                         >
                           <ThumbsUp size={13} />
                         </motion.button>
@@ -7397,7 +7393,7 @@ export const ChatPage: React.FC = () => {
                           
                           onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                           title={msg.is_pinned ? (dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin') : (dir === 'rtl' ? 'تثبيت' : 'Pin')}
-                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-accent hover:bg-accent/5'}`}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${msg.is_pinned ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:text-accent hover:bg-accent/5'}`}
                         >
                           {msg.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
                         </motion.button>
@@ -7405,7 +7401,7 @@ export const ChatPage: React.FC = () => {
                           
                           onClick={() => handleTTS(msg.content, msg.client_id || msg.id || idx)}
                           title={playingTTSId === (msg.client_id || msg.id || idx) ? (dir === 'rtl' ? 'إيقاف الصوت' : 'Stop') : (dir === 'rtl' ? 'قراءة صوتية' : 'Read Aloud')}
-                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-accent hover:'}`}
+                          className={`hidden sm:flex w-7 h-7 sm:w-10 sm:h-10 items-center justify-center rounded-sm bg-transparent border transition-theme ${playingTTSId === (msg.client_id || msg.id || idx) ? 'text-accent bg-accent/10 border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.3)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-overlay)] hover:text-accent hover:'}`}
                         >
                           {playingTTSId === (msg.client_id || msg.id || idx) ? (
                             <Square size={13} fill="currentColor" />
@@ -7487,7 +7483,7 @@ export const ChatPage: React.FC = () => {
                             setIsShareModalOpen(true);
                           }}
                           title={dir === 'rtl' ? 'مشاركة كلقطة اجتماعية' : 'Share to Social'}
-                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-accent/10 transition-theme ml-1 sm:ml-2"
+                          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-[var(--radius)] bg-[var(--bg-overlay)] border border-[var(--border)] text-accent shadow-[0_0_15px_rgba(156,163,175,0.15)] hover:bg-accent/10 transition-theme ml-1 sm:ml-2"
                         >
                           <Share2 size={14} className="" />
                         </motion.button>
@@ -7594,7 +7590,7 @@ export const ChatPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-accent/5 border-accent/10 text-accent select-none shadow-[0_0_15px_rgba(16,185,129,0.1)] mb-4 shrink-0 transition-theme"
+                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-accent/5 border-accent/10 text-accent select-none shadow-[0_0_15px_rgba(156,163,175,0.1)] mb-4 shrink-0 transition-theme"
                   >
                     <div className="flex gap-1 items-center justify-center">
                       <span className="perplexta-dot" />
@@ -8078,7 +8074,7 @@ export const ChatPage: React.FC = () => {
                           setIsGeneratingShare(false);
                         }
                       }}
-                      className="px-4 py-2 text-xs font-extrabold bg-accent hover:bg-accent text-black rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(16,185,129,0.25)] flex items-center gap-1.5"
+                      className="px-4 py-2 text-xs font-extrabold bg-accent hover:bg-accent text-black rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(156,163,175,0.25)] flex items-center gap-1.5"
                     >
                       {isGeneratingShare ? (
                         <>

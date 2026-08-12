@@ -117,7 +117,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                 </div>
 
                 {msg.is_pinned && (
-                  <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(16,185,129,0.1)] shrink-0 scale-90">
+                  <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.1)] shrink-0 scale-90">
                     <Pin size={8} className="text-accent" />
                     <span className="text-[7px] font-black uppercase text-accent/80 tracking-tighter">Pinned</span>
                   </div>

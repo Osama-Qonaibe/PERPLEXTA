@@ -2820,7 +2820,7 @@ export const BulletinBoardPage: React.FC = () => {
                   width: '28px',
                   height: '28px',
                   transform: 'translate(-50%, -50%)',
-                  boxShadow: '0 0 16px rgba(16,185,129,0.4)',
+                  boxShadow: '0 0 16px rgba(156,163,175,0.4)',
                 }}
               >
                 <div className="absolute inset-1 rounded-full bg-accent/40 animate-ping opacity-75" />
@@ -3842,7 +3842,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <button 
                         type="submit"
                         disabled={!newLiveComment.trim()}
-                        className="w-10 h-10 rounded-[4px] bg-accent flex items-center justify-center text-white hover:bg-accent disabled:opacity-20 disabled:bg-gray-800 transition-theme shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                        className="w-10 h-10 rounded-[4px] bg-accent flex items-center justify-center text-white hover:bg-accent disabled:opacity-20 disabled:bg-gray-800 transition-theme shrink-0 shadow-[0_0_20px_rgba(156,163,175,0.3)]"
                       >
                         <Send size={16} className={isRtl ? 'rotate-180 -ml-0.5' : 'ml-0.5'} />
                       </button>
@@ -3872,7 +3872,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <span className="text-[9px] text-white font-black uppercase tracking-widest drop-shadow-2xl">{isRtl ? 'مشاركة' : 'Share'}</span>
                     </button>
 
-                    <div className="w-9 h-9 rounded-[4px] border-2 border-accent p-0.5 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)] bg-black/20">
+                    <div className="w-9 h-9 rounded-[4px] border-2 border-accent p-0.5 animate-pulse shadow-[0_0_15px_rgba(156,163,175,0.5)] bg-black/20">
                       <img 
                         src={user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"} 
                         alt="host" 

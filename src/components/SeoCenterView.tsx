@@ -571,7 +571,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
 
           <div className="w-full bg-[var(--bg-base)] h-3 rounded-full overflow-hidden border border-[var(--border)] p-0.5">
             <div
-              className="h-full bg-accent rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(16,185,129,0.8)]"
+              className="h-full bg-accent rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(156,163,175,0.8)]"
               style={{ width: `${Math.min(100, Math.max(5, (syncProgress.completed / (syncProgress.total || 1)) * 100))}%` }}
             />
           </div>

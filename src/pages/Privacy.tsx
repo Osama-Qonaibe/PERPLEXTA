@@ -294,7 +294,7 @@ export const Privacy: React.FC = () => {
                 </p>
               </div>
               <div>
-                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]">
                   {isAr ? "نشطة" : "ACTIVE"}
                 </span>
               </div>

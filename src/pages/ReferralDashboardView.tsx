@@ -396,7 +396,7 @@ export const ReferralDashboardView = ({
           <button
             disabled={downloading}
             onClick={handleDownloadCSV}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-accent/20 transition-theme cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.05)]`}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-accent bg-accent/5 hover:bg-accent/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none rounded-[4px] border border-accent/20 transition-theme cursor-pointer shadow-[0_0_12px_rgba(156,163,175,0.05)]`}
           >
             <Download size={14} className={downloading ? "animate-pulse" : ""} />
             <span>

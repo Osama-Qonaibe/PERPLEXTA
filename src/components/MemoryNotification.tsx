@@ -75,7 +75,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-accent/[0.03] border border-accent/20 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.05)]"
+      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-accent/[0.03] border border-accent/20 backdrop-blur-sm shadow-[0_0_20px_rgba(156,163,175,0.05)]"
     >
       <BrainCircuit className="text-accent" size={14} />
       <span className="text-[11px] font-black text-accent/90 tracking-tight uppercase whitespace-nowrap">

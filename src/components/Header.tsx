@@ -196,7 +196,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
                         scale: [1, 1.03, 1],
-                        borderColor: ["var(--border-main)", "rgba(16,185,129,0.4)", "var(--border-main)"]
+                        borderColor: ["var(--border-main)", "rgba(156,163,175,0.4)", "var(--border-main)"]
                       } : {}}
                       transition={isStreaming ? {
                         duration: 1.8,
@@ -572,7 +572,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           <motion.div
             animate={{ x: ['-100%', '100%'] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-            className="w-full h-full bg-gradient-to-r from-transparent via-gray-500/10 to-transparent shadow-[0_0_12px_rgba(16,185,129,0.9)]"
+            className="w-full h-full bg-gradient-to-r from-transparent via-gray-500/10 to-transparent shadow-[0_0_12px_rgba(156,163,175,0.9)]"
           />
         </motion.div>
       )}

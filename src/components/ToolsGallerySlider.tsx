@@ -37,7 +37,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
               <path d="M22 70L42 48L55 61L78 36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               <circle cx="32" cy="32" r="3" fill="currentColor" className="text-accent" />
             </svg>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(156,163,175,0.12)_0%,transparent_70%)] animate-pulse" />
           </div>
         );
       case "video":
@@ -52,7 +52,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
               <path d="M15 34H85" stroke="currentColor" strokeWidth="1" className="opacity-30" />
               <path d="M15 62H85" stroke="currentColor" strokeWidth="1" className="opacity-30" />
             </svg>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(156,163,175,0.12)_0%,transparent_70%)] animate-pulse" />
           </div>
         );
       case "code":
@@ -69,7 +69,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
               <path d="M64 44L72 52L64 60" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               <line x1="53" y1="44" x2="47" y2="60" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(156,163,175,0.12)_0%,transparent_70%)] animate-pulse" />
           </div>
         );
       case "canvas":
@@ -86,7 +86,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
               <line x1="67" y1="40" x2="67" y2="60" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
               <line x1="75" y1="50" x2="75" y2="50" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
             </svg>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(156,163,175,0.12)_0%,transparent_70%)] animate-pulse" />
           </div>
         );
       default:
@@ -101,7 +101,7 @@ const GalleryCardImage: React.FC<{ toolId: string; title: string; imageUrl: stri
               <circle cx="52" cy="48" r="2" fill="currentColor" className="text-accent" />
               <line x1="38" y1="40" x2="52" y2="48" stroke="currentColor" strokeWidth="1" className="opacity-55" />
             </svg>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.12)_0%,transparent_70%)] animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(156,163,175,0.12)_0%,transparent_70%)] animate-pulse" />
           </div>
         );
     }
@@ -304,7 +304,7 @@ export const ToolsGallerySlider: React.FC = () => {
             onClick={() => setStartIndex(idx)}
             className={`transition-theme rounded-full cursor-pointer ${
               idx === startIndex
-                ? 'w-4 h-1.5 bg-accent shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                ? 'w-4 h-1.5 bg-accent shadow-[0_0_8px_rgba(156,163,175,0.7)]'
                 : 'w-1.5 h-1.5 bg-gray-300 dark:bg-gray-700 hover:bg-accent/60'
             }`}
             title={`Slide ${idx + 1}`}

@@ -55,16 +55,16 @@ export const ImageGenerationPlaceholder = ({
     <div className="w-full flex justify-start">
       <div className="flex flex-col gap-4 w-full my-4 items-start">
         <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(16,185,129,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
+          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(156,163,175,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
         >
-          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '16,185,129'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
+          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-40 animate-pulse`} />
 
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${isFailed ? 'bg-rose-500/5' : 'bg-accent/5'} blur-[50px] pointer-events-none`} />
 
           <motion.div 
             animate={{ y: ['0%', '100%', '0%'] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className={`absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-${isFailed ? 'rose' : 'accent'}-500/45 to-transparent shadow-[0_0_12px_rgba(${isFailed ? '244,63,94' : '16,185,129'},0.6)] pointer-events-none`}
+            className={`absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-${isFailed ? 'rose' : 'accent'}-500/45 to-transparent shadow-[0_0_12px_rgba(${isFailed ? '244,63,94' : '156,163,175'},0.6)] pointer-events-none`}
           />
 
           <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none overflow-hidden select-none">

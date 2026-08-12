@@ -86,8 +86,8 @@ export const PwaInstallSuccessService: React.FC = () => {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl relative overflow-hidden ${
               isDark
-                ? 'bg-[#121214] border-accent/30 text-white shadow-[0_0_50px_rgba(16,185,129,0.15)]'
-                : 'bg-white border-accent/30 text-gray-900 shadow-[0_0_50px_rgba(16,185,129,0.2)]'
+                ? 'bg-[#121214] border-accent/30 text-white shadow-[0_0_50px_rgba(156,163,175,0.15)]'
+                : 'bg-white border-accent/30 text-gray-900 shadow-[0_0_50px_rgba(156,163,175,0.2)]'
             }`}
           >
             {/* Top decorative glow bar */}
@@ -119,7 +119,7 @@ export const PwaInstallSuccessService: React.FC = () => {
             {/* Header Content */}
             <div className="flex flex-col items-center text-center mt-2">
               <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center shadow-[0_0_20px_rgba(156,163,175,0.2)]">
                   {logoUrl ? (
                     <img src={logoUrl} alt={siteName} className="w-10 h-10 object-contain" />
                   ) : (
@@ -168,7 +168,7 @@ export const PwaInstallSuccessService: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleGoToDashboard}
-                  className="w-full py-3 px-4 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(16,185,129,0.4)] cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(156,163,175,0.4)] cursor-pointer"
                 >
                   <LayoutDashboard size={16} />
                   <span>{isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to Dashboard'}</span>

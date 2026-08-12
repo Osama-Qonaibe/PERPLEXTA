@@ -95,7 +95,7 @@ export const PwaInstallBanner: React.FC = () => {
               className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-xl relative overflow-hidden transition-all ${
                 isDark
                   ? 'bg-[#121215]/95 border-accent/30 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8)]'
-                  : 'bg-white/95 border-accent/30 text-gray-900 shadow-[0_10px_30px_rgba(16,185,129,0.15)]'
+                  : 'bg-white/95 border-accent/30 text-gray-900 shadow-[0_10px_30px_rgba(156,163,175,0.15)]'
               }`}
             >
               {/* Subtle Emerald Glow Accent */}
@@ -104,7 +104,7 @@ export const PwaInstallBanner: React.FC = () => {
               <div className="flex items-start gap-3.5 relative z-10">
                 {/* App Logo */}
                 <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-xl border border-accent/40 bg-accent/10 flex items-center justify-center p-2 shadow-[0_0_12px_rgba(16,185,129,0.25)] overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl border border-accent/40 bg-accent/10 flex items-center justify-center p-2 shadow-[0_0_12px_rgba(156,163,175,0.25)] overflow-hidden">
                     <img
                       src={logoUrl}
                       alt={siteName}
@@ -158,7 +158,7 @@ export const PwaInstallBanner: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleAction}
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.5)] cursor-pointer"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-[0_0_20px_rgba(156,163,175,0.5)] cursor-pointer"
                       >
                         <ExternalLink size={14} className="stroke-[2.5]" />
                         <span>{isAr ? 'فتح التطبيق' : 'Open App'}</span>
@@ -176,7 +176,7 @@ export const PwaInstallBanner: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleAction}
-                        className="flex-1 py-2 px-3.5 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-[0_0_15px_rgba(156,163,175,0.4)] cursor-pointer"
                       >
                         <Download size={14} className="stroke-[2.5]" />
                         <span>{isAr ? 'تثبيت الآن' : 'Install Now'}</span>
@@ -237,7 +237,7 @@ export const PwaInstallBanner: React.FC = () => {
 
               <div className="flex flex-col items-center text-center gap-3">
                 <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-3">
-                  {mobilePlatform === 'desktop' ? <Monitor size={28} /> : <Smartphone size={28} />}
+                  <Smartphone size={28} />
                 </div>
 
                 <h3 className="text-base font-extrabold">
@@ -253,17 +253,13 @@ export const PwaInstallBanner: React.FC = () => {
                     ? isAr
                       ? 'افتح الصفحة في متصفح Safari للتمكن من التثبيت المباشر:'
                       : 'For best results on iOS, open this page in Safari or use the Share menu:'
-                    : mobilePlatform === 'android-chrome'
-                    ? isAr
-                      ? 'قم بالتثبيت المباشر من قائمة Chrome على Android:'
-                      : 'Use Chrome options to add the app to your home screen:'
                     : mobilePlatform === 'android-other'
                     ? isAr
                       ? 'استخدم قائمة المتصفح لإضافة التطبيق إلى الشاشة الرئيسية:'
                       : 'Use your browser options menu to install the application:'
                     : isAr
-                    ? 'انقر على أيقونة التثبيت في شريط عنوان المتصفح أو افتح قائمة الخيارات:'
-                    : 'Click the install icon in your browser address bar or use the browser menu:'}
+                    ? 'افتح قائمة المتصفح ثم اختر إضافة إلى الشاشة الرئيسية لتثبيت التطبيق:'
+                    : 'Open your browser menu and choose Add to Home Screen to install the app:'}
                 </p>
 
                 <div className="w-full space-y-3 mt-2 text-right rtl:text-right ltr:text-left">
@@ -289,20 +285,6 @@ export const PwaInstallBanner: React.FC = () => {
                           <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                             <span>{isAr ? 'يدعم Safari التثبيت الكامل' : 'Safari provides native iOS PWA support'}</span>
                             <Share2 size={13} className="text-blue-400 inline" />
-                          </div>
-                        </>
-                      ) : mobilePlatform === 'android-chrome' ? (
-                        <>
-                          <span className="font-bold">{isAr ? 'افتح قائمة Chrome (⋮)' : 'Tap Chrome Menu (⋮)'}</span>
-                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'في الزاوية العليا للمتصفح' : 'In top-right corner of browser'}</span>
-                          </div>
-                        </>
-                      ) : mobilePlatform === 'desktop' ? (
-                        <>
-                          <span className="font-bold">{isAr ? 'انقر على أيقونة التثبيت في شريط العنوان' : 'Click Install Icon in Address Bar'}</span>
-                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'أو افتح قائمة متصفحك (⋮)' : 'Or open browser menu (⋮)'}</span>
                           </div>
                         </>
                       ) : (
@@ -332,14 +314,6 @@ export const PwaInstallBanner: React.FC = () => {
                             <PlusSquare size={13} className="text-accent inline" />
                           </div>
                         </>
-                      ) : mobilePlatform === 'desktop' ? (
-                        <>
-                          <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" (Install App)' : 'Select "Install App"'}</span>
-                          <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                            <span>{isAr ? 'لتشغيل التطبيق في نافذة مستقلة' : 'To run in standalone desktop window'}</span>
-                            <PlusSquare size={13} className="text-accent inline" />
-                          </div>
-                        </>
                       ) : (
                         <>
                           <span className="font-bold">{isAr ? 'اختر "تثبيت التطبيق" أو "إضافة للشاشة"' : 'Select "Install App" or "Add to Home Screen"'}</span>
@@ -358,7 +332,7 @@ export const PwaInstallBanner: React.FC = () => {
                     setShowGuideModal(false);
                     handleClose();
                   }}
-                  className="w-full mt-4 py-2.5 rounded-xl bg-accent text-black font-extrabold text-xs cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                  className="w-full mt-4 py-2.5 rounded-xl bg-accent text-black font-extrabold text-xs cursor-pointer shadow-[0_0_15px_rgba(156,163,175,0.3)]"
                 >
                   {isAr ? 'تم، فهمت ذلك' : 'Got it, thanks!'}
                 </button>

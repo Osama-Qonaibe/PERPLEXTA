@@ -681,7 +681,7 @@ const CommandCenterView = ({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.cpu || 0}%` }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
                 />
               </div>
             </div>
@@ -696,7 +696,7 @@ const CommandCenterView = ({
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.memory?.percent || 0}%` }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
                 />
               </div>
             </div>
@@ -715,7 +715,7 @@ const CommandCenterView = ({
                   animate={{
                     width: `${Math.min(100, (serverHealth?.load?.[0] || 0) * 10)}%`,
                   }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
                 />
               </div>
             </div>
@@ -2389,7 +2389,7 @@ const ApiKeysVaultView = ({
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div
-                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-accent shadow-[0_0_5px_rgba(16,185,129,1)] animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]") : "bg-gray-400"}`}
+                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-accent shadow-[0_0_5px_rgba(156,163,175,1)] animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]") : "bg-gray-400"}`}
                     ></div>
                     <span
                       className={`text-[9px] font-black uppercase tracking-widest ${provider.status === "active" ? (provider.isActive ? t("statusActive") : language === "ar" ? "غير صالح" : "Invalid") : t("statusMissing")}`}
@@ -2447,7 +2447,7 @@ const ApiKeysVaultView = ({
                     animate={{
                       width: `${Number(provider.budget || 0) > 0 ? Math.min(100, (Number(provider.usedToday || 0) / Number(provider.budget || 0)) * 100) : 0}%`,
                     }}
-                    className={`h-full rounded-full ${Number(provider.budget || 0) > 0 && Number(provider.usedToday || 0) / Number(provider.budget || 0) > 0.9 ? "bg-red-500" : "bg-accent"} shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-theme`}
+                    className={`h-full rounded-full ${Number(provider.budget || 0) > 0 && Number(provider.usedToday || 0) / Number(provider.budget || 0) > 0.9 ? "bg-red-500" : "bg-accent"} shadow-[0_0_8px_rgba(156,163,175,0.3)] transition-theme`}
                   />
                 </div>
                 <div className="flex justify-between items-center text-[9px] font-bold text-gray-500 uppercase tracking-tighter">
@@ -2510,7 +2510,7 @@ const ApiKeysVaultView = ({
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-main)]/30 mb-4">
               <button
                 onClick={() => handleSyncUsage(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10px_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10px_rgba(156,163,175,0.1)] transition-theme active:scale-95 group/btn"
                 title={t("syncUsageLimits")}
               >
                 <RefreshCw
@@ -2521,7 +2521,7 @@ const ApiKeysVaultView = ({
               </button>
               <button
                 onClick={() => handleSyncModels(provider.id, provider.name)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10_rgba(16,185,129,0.1)] transition-theme active:scale-95 group/btn"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-sm bg-[var(--bg-primary)] text-gray-500 text-[9px] font-black uppercase tracking-wider border border-[var(--border-main)] hover:text-accent hover:border-accent/30 hover:shadow-[0_0_10_rgba(156,163,175,0.1)] transition-theme active:scale-95 group/btn"
                 title={t("syncModels")}
               >
                 <Cpu
@@ -3500,7 +3500,7 @@ const DatabaseOrchestrationView = ({
                 <div className="absolute inset-0 bg-accent/5 pointer-events-none" />
                 <button
                   onClick={() => handleChange(db.id, "type", "cloud")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-sm transition-theme ease-out relative z-10 ${db.type === "cloud" ? "bg-accent text-white shadow-[0_4px_15px_rgba(16,185,129,0.4)]" : "text-gray-500 hover:bg-[var(--bg-secondary)]/50 dark:hover:bg-[var(--bg-secondary)]/30"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-black uppercase tracking-[0.2em] rounded-sm transition-theme ease-out relative z-10 ${db.type === "cloud" ? "bg-accent text-white shadow-[0_4px_15px_rgba(156,163,175,0.4)]" : "text-gray-500 hover:bg-[var(--bg-secondary)]/50 dark:hover:bg-[var(--bg-secondary)]/30"}`}
                 >
                   <Cloud
                     size={14}
@@ -3543,7 +3543,7 @@ const DatabaseOrchestrationView = ({
                     </div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_5px_rgba(16,185,129,1)]"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_5px_rgba(156,163,175,1)]"></div>
                         <label className="text-[10px] uppercase text-accent font-black tracking-[0.2em]">
                           {t("connectionString")}
                         </label>
@@ -3753,7 +3753,7 @@ const DatabaseOrchestrationView = ({
                     title={t("migrateAdditiveDesc")}
                     className={`flex flex-col items-center justify-center gap-1.5 py-4 rounded-sm border transition-theme font-bold text-[10px] uppercase tracking-wider relative overflow-hidden group ${
                       theme === "dark"
-                        ? "border-accent/40 bg-accent/20 hover:bg-accent/30 text-accent hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                        ? "border-accent/40 bg-accent/20 hover:bg-accent/30 text-accent hover:shadow-[0_0_15px_rgba(156,163,175,0.2)]"
                         : "border-accent bg-accent hover:bg-accent/50 text-accent shadow-sm"
                     } ${isMigrating?.id === db.id && isMigrating?.type === "additive" ? "opacity-70 grayscale" : ""}`}
                   >
@@ -3843,7 +3843,7 @@ const DatabaseOrchestrationView = ({
                         ? "bg-red-500/10 border-red-500/40 text-red-500 hover:bg-red-500/20"
                         : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
                       : theme === "dark"
-                        ? "bg-accent/10 border-accent/40 text-accent hover:bg-accent/20 shadow-[0_4px_20px_rgba(16,185,129,0.1)]"
+                        ? "bg-accent/10 border-accent/40 text-accent hover:bg-accent/20 shadow-[0_4px_20px_rgba(156,163,175,0.1)]"
                         : "bg-accent border-accent text-white hover:bg-accent shadow-lg shadow-none"
                   }`}
                 >
@@ -4181,7 +4181,7 @@ const OrchestratorView = ({
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-1.5 rounded-md bg-accent text-white shadow-[0_4px_10px_rgba(16,185,129,0.3)]`}
+                      className={`p-1.5 rounded-md bg-accent text-white shadow-[0_4px_10px_rgba(156,163,175,0.3)]`}
                     >
                       <Icon size={20} />
                     </div>
@@ -4191,7 +4191,7 @@ const OrchestratorView = ({
                       </h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div
-                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-accent shadow-[0_0_5px_rgba(16,185,129,1)]" : "bg-gray-400"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-accent shadow-[0_0_5px_rgba(156,163,175,1)]" : "bg-gray-400"}`}
                         ></div>
                         <span
                           className={`text-[9px] font-black uppercase tracking-widest ${tool.isActive ? "text-accent" : "text-gray-400"}`}
@@ -7012,7 +7012,7 @@ const PlansSubscriptionsView = ({
                   <button
                     onClick={handleSavePlan}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
+                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(156,163,175,0.3)] disabled:opacity-50"
                   >
                     {isSaving ? (
                       <RefreshCw className="animate-spin" size={18} />
@@ -8261,7 +8261,7 @@ const LegacyUserManagementView = ({
         <div className="flex gap-3 w-full lg:w-auto">
           <button
             onClick={() => setIsCreateUserModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-3 rounded-md bg-accent text-white font-bold text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-theme"
+            className="flex items-center gap-2 px-4 py-3 rounded-md bg-accent text-white font-bold text-xs shadow-[0_0_15px_rgba(156,163,175,0.3)] hover:shadow-[0_0_20px_rgba(156,163,175,0.5)] transition-theme"
           >
             <UserPlus size={16} />
             {t("addExplorer")}
@@ -8382,7 +8382,7 @@ const LegacyUserManagementView = ({
                             )}
                           </div>
                           {user.subscription_status === "active" && (
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[var(--bg-secondary)] shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[var(--bg-secondary)] shadow-[0_0_8px_rgba(156,163,175,1)]" />
                           )}
                         </div>
                         <div>
@@ -8524,7 +8524,7 @@ const LegacyUserManagementView = ({
                         </button>
                         <button
                           onClick={() => handleViewProfile(user)}
-                          className="w-9 h-9 flex items-center justify-center rounded-md bg-accent/10 text-accent transition-theme border border-accent/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] group/btn"
+                          className="w-9 h-9 flex items-center justify-center rounded-md bg-accent/10 text-accent transition-theme border border-accent/30 hover:shadow-[0_0_15px_rgba(156,163,175,0.3)] group/btn"
                           title={t("viewProfile")}
                         >
                           <Eye
@@ -8656,7 +8656,7 @@ const LegacyUserManagementView = ({
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="w-full py-3 rounded-md bg-accent text-white font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
+                  className="w-full py-3 rounded-md bg-accent text-white font-bold text-sm shadow-[0_0_20px_rgba(156,163,175,0.3)] hover:shadow-[0_0_30px_rgba(156,163,175,0.5)] transition-theme flex items-center justify-center gap-2 group disabled:opacity-50"
                 >
                   {isUpdating ? (
                     <RefreshCw size={18} className="animate-spin" />
@@ -8810,7 +8810,7 @@ const LegacyUserManagementView = ({
                     <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                       {selectedUser.name}
                       {selectedUser.subscription_status === "active" && (
-                        <span className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.8)]" />
                       )}
                     </h2>
                     <div className="flex flex-col gap-0.5 mt-1">
@@ -8852,7 +8852,7 @@ const LegacyUserManagementView = ({
                     className={`p-8 rounded-lg border flex flex-col h-full transition-theme hover:shadow-2xl hover:translate-y-[-4px] ${theme === "dark" ? "bg-[#161618] border-[var(--border-main)]" : "bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm"}`}
                   >
                     <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2.5 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                      <div className="p-2.5 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.15)]">
                         <Users size={20} />
                       </div>
                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
@@ -9140,7 +9140,7 @@ const LegacyUserManagementView = ({
                         })
                       }
                       disabled={isUpdating}
-                      className="w-full mt-6 py-3 rounded-md bg-accent text-white font-bold text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-6 py-3 rounded-md bg-accent text-white font-bold text-sm transition-theme shadow-[0_0_15px_rgba(156,163,175,0.3)] hover:shadow-[0_0_20px_rgba(156,163,175,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUpdating ? (
                         <RefreshCw size={18} className="animate-spin" />
@@ -9318,7 +9318,7 @@ const LegacyUserManagementView = ({
                       disabled={isUpdating}
                       className={`w-full mt-6 py-3 rounded-md font-bold text-sm transition-theme flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${
                         ledgerAction === "add"
-                          ? "bg-accent text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+                          ? "bg-accent text-white shadow-[0_0_15px_rgba(156,163,175,0.3)] hover:shadow-[0_0_20px_rgba(156,163,175,0.5)]"
                           : "bg-amber-600 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_20px_rgba(217,119,6,0.5)]"
                       }`}
                     >
@@ -10176,7 +10176,7 @@ const SmartEmailHubView = ({
                       body_ar: "",
                     })
                   }
-                  className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                  className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)]"
                 >
                   <Plus size={18} />
                   {t("createNewTemplate")}
@@ -11285,7 +11285,7 @@ const MemoryCenterView = ({
         } shadow-sm`}
       >
         <div className="flex items-start gap-4">
-          <div className="p-3 bg-accent/10 rounded-lg text-accent shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+          <div className="p-3 bg-accent/10 rounded-lg text-accent shadow-[0_0_15px_rgba(156,163,175,0.05)]">
             <Brain
               size={28}
               className="text-accent "
@@ -11755,7 +11755,7 @@ const MemoryCenterView = ({
             <button
               onClick={handleRunConsolidation}
               disabled={isRunning}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent disabled:bg-accent/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] disabled:shadow-none cursor-pointer`}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent disabled:bg-accent/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(156,163,175,0.15)] hover:shadow-[0_0_25px_rgba(156,163,175,0.3)] disabled:shadow-none cursor-pointer`}
             >
               {isRunning ? (
                 <>
@@ -11969,7 +11969,7 @@ const MemoryCenterView = ({
                 className={`p-5 rounded-lg border transition-theme ${
                   report.success
                     ? theme === "dark"
-                      ? "bg-[#0f0f11]/60 border-accent/15 shadow-[0_0_15px_rgba(16,185,129,0.02)]"
+                      ? "bg-[#0f0f11]/60 border-accent/15 shadow-[0_0_15px_rgba(156,163,175,0.02)]"
                       : "bg-accent/15 border-accent/50"
                     : theme === "dark"
                       ? "bg-[#0f0f11]/60 border-red-500/15"
@@ -13050,7 +13050,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveGeneralSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -13440,7 +13440,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveVisualSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -13942,7 +13942,7 @@ const SystemSettingsView = ({
           <button
             onClick={handleSaveSeoSettings}
             disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(16,185,129,0.4)] disabled:opacity-50"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
           >
             {isSaving ? (
               <RefreshCw className="animate-spin" size={18} />
@@ -13962,7 +13962,7 @@ const SystemSettingsView = ({
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
               <Globe size={24} className="text-accent " />
             </div>
             <div>
@@ -13988,7 +13988,7 @@ const SystemSettingsView = ({
             </button>
             <button
               onClick={handleOpenAddRouteModal}
-              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(156,163,175,0.3)]"
             >
               <Plus size={16} />
               {dir === "rtl" ? "إضافة مسار جديد" : "Add Route SEO"}
@@ -14347,7 +14347,7 @@ const SystemSettingsView = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)]"
                   >
                     <Save size={14} />
                     {dir === "rtl" ? "حفظ التغييرات" : "Save Settings"}
@@ -14367,7 +14367,7 @@ const SystemSettingsView = ({
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
               <ShieldCheck size={24} className="text-accent " />
             </div>
             <div>
@@ -14386,7 +14386,7 @@ const SystemSettingsView = ({
             <button
               onClick={runCrawlAuditScan}
               disabled={crawlScanning}
-              className="flex items-center gap-2 text-xs bg-accent hover:bg-accent text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="flex items-center gap-2 text-xs bg-accent hover:bg-accent text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
             >
               <RefreshCw className={crawlScanning ? "animate-spin" : ""} size={14} />
               {language === "ar" ? "تشغيل تدقيق الفهرسة" : "Execute Crawl Audit"}
@@ -14577,7 +14577,7 @@ const SystemSettingsView = ({
         }`}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
             <Cpu size={24} className="text-accent " />
           </div>
           <div>
@@ -14674,7 +14674,7 @@ const SystemSettingsView = ({
             <button
               onClick={() => handleClearCache('global')}
               disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-accent hover:bg-accent text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="w-full py-2 px-3 bg-accent hover:bg-accent text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
             >
               {clearingCache === 'global' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
               {dir === "rtl" ? "مسح جميع الذاكرات" : "Purge All Caches"}
@@ -14906,7 +14906,7 @@ const ComplianceAuditLogsView = ({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(16,185,129,0.3)] disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
           >
             {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
             {isRtl ? "تطبيق التصفية" : "Apply Filter"}
@@ -15597,7 +15597,7 @@ export const AdminDashboard: React.FC = () => {
           {showAddButton && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] active:scale-95"
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(156,163,175,0.3)] hover:shadow-[0_8px_20px_rgba(156,163,175,0.5)] active:scale-95"
             >
               <Plus size={18} />
               {getAddButtonText()}
@@ -15870,7 +15870,7 @@ export const AdminDashboard: React.FC = () => {
             style={{
               boxShadow:
                 toast.type === "success"
-                  ? "0 10px 30px rgba(16,185,129,0.15)"
+                  ? "0 10px 30px rgba(156,163,175,0.15)"
                   : "0 10px 30px rgba(239,68,68,0.15)",
             }}
           >

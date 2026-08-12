@@ -1547,7 +1547,7 @@ export const AdsManagementView: React.FC<{
                       <span className="text-[9px] text-[var(--text-muted)] font-bold">0%</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded bg-accent shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                      <div className="w-3 h-3 rounded bg-accent shadow-[0_0_8px_rgba(156,163,175,0.5)]"></div>
                       <span className="text-[9px] text-[var(--text-muted)] font-bold">10%+</span>
                     </div>
                     <button
@@ -1594,7 +1594,7 @@ export const AdsManagementView: React.FC<{
                               else if (cr < 8) bgColor = 'bg-accent/80';
                               else {
                                 bgColor = 'bg-accent';
-                                glow = 'shadow-[0_0_10px_rgba(16,185,129,0.4)]';
+                                glow = 'shadow-[0_0_10px_rgba(156,163,175,0.4)]';
                               }
                             }
 
