@@ -1,9 +1,222 @@
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
 node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+lerna-debug.log
+
+# =============================================================================
+# BUILD OUTPUTS
+# =============================================================================
 build/
 dist/
+.next/
+out/
+.nuxt/
+.output/
 coverage/
-.DS_Store
-*.log
-audit.txt
-.env*
+.nyc_output/
+
+# =============================================================================
+# ENVIRONMENT VARIABLES (CRITICAL SECURITY)
+# =============================================================================
+# Ignore all .env files
+.env
+.env.*
+
+# EXCEPT these templates/examples (safe to commit)
 !.env.example
+!.env.template
+!.env.local.example
+!.env.sample
+
+# =============================================================================
+# SECRETS AND CRYPTOGRAPHIC KEYS
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.der
+*.csr
+*.jks
+*.keystore
+*.p7b
+*.p7c
+*.p7s
+*.spc
+
+# =============================================================================
+# LOGS AND AUDIT
+# =============================================================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+audit.txt
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# =============================================================================
+# OPERATING SYSTEM FILES
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# =============================================================================
+# IDE AND EDITORS
+# =============================================================================
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!.vscode/.gitignore
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# WebStorm
+.idea/
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+*.sublime-session
+
+# Vim
+*.swp
+*.swo
+*~
+*.un~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# =============================================================================
+# TESTING
+# =============================================================================
+.nyc_output/
+coverage/
+jest-results.json
+test-results/
+playwright-report/
+test-report/
+
+# =============================================================================
+# TYPESCRIPT
+# =============================================================================
+*.tsbuildinfo
+next-env.d.ts
+
+# =============================================================================
+# OPTIONAL: PACKAGE MANAGER LOCKS
+# Uncomment if you want to exclude lock files
+# =============================================================================
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+# Bun.lockb
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Uploads (if applicable)
+uploads/
+uploads-dev/
+uploads-test/
+
+# Database files (SQLite, etc.)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# =============================================================================
+# SECURITY SCANNING
+# =============================================================================
+# Snyk
+.snyk
+
+# ESLint
+.eslintcache
+
+# Stylelint
+.stylelintcache
+
+# =============================================================================
+# DEPLOYMENT
+# =============================================================================
+# PM2
+.pm2/
+
+# Docker
+.docker/
+docker-compose*.yml
+!docker-compose.yml.example
+Dockerfile
+!Dockerfile.example
+
+# Kubernetes
+*.yaml
+!*.yaml.example
+*.yml
+!*.yml.example
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfplan
+*.tfplan.json
+
+# =============================================================================
+# BACKUP FILES
+# =============================================================================
+*.bak
+*.backup
+*.old
+*.orig
+
+# =============================================================================
+# MISCELLANEOUS PROJECT-SPECIFIC
+# =============================================================================
+# Add your project-specific ignores here
