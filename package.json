@@ -12,6 +12,7 @@
     "sync:metadata": "tsx server/scripts/sync_seo_metadata.ts",
     "clean": "rm -rf dist",
     "check:colors": "node scripts/check-color-governance.js",
+    "audit:colors": "tsx scripts/audit-colors.ts",
     "validate:pwa": "tsx scripts/validate-pwa.ts",
     "validate:manifest": "tsx scripts/validate-pwa.ts",
     "lint": "tsc --noEmit"

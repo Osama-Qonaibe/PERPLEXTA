@@ -265,7 +265,7 @@
 }
 
 @theme {
-  --font-sans: "Space Grotesk", "Tajawal", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Tajawal", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   
   --font-size-xs: var(--fs-xs);
