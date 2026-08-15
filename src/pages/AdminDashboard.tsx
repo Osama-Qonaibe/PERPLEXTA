@@ -3900,23 +3900,37 @@ const OrchestratorView = ({
   const [tools, setTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
 
-  const providerOptions = useMemo(() => (
-    <>
-      <option value="">
+  const providerOptions = useMemo(() => {
+    return [
+      <option key="none" value="">
         {language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
-      </option>
-      <option value="openai">OpenAI</option>
-      <option value="anthropic">Anthropic</option>
-      <option value="google">Google Gemini</option>
-      <option value="deepseek">DeepSeek</option>
-      <option value="groq">Groq (LPU)</option>
-      <option value="mistral">Mistral AI</option>
-      <option value="openrouter">OpenRouter</option>
-      <option value="together">Together AI</option>
-      <option value="xai">xAI (Grok)</option>
-      <option value="ollama">Ollama (Local/Cloud)</option>
-    </>
-  ), [language]);
+      </option>,
+      ...Object.keys(providerModels).map((provider) => {
+        const displayNames: Record<string, string> = {
+          serper: "Serper (Search)",
+          tavily: "Tavily (Search)",
+          google_search: "Google Search",
+          openai: "OpenAI",
+          anthropic: "Anthropic",
+          google: "Google AI",
+          deepseek: "DeepSeek",
+          groq: "Groq",
+          openrouter: "OpenRouter",
+          together: "Together AI",
+          mistral: "Mistral AI",
+          xai: "xAI",
+          elevenlabs: "ElevenLabs (TTS)",
+          ollama: "Ollama",
+        };
+        const label = displayNames[provider] || provider;
+        return (
+          <option key={provider} value={provider}>
+            {label}
+          </option>
+        );
+      }),
+    ];
+  }, [language, providerModels]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -15262,8 +15276,10 @@ export const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (token) fetchProviderModels();
-  }, [token]);
+    if (token && (path === "orchestrator" || path === "keys" || Object.keys(providerModels).length === 0)) {
+      fetchProviderModels();
+    }
+  }, [token, path]);
 
   const [pulseData, setPulseData] = useState<any>(null);
   const [isPulseOpen, setIsPulseOpen] = useState(false);

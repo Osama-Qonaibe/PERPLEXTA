@@ -11,7 +11,10 @@ const originalConnect = Pool.prototype.connect as any;
         client._errorListenerAttached = true;
         // Prevent unhandled exception if client connection drops while checked out
         client.on('error', (clientErr: any) => {
-          console.warn('[DB Client] Checked-out client connection error:', clientErr?.message || clientErr);
+          const msg = clientErr?.message || String(clientErr);
+          if (!/Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection/i.test(msg)) {
+            console.warn('[DB Client] Checked-out client connection error:', msg);
+          }
         });
       }
       cb(err, client, release);
@@ -23,7 +26,10 @@ const originalConnect = Pool.prototype.connect as any;
       client._errorListenerAttached = true;
       // Prevent unhandled exception if client connection drops while checked out
       client.on('error', (clientErr: any) => {
-        console.warn('[DB Client] Checked-out client connection error:', clientErr?.message || clientErr);
+        const msg = clientErr?.message || String(clientErr);
+        if (!/Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection/i.test(msg)) {
+          console.warn('[DB Client] Checked-out client connection error:', msg);
+        }
       });
     }
     return client;

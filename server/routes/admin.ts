@@ -851,27 +851,24 @@ router.post("/approval-queue/submit", authenticateAdmin, async (req, res) => {
 
 router.get("/orchestrator/routes", authenticateAdmin, async (req, res) => {
   try {
-    const data = await memoryCache.getOrSet("admin:orchestrator:routes", async () => {
-      const { tools } = await import('../config/constants.js');
-      const dbTools = await pool.query('SELECT tool_id FROM tool_orchestrator');
-      const dbToolIds = new Set(dbTools.rows.map((r: any) => r.tool_id));
-      
-      const missingTools = tools.filter(t => !dbToolIds.has(t.id));
-      if (missingTools.length > 0) {
-        console.log(`[Admin Orchestrator] Seeding ${missingTools.length} missing tools to DB tool_orchestrator...`);
-        for (const t of missingTools) {
-          await pool.query(`
-            INSERT INTO tool_orchestrator (tool_id, primary_provider, primary_model, is_active, cost_per_usage, task_description, task_description_ar)
-            VALUES ($1, '', '', true, $2, $3, $4)
-            ON CONFLICT (tool_id) DO NOTHING
-          `, [t.id, t.cost, t.desc, t.descAr]);
-        }
+    const { tools } = await import('../config/constants.js');
+    const dbTools = await pool.query('SELECT tool_id FROM tool_orchestrator');
+    const dbToolIds = new Set(dbTools.rows.map((r: any) => r.tool_id));
+    
+    const missingTools = tools.filter(t => !dbToolIds.has(t.id));
+    if (missingTools.length > 0) {
+      console.log(`[Admin Orchestrator] Seeding ${missingTools.length} missing tools to DB tool_orchestrator...`);
+      for (const t of missingTools) {
+        await pool.query(`
+          INSERT INTO tool_orchestrator (tool_id, primary_provider, primary_model, is_active, cost_per_usage, task_description, task_description_ar)
+          VALUES ($1, '', '', true, $2, $3, $4)
+          ON CONFLICT (tool_id) DO NOTHING
+        `, [t.id, t.cost, t.desc, t.descAr]);
       }
+    }
 
-      const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
-      return { routes: result.rows, tools: result.rows };
-    }, 3600000); // 1 hour Cache
-    res.json(data);
+    const result = await pool.query('SELECT * FROM tool_orchestrator ORDER BY tool_id ASC');
+    res.json({ routes: result.rows, tools: result.rows });
   } catch (err) {
     console.error('[Admin Orchestrator Error]', err);
     res.status(500).json({ error: 'Internal Error' });
@@ -903,6 +900,11 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
         } = route;
         
         if (!tool_id) continue;
+
+        console.log(`[Admin Orchestrator] Mapping Tool: ${tool_id}`);
+        console.log(`  -> Primary: Provider="${primary_provider || 'none'}", Model="${primary_model || 'none'}"`);
+        console.log(`  -> FB 1: Provider="${fallback_1_provider || 'none'}", Model="${fallback_1_model || 'none'}"`);
+        console.log(`  -> FB 2: Provider="${fallback_2_provider || 'none'}", Model="${fallback_2_model || 'none'}"`);
 
         await client.query(`
           INSERT INTO tool_orchestrator (
@@ -942,6 +944,7 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
       }
       await client.query('COMMIT');
       invalidateVaultCache();
+      invalidateOrchestratorConfigCache();
       memoryCache.delete("admin:orchestrator:routes");
       res.json({ success: true });
     } catch (e) {
@@ -957,15 +960,12 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
 
 router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
   try {
-    const providerModels = await memoryCache.getOrSet("admin:orchestrator:models", async () => {
-      const result = await pool.query('SELECT provider, models FROM api_keys_vault');
-      const models: any = {};
-      result.rows.forEach((row: any) => {
-        models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
-      });
-      return models;
-    }, 3600000); // 1 hour Cache
-    res.json({ providerModels });
+    const result = await pool.query('SELECT provider, models FROM api_keys_vault');
+    const models: any = {};
+    result.rows.forEach((row: any) => {
+      models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
+    });
+    res.json({ providerModels: models });
   } catch {
     res.status(500).json({ error: 'Internal Error' });
   }
@@ -2732,6 +2732,7 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
     `, [cleanProvider, encryptedKey, finalBudget, urlKey]);
 
     invalidateVaultCache(cleanProvider);
+    invalidateApiKeysVaultCache();
     memoryCache.delete("admin:orchestrator:models");
 
     let syncedCount = 0;
@@ -2740,6 +2741,7 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
       const syncResult = await syncProviderModelsInternal(cleanProvider, finalKey, urlKey);
       syncedCount = syncResult.count;
       syncedModels = syncResult.models;
+      invalidateApiKeysVaultCache();
     } catch (syncErr) {
       console.error('[Admin] Post-save model sync failed:', syncErr);
     }
@@ -2759,6 +2761,7 @@ router.post("/api-keys/:id/budget", authenticateAdmin, async (req, res) => {
     if (budget === undefined || isNaN(Number(budget))) return res.status(400).json({ error: 'Valid budget required' });
     const cleanId = id.toLowerCase().replace(/\s+/g, '');
     await pool.query('UPDATE api_keys_vault SET daily_budget = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [budget, cleanId]);
+    invalidateApiKeysVaultCache();
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Update failed' });
@@ -2772,6 +2775,7 @@ router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
     await pool.query('DELETE FROM api_keys_vault WHERE provider = $1', [cleanId]);
     memoryCache.delete("admin:orchestrator:models");
     invalidateVaultCache();
+    invalidateApiKeysVaultCache();
     await auditLog((req as any).user?.id, 'Delete API Key', 'system', { provider: cleanId });
     res.json({ success: true });
   } catch {
@@ -2791,6 +2795,7 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
     const syncResult = await syncProviderModelsInternal(cleanId, decryptedKey, urlKey);
     memoryCache.delete("admin:orchestrator:models");
     invalidateVaultCache();
+    invalidateApiKeysVaultCache();
     res.json({ success: true, count: syncResult.count, models: syncResult.models });
   } catch (err: any) {
     console.error('[Admin API Keys] Sync models error:', err);
@@ -2810,6 +2815,7 @@ router.post("/api-keys/:id/sync-usage", authenticateAdmin, async (req, res) => {
     const status = await checkProviderStatus(cleanId, decryptedKey, urlKey);
     
     await pool.query('UPDATE api_keys_vault SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE provider = $2', [status.isValid, cleanId]);
+    invalidateApiKeysVaultCache();
     res.json({ success: true, status });
   } catch {
     res.status(500).json({ error: 'Sync failed' });
