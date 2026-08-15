@@ -2732,6 +2732,7 @@ router.post("/api-keys", authenticateAdmin, async (req, res) => {
     `, [cleanProvider, encryptedKey, finalBudget, urlKey]);
 
     invalidateVaultCache(cleanProvider);
+    memoryCache.delete("admin:orchestrator:models");
 
     let syncedCount = 0;
     let syncedModels: any[] = [];
@@ -2769,6 +2770,8 @@ router.delete("/api-keys/:id", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const cleanId = id.toLowerCase().replace(/\s+/g, '');
     await pool.query('DELETE FROM api_keys_vault WHERE provider = $1', [cleanId]);
+    memoryCache.delete("admin:orchestrator:models");
+    invalidateVaultCache();
     await auditLog((req as any).user?.id, 'Delete API Key', 'system', { provider: cleanId });
     res.json({ success: true });
   } catch {
@@ -2786,9 +2789,12 @@ router.post("/api-keys/:id/sync-models", authenticateAdmin, async (req, res) => 
     const decryptedKey = decrypt(keyResult.rows[0].encrypted_key);
     const urlKey = keyResult.rows[0].url_key;
     const syncResult = await syncProviderModelsInternal(cleanId, decryptedKey, urlKey);
+    memoryCache.delete("admin:orchestrator:models");
+    invalidateVaultCache();
     res.json({ success: true, count: syncResult.count, models: syncResult.models });
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (err: any) {
+    console.error('[Admin API Keys] Sync models error:', err);
+    res.status(500).json({ error: err?.message || 'Internal Server Error' });
   }
 });
 

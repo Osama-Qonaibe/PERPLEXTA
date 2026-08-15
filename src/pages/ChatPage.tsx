@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useVideoPlayback } from '../hooks/useVideoPlayback';
+import { useTypingDebounce } from '../hooks/useTypingDebounce';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import Prism from 'prismjs';
@@ -13,7 +14,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -30,7 +31,8 @@ import { TypewriterMotive } from '../components/TypewriterMotive';
 import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
 import { HighlightText } from '../components/HighlightText';
-import { stripProtocolMarkers, showSuccessToast, showErrorToast } from '../utils/chatUtils';
+import { useFollowUpSuggestions } from '../hooks/useFollowUpSuggestions';
+import { stripProtocolMarkers, extractFollowUpsClient, formatActionableSuggestion, showSuccessToast, showErrorToast } from '../utils/chatUtils';
 import { fileToBase64 } from '../utils/fileUtils';
 import { getAuthHeaders, formatExactTimestamp, formatTimeSeconds } from '../utils/adminUtils';
 import { ChatService } from '../services/chatService';
@@ -947,6 +949,7 @@ const BlockquoteWithActions = ({ children, dir }: any) => {
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const { dir, resolvedTheme } = useAppContext();
   const [copied, setCopied] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : 'text';
   const codeContent = String(children).trim();
@@ -957,6 +960,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   const [isRunning, setIsRunning] = useState(false);
   const [outputLogs, setOutputLogs] = useState<{ type: 'log' | 'info' | 'warn' | 'error'; text: string; time: string }[]>([]);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+
+  const lineCount = useMemo(() => editableCode.split('\n').length, [editableCode]);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -1271,7 +1276,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   return (
     <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-theme">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-[#1a1a1c]/40 border-b border-gray-100 dark:border-gray-800/40 rounded-t-md">
+      <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-gray-50/95 dark:bg-[#141416]/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 rounded-t-md transition-theme">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.5)]" />
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
@@ -1302,6 +1307,15 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               </button>
             ) : (
               <>
+                {lineCount > 20 && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95"
+                    title={isExpanded ? (dir === 'rtl' ? 'طي الكود' : 'Collapse code') : (dir === 'rtl' ? 'توسيع الكود' : 'Expand code')}
+                  >
+                    {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  </button>
+                )}
                 <button 
                   onClick={copyToClipboard} 
                   className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[var(--text-muted)] hover:text-accent transition-theme hover:bg-[var(--bg-overlay)] active:scale-95" 
@@ -1570,13 +1584,15 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               </div>
             ) : (
               <div 
-                className="w-full overflow-x-auto bg-[#0c0c0e] text-[#f8f8f2] border-t border-gray-100/10 dark:border-gray-800/20 rounded-b-md select-text custom-scrollbar animate-fade-in" 
+                className={`w-full overflow-x-auto bg-[#0c0c0e] text-[#f8f8f2] border-t border-gray-100/10 dark:border-gray-800/20 rounded-b-md select-text custom-scrollbar animate-fade-in transition-all duration-300 ${
+                  isExpanded ? 'max-h-none overflow-y-visible' : 'max-h-[520px] overflow-y-auto'
+                }`} 
                 style={{ direction: 'ltr', textAlign: 'left' }}
                 {...props}
               >
                 <div className="flex items-start min-w-max md:min-w-full">
-                  <div className="flex select-none flex-col text-right text-[#5c5c62] py-5 pl-4 pr-3.5 border-r border-gray-100/10 dark:border-gray-800/20 font-mono text-[13px] md:text-[14px] leading-relaxed shrink-0 bg-[#0a0a0c]" style={{ userSelect: 'none' }}>
-                    {Array.from({ length: editableCode.split('\n').length || 1 }, (_, i) => (
+                  <div className="sticky left-0 z-10 flex select-none flex-col text-right text-[#5c5c62] py-5 pl-4 pr-3.5 border-r border-gray-100/10 dark:border-gray-800/20 font-mono text-[13px] md:text-[14px] leading-relaxed shrink-0 bg-[#0a0a0c]" style={{ userSelect: 'none' }}>
+                    {Array.from({ length: lineCount || 1 }, (_, i) => (
                       <span key={i + 1} className="block select-none min-w-[24px] text-right pr-0.5">
                         {i + 1}
                       </span>
@@ -2405,27 +2421,25 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
   if (!followUps || followUps.length === 0) return null;
 
   return (
-    <div className="mt-8 pt-6 border-t border-[var(--border-main)]" id="follow-ups-container">
-      <div className="flex items-center gap-2 mb-4 px-0">
-        <Sparkles size={14} className="text-accent shadow-[0_0_10px_rgba(156,163,175,0.4)]" />
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-accent">
-          {dir === 'rtl' ? 'استكمال البحث' : 'FURTHER EXPLORATION'}
-        </span>
-      </div>
+    <div className="mt-5 pt-4 border-t border-[var(--border-main)]/40" id="follow-ups-container" dir={dir}>
       <div className="flex flex-col gap-2">
         {followUps.map((q, idx) => (
           <button
             key={idx}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
-            className="flex items-center gap-3 sm:gap-4 px-4 py-3.5 bg-transparent border border-[var(--border-main)] hover:border-accent/40 hover:bg-accent/[0.03] transition-theme text-start relative overflow-hidden rounded-md flex-row"
+            className="group flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 bg-[var(--surface-subtle)]/40 hover:bg-[var(--surface-subtle)] border border-[var(--border-main)]/40 hover:border-accent/40 rounded-xl transition-all duration-200 text-start cursor-pointer w-full text-[var(--text-primary)] shadow-xs"
           >
-            <div className="w-8 h-8 rounded-sm bg-[var(--bg-overlay)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-accent group-hover:border-accent/50 group-hover:shadow-[0_0_8px_rgba(156,163,175,0.3)] transition-theme shrink-0 order-first">
-               <Plus size={14} className="group-hover:scale-110 transition-transform" />
-            </div>
-            <span className="text-[12px] sm:text-[13px] font-bold text-[var(--text-primary)] group-hover:text-accent transition-theme flex-1 min-w-0 leading-tight">
+            <span className="text-[13px] sm:text-[14px] font-medium text-[var(--text-primary)] group-hover:text-accent transition-colors flex-1 min-w-0 leading-relaxed">
               {q}
             </span>
+            <div className="shrink-0 text-[var(--text-muted)] group-hover:text-accent rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1 transition-all duration-200">
+              {dir === 'rtl' ? (
+                <CornerDownLeft size={16} className="transition-transform" />
+              ) : (
+                <CornerDownRight size={16} className="transition-transform" />
+              )}
+            </div>
           </button>
         ))}
       </div>
@@ -4213,6 +4227,9 @@ export const ChatPage: React.FC = () => {
   const [typingParty, setTypingParty] = useState<'assistant' | 'user' | null>(null);
   const [typingName, setTypingName] = useState<string>('');
   const typingTimeoutRef = useRef<any>(null);
+  const { isWriting, startWriting, resetWriting } = useTypingDebounce({
+    delay: 3000,
+  });
   const [isRecording, setIsRecording] = useState(false);
   const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<any>(null);
@@ -4227,6 +4244,12 @@ export const ChatPage: React.FC = () => {
     }
   });
   const [chatId, setChatId] = useState<string | null>(routeChatId && routeChatId !== 'new' ? routeChatId : null);
+
+  const lastAssistantMessage = useMemo(() => {
+    return [...messages].reverse().find(m => m.role === 'assistant')?.content;
+  }, [messages]);
+
+  const { suggestions: aiSuggestions } = useFollowUpSuggestions(lastAssistantMessage);
 
   useEffect(() => {
     if (chatId) {
@@ -4397,6 +4420,7 @@ export const ChatPage: React.FC = () => {
       const text = (e as CustomEvent).detail;
       if (text) {
         setQuery(text);
+        resetWriting();
         if (textareaRef.current) {
           textareaRef.current.focus();
           textareaRef.current.style.height = 'auto';
@@ -4412,6 +4436,8 @@ export const ChatPage: React.FC = () => {
   const [showChatLimitWarning, setShowChatLimitWarning] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const modelsMenuRef = useRef<HTMLDivElement>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [playingTTSId, setPlayingTTSId] = useState<string | number | null>(null);
   const [chatRenameTitle, setChatRenameTitle] = useState('');
@@ -4438,6 +4464,7 @@ export const ChatPage: React.FC = () => {
   const finalResponseDataRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevGeneratingRef = useRef(false);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (behavior === 'auto' || isGenerating) {
@@ -4451,7 +4478,7 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && !isGenerating) {
       scrollToBottom('auto');
     }
   }, [messages.length, chatId]);
@@ -4459,8 +4486,19 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (!isGenerating) {
       setIsOtherTyping(false);
+      if (prevGeneratingRef.current && messages.length > 0) {
+        const lastIdx = messages.length - 1;
+        const targetId = `message-${lastIdx}`;
+        setTimeout(() => {
+          const el = document.getElementById(targetId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 80);
+      }
     }
-  }, [isGenerating]);
+    prevGeneratingRef.current = isGenerating;
+  }, [isGenerating, messages.length]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(() => { const cached = localStorage.getItem(`draft_edit_index_${routeChatId || 'new'}`); return cached ? parseInt(cached, 10) : null; });
@@ -4624,14 +4662,22 @@ export const ChatPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
         setIsExportMenuOpen(false);
       }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
+        setIsAdvancedToolsOpen(false);
+      }
+      if (modelsMenuRef.current && !modelsMenuRef.current.contains(event.target as Node)) {
+        setIsModelMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
       if (window.speechSynthesis) window.speechSynthesis.cancel();
     };
   }, []);
@@ -5145,19 +5191,23 @@ export const ChatPage: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setMessages(data.map((msg: any) => ({ 
-          id: msg.id,
-          role: msg.role, 
-          content: msg.content,
-          tool: msg.tool,
-          feedback: msg.feedback,
-          is_pinned: msg.is_pinned,
-          generation_time: msg.generation_time ? parseFloat(msg.generation_time) : undefined,
-          thinking_steps: typeof msg.thinking_steps === 'string' ? JSON.parse(msg.thinking_steps) : msg.thinking_steps,
-          citations: typeof msg.citations === 'string' ? JSON.parse(msg.citations) : msg.citations,
-          follow_ups: typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups,
-          created_at: msg.created_at
-        })));
+        setMessages(data.map((msg: any) => {
+          const rawFollowUps = typeof msg.follow_ups === 'string' ? JSON.parse(msg.follow_ups) : msg.follow_ups;
+          const clientParsed = extractFollowUpsClient(msg.content);
+          return { 
+            id: msg.id,
+            role: msg.role, 
+            content: clientParsed.cleanText || msg.content,
+            tool: msg.tool,
+            feedback: msg.feedback,
+            is_pinned: msg.is_pinned,
+            generation_time: msg.generation_time ? parseFloat(msg.generation_time) : undefined,
+            thinking_steps: typeof msg.thinking_steps === 'string' ? JSON.parse(msg.thinking_steps) : msg.thinking_steps,
+            citations: typeof msg.citations === 'string' ? JSON.parse(msg.citations) : msg.citations,
+            follow_ups: (rawFollowUps && rawFollowUps.length > 0) ? rawFollowUps.map(formatActionableSuggestion) : clientParsed.followUps,
+            created_at: msg.created_at
+          };
+        }));
 
       }
     } catch (error) {
@@ -5190,18 +5240,22 @@ export const ChatPage: React.FC = () => {
 
     const applyFinalResponse = (data: any) => {
       if (!data) return;
+      const clientParsed = extractFollowUpsClient(data.result || '');
+      const finalFollowUps = (data.follow_ups && data.follow_ups.length > 0) ? data.follow_ups.map(formatActionableSuggestion) : clientParsed.followUps;
+      const finalContent = clientParsed.cleanText || data.result;
+
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
         if (lastMessage && lastMessage.role === 'assistant') {
           newMessages[newMessages.length - 1] = {
             ...lastMessage,
-            content: data.result,
+            content: finalContent,
             tool: data.tool || lastMessage.tool,
             id: data.message_id || lastMessage.id,
             thinking_steps: data.thinking_steps || lastMessage.thinking_steps,
             citations: data.citations || lastMessage.citations,
-            follow_ups: data.follow_ups || [],
+            follow_ups: finalFollowUps || [],
             is_streaming: false,
             generation_time: data.generation_time !== undefined ? parseFloat(data.generation_time) : lastMessage.generation_time,
             created_at: data.created_at || lastMessage.created_at || new Date().toISOString()
@@ -5593,6 +5647,7 @@ export const ChatPage: React.FC = () => {
       setMessages(updatedMessages);
 
       setQuery('');
+      resetWriting();
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
@@ -6190,9 +6245,11 @@ export const ChatPage: React.FC = () => {
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto pb-safe">
 
-      {renderVideoSettings()}
-      {renderImageSettings()}
-      {renderAudioSettings()}
+      <div className={`transition-all ease-in-out ${isWriting ? 'duration-100 opacity-0 pointer-events-none -translate-y-1' : 'duration-300 opacity-100 pointer-events-auto translate-y-0'}`}>
+        {renderVideoSettings()}
+        {renderImageSettings()}
+        {renderAudioSettings()}
+      </div>
 
       <div className="relative w-full">
 
@@ -6228,12 +6285,32 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
 
         <motion.div 
-          className={`w-full flex flex-col rounded-md border box-border min-w-0 transition-theme bg-transparent border-[var(--border-main)] ${
-            isFocused 
-              ? 'border-accent/40 shadow-[0_0_0_4px_rgba(156,163,175,0.03)]' 
-              : ''
+          className={`relative w-full flex flex-col rounded-md border box-border min-w-0 transition-all bg-transparent ${
+            isWriting
+              ? 'duration-100 border-accent/40 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]'
+              : isFocused 
+                ? 'duration-300 border-accent/40 shadow-[0_0_0_4px_rgba(156,163,175,0.03)] border-[var(--border-main)]' 
+                : 'duration-300 border-[var(--border-main)]'
           }`}
         >
+          {/* Subtle pulse indicator on the container border during isWriting mode */}
+          <div 
+            className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-md overflow-hidden pointer-events-none z-20 transition-opacity ${
+              isWriting ? 'duration-100 opacity-100' : 'duration-300 opacity-0'
+            }`}
+          >
+            <motion.div 
+              className="w-full h-full bg-gradient-to-r from-transparent via-accent to-transparent"
+              animate={isWriting ? {
+                x: ['-100%', '100%'],
+                opacity: [0.5, 1, 0.5]
+              } : {}}
+              transition={isWriting ? {
+                x: { duration: 1.8, repeat: Infinity, ease: 'easeInOut' },
+                opacity: { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }
+              } : {}}
+            />
+          </div>
 
         {isRecording && (
           <div className="px-3.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border-b border-dashed border-red-500/20 flex flex-col gap-2.5 transition-theme">
@@ -6435,9 +6512,15 @@ export const ChatPage: React.FC = () => {
               ref={textareaRef}
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value);
+                const val = e.target.value;
+                setQuery(val);
                 e.target.style.height = 'auto';
                 e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                if (val.trim().length > 0) {
+                  startWriting();
+                } else {
+                  resetWriting();
+                }
                 handleUserTyping();
               }}
               onFocus={() => setIsFocused(true)}
@@ -6445,6 +6528,7 @@ export const ChatPage: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
+                  resetWriting();
                   handleSendOrStop();
                   if (textareaRef.current) textareaRef.current.style.height = 'auto'; 
                 }
@@ -6463,7 +6547,7 @@ export const ChatPage: React.FC = () => {
             )}
           </div>
 
-          <div className="relative flex-shrink-0 flex items-center gap-1">
+          <div className={`relative flex-shrink-0 flex items-center gap-1 transition-all ease-in-out ${isWriting ? 'duration-100 opacity-0 pointer-events-none -translate-x-1' : 'duration-300 opacity-100 pointer-events-auto translate-x-0'}`}>
             <input 
               type="file" 
               id="unified-upload" 
@@ -6488,13 +6572,20 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)]`}>
+        <div className={`flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)] transition-all ease-in-out ${
+          isWriting 
+            ? 'duration-100 opacity-0 pointer-events-none -translate-y-1' 
+            : 'duration-300 opacity-100 pointer-events-auto translate-y-0'
+        }`}>
           <div className="flex items-center gap-1 sm:gap-1.5">
-            <div className="relative">
+            <div ref={toolsMenuRef} className="relative">
               <button 
+                type="button"
                 onClick={() => {
                   if (!isInputDisabled) {
-                    setIsAdvancedToolsOpen(!isAdvancedToolsOpen);
+                    setIsAdvancedToolsOpen(prev => !prev);
+                    setIsModelMenuOpen(false);
+                    setIsAttachmentMenuOpen(false);
                   }
                 }}
                 disabled={isInputDisabled}
@@ -6513,7 +6604,7 @@ export const ChatPage: React.FC = () => {
               </button>
 
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-50 overflow-hidden bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-[100] overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)]`}>
                   <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
                     {t('tools').toUpperCase()}
                   </div>
@@ -6555,11 +6646,14 @@ export const ChatPage: React.FC = () => {
 
             <div className="w-px h-4 bg-[var(--border-main)] mx-0.5 hidden sm:block" />
 
-            <div className="relative">
+            <div ref={modelsMenuRef} className="relative">
               <button 
+                type="button"
                 onClick={() => {
                   if (!isInputDisabled) {
-                    setIsModelMenuOpen(!isModelMenuOpen);
+                    setIsModelMenuOpen(prev => !prev);
+                    setIsAdvancedToolsOpen(false);
+                    setIsAttachmentMenuOpen(false);
                   }
                 }}
                 disabled={isInputDisabled}
@@ -6577,7 +6671,7 @@ export const ChatPage: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
               {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-32 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-50 bg-[var(--bg-dropdown)] border-[var(--border-main)]`}>
+                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-36 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-[100] bg-[var(--surface-card)] border-[var(--border-main)]`}>
                   {models.map((model, idx) => (
                     <button 
                       key={`${model.id}-${idx}`}
@@ -6690,17 +6784,6 @@ export const ChatPage: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
-
-      {(isModelMenuOpen || isAttachmentMenuOpen || isAdvancedToolsOpen) && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => {
-            setIsModelMenuOpen(false);
-            setIsAttachmentMenuOpen(false);
-            setIsAdvancedToolsOpen(false);
-          }} 
-        />
       )}
 
       <div className="flex-1 flex flex-col w-full overflow-hidden relative">
@@ -7328,32 +7411,42 @@ export const ChatPage: React.FC = () => {
                         </Markdown>
                       )}
 
-                      {(((msg.citations && msg.citations.length > 0) || (msg.follow_ups && msg.follow_ups.length > 0))) && (
-                        <>
-                          {msg.citations && msg.citations.length > 0 && (
-                            <Citations 
-                              citations={msg.citations} 
-                              dir={dir} 
-                              isOpen={!!openCitationsMap[idx]}
-                              onToggle={() => setOpenCitationsMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                              query={messages.slice(0, idx).reverse().find(m => m.role === 'user')?.content || ''}
-                            />
-                          )}
-                          <AnimatePresence mode="wait">
-                            {(!isGenerating || idx < messages.length - 1) && msg.follow_ups && msg.follow_ups.length > 0 && (
-                              <motion.div
-                                key={`follow-ups-${idx}-${msg.id || idx}`}
-                                initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
-                                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                                exit={{ opacity: -3, filter: "blur(2px)" }}
-                                transition={{ duration: 0.15, ease: "easeOut" }}
-                              >
-                                <FollowUps followUps={msg.follow_ups || []} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
-                              </motion.div>
+                      {(() => {
+                        const messageFollowUps = (msg.follow_ups && msg.follow_ups.length > 0) 
+                          ? msg.follow_ups 
+                          : (idx === messages.length - 1 && aiSuggestions.length > 0 ? aiSuggestions : extractFollowUpsClient(msg.content).followUps);
+                        const hasCitations = !!(msg.citations && msg.citations.length > 0);
+                        const hasFollowUps = !!(messageFollowUps && messageFollowUps.length > 0);
+
+                        if (!hasCitations && !hasFollowUps) return null;
+
+                        return (
+                          <>
+                            {hasCitations && (
+                              <Citations 
+                                citations={msg.citations} 
+                                dir={dir} 
+                                isOpen={!!openCitationsMap[idx]}
+                                onToggle={() => setOpenCitationsMap(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                query={messages.slice(0, idx).reverse().find(m => m.role === 'user')?.content || ''}
+                              />
                             )}
-                          </AnimatePresence>
-                        </>
-                      )}
+                            <AnimatePresence mode="wait">
+                              {(!isGenerating || idx < messages.length - 1) && hasFollowUps && (
+                                <motion.div
+                                  key={`follow-ups-${idx}-${msg.id || idx}`}
+                                  initial={{ opacity: 0, y: 3, filter: "blur(2px)" }}
+                                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                                  exit={{ opacity: 0, filter: "blur(2px)" }}
+                                  transition={{ duration: 0.15, ease: "easeOut" }}
+                                >
+                                  <FollowUps followUps={messageFollowUps} onSelect={(q) => handleSendOrStop(q)} dir={dir} />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </>
+                        );
+                      })()}
                     </>
                       )}
 

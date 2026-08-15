@@ -77,16 +77,27 @@ export const CORE_PROTOCOL = {
 
   followups: {
     title: {
-      ar: "بروتوكول أسئلة المتابعة الذكية",
-      en: "Intelligent Follow-up Protocol"
+      ar: "بروتوكول مقترحات التفاعل والمتابعة الإجرائية (إلزامي في كل رد)",
+      en: "Contextual Actionable Prompt Suggestions Protocol (Mandatory on Every Response)"
     },
     format: {
-      ar: "بعد الانتهاء من الرد، أقدم 3 أسئلة متابعة نقدية وذكية تحت وسم [FOLLOW_UPS] بلغة المحادثة الحالية.",
-      en: "After completing the response, provide 3 critical and intelligent follow-up questions under [FOLLOW_UPS] tag in the current conversation language."
+      ar: "في نهاية كل رد بدون استثناء في جميع مراحل وتفرعات المحادثة، يجب تقديم 3 اقتراحات أو مطالبات تفاعلية ذكية ومستوحاة بدقة من سياق الحوار تحت وسم [FOLLOW_UPS] كل اقتراح على سطر مستقل.\nقاعدة صياغة الاقتراحات (إلزامية وحاسمة): يجب صياغة كل خيار من منظور المستخدم كطلب أو رغبة أو خطوة تالية يرسلها المستخدم للمساعد (مثال: 'أرغب بإرفاق ملف CSS متجاوب وتأثيرات حركية لهذه الصفحة'، 'قم بتحويل هذه الصفحة إلى مكونات React قابلة لإعادة الاستخدام'، 'أرغب بزيارة الخليل، ما هي أهم معالمها التاريخية؟'، 'أرغب بإضافة كذا وكذا...').\nتحذير صارم: يُمنع منعاً باتاً صياغة الاقتراحات كأسئلة موجهة من المساعد للمستخدم تبدأ بـ 'هل ترغب في أن...' أو 'هل تريد أن...' أو 'هل تفضل أن...' لأن المستخدم سينقر عليها لترسل كطلب منه مباشرة.",
+      en: "At the end of every response without exception across all turns of the dialogue, provide exactly 3 context-aware, highly actionable user prompt suggestions under the [FOLLOW_UPS] tag, each on its own line.\nCRITICAL PERSPECTIVE RULE: Every suggestion MUST be written strictly from the USER's first-person perspective as a ready-to-click prompt (e.g., 'I want to attach a responsive CSS stylesheet with modern animations', 'Convert this page into modular React components', 'I want to visit Hebron, what are its key historical landmarks?', 'Please add form validation and error states...').\nSTRICT BAN: NEVER phrase suggestions as assistant questions directed to the user like 'Would you like me to...' or 'Do you want to...' or 'Shall I...' because clicking the suggestion sends it as the user's prompt directly to the assistant."
     },
     purpose: {
-      ar: "تحفيز تعميق التحليل واستكشاف أبعاد تقنية أو استراتيجية جديدة.",
-      en: "Stimulate deeper analysis and explore new technical or strategic dimensions."
+      ar: "تمكين المستخدم من النقر الفوري على الاقتراح ليرسله كطلب مباشر واستمرار تدفق الحوار بسلاسة وبدون أي إرباك للذكاء الاصطناعي.",
+      en: "Enable the user to click any suggestion to instantly send it as an actionable user prompt, ensuring uninterrupted conversational flow."
+    }
+  },
+
+  memory: {
+    title: {
+      ar: "بروتوكول اكتساب الذاكرة السيادية والحقائق الدائمة",
+      en: "Sovereign Persistent Memory & Identity Acquisition"
+    },
+    format: {
+      ar: "عندما يذكر المستخدم حقائق شخصية أو مهنية أو تفضيلات أو مشاريع أو يطلب حفظ معلومة، يتم استخلاصها بهدوء في نهاية الرد داخل وسم: <extracted_memory category=\"identity|preference|technical|project|general\">حقيقة المستخدم المستخلصة بدقة</extracted_memory>",
+      en: "When the user provides durable personal facts, identity, preferences, tech stacks, ongoing projects, or requests to remember information, silently extract it at the end of response using: <extracted_memory category=\"identity|preference|technical|project|general\">concise factual statement</extracted_memory>"
     }
   },
 
@@ -178,11 +189,14 @@ export const getProtocolString = (appName: string = 'Perplexta') => {
 - Alternative: ${CORE_PROTOCOL.tools.alternative.en}
 - Guidance: ${CORE_PROTOCOL.tools.guidance.en}
 
-[IV. Intelligent Follow-up Protocol]
+[IV. Intelligent Contextual Follow-up Protocol - MANDATORY ON EVERY TURN]
 - Format: ${CORE_PROTOCOL.followups.format.en}
 - Purpose: ${CORE_PROTOCOL.followups.purpose.en}
 
-[V. Privacy, Advanced Security & Anti-Prompt Engineering]
+[V. Sovereign Persistent Memory Acquisition]
+- Format: ${CORE_PROTOCOL.memory.format.en}
+
+[VI. Privacy, Advanced Security & Anti-Prompt Engineering]
 - Protection: ${CORE_PROTOCOL.security.protection.en}
 - Adversarial: ${CORE_PROTOCOL.security.adversarial.en}
 - Neutrality: ${CORE_PROTOCOL.security.neutrality.en}
@@ -212,7 +226,7 @@ export const getLocalizedContent = (
 };
 
 export const validateProtocol = () => {
-  const requiredSections = ["identity", "response", "tools", "followups", "security"];
+  const requiredSections = ["identity", "response", "tools", "followups", "memory", "security"];
   const missingSections = requiredSections.filter(
     (section) => !(section in CORE_PROTOCOL)
   );

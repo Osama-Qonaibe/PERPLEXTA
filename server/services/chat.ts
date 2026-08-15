@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
-import { executeTaskLogic, cleanAIOutput } from './orchestrator.js';
+import { executeTaskLogic, cleanAIOutput, updateChatContextSummary } from './orchestrator.js';
+import { extractFollowUps } from '../utils/helpers.js';
 import { io } from '../config/socket.js';
 import { callAIProvider } from './ai.js';
 import { decrypt } from '../utils/crypto.js';
@@ -172,10 +173,12 @@ export async function handleChatMessage(socket: any, data: any) {
 
     // Final response sanitization to remove internal reasoning tags and technical markers
     const sanitizedResult = cleanAIOutput(result.result);
+    const { cleanText, followUps } = extractFollowUps(sanitizedResult);
+    const finalFollowUps = (result.follow_ups && result.follow_ups.length > 0) ? result.follow_ups : followUps;
 
     await pool.query(
-      'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
-      [sanitizedResult, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
+      'UPDATE messages SET content = $1, generation_time = $2, citations = $3, follow_ups = $4 WHERE id = $5',
+      [cleanText, generationTimeSeconds, JSON.stringify(result.citations || []), JSON.stringify(finalFollowUps || []), assistantMessageId]
     );
 
     // Link video generation output to assistant message ID 
@@ -189,17 +192,25 @@ export async function handleChatMessage(socket: any, data: any) {
 
     await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
 
+    const chatIdNum = finalChatId ? parseInt(String(finalChatId), 10) : 0;
+    if (chatIdNum > 0 && result.provider && result.model && result.apiKey) {
+      updateChatContextSummary(chatIdNum, authenticatedUserId, result.provider, result.model, result.apiKey).catch((err: any) => {
+        console.error('[ChatService] Error updating chat context summary:', err.message);
+      });
+    }
+
     // Reset typing state
     socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
 
     socket.emit('chat_chunk', { chunk: '', chatId: finalChatId, isFinal: true });
     socket.emit('chat_response', { 
-      result: sanitizedResult, 
+      result: cleanText, 
       chatId: finalChatId, 
       message_id: assistantMessageId,
       tool: finalToolId,
       generation_time: generationTimeSeconds,
-      citations: result.citations || []
+      citations: result.citations || [],
+      follow_ups: finalFollowUps || []
     });
 
     // Broadcast updated stats (including new ai generations count) to active admins in real-time

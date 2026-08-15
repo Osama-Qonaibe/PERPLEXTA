@@ -18,6 +18,7 @@ import {
 } from '../services/chat.js';
 import { VideoResourceProvider } from '../services/videoResourceProvider.js';
 import { validatePromptLength } from '../utils/security.js';
+import { extractFollowUps } from '../utils/helpers.js';
 import { getUserWallet } from '../services/wallet.js';
 
 const router = express.Router();
@@ -321,9 +322,12 @@ router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds,
 
     const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
 
+    const { cleanText, followUps } = extractFollowUps(result.result || '');
+    const finalFollowUps = (result.follow_ups && result.follow_ups.length > 0) ? result.follow_ups : followUps;
+
     await pool.query(
-      'UPDATE messages SET content = $1, generation_time = $2, citations = $3 WHERE id = $4',
-      [result.result, generationTimeSeconds, JSON.stringify(result.citations || []), assistantMessageId]
+      'UPDATE messages SET content = $1, generation_time = $2, citations = $3, follow_ups = $4 WHERE id = $5',
+      [cleanText, generationTimeSeconds, JSON.stringify(result.citations || []), JSON.stringify(finalFollowUps || []), assistantMessageId]
     );
 
     if (toolId === 'video' && result.result && assistantMessageId) {
@@ -340,12 +344,13 @@ router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds,
       io.to(`user_${req.user.id}`).emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
       io.to(`user_${req.user.id}`).emit('chat_chunk', { chunk: '', chatId, isFinal: true });
       io.to(`user_${req.user.id}`).emit('chat_response', { 
-        result: result.result, 
+        result: cleanText, 
         chatId, 
         message_id: assistantMessageId,
         tool: toolId || 'chat',
         generation_time: generationTimeSeconds,
-        citations: result.citations || []
+        citations: result.citations || [],
+        follow_ups: finalFollowUps || []
       });
       io.to(`user_${req.user.id}`).emit('chat_updated');
     }

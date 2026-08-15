@@ -81,6 +81,43 @@ function getDynamicHistoryLimit(totalMessages: number, maxDepth: number = 16): n
   return maxDepth;
 }
 
+export function extractDirectUserMemories(prompt: string): { fact: string; category: string }[] {
+  if (!prompt || prompt.trim().length < 4) return [];
+  const results: { fact: string; category: string }[] = [];
+  const trimmed = prompt.trim();
+
+  // Arabic explicit and implicit memory intents
+  const arPatterns = [
+    { regex: /(?:تذكر\s+(?:أن|ان|دائماً|دائما)?|احفظ\s+(?:أن|ان|عندي|لديك)?|لا\s+تنسى\s+(?:أن|ان)?|خزن\s+(?:أن|ان)?|سجل\s+(?:أن|ان)?)\s*[:،,-]?\s*(.+)/i, category: 'preference' },
+    { regex: /(?:اسمي\s+هو|اسمي|أنا\s+ادعى|انا\s+ادعى)\s+([^\.\n،]+)/i, category: 'identity', template: (m: string) => `اسم المستخدم هو ${m.trim()}` },
+    { regex: /(?:أنا\s+أعمل\s+(?:كـ|ك|في)?|انا\s+اعمل\s+(?:كـ|ك|في)?|مهنتي\s+هي|وظيفتي\s+هي|تخصصي\s+هو)\s+([^\.\n،]+)/i, category: 'professional', template: (m: string) => `تخصص/مهنة المستخدم: ${m.trim()}` },
+    { regex: /(?:أعيش\s+في|اعيش\s+في|أنا\s+من|انا\s+من|بلدي\s+هو|دولتي\s+هي|مدينتي\s+هي)\s+([^\.\n،]+)/i, category: 'identity', template: (m: string) => `مكان إقامة أو بلد المستخدم: ${m.trim()}` },
+    { regex: /(?:مشروعي\s+(?:الحالي|الجديد|القادم)?\s*(?:هو|عبارة عن)?)\s+([^\.\n،]+)/i, category: 'project', template: (m: string) => `مشروع المستخدم: ${m.trim()}` }
+  ];
+
+  // English explicit and implicit memory intents
+  const enPatterns = [
+    { regex: /(?:remember\s+(?:that|always)?|save\s+(?:that|this)?|keep\s+in\s+mind\s+(?:that)?|don't\s+forget\s+(?:that)?|note\s+(?:that)?)\s*[:,-]?\s*(.+)/i, category: 'preference' },
+    { regex: /(?:my\s+name\s+is|i\s+am|i'm\s+called)\s+([^\.\n,]+)/i, category: 'identity', template: (m: string) => `User's name is ${m.trim()}` },
+    { regex: /(?:i\s+work\s+as\s+(?:a|an)?|my\s+profession\s+is|my\s+job\s+is|my\s+specialty\s+is)\s+([^\.\n,]+)/i, category: 'professional', template: (m: string) => `User's profession: ${m.trim()}` },
+    { regex: /(?:i\s+live\s+in|i'm\s+from|i\s+am\s+from|my\s+country\s+is)\s+([^\.\n,]+)/i, category: 'identity', template: (m: string) => `User's location: ${m.trim()}` },
+    { regex: /(?:my\s+project\s+is|i\s+am\s+building|currently\s+working\s+on)\s+([^\.\n,]+)/i, category: 'project', template: (m: string) => `User's project: ${m.trim()}` }
+  ];
+
+  for (const p of [...arPatterns, ...enPatterns]) {
+    const match = trimmed.match(p.regex);
+    if (match && match[1]) {
+      const raw = match[1].trim();
+      if (raw.length >= 3 && raw.length <= 250) {
+        const fact = p.template ? p.template(raw) : raw;
+        results.push({ fact, category: p.category });
+      }
+    }
+  }
+
+  return results;
+}
+
 export function cleanAIOutput(text: string): string {
   if (!text) return '';
   
@@ -105,7 +142,6 @@ export function cleanAIOutput(text: string): string {
     .replace(CONSOLIDATE_TAG_REGEX, '')
     .replace(TASK_TAG_REGEX, '')
     .replace(AUTH_TAG_REGEX, '')
-    .replace(/```(?:json)?/gi, '')
     .trim();
 }
 
@@ -437,11 +473,20 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   let userMemoriesStr = '';
   if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
-    userMemoriesStr = "\nMEMORY:\n" + memoryRes.rows.map((m: any) => `- ${m.fact}`).join('\n') + "\n";
+    const facts = memoryRes.rows.map((m: any) => `• ${m.fact}`).join('\n');
+    userMemoriesStr = `\n\n[USER PERSISTENT MEMORY & VERIFIED FACTS]
+The sovereign system holds the following persistent verified facts regarding this user:
+${facts}
+CRITICAL INSTRUCTION: You MUST actively leverage, respect, and apply these remembered facts seamlessly throughout your reasoning and answers without reciting the raw list unless directly asked.\n`;
   }
 
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
-  const contextSummary = chatRes.rows[0]?.context_summary ? `\nCONTEXT:\n${chatRes.rows[0].context_summary}\n` : '';
+  const contextSummary = chatRes.rows[0]?.context_summary 
+    ? `\n[CONVERSATION CONTEXT SUMMARY]
+The following is a dense, stored summary of the ongoing conversation:
+${chatRes.rows[0].context_summary}
+CRITICAL INSTRUCTION: You MUST actively leverage this conversation summary and the recent message history to tailor your response. Specifically, you are STRICTLY PROHIBITED from generating generic greetings, default introductory templates, or generic follow-up suggestions. Every interaction proposal and suggested prompt under your [FOLLOW_UPS] tag MUST be highly specific, contextual, and directly derived from the topics, entities, and state of this particular ongoing dialogue.\n`
+    : '';
 
   let refinedSystemPromptSegment = '';
 
@@ -590,6 +635,7 @@ ${refinedSystemPromptSegment}`.trim();
 
   let generatedText = '';
   let successfulModel = null;
+  let successfulApiKey = '';
   let outerAccumulatedOutput = '';
 
   for (const target of modelsToTry) {
@@ -638,6 +684,7 @@ ${refinedSystemPromptSegment}`.trim();
           `${target.provider}/${displayModel}`
         );
         successfulModel = target;
+        successfulApiKey = apiKey;
 
         await recordProviderUsage(target.provider, route);
 
@@ -653,22 +700,36 @@ ${refinedSystemPromptSegment}`.trim();
           while ((match = memRegex.exec(generatedText)) !== null) {
             const category = match[1] || 'general';
             const fact = match[2]?.trim();
-            if (fact) extractedFacts.push({ fact, category });
+            if (fact && fact.length >= 3) {
+              extractedFacts.push({ fact, category });
+            }
+          }
+
+          // Extract direct user facts from user prompt as well
+          const directUserFacts = extractDirectUserMemories(cleanUserPrompt);
+          for (const duf of directUserFacts) {
+            if (!extractedFacts.some(ef => ef.fact.toLowerCase() === duf.fact.toLowerCase())) {
+              extractedFacts.push(duf);
+            }
           }
 
           if (extractedFacts.length > 0) {
             const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
             const currentCount = parseInt(countRes.rows[0].count);
 
-            if (currentCount >= memoryLimit) {
-              scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
-            }
-
-            const insertPromises = extractedFacts.map(item =>
-              pool.query(
-                "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
-                [userId, chatIdNum || null, item.fact, item.category]
-              ).then((insertRes: any) => {
+            let newInsertedCount = 0;
+            for (const item of extractedFacts) {
+              // Deduplication check: only insert if not already recorded
+              const existing = await pool.query(
+                'SELECT id FROM chat_memories WHERE user_id = $1 AND LOWER(fact) = LOWER($2) LIMIT 1',
+                [userId, item.fact]
+              );
+              if (existing.rows.length === 0) {
+                const insertRes = await pool.query(
+                  "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
+                  [userId, chatIdNum || null, item.fact, item.category]
+                );
+                newInsertedCount++;
                 if (io) {
                   io.to(`user_${userId}`).emit('memory_extracted', {
                     fact: item.fact,
@@ -676,15 +737,14 @@ ${refinedSystemPromptSegment}`.trim();
                     id: insertRes.rows[0].id
                   });
                 }
-              })
-            );
+              }
+            }
 
-            await Promise.all(insertPromises);
-
-            if (io) {
-              const newCount = currentCount + extractedFacts.length;
-              if (newCount >= memoryLimit) {
-                io.to(`user_${userId}`).emit('memory_warning', { currentCount: newCount });
+            const totalNow = currentCount + newInsertedCount;
+            if (totalNow >= memoryLimit) {
+              scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
+              if (io) {
+                io.to(`user_${userId}`).emit('memory_warning', { currentCount: totalNow });
               }
             }
           }
@@ -763,7 +823,17 @@ ${refinedSystemPromptSegment}`.trim();
     await onSuccess(generatedText);
     await incrementUserUsage(userId, toolIdStr).catch(() => {});
 
-    return { result: generatedText, citations: searchCitations };
+    const sanitizedOutput = cleanAIOutput(generatedText);
+    const { cleanText, followUps } = extractFollowUps(sanitizedOutput, cleanUserPrompt, userLang, toolIdStr);
+
+    return { 
+      result: cleanText, 
+      citations: searchCitations, 
+      follow_ups: followUps,
+      provider: successfulModel?.provider,
+      model: successfulModel?.model,
+      apiKey: successfulApiKey
+    };
   });
 };
 
@@ -833,26 +903,27 @@ Produce the minimum number of consolidated facts needed to preserve all key info
   }
 }
 
-async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
+export async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
   try {
-    const msgCountRes = await pool.query('SELECT count(*) FROM messages WHERE chat_id = $1', [chatIdNum]);
+    const msgCountRes = await pool.query('SELECT count(*) FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != \'\'', [chatIdNum]);
     const msgCount = parseInt(msgCountRes.rows[0].count, 10);
     
-    // Only update summary every 5 messages to save tokens and prevent rate limits
-    if (msgCount < 4 || msgCount % 5 !== 0) return;
+    // Generate context summary if there are at least 2 messages (1 user prompt + 1 assistant reply)
+    // to ensure early context is captured, and update it on every turn to keep it fresh and detailed.
+    if (msgCount < 2) return;
 
     const recentMessages = await pool.query(
       `SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT ${UPDATE_SUMMARY_LIMIT}`,
       [chatIdNum]
     );
 
-    if (recentMessages.rows.length < 4) return;
+    if (recentMessages.rows.length < 2) return;
 
     const conversationText = [...recentMessages.rows].reverse()
       .map((m: any) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
       .join('\n');
 
-    const summaryPrompt = `Summarize this conversation in 2-3 dense sentences capturing the main topics, decisions, and user context. Be factual and brief.\n\n${conversationText}`;
+    const summaryPrompt = `Summarize this conversation in 2-3 dense sentences in the language of the conversation (Arabic or English) capturing the main topics, decisions, and user context. Be factual and brief.\n\n${conversationText}`;
 
     const summary = await withTimeout(
       callAIProvider(provider, model, apiKey, summaryPrompt, 'You are a concise conversation summarizer. Output only the summary, no preamble.', undefined, [], {}, undefined),

@@ -2163,6 +2163,14 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       });
     });
 
+    await runVersioned('v80_sidebar_ads_columns', 'Ensure sidebar ads columns exist on system_settings', async (tx) => {
+      await ensureColumnsBulk(tx, 'system_settings', {
+        sidebar_ads_enabled: { type: 'BOOLEAN', default: 'true' },
+        sidebar_ad_impression_price: { type: 'NUMERIC(10,4)', default: '0.0100' },
+        sidebar_ad_click_price: { type: 'NUMERIC(10,2)', default: '0.10' }
+      });
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
 
     if (migrationMetrics.total > 0) {

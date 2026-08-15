@@ -699,15 +699,7 @@ export async function callAIProvider(
   const cleanApiKey = keyToUse.trim();
   if (!cleanApiKey) throw new Error(`No valid API key provided for ${provider}`);
 
-  // Resolve model aliases or typos (e.g., 'compound' placeholder)
-  let cleanModel = model;
-  if (cleanModel.toLowerCase() === 'compound') {
-    if (normProvider === 'groq') cleanModel = 'llama-3.1-70b-versatile';
-    else if (normProvider === 'openai') cleanModel = 'gpt-4o-mini';
-    else if (normProvider === 'anthropic') cleanModel = 'claude-3-haiku-20240307';
-    else if (normProvider === 'together') cleanModel = 'meta-llama/Llama-3-70b-chat-hf';
-    else if (normProvider.includes('google') || normProvider.includes('gemini')) cleanModel = 'gemini-1.5-flash';
-  }
+  let cleanModel = model.trim();
 
   if (cleanModel.includes('/') && !cleanModel.startsWith('models/')) {
     const parts = cleanModel.split('/');

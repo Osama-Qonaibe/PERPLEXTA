@@ -1,5 +1,35 @@
 import pkg from 'pg';
 const { Pool } = pkg;
+
+// Globally patch Pool.prototype.connect to handle errors on checked-out clients
+// and prevent Uncaught Exceptions on unexpected connection drops.
+const originalConnect = Pool.prototype.connect as any;
+(Pool.prototype as any).connect = function(cb?: any) {
+  if (typeof cb === 'function') {
+    return originalConnect.call(this, (err: any, client: any, release: any) => {
+      if (client && typeof client.on === 'function' && !client._errorListenerAttached) {
+        client._errorListenerAttached = true;
+        // Prevent unhandled exception if client connection drops while checked out
+        client.on('error', (clientErr: any) => {
+          console.warn('[DB Client] Checked-out client connection error:', clientErr?.message || clientErr);
+        });
+      }
+      cb(err, client, release);
+    });
+  }
+  
+  return originalConnect.call(this).then((client: any) => {
+    if (client && typeof client.on === 'function' && !client._errorListenerAttached) {
+      client._errorListenerAttached = true;
+      // Prevent unhandled exception if client connection drops while checked out
+      client.on('error', (clientErr: any) => {
+        console.warn('[DB Client] Checked-out client connection error:', clientErr?.message || clientErr);
+      });
+    }
+    return client;
+  });
+};
+
 import { encrypt, decrypt } from "../utils/crypto.js";
 
 export let pool: any;
