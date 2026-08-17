@@ -53,17 +53,21 @@ export const PwaInstallBanner: React.FC = () => {
   }, [canInstall, installState, isStandalone]);
 
   const handleAction = async () => {
+    // 1. If installed, just open the app
     if (installState === 'installed') {
       openApp();
-    } else if (canInstall) {
-      if (hasPrompt) {
-        const success = await promptInstall();
-        if (!success) {
-          setShowGuideModal(true);
-        }
-      } else {
-        setShowGuideModal(true);
-      }
+      return;
+    }
+
+    // 2. If browser supports PWA and has a captured prompt, trigger it.
+    if (canInstall && hasPrompt) {
+      await promptInstall();
+      return;
+    }
+
+    // 3. Fallback: If no prompt captured (e.g. iOS/unsupported), show guide.
+    if (canInstall && !hasPrompt) {
+      setShowGuideModal(true);
     }
   };
 

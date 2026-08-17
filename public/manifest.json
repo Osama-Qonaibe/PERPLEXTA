@@ -2,6 +2,7 @@
   "name": "Perplexta Platform",
   "short_name": "Perplexta",
   "description": "Professional Elite Technical Analysis & AI Orchestration Platform.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
