@@ -1,4 +1,4 @@
-import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
+import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {

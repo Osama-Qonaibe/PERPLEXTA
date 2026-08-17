@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrainCircuit, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface MemoryNotificationProps {
   isVisible: boolean;

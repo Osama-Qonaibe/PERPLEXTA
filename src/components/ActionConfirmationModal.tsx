@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, AlertTriangle, CheckCircle, Info, HelpCircle } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export interface ActionConfirmationModalProps {

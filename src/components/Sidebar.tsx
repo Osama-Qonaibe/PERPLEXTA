@@ -1,13 +1,13 @@
-import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
+import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
 import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Gift, CreditCard, LayoutDashboard, Plus, Settings, User, PanelRightClose, PanelLeftClose, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Palette, Keyboard, Wallet, Link2, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, Megaphone, LayoutGrid } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, User, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Wallet, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { SkeletonLoader } from './SkeletonLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
-import { PERPLEXTA_TRANSITION, SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
+import { SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
 import { useSwipeToClose } from '../utils/swipe';
 const sidebarTransition = SIDEBAR_TRANSITION;
 const sidebarSpring = SIDEBAR_MOTION_TRANSITION;

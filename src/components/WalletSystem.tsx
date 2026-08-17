@@ -1,4 +1,4 @@
-import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
+import { safeStorageGet } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';

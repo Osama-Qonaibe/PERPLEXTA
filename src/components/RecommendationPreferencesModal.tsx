@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sliders, X, Check, Save, RotateCcw, Sparkles, Tag, DollarSign, RefreshCw } from 'lucide-react';
+import { Sliders, X, Check, Save, Tag, DollarSign, RefreshCw } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 interface RecommendationPreferencesModalProps {

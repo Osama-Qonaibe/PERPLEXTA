@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
 
 export interface CustomVideoPlayerProps {
   src: string;

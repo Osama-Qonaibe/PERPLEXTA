@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Archive, RotateCcw, Trash2, Loader2, Play, Image as ImageIcon } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
-import { BulletinAd } from '../../server/db/types';
 
 interface StoryArchiveProps {
   dir: 'rtl' | 'ltr';

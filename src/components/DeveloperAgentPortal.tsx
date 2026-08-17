@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { 
   Terminal, ShieldCheck, Copy, Plus, Trash2, Globe, ArrowRight,
   RefreshCw, FileCode, Code, Check, Key, ShieldAlert, BookOpen, ExternalLink, Cpu,
@@ -21,6 +22,7 @@ interface Agent {
 
 export const DeveloperAgentPortal: React.FC = () => {
   const { token, language } = useAppContext();
+  const confirm = useConfirm();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -255,7 +257,12 @@ export const DeveloperAgentPortal: React.FC = () => {
   };
 
   const handleRevokeAgent = async (clientId: string) => {
-    if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من إلغاء وتجميد هذا الوكيل؟ سيتم تدمير جميع صلاحياته فوراً!' : 'Are you sure you want to revoke and delete this agent client? All its access rights will be terminated immediately!')) {
+    const isConfirmed = await confirm({
+      title: language === 'ar' ? 'إلغاء وكيل' : 'Revoke Agent',
+      description: language === 'ar' ? 'هل أنت متأكد من إلغاء وتجميد هذا الوكيل؟ سيتم تدمير جميع صلاحياته فوراً!' : 'Are you sure you want to revoke and delete this agent client? All its access rights will be terminated immediately!',
+      variant: 'danger' as const
+    });
+    if (!isConfirmed) {
       return;
     }
 

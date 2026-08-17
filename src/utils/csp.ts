@@ -38,7 +38,7 @@ export const getCSPNonce = (): string => {
  * Typically nonces are 16 or 32-byte base64 strings (e.g. 24 or 44 characters).
  * We check if the string contains only valid base64 characters and is of reasonable length.
  */
-export const isValidNonce = (nonce: string): boolean => {
+const isValidNonce = (nonce: string): boolean => {
   if (!nonce || typeof nonce !== 'string') return false;
   // Nonce must be at least 16 chars and contain only alphanumeric, +, /, = characters
   if (nonce.length < 16) return false;

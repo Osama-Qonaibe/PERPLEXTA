@@ -79,9 +79,17 @@ To optimize context limits while preserving historical continuity, the system co
 * **Fine-tuning Analytics:** Allows clients to dispatch immediate ratings ("Thumbs Up" / "Thumbs Down") directly to the database.
 * **Database Mapping:** Assistant messages stream down alongside their unique database IDs. Clicking feedback prompts immediate, error-free database writes against the `feedback` schema in Core DB, mapping human quality metrics to explicit model runs.
 
-### 5. Secure 100MB File Sandbox Ingestion & PDF Bridge
+### 5. Secure 100MB File Sandbox Ingestion, PDF Bridge & OCR Integration
 * **Strict Allowlist Filtering:** Files uploaded to the localized volume go through heavy backend verification, enforcing strict size checks (100MB MAX limit), filename path-traversal sanitization, and type checking.
-* **PDF Analytical Bridge:** Deploys resilient on-the-fly text extraction pipelines to handle multi-version PDF files. Extracted text contexts are injected dynamically into the active Orchestrator runtime prompt parameters.
+* **PDF Analytical Bridge & OCR Engine:** Deploys resilient on-the-fly text extraction pipelines and optical character recognition (OCR) to handle multi-version scanned documents, images, and PDF files. Extracted text contexts are injected dynamically into the active Orchestrator runtime prompt parameters to feed multi-modal analysis.
+
+### 6. Automatic Geolocation & Currency Targeting
+* **IP-to-Location Auto-Detection:** The gateway integrates silent IP-to-location lookups on incoming requests to map users to their local jurisdiction.
+* **Dynamic Currency & Language Fallback:** Dynamically maps account billing triggers, default currencies (e.g., ₪, $, €), and localized system fallbacks (Arabic/English) automatically based on geographical metrics to simplify user onboarding.
+
+### 7. Dynamic Email Template & Plan Management System
+* **Bilingual Custom Email Hub:** Admins construct, preview, and save rich, responsive HTML email templates for system actions (Welcome, Password Reset, Referral Bonus) directly in the Admin Dashboard, automatically localized in both Arabic and English.
+* **Active Plan Calculations:** Incorporates a centralized pricing engine ensuring mathematical precision between monthly, annual, and custom discounted subscription rates. Plan alterations in the Admin Dashboard auto-derive implied discounts and sync live configurations instantly to the Stripe gateway.
 
 ---
 

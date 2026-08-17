@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { pool } from '../db/index.js';
 import { decrypt } from '../utils/crypto.js';
 import { memoryCache } from '../utils/cache.js';
+import { invalidateApiKeysVaultCache } from '../db/queries.js';
 
 const CUSTOM_PROVIDER_TIMEOUT_MS = 60000;
 
@@ -246,11 +247,13 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
         [JSON.stringify(models), providerId]
       );
       invalidateVaultCache(providerId);
+      invalidateApiKeysVaultCache();
     }
     return { models, count };
   } catch (error) {
     console.error(`[SyncInternal] Error syncing ${providerId}:`, error);
     await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [providerId]);
+    invalidateApiKeysVaultCache();
     throw error;
   } finally {
     clearTimeoutTimer();

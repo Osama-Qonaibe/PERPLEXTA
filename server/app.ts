@@ -144,6 +144,10 @@ app.use((req: any, res: any, next: any) => {
     "https://*.gstatic.com"
   ];
 
+  if (res.locals.nonce) {
+    scriptSrcDirectives.push(`'nonce-${res.locals.nonce}'`);
+  }
+
   const cspDirectives: any = {
     defaultSrc: ["'self'"],
     scriptSrc: scriptSrcDirectives,
@@ -171,7 +175,8 @@ app.use((req: any, res: any, next: any) => {
       directives: cspDirectives
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "cross-origin" }
   })(req, res, next);
 });
 
