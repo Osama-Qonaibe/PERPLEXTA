@@ -1900,7 +1900,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSamePage) {
         toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
       } else {
-        localStorage.setItem('app_logged_in_toast', '1');
         localStorage.setItem('app_force_refresh', '1');
         window.location.href = targetRef || '/';
       }
@@ -2257,13 +2256,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!', { id: 'logout-success' });
       }, 100);
     }
-    const loggedInToast = localStorage.getItem('app_logged_in_toast');
-    if (loggedInToast === '1') {
-      localStorage.removeItem('app_logged_in_toast');
-      setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
-      }, 100);
-    }
   }, [language]);
 
   useEffect(() => {
@@ -2406,7 +2398,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           navigate('/chat');
-          toast.success(dir === 'rtl' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
 
           return { success: true };
         } else {
@@ -2517,7 +2508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ refreshToken: storedRefreshToken })
-      }).catch((e) => {});
+      }).catch(() => {});
     }
 
     purgeSession(forceRedirect);

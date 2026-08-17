@@ -673,13 +673,41 @@ ${refinedSystemPromptSegment}`.trim();
           continue;
         }
 
+        let isInsideThinkingBlock = false;
+
         const wrappedOnChunk = (chunk: string) => {
-          // Robust streaming cleaner to strip thinking blocks before streaming to frontend
-          const sanitizedChunk = chunk.replace(/<think>[\s\S]*?<\/think>/gi, '')
-                                     .replace(/:think>[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '')
-                                     .replace(/【[\s\S]*?】/g, '')
-                                     .replace(/\[Reasoning\][\s\S]*?\[\/Reasoning\]/gi, '');
+          let sanitizedChunk = '';
+          let i = 0;
           
+          while (i < chunk.length) {
+            if (!isInsideThinkingBlock) {
+              const startThink = chunk.indexOf('<think>', i);
+              if (startThink !== -1) {
+                sanitizedChunk += chunk.substring(i, startThink);
+                isInsideThinkingBlock = true;
+                i = startThink + 7;
+              } else {
+                sanitizedChunk += chunk.substring(i);
+                break;
+              }
+            } else {
+              const endThink = chunk.indexOf('</think>', i);
+              if (endThink !== -1) {
+                isInsideThinkingBlock = false;
+                i = endThink + 8;
+              } else {
+                break;
+              }
+            }
+          }
+          
+          // Secondary cleanup for other patterns
+          sanitizedChunk = sanitizedChunk
+            .replace(/<think>[\s\S]*?<\/think>/gi, '')
+            .replace(/:think>[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '')
+            .replace(/【[\s\S]*?】/g, '')
+            .replace(/\[Reasoning\][\s\S]*?\[\/Reasoning\]/gi, '');
+
           updateCostProgress(sanitizedChunk);
           if (onChunk) onChunk(sanitizedChunk);
         };

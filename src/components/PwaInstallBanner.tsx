@@ -39,12 +39,16 @@ export const PwaInstallBanner: React.FC = () => {
 
     const isCooldownActive = lastDismissedTime && (Date.now() - Number(lastDismissedTime) < cooldownMs);
 
-    if (isStandalone || isCooldownActive || installState === 'dismissed') {
+    // Check if already running in standalone mode (already installed and opened)
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+    
+    // Hide if installed OR already running standalone OR dismissed
+    if (isStandaloneMode || installState === 'installed' || installState === 'dismissed' || isCooldownActive) {
       setIsVisible(false);
       return;
     }
 
-    if (canInstall || installState === 'installed') {
+    if (canInstall) {
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1500);
