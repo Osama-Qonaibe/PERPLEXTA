@@ -36,58 +36,12 @@ const originalConnect = Pool.prototype.connect as any;
   });
 };
 
-import { encrypt, decrypt } from "../utils/crypto.js";
+import { decrypt } from "../utils/crypto.js";
 
-let corePoolInstance: any = null;
-let ledgerPoolInstance: any = null;
-let externalPoolInstance: any = null;
-let securityPoolInstance: any = null;
-
-function createPoolProxy(getPool: () => any): any {
-  return new Proxy({} as any, {
-    get(target, prop) {
-      let p = getPool();
-      if (!p || p.ended) {
-        if (prop === 'query') {
-          return async (text: any, params: any) => {
-            if (poolInitPromise) {
-              try { await poolInitPromise; } catch {}
-            }
-            p = getPool();
-            if (!p || p.ended) {
-              if (corePoolInstance && !corePoolInstance.ended) {
-                return corePoolInstance.query(text, params);
-              }
-              const defaultCore = process.env.DATABASE_URL || '';
-              if (defaultCore) {
-                const tempPool = new Pool({ connectionString: defaultCore, ...getBasePoolConfig(5, 5000) });
-                patchPoolQuery(tempPool);
-                try {
-                  return await tempPool.query(text, params);
-                } finally {
-                  await tempPool.end().catch(() => {});
-                }
-              }
-              throw new Error('Database pool is not initialized or in degraded mode.');
-            }
-            return p.query(text, params);
-          };
-        }
-        return undefined;
-      }
-      const val = p[prop];
-      if (typeof val === 'function') {
-        return val.bind(p);
-      }
-      return val;
-    }
-  });
-}
-
-export const pool: any = createPoolProxy(() => corePoolInstance);
-export const ledgerPool: any = createPoolProxy(() => ledgerPoolInstance);
-export const externalPool: any = createPoolProxy(() => externalPoolInstance);
-export const securityPool: any = createPoolProxy(() => securityPoolInstance);
+export let pool: any;
+export let ledgerPool: any;
+export let externalPool: any;
+export let securityPool: any;
 
 let currentCoreUrl     = '';
 let currentLedgerUrl   = '';
@@ -154,36 +108,16 @@ function patchPoolQuery(p: any) {
   if (!p || p._queryPatched) return p;
   const originalQuery = p.query.bind(p);
   p.query = async function(text: any, params: any) {
-    const maxRetries = 3;
+    const maxRetries = 2;
     let delay = 500;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        if (p.ended) {
-          throw new Error('Cannot use a pool after calling end on the pool');
-        }
         return await originalQuery(text, params);
       } catch (err: any) {
         const msg = err?.message || String(err);
-        const isTransient = /Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection|closed|SSL|Cannot use a pool after calling end|timeout exceeded|not queryable/i.test(msg);
+        const isTransient = /Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection|closed|SSL/i.test(msg);
         if (isTransient && attempt < maxRetries) {
-          console.warn(`[DB] Transient/Ended pool error ("${msg}"). Retrying query (attempt ${attempt}/${maxRetries})...`);
-          if (/Cannot use a pool after calling end|not queryable/i.test(msg)) {
-            if (poolInitPromise) {
-              try { await poolInitPromise; } catch {}
-            } else {
-              try {
-                if (!corePoolInstance || corePoolInstance.ended) {
-                  const defaultCore = process.env.DATABASE_URL || '';
-                  if (defaultCore) {
-                    corePoolInstance = new Pool({ connectionString: defaultCore, ...getBasePoolConfig(20, 15000) });
-                    patchPoolQuery(corePoolInstance);
-                  }
-                }
-              } catch (reInitErr) {
-                console.error('[DB] Auto-reinit error:', reInitErr);
-              }
-            }
-          }
+          console.warn(`[DB] Transient connection error ("${msg}"). Retrying query (attempt ${attempt}/${maxRetries})...`);
           await new Promise(r => setTimeout(r, delay));
           delay *= 2;
           continue;
@@ -275,7 +209,7 @@ export async function initializePerplextaPools(
 
     if (!coreUrl) {
       console.warn('[DB] ⚠️ DATABASE_URL missing. Operating in Degraded Mode.');
-      corePoolInstance = ledgerPoolInstance = externalPoolInstance = securityPoolInstance = null;
+      pool = ledgerPool = externalPool = securityPool = null;
       return;
     }
 
@@ -287,39 +221,39 @@ export async function initializePerplextaPools(
     } catch (err: any) {
       console.error(`[DB] Validation failed: ${err.message}`);
       if (process.env.NODE_ENV === 'production' && coreUrl) throw err;
-      corePoolInstance = ledgerPoolInstance = externalPoolInstance = securityPoolInstance = null;
+      pool = ledgerPool = externalPool = securityPool = null;
       return;
     }
 
-    if (corePoolInstance) corePoolInstance.end().catch((e: any) => console.error('[DB] Error closing core pool:', e.message));
-    if (ledgerPoolInstance   && ledgerPoolInstance   !== corePoolInstance) ledgerPoolInstance.end().catch((e: any)   => console.error('[DB] Error closing ledger pool:', e.message));
-    if (externalPoolInstance && externalPoolInstance !== corePoolInstance) externalPoolInstance.end().catch((e: any) => console.error('[DB] Error closing external pool:', e.message));
-    if (securityPoolInstance && securityPoolInstance !== corePoolInstance) securityPoolInstance.end().catch((e: any) => console.error('[DB] Error closing security pool:', e.message));
+    if (pool) pool.end().catch((e: any) => console.error('[DB] Error closing core pool:', e.message));
+    if (ledgerPool   && ledgerPool   !== pool) ledgerPool.end().catch((e: any)   => console.error('[DB] Error closing ledger pool:', e.message));
+    if (externalPool && externalPool !== pool) externalPool.end().catch((e: any) => console.error('[DB] Error closing external pool:', e.message));
+    if (securityPool && securityPool !== pool) securityPool.end().catch((e: any) => console.error('[DB] Error closing security pool:', e.message));
 
     const ssl = getSslConfig(); // single call, used for all pools below
 
     try {
-      corePoolInstance = patchPoolQuery(new Pool({
+      pool = patchPoolQuery(new Pool({
         connectionString: coreUrl,
-        ...getBasePoolConfig(finalCoreMax, 15000),
+        ...getBasePoolConfig(finalCoreMax, 10000),
       }));
-      ledgerPoolInstance = finalLedgerUrl === coreUrl ? corePoolInstance : patchPoolQuery(new Pool({
+      ledgerPool = finalLedgerUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalLedgerUrl,
-        ...getBasePoolConfig(finalLedgerMax, 15000),
+        ...getBasePoolConfig(finalLedgerMax, 5000),
       }));
-      externalPoolInstance = finalExternalUrl === coreUrl ? corePoolInstance : patchPoolQuery(new Pool({
+      externalPool = finalExternalUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalExternalUrl,
-        ...getBasePoolConfig(finalExternalMax, 15000),
+        ...getBasePoolConfig(finalExternalMax, 5000),
       }));
-      securityPoolInstance = finalSecurityUrl === coreUrl ? corePoolInstance : patchPoolQuery(new Pool({
+      securityPool = finalSecurityUrl === coreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: finalSecurityUrl,
-        ...getBasePoolConfig(finalSecurityMax, 15000),
+        ...getBasePoolConfig(finalSecurityMax, 5000),
       }));
 
-      corePoolInstance.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
-      if (ledgerPoolInstance   !== corePoolInstance) ledgerPoolInstance.on('error',   (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
-      if (externalPoolInstance !== corePoolInstance) externalPoolInstance.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
-      if (securityPoolInstance !== corePoolInstance) securityPoolInstance.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
+      pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
+      if (ledgerPool   !== pool) ledgerPool.on('error',   (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
+      if (externalPool !== pool) externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
+      if (securityPool !== pool) securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
 
       currentCoreUrl = coreUrl; currentLedgerUrl = finalLedgerUrl;
       currentExternalUrl = finalExternalUrl; currentSecurityUrl = finalSecurityUrl;
@@ -328,9 +262,10 @@ export async function initializePerplextaPools(
 
       console.log('[DB] Pools created. Verifying connectivity...');
 
-      const verify = async (p: any, name: string, retries: number = 1): Promise<boolean> => {
-        let delay = 500;
+      const verify = async (p: any, name: string, retries: number = 3): Promise<boolean> => {
+        let delay = 1000;
         for (let attempt = 1; attempt <= retries; attempt++) {
+          let fatalErr: string | null = null;
           const success = await new Promise<boolean>((resolve) => {
             let settled = false;
             const timer = setTimeout(() => {
@@ -338,7 +273,7 @@ export async function initializePerplextaPools(
                 settled = true;
                 resolve(false);
               }
-            }, 3000); // 3 seconds timeout
+            }, 5000);
             p.query('SELECT 1')
               .then(() => {
                 if (!settled) {
@@ -351,6 +286,10 @@ export async function initializePerplextaPools(
                 if (!settled) {
                   settled = true;
                   clearTimeout(timer);
+                  const msg = e?.message || String(e);
+                  if (msg.includes('password authentication failed') || msg.includes('does not exist')) {
+                    fatalErr = msg;
+                  }
                   resolve(false);
                 }
               });
@@ -358,42 +297,62 @@ export async function initializePerplextaPools(
 
           if (success) return true;
 
+          if (fatalErr) {
+            console.warn(`[DB] ${name} authentication failed: ${fatalErr}. Falling back immediately.`);
+            return false;
+          }
+
           if (attempt < retries) {
-            console.log(`[DB Info] ${name} connectivity check failed on attempt ${attempt}/${retries}. Retrying in ${delay}ms...`);
+            console.warn(`[DB] ${name} connectivity check failed on attempt ${attempt}/${retries}. Retrying in ${delay}ms...`);
             await new Promise(r => setTimeout(r, delay));
             delay *= 2;
           }
         }
-        console.log(`[DB Info] ${name} connectivity check completed (unreachable after ${retries} attempts).`);
+        console.warn(`[DB] ${name} connectivity check failed after ${retries} attempts.`);
         return false;
       };
 
-      const coreOk = await verify(corePoolInstance, 'Core DB', 1);
+      const coreOk = await verify(pool, 'Core DB', 3);
       coreOk
         ? console.log('[DB] Core DB connection verified.')
         : console.error('[DB] ❌ Core DB unreachable.');
 
-      if (ledgerPoolInstance !== corePoolInstance) {
-        if (!await verify(ledgerPoolInstance, 'Ledger DB', 1)) {
-          console.log('[DB Info] Ledger DB unreachable — falling back to Core pool.');
-          try { await ledgerPoolInstance.end(); } catch {}
-          ledgerPoolInstance = corePoolInstance;
+      if (ledgerPool !== pool) {
+        if (!await verify(ledgerPool, 'Ledger DB', 1)) {
+          console.warn('[DB] Ledger DB unreachable — falling back to Core pool.');
+          try { await ledgerPool.end(); } catch {}
+          ledgerPool = pool;
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'ledger'");
+            } catch {}
+          }
         } else { console.log('[DB] Ledger DB connection verified.'); }
       } else { console.log('[DB] Ledger DB sharing Core pool.'); }
 
-      if (externalPoolInstance !== corePoolInstance) {
-        if (!await verify(externalPoolInstance, 'External DB', 1)) {
-          console.log('[DB Info] External DB unreachable — falling back to Core pool.');
-          try { await externalPoolInstance.end(); } catch {}
-          externalPoolInstance = corePoolInstance;
+      if (externalPool !== pool) {
+        if (!await verify(externalPool, 'External DB', 1)) {
+          console.warn('[DB] External DB unreachable — falling back to Core pool.');
+          try { await externalPool.end(); } catch {}
+          externalPool = pool;
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'external'");
+            } catch {}
+          }
         } else { console.log('[DB] External DB connection verified.'); }
       } else { console.log('[DB] External DB sharing Core pool.'); }
 
-      if (securityPoolInstance !== corePoolInstance) {
-        if (!await verify(securityPoolInstance, 'Security DB', 1)) {
-          console.log('[DB Info] Security DB unreachable — falling back to Core pool.');
-          try { await securityPoolInstance.end(); } catch {}
-          securityPoolInstance = corePoolInstance;
+      if (securityPool !== pool) {
+        if (!await verify(securityPool, 'Security DB', 1)) {
+          console.warn('[DB] Security DB unreachable — falling back to Core pool.');
+          try { await securityPool.end(); } catch {}
+          securityPool = pool;
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'security'");
+            } catch {}
+          }
         } else { console.log('[DB] Security DB connection verified.'); }
       } else { console.log('[DB] Security DB sharing Core pool.'); }
 
@@ -401,7 +360,7 @@ export async function initializePerplextaPools(
     } catch (err: any) {
       console.error('[DB] Critical error during pool creation:', err.message);
       if (process.env.NODE_ENV === 'production') throw err;
-      corePoolInstance = ledgerPoolInstance = externalPoolInstance = securityPoolInstance = null;
+      pool = ledgerPool = externalPool = securityPool = null;
     }
   })();
 
@@ -521,30 +480,20 @@ export async function synchronizePerplextaPoolsFromRegistry() {
           if (p) {
             await p.end().catch(() => {});
           }
-          const isAuthFailure = e.code === '28P01' || 
-                                e.message.toLowerCase().includes('password authentication') || 
-                                e.message.toLowerCase().includes('authentication failed') ||
-                                e.message.toLowerCase().includes('invalid password');
-          if (isAuthFailure) {
-            console.log(`[DB Info] Registry ${id} DB check failed immediately due to invalid credentials: ${e.message}. Deactivating in registry and falling back to Core.`);
+          const isFatal = e.message.includes('password authentication failed') || e.message.includes('does not exist');
+          if (attempt === retries || isFatal) {
+            console.warn(`[DB] Registry ${id} DB check failed${isFatal ? ' (fatal)' : ` after ${retries} attempts`}: ${e.message}. Falling back to Core.`);
             try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false WHERE id = $1", [id]);
+              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = $1", [id]);
             } catch {}
-            return defaultUrl;
+            return coreUrl;
           }
-          if (attempt === retries) {
-            console.log(`[DB Info] Registry ${id} DB check failed after ${retries} attempts: ${e.message}. Falling back to Core.`);
-            try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false WHERE id = $1", [id]);
-            } catch {}
-            return defaultUrl;
-          }
-          console.log(`[DB Info] Registry ${id} DB check failed on attempt ${attempt}/${retries}: ${e.message}. Retrying in ${delay}ms (exponential backoff)...`);
+          console.warn(`[DB] Registry ${id} DB check failed on attempt ${attempt}/${retries}: ${e.message}. Retrying in ${delay}ms (exponential backoff)...`);
           await new Promise(r => setTimeout(r, delay));
           delay *= 2;
         }
       }
-      return defaultUrl;
+      return coreUrl;
     };
 
     const ledgerUrl   = await testAndResolveUrl('ledger', ledgerRaw, defaultLedger);
@@ -652,70 +601,60 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
   if (poolName === 'core') {
     const url = currentCoreUrl || process.env.DATABASE_URL;
     if (!url) throw new Error('Core DB URL not found');
-    if (corePoolInstance) {
-      await corePoolInstance.end().catch((e: any) => console.error('[DB] Error ending core pool:', e.message));
+    if (pool) {
+      await pool.end().catch((e: any) => console.error('[DB] Error ending core pool:', e.message));
     }
-    corePoolInstance = patchPoolQuery(new Pool({
+    pool = patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 15000),
+      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000),
     }));
-    corePoolInstance.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
-    await corePoolInstance.query('SELECT 1');
+    pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
+    await pool.query('SELECT 1');
     console.log('[DB] Core pool reconnected successfully.');
   } else if (poolName === 'ledger') {
     const url = currentLedgerUrl || process.env.LEDGER_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
     if (!url) throw new Error('Ledger DB URL not found');
-    if (ledgerPoolInstance && ledgerPoolInstance !== corePoolInstance) {
-      await ledgerPoolInstance.end().catch((e: any) => console.error('[DB] Error ending ledger pool:', e.message));
+    if (ledgerPool && ledgerPool !== pool) {
+      await ledgerPool.end().catch((e: any) => console.error('[DB] Error ending ledger pool:', e.message));
     }
-    ledgerPoolInstance = url === (currentCoreUrl || process.env.DATABASE_URL) ? corePoolInstance : patchPoolQuery(new Pool({
+    ledgerPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 15000),
+      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000),
     }));
-    if (ledgerPoolInstance !== corePoolInstance) {
-      ledgerPoolInstance.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
+    if (ledgerPool !== pool) {
+      ledgerPool.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
     }
-    await ledgerPoolInstance.query('SELECT 1');
+    await ledgerPool.query('SELECT 1');
     console.log('[DB] Ledger pool reconnected successfully.');
   } else if (poolName === 'external') {
     const url = currentExternalUrl || process.env.EXTERNAL_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
     if (!url) throw new Error('External DB URL not found');
-    if (externalPoolInstance && externalPoolInstance !== corePoolInstance) {
-      await externalPoolInstance.end().catch((e: any) => console.error('[DB] Error ending external pool:', e.message));
+    if (externalPool && externalPool !== pool) {
+      await externalPool.end().catch((e: any) => console.error('[DB] Error ending external pool:', e.message));
     }
-    externalPoolInstance = url === (currentCoreUrl || process.env.DATABASE_URL) ? corePoolInstance : patchPoolQuery(new Pool({
+    externalPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 15000),
+      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000),
     }));
-    if (externalPoolInstance !== corePoolInstance) {
-      externalPoolInstance.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
+    if (externalPool !== pool) {
+      externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
     }
-    await externalPoolInstance.query('SELECT 1');
+    await externalPool.query('SELECT 1');
     console.log('[DB] External pool reconnected successfully.');
   } else if (poolName === 'security') {
     const url = currentSecurityUrl || process.env.SECURITY_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
     if (!url) throw new Error('Security DB URL not found');
-    if (securityPoolInstance && securityPoolInstance !== corePoolInstance) {
-      await securityPoolInstance.end().catch((e: any) => console.error('[DB] Error ending security pool:', e.message));
+    if (securityPool && securityPool !== pool) {
+      await securityPool.end().catch((e: any) => console.error('[DB] Error ending security pool:', e.message));
     }
-    securityPoolInstance = url === (currentCoreUrl || process.env.DATABASE_URL) ? corePoolInstance : patchPoolQuery(new Pool({
+    securityPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 15000),
+      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000),
     }));
-    if (securityPoolInstance !== corePoolInstance) {
-      securityPoolInstance.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
+    if (securityPool !== pool) {
+      securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
     }
-    await securityPoolInstance.query('SELECT 1');
+    await securityPool.query('SELECT 1');
     console.log('[DB] Security pool reconnected successfully.');
   }
 }
-
-export async function forceReconnectAllPools(): Promise<void> {
-  console.log('[DB] Global Pool Reset requested for all 4 pools...');
-  await forceReconnectPool('core');
-  await forceReconnectPool('ledger');
-  await forceReconnectPool('external');
-  await forceReconnectPool('security');
-  console.log('[DB] All 4 database pools successfully reconnected and reset.');
-}
-

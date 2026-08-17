@@ -29,7 +29,7 @@ router.post('/generate-followups', async (req, res) => {
     Assistant Response: ${lastMessage}`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: { responseMimeType: "application/json" }
     }).catch((err: any) => {
@@ -45,8 +45,7 @@ router.post('/generate-followups', async (req, res) => {
     res.json(JSON.parse(text));
   } catch (err: any) {
     if (err.message === 'INVALID_API_KEY') {
-        console.warn('AI follow-up suggestion error: Invalid API Key - disabling feature for this request');
-        return res.status(401).json({ error: 'AI configuration error: Invalid API Key' });
+        return res.json([]);
     }
     console.error('AI follow-up suggestion error:', err);
     res.status(500).json({ error: 'Failed to generate suggestions' });
@@ -80,7 +79,7 @@ router.post('/suggest-meta', async (req, res) => {
     const prompt = `Based on the following body content, suggest a high-performing meta-title (max 60 chars) and meta-description (max 160 chars). Return the result strictly in JSON format: {"metaTitle": "...", "metaDescription": "..."}. \n\nContent: ${content}`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Using standard stable flash model
+      model: "gemini-1.5-flash", // Using standard stable flash model
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });

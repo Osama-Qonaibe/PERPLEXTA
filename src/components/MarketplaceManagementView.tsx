@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { 
-  ShoppingBag, Check, X, Shield, Trash2, ExternalLink, Calendar, Search, Filter, Eye, AlertCircle,
-  Edit, Award, Share2, Upload, AlertTriangle, Flame, Star, Sparkles, Gift, Scale, TrendingUp
+  ShoppingBag, Check, X, Trash2, Search, Eye, 
+  Edit, Award, Share2, Upload, Flame, Star, Sparkles, Gift, Scale, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';

@@ -5,7 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
 
 export const IncentiveCard: React.FC = () => {
-  const { dir, t, user, milestoneData, setMilestoneData, theme, siteSettings } = useAppContext();
+  const { dir, t, user, milestoneData, setMilestoneData, siteSettings } = useAppContext();
   const [copied, setCopied] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 

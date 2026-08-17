@@ -100,6 +100,11 @@ export function usePwaInstall(): UsePwaInstallReturn {
       }
     }
 
+    // Check if early prompt was captured by index.html script
+    if (typeof window !== 'undefined' && (window as any).__deferredPwaPrompt) {
+      setDeferredPrompt((window as any).__deferredPwaPrompt);
+    }
+
     // Check if marked as installed
     const wasInstalled = safeStorageGet(STORAGE_INSTALLED_KEY) === 'true';
     if (checkStandalone || wasInstalled) {
@@ -107,12 +112,27 @@ export function usePwaInstall(): UsePwaInstallReturn {
     }
   }, []);
 
-  // Listen for native beforeinstallprompt & appinstalled browser events
+  // Listen for native beforeinstallprompt, captured prompt, & appinstalled browser events
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const handleCaptured = () => {
+      if ((window as any).__deferredPwaPrompt) {
+        setDeferredPrompt((window as any).__deferredPwaPrompt);
+        if (safeStorageGet(STORAGE_INSTALLED_KEY) !== 'true') {
+          const lastDismissedTime = safeStorageGet(STORAGE_DISMISSED_KEY);
+          const savedCount = parseInt(safeStorageGet(STORAGE_DISMISS_COUNT_KEY) || '0', 10);
+          const elapsed = lastDismissedTime ? Date.now() - Number(lastDismissedTime) : Infinity;
+          if (elapsed >= getDismissCooldownMs(savedCount)) {
+            setInstallState('idle');
+          }
+        }
+      }
+    };
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any).__deferredPwaPrompt = e;
       setDeferredPrompt(e);
       if (safeStorageGet(STORAGE_INSTALLED_KEY) !== 'true') {
         const lastDismissedTime = safeStorageGet(STORAGE_DISMISSED_KEY);
@@ -126,6 +146,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
 
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
+      (window as any).__deferredPwaPrompt = null;
       setInstallState('installed');
       safeStorageSet(STORAGE_INSTALLED_KEY, 'true');
       if (typeof window !== 'undefined') {
@@ -133,10 +154,12 @@ export function usePwaInstall(): UsePwaInstallReturn {
       }
     };
 
+    window.addEventListener('pwa-prompt-captured', handleCaptured);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
+      window.removeEventListener('pwa-prompt-captured', handleCaptured);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -212,10 +235,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
   }, []);
 
   const hasPrompt = deferredPrompt !== null;
-  const isNativeSupported = mobilePlatform === 'desktop' || mobilePlatform === 'android-chrome';
-  const canInstall = !isStandalone && installState !== 'installed' && (
-    isNativeSupported ? hasPrompt : (mobilePlatform === 'ios-safari' || mobilePlatform === 'ios-other' || mobilePlatform === 'android-other')
-  );
+  const canInstall = !isStandalone && installState !== 'installed';
 
   return {
     installState,

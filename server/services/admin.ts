@@ -87,50 +87,28 @@ export async function getDatabaseRegistry() {
   } catch (err) {
     console.warn(err);
   }
-  const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, connection_string, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
-  return result.rows.map((row: any) => ({
-    ...row,
-    connection_string: row.connection_string ? decrypt(row.connection_string) : ''
-  }));
+  const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
+  return result.rows;
 }
 
 export async function saveDatabaseConfig(config: any) {
   const body = config.config || config;
   const { id, type, is_active, activate } = config;
-  const targetId = id || body.id || (config.config && config.id);
-
-  console.log("[AdminService] Initializing saveDatabaseConfig for targetId:", targetId, {
-    db_type: type || body.type,
-    is_active,
-    activate
-  });
+  const targetId = id || body.id;
 
   if (!['core', 'ledger', 'external', 'security'].includes(targetId)) {
-    console.error("[AdminService] Unauthorized target ID passed to saveDatabaseConfig:", targetId);
     throw new Error('Unauthorized database target ID');
   }
 
   const db_name = body.db_name || body.dbName;
-  const connection_string = body.connection_string !== undefined ? body.connection_string : body.connectionString;
+  const connection_string = body.connection_string || body.connectionString;
   const ssl_mode = body.ssl_mode || body.sslMode;
-  const pool_size = body.pool_size || body.poolSize || 10;
-  const active_state = is_active !== undefined ? is_active : (activate !== undefined ? activate : true);
-  const db_type = type || body.type || 'cloud';
-
-  console.log("[AdminService] Parameter resolution:", {
-    db_name,
-    ssl_mode,
-    pool_size,
-    active_state,
-    db_type,
-    hasPassword: !!body.password,
-    hasConnString: !!connection_string
-  });
+  const pool_size = body.pool_size || body.poolSize;
+  const active_state = is_active !== undefined ? is_active : activate;
 
   const encryptedPassword = body.password ? encrypt(body.password) : null;
   const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
-  console.log("[AdminService] Running UPSERT on db_connections_registry table...");
   await pool.query(`
     INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -138,36 +116,29 @@ export async function saveDatabaseConfig(config: any) {
       type = EXCLUDED.type, host = EXCLUDED.host, port = EXCLUDED.port, db_name = EXCLUDED.db_name,
       username = EXCLUDED.username,
       password = COALESCE(EXCLUDED.password, db_connections_registry.password),
-      connection_string = EXCLUDED.connection_string,
+      connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
       ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size,
       is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-  `, [targetId, db_type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
-  console.log("[AdminService] UPSERT completed successfully.");
+  `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
 
   if (active_state) {
-    if (['core', 'ledger', 'external', 'security'].includes(targetId)) {
-      console.log("[AdminService] Database target is active. Commencing in-memory pool synchronization...");
+    if (targetId === 'core' || targetId === 'ledger' || targetId === 'external' || targetId === 'security') {
       await synchronizePerplextaPoolsFromRegistry();
-      console.log("[AdminService] Connection pool synchronization completed. Running incremental database schema migrations...");
-      const migrationRes = await runDatabaseMigrations('additive', targetId);
-      console.log("[AdminService] Database schema migration completed. Migration status details:", migrationRes);
+      await runDatabaseMigrations('additive', targetId);
     }
-  } else {
-    console.log("[AdminService] Database target is not active. Skipping in-memory pool synchronization and migrations.");
   }
-
   return { success: true };
 }
 
 export async function testDatabaseConnection(config: any) {
   const body = config.config || config;
   const dbId = config.id || body.id;
-  const connection_string = body.connection_string !== undefined ? body.connection_string : (body.connectionString !== undefined ? body.connectionString : config.connectionString);
-  const host = body.host || config.host;
-  const port = body.port || config.port;
-  const db_name = body.db_name || body.dbName || config.dbName;
-  const username = body.username || config.username;
-  const password = body.password || config.password;
+  const connection_string = body.connection_string || body.connectionString;
+  const host = body.host;
+  const port = body.port;
+  const db_name = body.db_name || body.dbName;
+  const username = body.username;
+  const password = body.password;
 
   let decryptedPassword = '';
   let decryptedConnString = '';
@@ -189,7 +160,7 @@ export async function testDatabaseConnection(config: any) {
     }
   }
 
-  let connStr = connection_string !== undefined && connection_string !== '' ? connection_string : decryptedConnString;
+  let connStr = connection_string || decryptedConnString;
   if (!connStr && host) {
     const finalPass = password || decryptedPassword;
     const encodedUser = encodeURIComponent(username || '');
@@ -541,147 +512,6 @@ export async function getServerHealth() {
     platform: os.platform(),
     load,
     databases: dbStatus
-  };
-}
-
-export async function getDatabasesHealthSummary() {
-  const poolsConfig = [
-    { id: 'core', name: 'Core Database', role: 'Operational Engine', target: pool },
-    { id: 'ledger', name: 'Ledger Vault', role: 'Financial & Economy', target: ledgerPool || pool },
-    { id: 'external', name: 'Sections Dashboard', role: 'Content & Integrations', target: externalPool || pool },
-    { id: 'security', name: 'Security & Defense', role: 'Defense & Audit Logs', target: securityPool || pool }
-  ];
-
-  const poolsData: any[] = [];
-  let totalActive = 0;
-  let totalIdle = 0;
-  let totalWaiting = 0;
-  let totalAllocated = 0;
-  let totalMaxLimit = 0;
-  let totalLatency = 0;
-  let connectedCount = 0;
-  let warningCount = 0;
-  let criticalCount = 0;
-
-  for (const p of poolsConfig) {
-    let status: 'connected' | 'disconnected' = 'connected';
-    let latencyMs = 0;
-    let error: string | null = null;
-    try {
-      const start = Date.now();
-      await p.target.query('SELECT 1');
-      latencyMs = Date.now() - start;
-      connectedCount++;
-      totalLatency += latencyMs;
-    } catch (err: any) {
-      status = 'disconnected';
-      error = err.message || 'Connection unreachable';
-    }
-
-    const metrics = getPoolMetrics(p.target, p.id);
-    const max = metrics.max || 20;
-    const active = metrics.active || 0;
-    const idle = metrics.idle || 0;
-    const waiting = metrics.waiting || 0;
-    const total = metrics.total || 0;
-    const utilization = Math.min(100, Math.round((active / (max || 1)) * 100));
-    const allocation = Math.min(100, Math.round((total / (max || 1)) * 100));
-
-    totalActive += active;
-    totalIdle += idle;
-    totalWaiting += waiting;
-    totalAllocated += total;
-    totalMaxLimit += max;
-
-    let alertLevel: 'optimal' | 'warning' | 'critical' = 'optimal';
-    let alertMessage = 'Normal connection load';
-    let alertMessageAr = 'مستوى اتصال طبيعي ومستقر';
-
-    if (status === 'disconnected') {
-      alertLevel = 'critical';
-      alertMessage = `Connection offline: ${error || 'Pool unreachable'}`;
-      alertMessageAr = `قاعدة البيانات غير متصلة: ${error || 'تعذر الوصول إلى المجمع'}`;
-      criticalCount++;
-    } else if (metrics.saturated || utilization >= 90 || active >= max) {
-      alertLevel = 'critical';
-      alertMessage = `CRITICAL: Pool saturated! Using ${active}/${max} connections (${waiting} queued)`;
-      alertMessageAr = `حرج: استنفاد كامل لسعة الاتصالات (${active}/${max} مستخدمة، ${waiting} قيد الانتظار)`;
-      criticalCount++;
-    } else if (utilization >= 70 || (max - active <= 3 && max > 5) || waiting > 0 || metrics.connection_leak_risk) {
-      alertLevel = 'warning';
-      alertMessage = `WARNING: Approaching max connection limit (${active}/${max} in use, ${utilization}%)`;
-      alertMessageAr = `تحذير: الاقتراب من الحد الأقصى للمجمع (${active}/${max} مستخدمة، ${utilization}%)`;
-      warningCount++;
-    }
-
-    let schemaVersion = 'v1.0 (Base)';
-    let migrationCount = 0;
-    if (status === 'connected' && p.target) {
-      try {
-        const migRes = await p.target.query('SELECT migration_name FROM migration_history ORDER BY id DESC LIMIT 1');
-        if (migRes.rows.length > 0) {
-          schemaVersion = migRes.rows[0].migration_name;
-        }
-        const countRes = await p.target.query('SELECT count(*) FROM migration_history');
-        migrationCount = parseInt(countRes.rows[0].count, 10) || 0;
-      } catch {
-        try {
-          const tCheck = await p.target.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");
-          migrationCount = tCheck.rows.length;
-          schemaVersion = `${migrationCount} tables`;
-        } catch {
-          schemaVersion = 'v1.0';
-        }
-      }
-    }
-
-    poolsData.push({
-      id: p.id,
-      name: p.name,
-      role: p.role,
-      status,
-      latencyMs,
-      error,
-      active,
-      idle,
-      waiting,
-      total,
-      max,
-      utilization,
-      allocation,
-      saturated: metrics.saturated,
-      connection_leak_risk: metrics.connection_leak_risk,
-      available: metrics.available,
-      alertLevel,
-      alertMessage,
-      alertMessageAr,
-      schemaVersion,
-      migrationCount
-    });
-  }
-
-  const avgLatencyMs = connectedCount > 0 ? Math.round(totalLatency / connectedCount) : 0;
-  const clusterUtilization = totalMaxLimit > 0 ? Math.min(100, Math.round((totalActive / totalMaxLimit) * 100)) : 0;
-  const overallClusterStatus: 'optimal' | 'warning' | 'critical' = 
-    criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'optimal';
-
-  return {
-    pools: poolsData,
-    summary: {
-      totalActive,
-      totalIdle,
-      totalWaiting,
-      totalAllocated,
-      totalMaxLimit,
-      clusterUtilization,
-      avgLatencyMs,
-      connectedCount,
-      totalPools: poolsConfig.length,
-      warningCount,
-      criticalCount,
-      overallClusterStatus,
-      timestamp: new Date().toISOString()
-    }
   };
 }
 

@@ -7,9 +7,9 @@ import {
   setGoogleAccessToken
 } from '../lib/googleAuth';
 import { 
-  Users, Search, Plus, Trash2, Edit2, X, Check, Loader2, 
-  UserCheck, LogIn, LogOut, Mail, Phone, MapPin, Cake, 
-  Briefcase, FileText, AlertCircle, RefreshCw, UserCheck2, ShieldCheck, HelpCircle
+  Users, Search, Plus, Trash2, Edit2, X, Loader2, 
+  UserCheck, LogOut, Mail, Phone, MapPin, Cake, 
+  Briefcase, FileText, AlertCircle, RefreshCw, UserCheck2, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { HighlightText } from './HighlightText';

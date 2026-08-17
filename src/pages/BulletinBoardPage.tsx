@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import {
   Megaphone, Plus, Search, Heart, MessageSquare, Share2, Bookmark, Gift,
-  ExternalLink, Phone, PhoneCall, Video, Film, Upload, CheckCircle2, AlertCircle, Clock, Eye, Sparkles,
+  Phone, Video, CheckCircle2, Eye, Sparkles,
   Send, X, Wallet, Tag, MessageCircle, Building2, MapPin, Globe, Type,
   UserCheck, UserPlus, Inbox, ArrowRight, ArrowLeft, ShieldCheck, Camera,
   Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
@@ -12,14 +12,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
-import { BulletinAd, BulletinAdComment, BulletinPage, BulletinInquiry } from '../../server/db/types';
+import { BulletinAd, BulletinAdComment, BulletinPage } from '../../server/db/types';
 import { UserAdAnalyticsView } from '../components/UserAdAnalyticsView';
 import { PostFeed } from '../components/PostFeed';
-import { AdDirectChat } from '../components/AdDirectChat';
 import { AdMessengerHub } from '../components/AdMessengerHub';
 import { BoostPostModal } from '../components/BoostPostModal';
 import { RecommendationWidget } from '../components/RecommendationWidget';
-import { AdInsightsTab } from '../components/AdInsightsTab';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
@@ -29,13 +27,6 @@ import { StoryUploadModal } from '../components/StoryUploadModal';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { SOCIAL_COLORS } from '../constants/socialColors';
-
-const DURATION_TIERS = [
-  { days: 3, price: 3.00, labelAr: '3 أيام', labelEn: '3 Days', badgeAr: 'اقتصادي', badgeEn: 'Basic' },
-  { days: 7, price: 5.00, labelAr: '7 أيام', labelEn: '7 Days', badgeAr: 'الأكثر شيوعاً', badgeEn: 'Popular' },
-  { days: 15, price: 10.00, labelAr: '15 يوماً', labelEn: '15 Days', badgeAr: 'توفير 20%', badgeEn: 'Save 20%' },
-  { days: 30, price: 18.00, labelAr: '30 يوماً', labelEn: '30 Days', badgeAr: 'أعلى قيمة (توفير 40%)', badgeEn: 'Best Value' },
-];
 
 const CATEGORIES = [
   { id: 'all', nameAr: 'جميع التصنيفات', nameEn: 'All Categories' },

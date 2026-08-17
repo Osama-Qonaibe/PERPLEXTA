@@ -114,7 +114,6 @@ import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 import { SeoCenterView } from "../components/SeoCenterView";
 import { AdminDiagnosticTool } from "../components/AdminDiagnosticTool";
 import { PagePreviewModal } from "../components/PagePreviewModal";
-import { DatabasePoolSummaryView } from "../components/DatabasePoolSummaryView";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -2921,7 +2920,7 @@ const ApiKeysVaultView = ({
   );
 };
 
-
+// --- Database Orchestration View ---
 const DatabaseOrchestrationView = ({
   theme,
   t,
@@ -2941,10 +2940,9 @@ const DatabaseOrchestrationView = ({
   } | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error" | "warning";
+    type: "success" | "error";
   } | null>(null);
   const [openBackupMenuId, setOpenBackupMenuId] = useState<string | null>(null);
-  const [isTestingAll, setIsTestingAll] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string | { ar: string; en: string };
@@ -2987,20 +2985,16 @@ const DatabaseOrchestrationView = ({
               color = "teal";
             }
 
-            const isLocal = db.host === 'localhost' || db.host === '127.0.0.1' || 
-                           (db.connection_string && (db.connection_string.includes('@localhost') || db.connection_string.includes('@127.0.0.1')));
-            const autoType = isLocal ? "local" : "cloud";
-
             return {
               ...db,
-              type: autoType,
+              type: db.type === "postgres" ? "local" : db.type || "local",
               titleKey,
               descKey,
               icon,
               color,
               isTesting: false,
               showPassword: false,
-              connectionTested: db.status === "healthy" || db.status === "saturated",
+              connectionTested: db.status === "healthy",
             };
           }),
         );
@@ -3012,8 +3006,9 @@ const DatabaseOrchestrationView = ({
 
   useEffect(() => {
     if (token) fetchDatabases();
+
     if (socket) {
-      socket.on("db_alert", (data: any) => {
+      socket.on("db_alert", (data) => {
         fetchDatabases();
         showToast(
           `⚠️ Alert: Database ${data.provider} is ${data.status}!`,
@@ -3021,13 +3016,14 @@ const DatabaseOrchestrationView = ({
         );
       });
     }
+
     return () => {
       if (socket) socket.off("db_alert");
     };
   }, [token, socket]);
 
-  const showToast = (message: string, type: "success" | "error" | "warning") => {
-    setToast({ message, type: type === "warning" ? "error" : type });
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -3040,30 +3036,33 @@ const DatabaseOrchestrationView = ({
     );
 
     try {
-      const res = await fetch("/api/health/db");
-      const data = await res.json();
-      
-      const poolMetrics = data.pools?.[id];
+      const res = await fetch("/api/admin/databases/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id, type: db.type, config: db }),
+      });
 
-      if (res.ok && poolMetrics && poolMetrics.available) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         setDatabases((dbs) =>
           dbs.map((d) =>
-            d.id === id ? { ...d, isTesting: false, status: poolMetrics.saturated ? "saturated" : "healthy", connectionTested: true } : d,
+            d.id === id ? { ...d, isTesting: false, status: "healthy", connectionTested: true } : d,
           ),
         );
-        showToast(
-          poolMetrics.saturated 
-            ? t("dbTestSaturated") || "Connection active but saturated (Queue full)" 
-            : t("dbTestSuccess") || "Connection active & healthy!", 
-          poolMetrics.saturated ? "warning" : "success"
-        );
+        showToast(t("dbTestSuccess") || "Connection successful!", "success");
       } else {
         setDatabases((dbs) =>
           dbs.map((d) =>
             d.id === id ? { ...d, isTesting: false, status: "error", connectionTested: false } : d,
           ),
         );
-        showToast(t("dbTestFailed") || "Connection inactive or failed", "error");
+        showToast(
+          data.error || t("dbTestFailed") || "Connection failed",
+          "error",
+        );
       }
     } catch (error) {
       setDatabases((dbs) =>
@@ -3075,66 +3074,19 @@ const DatabaseOrchestrationView = ({
     }
   };
 
-  const handleTestAllConnections = async () => {
-    if (databases.length === 0) return;
-    setIsTestingAll(true);
-    setDatabases((dbs) =>
-      dbs.map((d) => ({ ...d, isTesting: true })),
-    );
-
-    try {
-      const res = await fetch("/api/health/db");
-      const data = await res.json();
-
-      if (res.ok && data.pools) {
-        setDatabases((dbs) =>
-          dbs.map((d) => {
-            const poolMetrics = data.pools[d.id];
-            if (poolMetrics && poolMetrics.available) {
-              return {
-                ...d,
-                isTesting: false,
-                status: poolMetrics.saturated ? "saturated" : "healthy",
-                connectionTested: true,
-              };
-            } else {
-              return {
-                ...d,
-                isTesting: false,
-                status: "error",
-                connectionTested: false,
-              };
-            }
-          }),
-        );
-        const msg = language === "ar"
-          ? "تم فحص جميع اتصالات قواعد البيانات بالتوازي بنجاح!"
-          : "All database connections checked in parallel successfully!";
-        showToast(msg, "success");
-      } else {
-        setDatabases((dbs) =>
-          dbs.map((d) => ({ ...d, isTesting: false, status: "error", connectionTested: false })),
-        );
-        showToast(t("dbTestFailed") || "Connections check failed", "error");
-      }
-    } catch (error) {
-      setDatabases((dbs) =>
-        dbs.map((d) => ({ ...d, isTesting: false, status: "error", connectionTested: false })),
-      );
-      showToast(t("dbTestError") || "Error testing connections", "error");
-    } finally {
-      setIsTestingAll(false);
-    }
-  };
-
   const handleSaveConfig = (id: string) => {
     const db = databases.find((d) => d.id === id);
-    if (!db) {
-      console.warn("[DatabaseOrchestration] Save abort: database ID not found in current states:", id);
+    if (!db) return;
+
+    if (!db.connectionTested) {
+      showToast(
+        dir === "rtl"
+          ? "يجب اختبار الاتصال بنجاح أولاً قبل حفظ التعديلات."
+          : "Please successfully test the connection before saving configuration.",
+        "error"
+      );
       return;
     }
-
-    console.log("[DatabaseOrchestration] Save triggered for ID:", id, "current config state:", db);
 
     const confirmMsg = language === "ar"
       ? "هل أنت متأكد من حفظ وتغيير إعدادات وسلاسل الاتصال لقاعدة البيانات هذه؟ قد يؤثر استبدال سلاسل الاتصال النشطة على العمليات الجارية."
@@ -3146,28 +3098,6 @@ const DatabaseOrchestrationView = ({
       description: confirmMsg,
       variant: "warning",
       onConfirm: async () => {
-        console.log("[DatabaseOrchestration] Save modal confirmation received. Setting isSaving state for:", id);
-        setDatabases((dbs) =>
-          dbs.map((d) => (d.id === id ? { ...d, isSaving: true } : d)),
-        );
-        const requestPayload = {
-          id: db.id,
-          config: {
-            provider: db.provider,
-            type: db.type,
-            host: db.host || null,
-            port: db.port || null,
-            dbName: db.db_name || db.dbName || null,
-            username: db.username || null,
-            password: db.password || null,
-            connectionString:
-              db.connection_string || db.connectionString || null,
-            sslMode: db.ssl_mode || db.sslMode || null,
-            poolSize: db.pool_size || db.poolSize || 10,
-          },
-          activate: db.is_active || false,
-        };
-        console.log("[DatabaseOrchestration] Sending POST /api/admin/databases/save with payload:", requestPayload);
         try {
           const res = await fetch("/api/admin/databases/save", {
             method: "POST",
@@ -3175,14 +3105,26 @@ const DatabaseOrchestrationView = ({
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(requestPayload),
+            body: JSON.stringify({
+              id: db.id,
+              config: {
+                provider: db.provider,
+                type: db.type,
+                host: db.host || null,
+                port: db.port || null,
+                dbName: db.db_name || db.dbName || null,
+                username: db.username || null,
+                password: db.password || null,
+                connectionString:
+                  db.connection_string || db.connectionString || null,
+                sslMode: db.ssl_mode || db.sslMode || null,
+                poolSize: db.pool_size || db.poolSize || 10,
+              },
+              activate: db.is_active || false,
+            }),
           });
 
-          console.log("[DatabaseOrchestration] POST Response status:", res.status, "statusText:", res.statusText);
-
           if (res.ok) {
-            const data = await res.json();
-            console.log("[DatabaseOrchestration] Save completed successfully, response body:", data);
             showToast(
               t("dbSaveSuccess") || "Configuration saved successfully",
               "success",
@@ -3190,17 +3132,10 @@ const DatabaseOrchestrationView = ({
             fetchDatabases();
           } else {
             const data = await res.json();
-            console.error("[DatabaseOrchestration] Save request returned non-OK status. Response body error:", data);
             showToast(data.error || "Failed to save configuration", "error");
           }
-        } catch (error: any) {
-          console.error("[DatabaseOrchestration] Network error or exception thrown during save request:", error.message, error);
+        } catch (error) {
           showToast("Error saving configuration", "error");
-        } finally {
-          console.log("[DatabaseOrchestration] Completing save operation. Clearing isSaving state for:", id);
-          setDatabases((dbs) =>
-            dbs.map((d) => (d.id === id ? { ...d, isSaving: false } : d)),
-          );
         }
       }
     });
@@ -3541,41 +3476,6 @@ const DatabaseOrchestrationView = ({
           <span className="font-medium text-sm">{toast.message}</span>
         </div>
       )}
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--border-main)] pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-[var(--text-primary)] font-sans">
-            {language === "ar" ? "اتصالات قاعدة البيانات والتنظيم" : "Database Connections & Orchestration"}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            {language === "ar"
-              ? "تحكم كامل وتوزيع ديناميكي للمجموعات التشغيلية والمالية مع الفحص المباشر للأداء."
-              : "Complete control and dynamic allocation of operational & financial pools with live performance telemetry."}
-          </p>
-        </div>
-        <button
-          onClick={handleTestAllConnections}
-          disabled={isTestingAll || databases.length === 0}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-[var(--radius)] font-bold transition-theme border border-accent text-accent hover:bg-accent/10 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
-        >
-          {isTestingAll ? (
-            <span className="animate-spin inline-block w-4 h-4 border-2 border-accent border-t-transparent rounded-full" />
-          ) : (
-            <Activity size={16} />
-          )}
-          <span>{language === "ar" ? "فحص جميع الاتصالات" : "Test All Connections"}</span>
-        </button>
-      </div>
-
-      <DatabasePoolSummaryView
-        token={token}
-        language={language}
-        dir={dir}
-        theme={theme}
-        onRefreshRegistry={fetchDatabases}
-        showToast={showToast}
-      />
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {databases.map((db) => {
           const Icon = db.icon;
@@ -3620,15 +3520,11 @@ const DatabaseOrchestrationView = ({
                   )}
                   {db.status === "healthy" ? (
                     <span className="text-[11px] font-medium text-accent bg-accent/10 border border-accent/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 size={12} /> {t("statusConnected") || "Active"}
-                    </span>
-                  ) : db.status === "saturated" ? (
-                    <span className="text-[11px] font-medium text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <AlertTriangle size={12} /> {t("statusSaturated") || "Saturated"}
+                      <CheckCircle2 size={12} /> {t("statusConnected")}
                     </span>
                   ) : (
                     <span className="text-[11px] font-medium text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <XCircle size={12} /> {t("statusDisconnected") || "Inactive"}
+                      <XCircle size={12} /> {t("statusDisconnected")}
                     </span>
                   )}
                 </div>
@@ -3849,20 +3745,10 @@ const DatabaseOrchestrationView = ({
                   </button>
                   <button
                     onClick={() => handleSaveConfig(db.id)}
-                    disabled={db.isSaving}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] disabled:opacity-50`}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]`}
                   >
-                    {db.isSaving ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin text-accent" />
-                        {language === "ar" ? "جاري الحفظ..." : "Saving..."}
-                      </>
-                    ) : (
-                      <>
-                        <Save size={14} className="text-gray-400" />{" "}
-                        {t("saveDbConfig")}
-                      </>
-                    )}
+                    <Save size={14} className="text-gray-400" />{" "}
+                    {t("saveDbConfig")}
                   </button>
                 </div>
 

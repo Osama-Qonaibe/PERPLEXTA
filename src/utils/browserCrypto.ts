@@ -1,4 +1,4 @@
-const ENCRYPTION_KEY = 'perplexta_secure_key_32_chars_!!'; // Should match server-side key fallback
+export const ENCRYPTION_KEY = 'perplexta_secure_key_32_chars_!!'; // Should match server-side key fallback
 
 export async function encrypt(text: string): Promise<string> {
   const enc = new TextEncoder();

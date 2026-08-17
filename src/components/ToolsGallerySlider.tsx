@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  MessageSquare, 
+  
   Code, 
   Search, 
   Image as ImageIcon, 

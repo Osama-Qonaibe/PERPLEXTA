@@ -1,32 +1,49 @@
-import React, { Suspense, useEffect, useState, useRef } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeEngineProvider } from './context/ThemeContext';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { PwaProvider } from './context/PwaContext';
-import { ConfirmProvider } from './context/ConfirmContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
+// Helper to extract default export cleanly from ES modules or named exports
+const resolveModule = (m: any, name?: string) => {
+  if (!m) return { default: () => null };
+  if (m.default) return m;
+  if (name && m[name]) return { default: m[name] };
+  if (typeof m === 'function') return { default: m };
+  return m;
+};
+
 // Lazy-loaded page components with robust retry wrapper to prevent dynamic import fetch failures
-const lazyRetry = (factory: () => Promise<any>, name?: string) =>
-  React.lazy(() =>
-    factory()
-      .then((m) => (name ? { default: m[name] } : m))
-      .catch((err) => {
-        return new Promise<any>((resolve, reject) => {
-          setTimeout(() => {
-            factory()
-              .then((m) => resolve(name ? { default: m[name] } : m))
-              .catch((retryErr) => {
-                console.error('Chunk retry failed permanently, reloading page...', retryErr);
-                window.location.reload();
-                reject(retryErr);
-              });
-          }, 1500);
-        });
-      })
-  );
+const lazyRetry = (componentImport: () => Promise<any>, name?: string) =>
+  React.lazy(async () => {
+    const pageHasAlreadyBeenReloaded = JSON.parse(
+      sessionStorage.getItem('page_reloaded_for_chunk') || 'false'
+    );
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const m = await componentImport();
+        sessionStorage.removeItem('page_reloaded_for_chunk');
+        return resolveModule(m, name);
+      } catch (err) {
+        console.warn(`[LazyRetry] Attempt ${attempt} failed for ${name || 'chunk'}:`, err);
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 800 * attempt));
+        }
+      }
+    }
+
+    if (!pageHasAlreadyBeenReloaded) {
+      sessionStorage.setItem('page_reloaded_for_chunk', 'true');
+      window.location.reload();
+      return new Promise<any>(() => {});
+    }
+
+    throw new Error(`Failed to load module ${name || 'component'}. Please check network connection.`);
+  });
 
 const ChatPage = lazyRetry(() => import('./pages/ChatPage'), 'ChatPage');
 const RewardsPage = lazyRetry(() => import('./pages/RewardsPage'), 'RewardsPage');
@@ -57,7 +74,6 @@ import { InactivityWarningModal } from './components/InactivityWarningModal';
 import { ServiceUpdateToast } from './components/ServiceUpdateToast';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { PwaInstallSuccessService } from './components/PwaInstallSuccessService';
-import { PriorityImagePreloader } from './components/PriorityImagePreloader';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAppContext();
@@ -77,7 +93,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { theme, isAuthReady, siteSettings, language } = useAppContext();
+  const { theme, siteSettings, language } = useAppContext();
   const location = useLocation();
   const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
 
@@ -244,7 +260,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         expand={false}
       />
       <IncentiveCard />
-      <PriorityImagePreloader />
       <UpgradePromptModal />
       <InactivityWarningModal />
       <GlobalLoadingOverlay />
@@ -269,47 +284,45 @@ export default function App() {
     <BrowserRouter>
       <ThemeEngineProvider>
         <AppProvider>
-          <ConfirmProvider>
-            <PwaProvider>
-              <VideoResourceProvider>
-                <ErrorBoundary name="Perplexta Core Runtime">
-                  <PWAWrapper>
-                    <Routes>
-                <Route path="/" element={<MainLayout />}>
-                  <Route index element={<Navigate to="/chat" replace />} />
-                  <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
-                  <Route path="subscription" element={<SubscriptionPage />} />
-                  <Route path="chat/:id?" element={<ChatPage />} />
-                  <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
-                  <Route path="marketplace/:id?" element={<MarketplacePage />} />
-                  <Route path="google-hub" element={<GoogleHubPage />} />
-                  <Route path="discover" element={<RecommendationsPage />} />
-                  <Route path="Studio" element={<StudioPage />} />
-                  <Route path="blog/:slug?" element={<BlogPage />} />
-                  <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
-                  <Route path="terms" element={<Terms />} />
-                  <Route path="privacy" element={<Privacy />} />
-                  <Route path="about" element={<About />} />
-                  <Route path="reset-password" element={<ResetPasswordPage />} />
-                </Route>
+          <PwaProvider>
+            <VideoResourceProvider>
+              <ErrorBoundary name="Perplexta Core Runtime">
+                <PWAWrapper>
+                  <Routes>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<Navigate to="/chat" replace />} />
+                <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
+                <Route path="subscription" element={<SubscriptionPage />} />
+                <Route path="chat/:id?" element={<ChatPage />} />
+                <Route path="bulletin/:id?" element={<BulletinBoardPage />} />
+                <Route path="marketplace/:id?" element={<MarketplacePage />} />
+                <Route path="google-hub" element={<GoogleHubPage />} />
+                <Route path="discover" element={<RecommendationsPage />} />
+                <Route path="Studio" element={<StudioPage />} />
+                <Route path="blog/:slug?" element={<BlogPage />} />
+                <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
+                <Route path="terms" element={<Terms />} />
+                <Route path="privacy" element={<Privacy />} />
+                <Route path="about" element={<About />} />
+                <Route path="reset-password" element={<ResetPasswordPage />} />
+              </Route>
 
-                <Route path="share/:id" element={<SharedSnapshotPage />} />
+              <Route path="share/:id" element={<SharedSnapshotPage />} />
 
-                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
-                <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                  <Route path="dashboard" element={<AdminDashboard />} />
-                  <Route path="*" element={<AdminDashboard />} />
-                </Route>
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="*" element={<AdminDashboard />} />
+              </Route>
 
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </PWAWrapper>
-          </ErrorBoundary>
-        </VideoResourceProvider>
-      </PwaProvider>
-    </ConfirmProvider>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </PWAWrapper>
+        </ErrorBoundary>
+      </VideoResourceProvider>
+    </PwaProvider>
     </AppProvider>
     </ThemeEngineProvider>
     </BrowserRouter>

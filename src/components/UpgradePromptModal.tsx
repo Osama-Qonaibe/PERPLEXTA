@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { useSwipeToClose } from '../utils/swipe';
 import { 
-  X, Zap, CheckCircle2, ChevronRight, AlertTriangle, 
-  Sparkles, ShieldCheck, Wallet, ArrowRight, Layers,
+  X, Zap, CheckCircle2, AlertTriangle, 
+  Sparkles, ShieldCheck, Wallet, 
   Lock, Check, Coins, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';

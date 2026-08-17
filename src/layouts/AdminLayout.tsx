@@ -8,9 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
-  const { theme, resolvedTheme, themeTransitioning, isSidebarOpen, setIsSidebarOpen, dir: globalDir, language, isMobile } = useAppContext();
-
-  const localDir = language === 'ar' ? 'rtl' : 'ltr';
+  const { dir, language, isMobile } = useAppContext();
 
   return (
     <div 
@@ -20,7 +18,7 @@ export const AdminLayout: React.FC = () => {
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          dir={localDir}
+          dir={dir}
           initial="initial"
           animate="animate"
           exit="exit"
@@ -31,8 +29,8 @@ export const AdminLayout: React.FC = () => {
 
           <div 
             style={{ 
-              marginLeft: isMobile ? 0 : (localDir === 'rtl' ? 0 : 240),
-              marginRight: isMobile ? 0 : (localDir === 'rtl' ? 240 : 0),
+              marginLeft: isMobile ? 0 : (dir === 'rtl' ? 0 : 240),
+              marginRight: isMobile ? 0 : (dir === 'rtl' ? 240 : 0),
               transition: 'margin 0.2s ease'
             }}
             className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-inherit"

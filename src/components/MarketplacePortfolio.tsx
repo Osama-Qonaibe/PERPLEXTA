@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { 
-  ShoppingBag, Download, ExternalLink, Gift, DollarSign, 
-  Calendar, CreditCard, ChevronRight, LayoutGrid, Award, ShieldCheck, HeartPulse,
+  ShoppingBag, Download, Gift, DollarSign, 
+  Calendar, Award, 
   Eye, Play
 } from 'lucide-react';
 import { toast } from 'sonner';

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSwipeToClose } from '../utils/swipe';
 
 export const AuthModal: React.FC = () => {
-  const { t, theme, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
+  const { t, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const ref = searchParams.get('ref') || safeStorageGet('app_ref') || undefined;

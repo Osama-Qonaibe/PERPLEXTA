@@ -9,37 +9,27 @@ VersionManager.initAutoCheck();
 
 // Register Service Worker for app shell precaching and offline support
 if ('serviceWorker' in navigator) {
-  if (import.meta.env.DEV) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        registration.unregister().then((success) => {
-          if (success) console.log('[PWA] Unregistered stale service worker in development mode to avoid cached import interference.');
-        });
-      }
+  window.addEventListener('load', () => {
+    // Listen for controller changes when a new Service Worker takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.dispatchEvent(new CustomEvent('service-worker-updated'));
     });
-  } else {
-    window.addEventListener('load', () => {
-      // Listen for controller changes when a new Service Worker takes control
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.dispatchEvent(new CustomEvent('service-worker-updated'));
-      });
 
-      navigator.serviceWorker.register('/sw.js').then((registration) => {
-        registration.addEventListener('updatefound', () => {
-          const installingWorker = registration.installing;
-          if (installingWorker) {
-            installingWorker.addEventListener('statechange', () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                window.dispatchEvent(new CustomEvent('service-worker-updated'));
-              }
-            });
-          }
-        });
-      }).catch((err) => {
-        console.warn('[PWA] Service Worker registration failed:', err);
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.dispatchEvent(new CustomEvent('service-worker-updated'));
+            }
+          });
+        }
       });
+    }).catch((err) => {
+      console.warn('[PWA] Service Worker registration failed:', err);
     });
-  }
+  });
 }
 
 // Silence non-critical console calls in production to prevent telemetry / token leakage.

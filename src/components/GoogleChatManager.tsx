@@ -4,7 +4,7 @@ import { auth } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 import { 
   MessageSquare, Send, Plus, Users, Hash, RefreshCw, 
-  LogIn, LogOut, CheckCircle2, AlertCircle, ShieldCheck, Loader2, Sparkles, HelpCircle 
+  LogIn, LogOut, CheckCircle2, AlertCircle, ShieldCheck, Loader2 
 } from 'lucide-react';
 import { toast } from 'sonner';
 

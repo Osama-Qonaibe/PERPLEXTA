@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, BarChart2, Sparkles, Filter, Zap } from 'lucide-react';
+import { TrendingUp, Activity, BarChart2, Sparkles, Zap } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export interface TrendDataPoint {

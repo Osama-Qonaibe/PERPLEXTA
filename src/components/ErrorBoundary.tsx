@@ -48,9 +48,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const boundaryName = this.props.name || 'General';
-    // console.error is kept alive in production (see main.tsx) so this line
-    // always reaches the browser devtools AND the server-side reporter below.
     console.error(`[ErrorBoundary] [${boundaryName}] Caught error:`, error, errorInfo);
+
+    const isChunkError = /failed to fetch dynamically imported module|loading chunk failed|import/i.test(
+      error?.message || ''
+    );
+
+    if (isChunkError) {
+      const reloaded = sessionStorage.getItem('chunk_error_reloaded');
+      if (!reloaded) {
+        sessionStorage.setItem('chunk_error_reloaded', 'true');
+        window.location.reload();
+        return;
+      }
+    }
+
     reportToServer(boundaryName, error, errorInfo);
   }
 

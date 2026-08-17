@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const TypewriterMotive: React.FC<{ isVisible?: boolean }> = ({ isVisible = true }) => {
-  const { dir, language } = useAppContext();
+  const { language } = useAppContext();
 
   const arabicPhrases = useMemo(() => [
     "ابدأ الآن بإنشاء صوراً فائقة الدقة والجمال",

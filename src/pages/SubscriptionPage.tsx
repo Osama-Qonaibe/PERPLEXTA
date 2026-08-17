@@ -443,8 +443,8 @@ export const SubscriptionPage: React.FC = () => {
                 <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 md:mb-3">
                   {dir === 'rtl' ? 'الميزات' : 'Features'}
                 </p>
-                {plan.features.map((feature: any) => (
-                  <div key={feature.id} className="flex items-start gap-2.5 md:gap-3">
+                {plan.features.map((feature: any, idx: number) => (
+                  <div key={feature.id || feature.textEn || feature.textAr || idx} className="flex items-start gap-2.5 md:gap-3">
                     <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#334155' }} />
                     <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
                       {dir === 'rtl' ? feature.textAr : feature.textEn}

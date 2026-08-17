@@ -1,10 +1,10 @@
 import { safeStorageGet } from "@/utils/safeStorage";
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
   Send, 
-  Image as ImageIcon, 
+  Image as 
   X, 
   Loader2, 
   Check, 

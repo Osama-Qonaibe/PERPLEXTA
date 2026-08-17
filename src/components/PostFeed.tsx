@@ -37,10 +37,7 @@ import {
   Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ReactPlayer from 'react-player';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
-
-const Player = ReactPlayer as any;
 import { AdDirectChat } from './AdDirectChat';
 import { AdInsightsTab } from './AdInsightsTab';
 import { HighlightText } from './HighlightText';

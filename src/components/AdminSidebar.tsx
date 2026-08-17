@@ -3,12 +3,12 @@ import { NavLink } from 'react-router-dom';
 import { 
   Activity, Key, Database, Cpu, Landmark, 
   CreditCard, Users, Settings, Mail, ArrowRight,
-  Send, Brain, ShoppingBag, ShieldAlert, UserPlus, Megaphone, Shield
+  Send, Brain, ShieldAlert, UserPlus, Megaphone, Shield
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
-  const { t, user, theme, language: globalLang } = useAppContext();
+  const { t, user, language: globalLang } = useAppContext();
 
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';

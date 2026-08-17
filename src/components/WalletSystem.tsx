@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Wallet, TrendingUp, Users, ArrowUpCircle, 
-  ArrowDownCircle, Settings, History, CreditCard,
-  DollarSign, CheckCircle2, Clock, AlertCircle,
+  Wallet, ArrowUpCircle, 
+  ArrowDownCircle, History, CreditCard,
+  CheckCircle2, Clock, AlertCircle,
   Plus, Copy, ExternalLink, Check, ShieldCheck,
   Smartphone, Building, Mail, Globe, Save, Loader2,
   Lock, Send, Info, Paperclip, Trash2, Sparkles

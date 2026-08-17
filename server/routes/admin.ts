@@ -1,7 +1,7 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { pool, ledgerPool, getSecurityPool, getExternalPool } from '../db/index.js';
+import { pool, ledgerPool, getSecurityPool } from '../db/index.js';
 import { authenticateAdmin, invalidateUserCache } from '../middleware/auth.js';
 import { syncProviderModelsInternal, checkProviderStatus, invalidateVaultCache } from '../services/ai.js';
 import { memoryCache } from '../utils/cache.js';
@@ -13,11 +13,10 @@ import { createNotification, logSystemActivity } from '../services/notifications
 import { consolidateAllUserMemories } from '../services/memory.js';
 import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic, getMissingAssetReport } from '../services/system.js';
 import { syncAllContentSeoMetadata, auditContentSeoItems, syncSingleContentSeoItem, getSmartSeoSuggestion, applySmartSeoSuggestion } from '../services/seoSync.js';
-import { isSafeHost } from '../utils/helpers.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
-import { optimizeUploadedImage, normalizeMediaUrl } from '../services/mediaOptimizationService.js';
-import { authLimiter, adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
+import { optimizeUploadedImage } from '../services/mediaOptimizationService.js';
+import { adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
   getDatabaseRegistry, 
@@ -27,8 +26,7 @@ import {
   importDatabase, 
   initAllTools, 
   getAdminStats,
-  getServerHealth,
-  getDatabasesHealthSummary
+  getServerHealth
 } from '../services/admin.js';
 import { 
   invalidateRouteSeoCache, 
@@ -378,16 +376,6 @@ router.get("/pulse", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.get("/databases/health", authenticateAdmin, async (req, res) => {
-  try {
-    const healthSummary = await getDatabasesHealthSummary();
-    res.json(healthSummary);
-  } catch (error: any) {
-    console.error('[AdminRouter] Failed to retrieve database health summary:', error);
-    res.status(500).json({ error: 'Failed to retrieve database health summary' });
-  }
-});
-
 router.get("/databases/registry", authenticateAdmin, async (req, res) => {
   try {
     const registry = await getDatabaseRegistry();
@@ -398,30 +386,19 @@ router.get("/databases/registry", authenticateAdmin, async (req, res) => {
 });
 
 router.post("/databases/save", authenticateAdmin, async (req, res) => {
-  console.log("[AdminRouter] Received /databases/save request with body:", {
-    id: req.body.id,
-    type: req.body.type,
-    activate: req.body.activate,
-    is_active: req.body.is_active,
-    hasConfig: !!req.body.config
-  });
   try {
     const config = req.body.config || req.body;
     const host = config.host;
     const connStr = config.connection_string || config.connectionString;
 
     if (host && host.includes(' ')) {
-      console.warn("[AdminRouter] Rejected /databases/save due to invalid host content:", host);
       return res.status(400).json({ error: 'Invalid characters in Host.' });
     }
 
-    console.log("[AdminRouter] Invoking saveDatabaseConfig for ID:", req.body.id || config.id);
     const result = await saveDatabaseConfig(req.body);
-    console.log("[AdminRouter] saveDatabaseConfig completed successfully:", result);
     res.json(result);
-  } catch (error: any) {
-    console.error("[AdminRouter] Error in /databases/save route:", error.message, error.stack);
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -472,25 +449,6 @@ router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
   } catch (error: any) {
     console.error('[Admin] Database migration error:', error);
     res.status(500).json({ error: error.message || 'Database migration failed' });
-  }
-});
-
-router.post("/databases/reset-all", authenticateAdmin, async (req, res) => {
-  try {
-    const { forceReconnectAllPools, forceReconnectPool } = await import('../db/index.js');
-    if (typeof forceReconnectAllPools === 'function') {
-      await forceReconnectAllPools();
-    } else {
-      await forceReconnectPool('core');
-      await forceReconnectPool('ledger');
-      await forceReconnectPool('external');
-      await forceReconnectPool('security');
-    }
-    await auditLog((req as any).user?.id, 'Global Database Pool Reset', 'system', { timestamp: new Date().toISOString() });
-    res.json({ success: true, message: 'All four database connection pools successfully reset and reconnected.' });
-  } catch (error: any) {
-    console.error('[AdminRouter] Global pool reset failed:', error);
-    res.status(500).json({ error: error.message || 'Global pool reset failed' });
   }
 });
 

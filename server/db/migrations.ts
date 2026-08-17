@@ -495,56 +495,39 @@ export async function runSystemMaintenance() {
 export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive', targetId?: string) {
   if (!pool) return;
 
-  let client: PgPoolClient = null as unknown as PgPoolClient;
+  const client = await pool.connect();
   let ledgerClient: PgPoolClient | null = null;
   let externalClient: PgPoolClient | null = null;
   let securityClient: PgPoolClient | null = null;
 
-  try {
-    client = await pool.connect();
-    if (!client) throw new Error('Failed to acquire client from pool');
-
-    const isSameDb = (poolA: any, poolB: any) => {
-      if (!poolA || !poolB) return true;
-      if (poolA === poolB) return true;
-      const connA = poolA.options?.connectionString;
-      const connB = poolB.options?.connectionString;
-      if (!connA || !connB) return false;
-      try {
-        const urlA = new URL(connA);
-        const urlB = new URL(connB);
-        return urlA.host === urlB.host && urlA.pathname === urlB.pathname;
-      } catch {
-        return connA === connB;
-      }
-    };
-
-    const isLedgerDistinct = ledgerPool && !isSameDb(pool, ledgerPool);
-    const isExternalDistinct = externalPool && !isSameDb(pool, externalPool);
-    const isSecurityDistinct = securityPool && !isSameDb(pool, securityPool);
-
-    ledgerClient = isLedgerDistinct ? await connectToPool(ledgerPool, 'Ledger') : null;
-    externalClient = isExternalDistinct ? await connectToPool(externalPool, 'External') : null;
-    securityClient = isSecurityDistinct ? await connectToPool(securityPool, 'Security') : null;
-
-    // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
-    let hasLock = false;
+  const isSameDb = (poolA: any, poolB: any) => {
+    if (!poolA || !poolB) return true;
+    if (poolA === poolB) return true;
+    const connA = poolA.options?.connectionString;
+    const connB = poolB.options?.connectionString;
+    if (!connA || !connB) return false;
     try {
-      const lockRes = await client.query('SELECT pg_try_advisory_lock(74635291)');
-      hasLock = lockRes.rows[0]?.pg_try_advisory_lock === true;
-      if (!hasLock) {
-        console.warn('[Migrations] Advisory lock already held. Skipping concurrent migration runner to prevent deadlocks.');
-        return {
-          success: true,
-          target: targetId || 'all',
-          type,
-          skipped: true,
-          message: 'Migrations are currently locked/running or previous session retained the lock. Schema is assumed up-to-date.'
-        };
-      }
-    } catch (err: any) {
-      console.warn('[Migrations] Advisory lock acquisition warning:', err.message);
+      const urlA = new URL(connA);
+      const urlB = new URL(connB);
+      return urlA.host === urlB.host && urlA.pathname === urlB.pathname;
+    } catch {
+      return connA === connB;
     }
+  };
+
+  const isLedgerDistinct = ledgerPool && ledgerPool !== pool && !isSameDb(pool, ledgerPool);
+  const isExternalDistinct = externalPool && externalPool !== pool && !isSameDb(pool, externalPool);
+  const isSecurityDistinct = securityPool && securityPool !== pool && !isSameDb(pool, securityPool);
+
+  ledgerClient = await connectToPool(ledgerPool, 'Ledger');
+  externalClient = await connectToPool(externalPool, 'External');
+  securityClient = await connectToPool(securityPool, 'Security');
+
+  try {
+    // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
+    await client.query('SELECT pg_advisory_lock(74635291)').catch((err: any) => {
+      console.warn('[Migrations] Advisory lock acquisition warning:', err.message);
+    });
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
@@ -566,22 +549,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       )
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_migration_security_audit_created_at ON migration_security_audit(created_at)`);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS user_sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        session_token TEXT UNIQUE NOT NULL,
-        ip_address VARCHAR(100),
-        user_agent TEXT,
-        status VARCHAR(20) DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP NOT NULL,
-        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`).catch(() => {});
-    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`).catch(() => {});
 
     try {
       await safeQueryClient(securityClient, client, `
@@ -765,7 +732,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       }
 
       // Re-initialize tables cleanly from scratch
-      await initDb('scratch', client, ledgerClient, externalClient, securityClient);
+      await initDb('scratch', client, ledgerClient);
     }
 
     await client.query(`
@@ -796,21 +763,6 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         const startTime = Date.now();
         console.log(`[Migrations] Applying ${name}: ${description}...`);
         
-        try {
-          await client.query(`
-            INSERT INTO migration_security_audit (migration_name, status, details)
-            VALUES ($1, 'started', $2)
-          `, [
-            name,
-            JSON.stringify(sanitizeForLogging({
-              description,
-              lockKey,
-              targetId: targetId || 'all',
-              startTime: new Date(startTime).toISOString()
-            }))
-          ]);
-        } catch {}
-
         await client.query('BEGIN');
         if (ledgerClient) await ledgerClient.query('BEGIN');
         if (externalClient) await externalClient.query('BEGIN');
@@ -822,10 +774,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
           const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
           if (doubleCheck.rows.length > 0) {
-            await client.query('COMMIT').catch(() => {});
-            if (ledgerClient) await ledgerClient.query('COMMIT').catch(() => {});
-            if (externalClient) await externalClient.query('COMMIT').catch(() => {});
-            if (securityClient) await securityClient.query('COMMIT').catch(() => {});
+            await client.query('COMMIT');
+            if (ledgerClient) await ledgerClient.query('COMMIT');
+            if (externalClient) await externalClient.query('COMMIT');
+            if (securityClient) await securityClient.query('COMMIT');
             return;
           }
 
@@ -884,9 +836,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
             await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
             await client.query('COMMIT');
-            if (ledgerClient) await ledgerClient.query('COMMIT').catch(() => {});
-            if (externalClient) await externalClient.query('COMMIT').catch(() => {});
-            if (securityClient) await securityClient.query('COMMIT').catch(() => {});
+            if (ledgerClient) await ledgerClient.query('COMMIT');
+            if (externalClient) await externalClient.query('COMMIT');
+            if (securityClient) await securityClient.query('COMMIT');
 
             const duration = Date.now() - startTime;
             migrationMetrics.total++;
@@ -894,38 +846,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             migrationMetrics.totalDuration += duration;
             migrationMetrics.perMigration.set(name, { duration, status: 'success' });
             console.log(`[Migrations] Successfully applied ${name} (${duration}ms).`);
-
-            try {
-              await client.query(`
-                INSERT INTO migration_security_audit (migration_name, status, details)
-                VALUES ($1, 'committed', $2)
-              `, [
-                name,
-                JSON.stringify(sanitizeForLogging({
-                  description,
-                  durationMs: duration,
-                  targetId: targetId || 'all',
-                  timestamp: new Date().toISOString()
-                }))
-              ]);
-
-              const secPool = getSecurityPool();
-              if (secPool) {
-                await secPool.query(`
-                  INSERT INTO admin_audit_logs (action, target_resource, details)
-                  VALUES ($1, $2, $3)
-                `, [
-                  'DATABASE_MIGRATION_ACID_COMMIT',
-                  name,
-                  JSON.stringify({ migration_name: name, description, durationMs: duration, targetId: targetId || 'all' })
-                ]).catch(() => {});
-              }
-            } catch {}
           } catch (error) {
-            await client.query('ROLLBACK').catch(() => {});
-            if (ledgerClient) await ledgerClient.query('ROLLBACK').catch(() => {});
-            if (externalClient) await externalClient.query('ROLLBACK').catch(() => {});
-            if (securityClient) await securityClient.query('ROLLBACK').catch(() => {});
+            await client.query('ROLLBACK');
+            if (ledgerClient) await ledgerClient.query('ROLLBACK');
+            if (externalClient) await externalClient.query('ROLLBACK');
+            if (securityClient) await securityClient.query('ROLLBACK');
 
             const err = error as Error & { code?: string };
             console.error(`[Migrations] Failed to apply ${name}:`, err.message);
@@ -938,31 +863,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             try {
               await client.query(`
                 INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
-                VALUES ($1, 'rolled_back', $2, $3, $4)
+                VALUES ($1, 'failed', $2, $3, $4)
               `, [
                 name,
                 err.message || 'Unknown error',
                 err.code || null,
-                JSON.stringify(sanitizeForLogging({
-                  description,
-                  durationMs: duration,
-                  stack: err.stack,
-                  phase: 'runVersioned',
-                  targetId: targetId || 'all'
-                }))
+                JSON.stringify(sanitizeForLogging({ stack: err.stack, phase: 'runVersioned' }))
               ]);
-
-              const secPool = getSecurityPool();
-              if (secPool) {
-                await secPool.query(`
-                  INSERT INTO admin_audit_logs (action, target_resource, details)
-                  VALUES ($1, $2, $3)
-                `, [
-                  'DATABASE_MIGRATION_ACID_ROLLBACK',
-                  name,
-                  JSON.stringify({ migration_name: name, description, error: err.message, sql_state: err.code, durationMs: duration, targetId: targetId || 'all' })
-                ]).catch(() => {});
-              }
             } catch (auditErr) {
               console.error('[Migrations] Failed to write failure audit log');
             }
@@ -973,7 +880,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       };
 
     console.log('[Migrations] Running dynamic schema auto-repair...');
-    await initDb('additive', client, ledgerClient, externalClient, securityClient);
+    await initDb('additive');
 
     await runVersioned('v1_core_schema', 'Initial core database schema', async () => {});
 
@@ -2412,28 +2319,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     console.error('[CRITICAL] Database Migration failed:', err.message);
     if (process.env.NODE_ENV === 'production') throw err;
   } finally {
-    if (client) {
-      try { await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {}); } catch {}
-      client.release();
-    }
+    await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {});
+    client.release();
     if (ledgerClient) ledgerClient.release();
     if (externalClient) externalClient.release();
     if (securityClient) securityClient.release();
   }
 }
 
-export async function initDb(
-  mode: 'scratch' | 'additive' = 'additive',
-  customPool?: QueryClient,
-  customLedgerPool?: QueryClient,
-  customExternalPool?: QueryClient,
-  customSecurityPool?: QueryClient
-) {
+export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: QueryClient, customLedgerPool?: QueryClient) {
   if (!pool) return;
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
-  const targetSecurityPool = customSecurityPool || (securityPool === pool ? targetPool : (securityPool || targetPool));
-  const targetExternalPool = customExternalPool || (externalPool === pool ? targetPool : (externalPool || targetPool));
+  const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
+  const targetExternalPool = externalPool === pool ? targetPool : (externalPool || targetPool);
 
   interface SchemaTable {
     name: string;
@@ -2468,20 +2367,6 @@ export async function initDb(
         avatar TEXT,
         referral_code VARCHAR(6),
         email_notifications BOOLEAN DEFAULT true
-      )`
-    },
-    {
-      name: 'user_sessions',
-      query: `CREATE TABLE IF NOT EXISTS user_sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        session_token TEXT UNIQUE NOT NULL,
-        ip_address VARCHAR(100),
-        user_agent TEXT,
-        status VARCHAR(20) DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP NOT NULL,
-        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -3530,9 +3415,6 @@ export async function initDb(
     await p.query(table.query);
   }
 
-  await targetPool.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`).catch(() => {});
-  await targetPool.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`).catch(() => {});
-
   const settingsCheck = await targetPool.query('SELECT count(*) FROM system_settings');
   if (parseInt(settingsCheck.rows[0].count, 10) === 0) {
     await targetPool.query(
@@ -3864,14 +3746,6 @@ export async function verifySchemaIntegrity() {
           referral_code: { type: 'VARCHAR(6)' }
         }
       },
-      user_sessions: {
-        columns: ['id', 'user_id', 'session_token', 'ip_address', 'user_agent', 'status', 'created_at', 'expires_at', 'last_active_at'],
-        repairCols: {
-          session_token: { type: 'TEXT' },
-          status: { type: 'VARCHAR(20)', default: `'active'` },
-          last_active_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
-        }
-      },
       chats: {
         columns: ['id', 'user_id', 'title', 'tool_id', 'context_summary', 'is_pinned', 'created_at', 'updated_at', 'tool']
       },
@@ -4005,7 +3879,7 @@ export async function verifySchemaIntegrity() {
 
           try {
             console.log(`[Schema Integrity] Attempting table reconstruction for ${tableName}...`);
-            await initDb('additive', pool, ledgerPool, externalPool, securityPool);
+            await initDb('additive', pool, ledgerPool);
             report.repairedTables.push(tableName);
             console.log(`[Schema Integrity] Table ${tableName} reconstructed successfully.`);
           } catch (repairErr) {

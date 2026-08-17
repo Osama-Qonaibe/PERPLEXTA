@@ -144,10 +144,6 @@ app.use((req: any, res: any, next: any) => {
     "https://*.gstatic.com"
   ];
 
-  if (res.locals.nonce) {
-    scriptSrcDirectives.push(`'nonce-${res.locals.nonce}'`);
-  }
-
   const cspDirectives: any = {
     defaultSrc: ["'self'"],
     scriptSrc: scriptSrcDirectives,
@@ -175,8 +171,7 @@ app.use((req: any, res: any, next: any) => {
       directives: cspDirectives
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   })(req, res, next);
 });
 
@@ -280,6 +275,16 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
 app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
 app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
 app.get('/sw.js', serveStaticResource('sw.js'));
+app.get('/version.json', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.json({
+    version: '2.0.0',
+    buildHash: process.env.BUILD_HASH || 'v2.0.0-perplexta',
+    timestamp: Date.now()
+  });
+});
 
 app.use(wellKnownRouter);
 

@@ -15,7 +15,7 @@ const MAX_ALLOWED_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 /**
  * Known magic byte signatures for common file formats
  */
-function verifyMagicBytes(buffer: Buffer, ext: string, mimetype: string): { matches: boolean; detail?: string } {
+function verifyMagicBytes(buffer: Buffer, ext: string, mimetype?: string): { matches: boolean; detail?: string } {
   const hex = buffer.toString('hex', 0, Math.min(buffer.length, 32)).toLowerCase();
 
   switch (ext) {
@@ -141,7 +141,7 @@ export async function validateFileIntegrity(file: Express.Multer.File): Promise<
     };
   }
 
-  const magicCheck = verifyMagicBytes(fileBuffer, ext, mimetype);
+  const magicCheck = verifyMagicBytes(fileBuffer, ext);
   if (!magicCheck.matches) {
     return {
       isValid: false,

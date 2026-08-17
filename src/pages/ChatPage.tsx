@@ -32,9 +32,9 @@ import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
 import { HighlightText } from '../components/HighlightText';
 import { useFollowUpSuggestions } from '../hooks/useFollowUpSuggestions';
-import { stripProtocolMarkers, extractFollowUpsClient, formatActionableSuggestion, showSuccessToast, showErrorToast } from '../utils/chatUtils';
+import { stripProtocolMarkers, extractFollowUpsClient, formatActionableSuggestion } from '../utils/chatUtils';
 import { fileToBase64 } from '../utils/fileUtils';
-import { getAuthHeaders, formatExactTimestamp, formatTimeSeconds } from '../utils/adminUtils';
+import { formatExactTimestamp } from '../utils/adminUtils';
 import { ChatService } from '../services/chatService';
 
 import { ResponseSkeleton } from '../components/ResponseSkeleton';
@@ -42,7 +42,7 @@ import { ASPECT_RATIO_CLASSES } from '../constants/chat';
 
 import { ImageGenerationPlaceholder } from '../components/ImageGenerationPlaceholder';
 
-const ShareableImageOutput = ({ src, dir, alt, ...props }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
+const ShareableImageOutput = ({ src, dir, alt }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [scale, setScale] = useState(1);
@@ -3790,7 +3790,7 @@ export const SystemInactiveCard = ({ data, dir }: { data: any, dir: 'rtl' | 'ltr
   </motion.div>
 );
 
-export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any, tool?: string }) => {
+export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data: any, dir: 'rtl' | 'ltr', t?: any, navigate: any, user: any, tool?: string }) => {
   const [copied, setCopied] = useState(false);
   const { triggerUpgradePrompt, economySettings } = useAppContext();
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
@@ -3927,7 +3927,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
   );
 };
 
-export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t: any, navigate: any, user: any }) => {
+export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: any, dir: 'rtl' | 'ltr', t?: any, navigate: any, user: any }) => {
   const [copied, setCopied] = useState(false);
   const { triggerUpgradePrompt, economySettings } = useAppContext();
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
@@ -6547,7 +6547,7 @@ export const ChatPage: React.FC = () => {
             )}
           </div>
 
-          <div className={`relative flex-shrink-0 flex items-center gap-1 transition-all ease-in-out ${isWriting ? 'duration-100 opacity-0 pointer-events-none -translate-x-1' : 'duration-300 opacity-100 pointer-events-auto translate-x-0'}`}>
+          <div className="relative flex-shrink-0 flex items-center gap-1">
             <input 
               type="file" 
               id="unified-upload" 
@@ -6572,11 +6572,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)] transition-all ease-in-out ${
-          isWriting 
-            ? 'duration-100 opacity-0 pointer-events-none -translate-y-1' 
-            : 'duration-300 opacity-100 pointer-events-auto translate-y-0'
-        }`}>
+        <div className="flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)] transition-all ease-in-out">
           <div className="flex items-center gap-1 sm:gap-1.5">
             <div ref={toolsMenuRef} className="relative">
               <button 
@@ -7320,9 +7316,9 @@ export const ChatPage: React.FC = () => {
                             }}
                           />
                         ) : msg.is_quota_error ? (
-                           <QuotaExceededCard tool={msg.tool} data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
+                           <QuotaExceededCard tool={msg.tool} data={msg.quota_data} dir={dir} navigate={navigate} user={user} />
                         ) : msg.is_insufficient_funds ? (
-                           <InsufficientFundsCard data={msg.quota_data} dir={dir} t={t} navigate={navigate} user={user} />
+                           <InsufficientFundsCard data={msg.quota_data} dir={dir} navigate={navigate} user={user} />
                         ) : msg.is_system_inactive ? (
                            <SystemInactiveCard data={msg.quota_data} dir={dir} />
                         ) : (

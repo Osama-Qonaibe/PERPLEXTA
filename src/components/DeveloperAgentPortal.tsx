@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { 
-  Terminal, ShieldCheck, Copy, Plus, Trash2, Globe, ArrowRight,
-  RefreshCw, FileCode, Code, Check, Key, ShieldAlert, BookOpen, ExternalLink, Cpu,
-  Play, Send, Layers, Wifi, Database, Activity, CheckCircle2
+  Terminal, ShieldCheck, Copy, Plus, Trash2, Globe, 
+  RefreshCw, Code, Check, Key, ShieldAlert, BookOpen, Cpu,
+  Play, Layers, Wifi, Database, Activity, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 

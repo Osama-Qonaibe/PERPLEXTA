@@ -1,9 +1,7 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
 import jwt from 'jsonwebtoken';
 import { authenticateAdmin, authenticateToken } from '../middleware/auth.js';
-import { getSystemSettings, updateSystemSettings, getEconomySettings, updateEconomySettings } from '../services/system.js';
+import { getSystemSettings, updateSystemSettings, getEconomySettings } from '../services/system.js';
 import { pool } from '../db/index.js';
 import { getStripe, getPayPalCredentials } from '../services/payments.js';
 import { logSystemActivity } from '../services/notifications.js';

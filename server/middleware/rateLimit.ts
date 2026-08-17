@@ -2,7 +2,6 @@ import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { logSecurityAlert } from '../services/notifications.js';
 
-const isProd = process.env.NODE_ENV === 'production';
 const limitMultiplier = 500;
 
 const resolveClientKey = (req: any): string => {
