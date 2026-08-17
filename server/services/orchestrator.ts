@@ -2,7 +2,7 @@ import express from 'express';
 import { pool } from '../db/index.js';
 import { io } from '../config/socket.js';
 import { callAIProvider, getProviderKey, getProviderUrlKey, invalidateVaultCache } from './ai.js';
-import { checkAndIncrementQuota, decrementUserUsage, incrementUserUsage } from './quota.js';
+import { checkAndIncrementQuota, incrementUserUsage } from './quota.js';
 import { logSecurityAlert, logSystemActivity } from './notifications.js';
 import { forensicScanPDF } from './extractor.js';
 import { perplextaTTS } from './tts.js';
@@ -146,7 +146,7 @@ export function cleanAIOutput(text: string): string {
 }
 
 export const executeTaskLogic = async (reqBody: any, userId: number, req?: express.Request, onChunk?: (chunk: string) => void, socket?: any) => {
-  let { tool_id, prompt, system_prompt, chat_id, file_data, forensic_mode, image_settings, video_settings, audio_settings } = reqBody;
+  let { tool_id, prompt, chat_id, file_data, audio_settings } = reqBody;
   let toolIdStr = (tool_id as string) || 'chat';
 
   if (toolIdStr === 'sovereign_search') {
@@ -674,8 +674,14 @@ ${refinedSystemPromptSegment}`.trim();
         }
 
         const wrappedOnChunk = (chunk: string) => {
-          updateCostProgress(chunk);
-          if (onChunk) onChunk(chunk);
+          // Robust streaming cleaner to strip thinking blocks before streaming to frontend
+          const sanitizedChunk = chunk.replace(/<think>[\s\S]*?<\/think>/gi, '')
+                                     .replace(/:think>[\s\S]*?(?=\n\n|\n[A-Z]|$)/gi, '')
+                                     .replace(/【[\s\S]*?】/g, '')
+                                     .replace(/\[Reasoning\][\s\S]*?\[\/Reasoning\]/gi, '');
+          
+          updateCostProgress(sanitizedChunk);
+          if (onChunk) onChunk(sanitizedChunk);
         };
 
         generatedText = await withTimeout(
@@ -775,7 +781,7 @@ ${refinedSystemPromptSegment}`.trim();
             errMessage.includes('1113') ||
             errMessage.includes('Insufficient balance') ||
             errMessage.includes('resource package') ||
-            errMessage.includes('quota') ||
+            // errMessage.includes('quota') || // REMOVED: Too aggressive, often temporary
             errMessage.includes('recharge') ||
             errMessage.includes('balance') ||
             errMessage.includes('subscription') ||
