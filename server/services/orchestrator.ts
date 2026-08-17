@@ -16,7 +16,7 @@ import { getEconomySettings } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
 import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
 import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
-import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCachedApiKeysVault, invalidateApiKeysVaultCache } from '../db/queries.js';
+import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCachedApiKeysVault } from '../db/queries.js';
 
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 const SEARCH_TAG_REGEX = /<search_query>([\s\S]*?)<\/search_query>/gi;
@@ -787,7 +787,6 @@ ${refinedSystemPromptSegment}`.trim();
             const provLower = target.provider.toLowerCase();
             await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
             invalidateVaultCache(provLower);
-            invalidateApiKeysVaultCache();
             console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
             await logSecurityAlert(
               userId,
