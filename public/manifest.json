@@ -2,15 +2,12 @@
   "name": "Perplexta Platform - Elite AI Orchestration",
   "short_name": "Perplexta",
   "description": "Professional Elite Technical Analysis & AI Orchestration Platform with Dual-Database Architecture.",
-  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "any",
-  "categories": ["productivity", "utilities", "artificial intelligence", "finance", "business"],
   "icons": [
     {
       "src": "/app-assets/pwa-192x192.png",

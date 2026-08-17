@@ -4896,11 +4896,11 @@ export const ChatPage: React.FC = () => {
     if (!chatId) return;
     try {
       await ChatService.deleteChat(token || '', chatId);
-      toast.success(dir === 'rtl' ? 'تم حذف المحادثة بنجاح' : 'Chat deleted successfully');
+      // Removed toast notification for chat deletion
       window.dispatchEvent(new Event('chat-updated'));
       navigate('/chat');
     } catch (e: any) {
-      toast.error(e.message || (dir === 'rtl' ? 'فشل حذف المحادثة' : 'Failed to delete chat'));
+      // Removed error toast notification for chat deletion
     }
   };
 
