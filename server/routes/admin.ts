@@ -27,7 +27,8 @@ import {
   importDatabase, 
   initAllTools, 
   getAdminStats,
-  getServerHealth
+  getServerHealth,
+  getDatabasesHealthSummary
 } from '../services/admin.js';
 import { 
   invalidateRouteSeoCache, 
@@ -377,6 +378,16 @@ router.get("/pulse", authenticateAdmin, async (req, res) => {
   }
 });
 
+router.get("/databases/health", authenticateAdmin, async (req, res) => {
+  try {
+    const healthSummary = await getDatabasesHealthSummary();
+    res.json(healthSummary);
+  } catch (error: any) {
+    console.error('[AdminRouter] Failed to retrieve database health summary:', error);
+    res.status(500).json({ error: 'Failed to retrieve database health summary' });
+  }
+});
+
 router.get("/databases/registry", authenticateAdmin, async (req, res) => {
   try {
     const registry = await getDatabaseRegistry();
@@ -387,19 +398,30 @@ router.get("/databases/registry", authenticateAdmin, async (req, res) => {
 });
 
 router.post("/databases/save", authenticateAdmin, async (req, res) => {
+  console.log("[AdminRouter] Received /databases/save request with body:", {
+    id: req.body.id,
+    type: req.body.type,
+    activate: req.body.activate,
+    is_active: req.body.is_active,
+    hasConfig: !!req.body.config
+  });
   try {
     const config = req.body.config || req.body;
     const host = config.host;
     const connStr = config.connection_string || config.connectionString;
 
     if (host && host.includes(' ')) {
+      console.warn("[AdminRouter] Rejected /databases/save due to invalid host content:", host);
       return res.status(400).json({ error: 'Invalid characters in Host.' });
     }
 
+    console.log("[AdminRouter] Invoking saveDatabaseConfig for ID:", req.body.id || config.id);
     const result = await saveDatabaseConfig(req.body);
+    console.log("[AdminRouter] saveDatabaseConfig completed successfully:", result);
     res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error("[AdminRouter] Error in /databases/save route:", error.message, error.stack);
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 
@@ -437,22 +459,50 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
 
 router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
   try {
-    const { type } = req.body;
-    await runDatabaseMigrations(type || 'additive');
-    await auditLog((req as any).user?.id, 'Run Database Migrations', 'system', { type });
-    res.json({ success: true, message: 'Migrations completed' });
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+    const { id, type } = req.body;
+    const result = await runDatabaseMigrations(type || 'additive', id);
+    await auditLog((req as any).user?.id, 'Run Database Migrations', 'system', { id, type });
+    res.json({ 
+      success: true, 
+      message: type === 'scratch' ? 'Tables re-initialized successfully from scratch' : 'Schema synchronized successfully', 
+      target: id || 'all', 
+      type: type || 'additive',
+      details: result || null
+    });
+  } catch (error: any) {
+    console.error('[Admin] Database migration error:', error);
+    res.status(500).json({ error: error.message || 'Database migration failed' });
+  }
+});
+
+router.post("/databases/reset-all", authenticateAdmin, async (req, res) => {
+  try {
+    const { forceReconnectAllPools, forceReconnectPool } = await import('../db/index.js');
+    if (typeof forceReconnectAllPools === 'function') {
+      await forceReconnectAllPools();
+    } else {
+      await forceReconnectPool('core');
+      await forceReconnectPool('ledger');
+      await forceReconnectPool('external');
+      await forceReconnectPool('security');
+    }
+    await auditLog((req as any).user?.id, 'Global Database Pool Reset', 'system', { timestamp: new Date().toISOString() });
+    res.json({ success: true, message: 'All four database connection pools successfully reset and reconnected.' });
+  } catch (error: any) {
+    console.error('[AdminRouter] Global pool reset failed:', error);
+    res.status(500).json({ error: error.message || 'Global pool reset failed' });
   }
 });
 
 router.get("/databases/export", authenticateAdmin, async (req, res) => {
   try {
-    const backup = await exportDatabase(req.query.type as any);
-    await auditLog((req as any).user?.id, 'Export Database Backup', 'system', { type: req.query.type });
+    const type = (req.query.type as any) || 'core';
+    const backup = await exportDatabase(type);
+    await auditLog((req as any).user?.id, 'Export Database Backup', 'system', { type });
     res.json(backup);
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('[Admin] Database export error:', error);
+    res.status(500).json({ error: error.message || 'Database export failed' });
   }
 });
 
@@ -464,8 +514,9 @@ router.post("/databases/import", authenticateAdmin, async (req, res) => {
     const result = await importDatabase(backup, targetType);
     await auditLog((req as any).user?.id, 'Import Database', 'system', { targetType });
     res.json(result);
-  } catch {
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error: any) {
+    console.error('[Admin] Database import error:', error);
+    res.status(500).json({ error: error.message || 'Database import failed' });
   }
 });
 

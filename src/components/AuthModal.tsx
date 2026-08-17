@@ -1,6 +1,6 @@
-import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeStorage";
+import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, Loader2, Sparkles, LogIn, UserPlus, KeyRound } from 'lucide-react';
+import { X, Mail, Lock, Loader2, Sparkles } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';

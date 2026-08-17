@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Bell, Sun, Moon, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, WifiOff, Megaphone, Cpu } from 'lucide-react';
+import { Bell, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, WifiOff, Megaphone, Cpu } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { DefaultLogo } from './DefaultLogo';
 import { resolveImageUrl } from '../utils/imageResolver';

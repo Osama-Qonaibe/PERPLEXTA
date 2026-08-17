@@ -201,14 +201,69 @@ export async function logSecurityAlert(userId: number | null, alertType: string,
   }
 }
 
+let cachedSysLogColumns: string[] | null = null;
+async function getSysLogColumns(): Promise<string[]> {
+  if (cachedSysLogColumns) return cachedSysLogColumns;
+  try {
+    if (!pool) return ['user_id', 'action', 'type', 'description', 'metadata', 'details', 'ip_address'];
+    const res = await pool.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'system_logs'
+    `);
+    const cols = res.rows.map((r: any) => r.column_name);
+    cachedSysLogColumns = cols;
+    return cols;
+  } catch {
+    return ['user_id', 'action', 'type', 'description', 'metadata', 'details', 'ip_address'];
+  }
+}
+
 export async function logSystemActivity(userId: number | null, action: string, description: string, metadata: any = {}, req?: any) {
   try {
     const ip = req ? (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || null) : null;
     const metaStr = typeof metadata === 'string' ? metadata : JSON.stringify(metadata || {});
+    const columns = await getSysLogColumns();
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (columns.includes('user_id')) {
+      fields.push('user_id');
+      values.push(userId);
+    }
+    if (columns.includes('action')) {
+      fields.push('action');
+      values.push(action);
+    }
+    if (columns.includes('type')) {
+      fields.push('type');
+      values.push(action);
+    }
+    if (columns.includes('description')) {
+      fields.push('description');
+      values.push(description);
+    }
+    if (columns.includes('details')) {
+      fields.push('details');
+      values.push(metaStr);
+    }
+    if (columns.includes('metadata')) {
+      fields.push('metadata');
+      values.push(metaStr);
+    }
+    if (columns.includes('ip_address')) {
+      fields.push('ip_address');
+      values.push(ip);
+    }
+
+    if (fields.length === 0) return;
+
+    const placeholders = fields.map((_, idx) => `$${idx + 1}`).join(', ');
     await pool.query(`
-      INSERT INTO system_logs (user_id, action, type, description, details, metadata, ip_address)
-      VALUES ($1, $2, $2, $3, $4, $4, $5)
-    `, [userId, action, description, metaStr, ip]);
+      INSERT INTO system_logs (${fields.join(', ')})
+      VALUES (${placeholders})
+    `, values);
   } catch (err) {
     console.error('[SystemLog] Failed:', err);
   }

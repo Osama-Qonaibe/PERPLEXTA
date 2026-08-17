@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'motion/react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { ASPECT_RATIO_CLASSES } from '../constants/chat';

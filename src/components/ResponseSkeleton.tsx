@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const ResponseSkeleton = ({ dir }: { dir: 'ltr' | 'rtl' }) => (
   <div className="flex flex-col gap-3 w-full animate-pulse transition-theme">
     <div className="flex items-center gap-2">

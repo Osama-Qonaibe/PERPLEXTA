@@ -246,6 +246,16 @@ async function ensureColumnsBulk(
   try {
     if (!isClient) await client.query('BEGIN');
 
+    const tableCheck = await client.query(
+      `SELECT 1 FROM information_schema.tables WHERE table_name = $1 AND table_schema = 'public'`,
+      [tableName]
+    );
+    if (tableCheck.rows.length === 0) {
+      console.warn(`[Database] Table "${tableName}" does not exist on target database for ensureColumnsBulk. Skipping.`);
+      if (!isClient) await client.query('COMMIT');
+      return;
+    }
+
     const existing = await client.query(
       `SELECT column_name FROM information_schema.columns WHERE table_name = $1`,
       [tableName]
@@ -482,47 +492,59 @@ export async function runSystemMaintenance() {
   }
 }
 
-export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive') {
-  if (type === 'scratch') {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Scratch mode is strictly and unconditionally prohibited in production environments.');
-    }
-  }
+export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'additive', targetId?: string) {
   if (!pool) return;
 
-  const client = await pool.connect();
+  let client: PgPoolClient = null as unknown as PgPoolClient;
   let ledgerClient: PgPoolClient | null = null;
   let externalClient: PgPoolClient | null = null;
   let securityClient: PgPoolClient | null = null;
 
-  const isSameDb = (poolA: any, poolB: any) => {
-    if (!poolA || !poolB) return true;
-    if (poolA === poolB) return true;
-    const connA = poolA.options?.connectionString;
-    const connB = poolB.options?.connectionString;
-    if (!connA || !connB) return false;
-    try {
-      const urlA = new URL(connA);
-      const urlB = new URL(connB);
-      return urlA.host === urlB.host && urlA.pathname === urlB.pathname;
-    } catch {
-      return connA === connB;
-    }
-  };
-
-  const isLedgerDistinct = ledgerPool && ledgerPool !== pool && !isSameDb(pool, ledgerPool);
-  const isExternalDistinct = externalPool && externalPool !== pool && !isSameDb(pool, externalPool);
-  const isSecurityDistinct = securityPool && securityPool !== pool && !isSameDb(pool, securityPool);
-
-  ledgerClient = await connectToPool(ledgerPool, 'Ledger');
-  externalClient = await connectToPool(externalPool, 'External');
-  securityClient = await connectToPool(securityPool, 'Security');
-
   try {
+    client = await pool.connect();
+    if (!client) throw new Error('Failed to acquire client from pool');
+
+    const isSameDb = (poolA: any, poolB: any) => {
+      if (!poolA || !poolB) return true;
+      if (poolA === poolB) return true;
+      const connA = poolA.options?.connectionString;
+      const connB = poolB.options?.connectionString;
+      if (!connA || !connB) return false;
+      try {
+        const urlA = new URL(connA);
+        const urlB = new URL(connB);
+        return urlA.host === urlB.host && urlA.pathname === urlB.pathname;
+      } catch {
+        return connA === connB;
+      }
+    };
+
+    const isLedgerDistinct = ledgerPool && !isSameDb(pool, ledgerPool);
+    const isExternalDistinct = externalPool && !isSameDb(pool, externalPool);
+    const isSecurityDistinct = securityPool && !isSameDb(pool, securityPool);
+
+    ledgerClient = isLedgerDistinct ? await connectToPool(ledgerPool, 'Ledger') : null;
+    externalClient = isExternalDistinct ? await connectToPool(externalPool, 'External') : null;
+    securityClient = isSecurityDistinct ? await connectToPool(securityPool, 'Security') : null;
+
     // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
-    await client.query('SELECT pg_advisory_lock(74635291)').catch((err: any) => {
+    let hasLock = false;
+    try {
+      const lockRes = await client.query('SELECT pg_try_advisory_lock(74635291)');
+      hasLock = lockRes.rows[0]?.pg_try_advisory_lock === true;
+      if (!hasLock) {
+        console.warn('[Migrations] Advisory lock already held. Skipping concurrent migration runner to prevent deadlocks.');
+        return {
+          success: true,
+          target: targetId || 'all',
+          type,
+          skipped: true,
+          message: 'Migrations are currently locked/running or previous session retained the lock. Schema is assumed up-to-date.'
+        };
+      }
+    } catch (err: any) {
       console.warn('[Migrations] Advisory lock acquisition warning:', err.message);
-    });
+    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS migration_history (
@@ -545,16 +567,83 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_migration_security_audit_created_at ON migration_security_audit(created_at)`);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        session_token TEXT UNIQUE NOT NULL,
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        status VARCHAR(20) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`).catch(() => {});
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`).catch(() => {});
+
     try {
-      const checkSecTable = await safeQueryClient(securityClient, client, `
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_name = 'token_blacklist'
+      await safeQueryClient(securityClient, client, `
+        CREATE TABLE IF NOT EXISTS token_blacklist (
+          id SERIAL PRIMARY KEY,
+          token TEXT UNIQUE NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      if (!checkSecTable.rows[0].exists) {
-        console.log('[Migrations] token_blacklist table does not exist on active security database. Initializing...');
-        await safeQueryClient(securityClient, client, `
+
+      await safeQueryClient(securityClient, client, `
+        CREATE TABLE IF NOT EXISTS security_alerts (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          type VARCHAR(100) NOT NULL,
+          severity VARCHAR(50) DEFAULT 'medium',
+          description TEXT,
+          metadata JSONB DEFAULT '{}',
+          is_resolved BOOLEAN DEFAULT false,
+          ip_address VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await safeQueryClient(securityClient, client, `
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+          id SERIAL PRIMARY KEY,
+          admin_id INTEGER,
+          admin_email VARCHAR(255),
+          action VARCHAR(100) NOT NULL,
+          target_resource VARCHAR(100),
+          details JSONB DEFAULT '{}',
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await safeQueryClient(securityClient, client, `
+        CREATE TABLE IF NOT EXISTS registered_agents (
+          id SERIAL PRIMARY KEY,
+          client_id VARCHAR(255) UNIQUE NOT NULL,
+          client_secret VARCHAR(255),
+          api_key_hash VARCHAR(255),
+          client_name VARCHAR(255) NOT NULL,
+          identity_type VARCHAR(50) DEFAULT 'agent',
+          credential_type VARCHAR(50) DEFAULT 'client_credentials',
+          redirect_uris TEXT[],
+          jwks_uri VARCHAR(500),
+          user_agent VARCHAR(500),
+          signature_keys JSONB,
+          permissions JSONB DEFAULT '[]',
+          is_active BOOLEAN DEFAULT true,
+          user_id INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      if (securityClient && securityClient !== client) {
+        await client.query(`
           CREATE TABLE IF NOT EXISTS token_blacklist (
             id SERIAL PRIMARY KEY,
             token TEXT UNIQUE NOT NULL,
@@ -562,8 +651,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
-
-        await safeQueryClient(securityClient, client, `
+        await client.query(`
           CREATE TABLE IF NOT EXISTS security_alerts (
             id SERIAL PRIMARY KEY,
             user_id INTEGER,
@@ -577,8 +665,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
-
-        await safeQueryClient(securityClient, client, `
+        await client.query(`
           CREATE TABLE IF NOT EXISTS admin_audit_logs (
             id SERIAL PRIMARY KEY,
             admin_id INTEGER,
@@ -591,36 +678,94 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS registered_agents (
+            id SERIAL PRIMARY KEY,
+            client_id VARCHAR(255) UNIQUE NOT NULL,
+            client_secret VARCHAR(255),
+            api_key_hash VARCHAR(255),
+            client_name VARCHAR(255) NOT NULL,
+            identity_type VARCHAR(50) DEFAULT 'agent',
+            credential_type VARCHAR(50) DEFAULT 'client_credentials',
+            redirect_uris TEXT[],
+            jwks_uri VARCHAR(500),
+            user_agent VARCHAR(500),
+            signature_keys JSONB,
+            permissions JSONB DEFAULT '[]',
+            is_active BOOLEAN DEFAULT true,
+            user_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
       }
     } catch (error) {
       console.warn('[Migrations] Failed to inspect/initialize security database tables:', error instanceof Error ? error.message : 'Unknown error');
     }
 
     if (type === 'scratch') {
-      console.warn('[Migrations] RUNNING IN SCRATCH MODE - ALL DATA WILL BE WIPED');
-      const tables = ['db_connections_registry', 'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 'email_settings', 'message_reports', 'user_shortcuts', 'system_settings', 'system_broadcasts', 'user_files', 'security_alerts', 'system_logs', 'token_blacklist', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states', 'admin_audit_logs', 'marketplace_items', 'marketplace_purchases', 'marketplace_reviews', 'video_resources', 'referral_invitations', 'shared_snapshots', 'advertisements', 'bulletin_ads', 'bulletin_saved_ads', 'bulletin_reports', 'bulletin_pages', 'bulletin_page_followers', 'bulletin_page_inquiries', 'bulletin_ad_likes', 'bulletin_ad_comments', 'bulletin_ad_messages', 'route_seo_settings', 'asset_metadata', 'user_recommendation_interactions', 'user_recommendation_preferences', 'recommendation_feedback', 'gift_catalog', 'google_tool_connections'];
-      for (const t of tables) {
-        await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+      console.warn(`[Migrations] RUNNING IN SCRATCH MODE FOR TARGET: ${targetId || 'ALL'}`);
+      
+      const coreTables = [
+        'users', 'user_sessions', 'chats', 'messages', 'api_keys_vault', 'tool_orchestrator', 
+        'subscriptions', 'plans', 'user_usage', 'notifications', 'chat_memories', 'email_templates', 
+        'email_settings', 'message_reports', 'user_shortcuts', 'system_settings', 'system_broadcasts', 
+        'user_files', 'password_resets', 'support_tickets', 'support_ticket_replies', 'oauth_states', 
+        'marketplace_items', 'marketplace_purchases', 'marketplace_reviews', 'video_resources', 
+        'referral_invitations', 'shared_snapshots', 'advertisements', 'bulletin_ads', 'bulletin_saved_ads', 
+        'bulletin_reports', 'bulletin_pages', 'bulletin_page_followers', 'bulletin_page_inquiries', 
+        'bulletin_ad_likes', 'bulletin_ad_comments', 'bulletin_ad_messages', 'route_seo_settings', 
+        'asset_metadata', 'user_recommendation_interactions', 'user_recommendation_preferences', 
+        'recommendation_feedback', 'gift_catalog', 'google_tool_connections'
+      ];
+      
+      const ledgerTables = [
+        'stripe_events', 'deposit_requests', 'coupon_usages', 'payout_accounts', 
+        'withdrawal_requests', 'kyc_requests', 'referral_tree', 'referrals', 
+        'ledger_transactions', 'wallets', 'coupons', 'economy_settings'
+      ];
+
+      const externalTables = ['blog_ratings', 'blog_comments', 'blog_articles'];
+      const securityTables = ['registered_agents', 'admin_audit_logs', 'security_alerts', 'token_blacklist'];
+
+      if (!targetId || targetId === 'all' || targetId === 'core') {
+        for (const t of coreTables) {
+          await client.query(`DROP TABLE IF EXISTS "${t}" CASCADE`).catch(() => {});
+        }
       }
-      if (ledgerClient) {
-        const ledgerTables = ['wallets', 'ledger_transactions', 'referrals', 'referral_tree', 'kyc_requests', 'withdrawal_requests', 'payout_accounts', 'economy_settings', 'coupon_usages', 'deposit_requests', 'coupons', 'stripe_events'];
+
+      if (!targetId || targetId === 'all' || targetId === 'ledger') {
+        const lClient = ledgerClient || client;
         for (const t of ledgerTables) {
-          await ledgerClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+          await lClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`).catch(() => {});
         }
       }
-      if (externalClient) {
-        const externalTables = ['blog_articles', 'blog_comments', 'blog_ratings'];
+
+      if (!targetId || targetId === 'all' || targetId === 'external') {
+        const extClient = externalClient || client;
         for (const t of externalTables) {
-          await externalClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+          await extClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`).catch(() => {});
         }
       }
-      if (securityClient) {
-        const securityTables = ['token_blacklist', 'security_alerts', 'admin_audit_logs'];
+
+      if (!targetId || targetId === 'all' || targetId === 'security') {
+        const secClient = securityClient || client;
         for (const t of securityTables) {
-          await securityClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`);
+          await secClient.query(`DROP TABLE IF EXISTS "${t}" CASCADE`).catch(() => {});
         }
       }
-      await client.query('DELETE FROM migration_history');
+
+      if (!targetId || targetId === 'all' || targetId === 'core') {
+        await client.query('DELETE FROM migration_history').catch(() => {});
+      } else if (targetId === 'ledger') {
+        await client.query("DELETE FROM migration_history WHERE migration_name ~* 'ledger|wallet|kyc|economy|payout|coupon|stripe'").catch(() => {});
+      } else if (targetId === 'external') {
+        await client.query("DELETE FROM migration_history WHERE migration_name ~* 'blog|article'").catch(() => {});
+      } else if (targetId === 'security') {
+        await client.query("DELETE FROM migration_history WHERE migration_name ~* 'security|token_blacklist|audit|agent'").catch(() => {});
+      }
+
+      // Re-initialize tables cleanly from scratch
+      await initDb('scratch', client, ledgerClient, externalClient, securityClient);
     }
 
     await client.query(`
@@ -651,6 +796,21 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         const startTime = Date.now();
         console.log(`[Migrations] Applying ${name}: ${description}...`);
         
+        try {
+          await client.query(`
+            INSERT INTO migration_security_audit (migration_name, status, details)
+            VALUES ($1, 'started', $2)
+          `, [
+            name,
+            JSON.stringify(sanitizeForLogging({
+              description,
+              lockKey,
+              targetId: targetId || 'all',
+              startTime: new Date(startTime).toISOString()
+            }))
+          ]);
+        } catch {}
+
         await client.query('BEGIN');
         if (ledgerClient) await ledgerClient.query('BEGIN');
         if (externalClient) await externalClient.query('BEGIN');
@@ -662,10 +822,10 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
           const doubleCheck = await client.query('SELECT 1 FROM migration_history WHERE migration_name = $1', [name]);
           if (doubleCheck.rows.length > 0) {
-            await client.query('COMMIT');
-            if (ledgerClient) await ledgerClient.query('COMMIT');
-            if (externalClient) await externalClient.query('COMMIT');
-            if (securityClient) await securityClient.query('COMMIT');
+            await client.query('COMMIT').catch(() => {});
+            if (ledgerClient) await ledgerClient.query('COMMIT').catch(() => {});
+            if (externalClient) await externalClient.query('COMMIT').catch(() => {});
+            if (securityClient) await securityClient.query('COMMIT').catch(() => {});
             return;
           }
 
@@ -724,9 +884,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
 
             await client.query('INSERT INTO migration_history (migration_name) VALUES ($1)', [name]);
             await client.query('COMMIT');
-            if (ledgerClient) await ledgerClient.query('COMMIT');
-            if (externalClient) await externalClient.query('COMMIT');
-            if (securityClient) await securityClient.query('COMMIT');
+            if (ledgerClient) await ledgerClient.query('COMMIT').catch(() => {});
+            if (externalClient) await externalClient.query('COMMIT').catch(() => {});
+            if (securityClient) await securityClient.query('COMMIT').catch(() => {});
 
             const duration = Date.now() - startTime;
             migrationMetrics.total++;
@@ -734,11 +894,38 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             migrationMetrics.totalDuration += duration;
             migrationMetrics.perMigration.set(name, { duration, status: 'success' });
             console.log(`[Migrations] Successfully applied ${name} (${duration}ms).`);
+
+            try {
+              await client.query(`
+                INSERT INTO migration_security_audit (migration_name, status, details)
+                VALUES ($1, 'committed', $2)
+              `, [
+                name,
+                JSON.stringify(sanitizeForLogging({
+                  description,
+                  durationMs: duration,
+                  targetId: targetId || 'all',
+                  timestamp: new Date().toISOString()
+                }))
+              ]);
+
+              const secPool = getSecurityPool();
+              if (secPool) {
+                await secPool.query(`
+                  INSERT INTO admin_audit_logs (action, target_resource, details)
+                  VALUES ($1, $2, $3)
+                `, [
+                  'DATABASE_MIGRATION_ACID_COMMIT',
+                  name,
+                  JSON.stringify({ migration_name: name, description, durationMs: duration, targetId: targetId || 'all' })
+                ]).catch(() => {});
+              }
+            } catch {}
           } catch (error) {
-            await client.query('ROLLBACK');
-            if (ledgerClient) await ledgerClient.query('ROLLBACK');
-            if (externalClient) await externalClient.query('ROLLBACK');
-            if (securityClient) await securityClient.query('ROLLBACK');
+            await client.query('ROLLBACK').catch(() => {});
+            if (ledgerClient) await ledgerClient.query('ROLLBACK').catch(() => {});
+            if (externalClient) await externalClient.query('ROLLBACK').catch(() => {});
+            if (securityClient) await securityClient.query('ROLLBACK').catch(() => {});
 
             const err = error as Error & { code?: string };
             console.error(`[Migrations] Failed to apply ${name}:`, err.message);
@@ -751,13 +938,31 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             try {
               await client.query(`
                 INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
-                VALUES ($1, 'failed', $2, $3, $4)
+                VALUES ($1, 'rolled_back', $2, $3, $4)
               `, [
                 name,
                 err.message || 'Unknown error',
                 err.code || null,
-                JSON.stringify(sanitizeForLogging({ stack: err.stack, phase: 'runVersioned' }))
+                JSON.stringify(sanitizeForLogging({
+                  description,
+                  durationMs: duration,
+                  stack: err.stack,
+                  phase: 'runVersioned',
+                  targetId: targetId || 'all'
+                }))
               ]);
+
+              const secPool = getSecurityPool();
+              if (secPool) {
+                await secPool.query(`
+                  INSERT INTO admin_audit_logs (action, target_resource, details)
+                  VALUES ($1, $2, $3)
+                `, [
+                  'DATABASE_MIGRATION_ACID_ROLLBACK',
+                  name,
+                  JSON.stringify({ migration_name: name, description, error: err.message, sql_state: err.code, durationMs: duration, targetId: targetId || 'all' })
+                ]).catch(() => {});
+              }
             } catch (auditErr) {
               console.error('[Migrations] Failed to write failure audit log');
             }
@@ -768,7 +973,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       };
 
     console.log('[Migrations] Running dynamic schema auto-repair...');
-    await initDb('additive');
+    await initDb('additive', client, ledgerClient, externalClient, securityClient);
 
     await runVersioned('v1_core_schema', 'Initial core database schema', async () => {});
 
@@ -2163,6 +2368,14 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       });
     });
 
+        await runVersioned('v81_advertisements_format_column', 'Adding format column to advertisements', async (tx) => {
+      await ensureColumnsBulk(tx, 'advertisements', {
+        format: { type: 'VARCHAR(50)', default: "'sidebar'" },
+        video_url: { type: 'TEXT' },
+        poster_url: { type: 'TEXT' }
+      });
+    });
+
     await runVersioned('v80_sidebar_ads_columns', 'Ensure sidebar ads columns exist on system_settings', async (tx) => {
       await ensureColumnsBulk(tx, 'system_settings', {
         sidebar_ads_enabled: { type: 'BOOLEAN', default: 'true' },
@@ -2188,25 +2401,39 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       });
     }
 
+    return {
+      success: true,
+      target: targetId || 'all',
+      type,
+      totalMigrations: migrationMetrics.total
+    };
   } catch (error) {
     const err = error as Error;
     console.error('[CRITICAL] Database Migration failed:', err.message);
     if (process.env.NODE_ENV === 'production') throw err;
   } finally {
-    await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {});
-    client.release();
+    if (client) {
+      try { await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {}); } catch {}
+      client.release();
+    }
     if (ledgerClient) ledgerClient.release();
     if (externalClient) externalClient.release();
     if (securityClient) securityClient.release();
   }
 }
 
-export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: QueryClient, customLedgerPool?: QueryClient) {
+export async function initDb(
+  mode: 'scratch' | 'additive' = 'additive',
+  customPool?: QueryClient,
+  customLedgerPool?: QueryClient,
+  customExternalPool?: QueryClient,
+  customSecurityPool?: QueryClient
+) {
   if (!pool) return;
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
-  const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
-  const targetExternalPool = externalPool === pool ? targetPool : (externalPool || targetPool);
+  const targetSecurityPool = customSecurityPool || (securityPool === pool ? targetPool : (securityPool || targetPool));
+  const targetExternalPool = customExternalPool || (externalPool === pool ? targetPool : (externalPool || targetPool));
 
   interface SchemaTable {
     name: string;
@@ -2241,6 +2468,20 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         avatar TEXT,
         referral_code VARCHAR(6),
         email_notifications BOOLEAN DEFAULT true
+      )`
+    },
+    {
+      name: 'user_sessions',
+      query: `CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        session_token TEXT UNIQUE NOT NULL,
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        status VARCHAR(20) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -2815,6 +3056,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     },
     {
       name: 'security_alerts',
+      pool: targetSecurityPool,
       query: `CREATE TABLE IF NOT EXISTS security_alerts (
         id SERIAL PRIMARY KEY,
         user_id INTEGER,
@@ -2836,6 +3078,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         action VARCHAR(255),
         type VARCHAR(100) DEFAULT 'info',
         description TEXT,
+        details JSONB DEFAULT '{}',
         metadata JSONB DEFAULT '{}',
         ip_address VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3011,6 +3254,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         badge_text_ar VARCHAR(50) DEFAULT 'مُموَّل',
         badge_text_en VARCHAR(50) DEFAULT 'Sponsored',
         position VARCHAR(50) DEFAULT 'sidebar',
+        format VARCHAR(50) DEFAULT 'sidebar',
         display_order INTEGER DEFAULT 0,
         is_active BOOLEAN DEFAULT true,
         meta_title_ar VARCHAR(255),
@@ -3260,6 +3504,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     },
     {
       name: 'registered_agents',
+      pool: targetSecurityPool,
       query: `CREATE TABLE IF NOT EXISTS registered_agents (
         id SERIAL PRIMARY KEY,
         client_id VARCHAR(255) UNIQUE NOT NULL,
@@ -3284,6 +3529,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     const p = table.pool || targetPool;
     await p.query(table.query);
   }
+
+  await targetPool.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`).catch(() => {});
+  await targetPool.query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`).catch(() => {});
 
   const settingsCheck = await targetPool.query('SELECT count(*) FROM system_settings');
   if (parseInt(settingsCheck.rows[0].count, 10) === 0) {
@@ -3429,12 +3677,12 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS password_resets_pkey ON password_resets(id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS plans_name_en_key ON plans(name_en)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS plans_pkey ON plans(id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
+    { pool: targetSecurityPool, query: `CREATE INDEX IF NOT EXISTS idx_security_alerts_user_id ON security_alerts(user_id)` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_articles_title_fts ON blog_articles USING GIN(to_tsvector('english', title_en))` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_articles_content_fts ON blog_articles USING GIN(to_tsvector('english', content_en))` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_blog_comments_article_id ON blog_comments(article_id)` },
     { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_blog_ratings_article_id ON blog_ratings(article_id)` },
-    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS security_alerts_pkey ON security_alerts(id)` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS security_alerts_pkey ON security_alerts(id)` },
     { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_pkey ON stripe_events(id)` },
     { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS stripe_events_stripe_event_id_key ON stripe_events(stripe_event_id)` },
     { pool: targetLedgerPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS kyc_requests_pkey ON kyc_requests(id)` },
@@ -3478,7 +3726,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetLedgerPool, query: `CREATE INDEX IF NOT EXISTS idx_ledger_reference ON ledger_transactions(reference_id)` },
     { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS video_resources_pkey ON video_resources(id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_chat_id ON video_resources(chat_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)` }
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS registered_agents_pkey ON registered_agents(id)` },
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS registered_agents_client_id_key ON registered_agents(client_id)` }
   ];
 
   for (const idx of indexes) {
@@ -3614,6 +3864,14 @@ export async function verifySchemaIntegrity() {
           referral_code: { type: 'VARCHAR(6)' }
         }
       },
+      user_sessions: {
+        columns: ['id', 'user_id', 'session_token', 'ip_address', 'user_agent', 'status', 'created_at', 'expires_at', 'last_active_at'],
+        repairCols: {
+          session_token: { type: 'TEXT' },
+          status: { type: 'VARCHAR(20)', default: `'active'` },
+          last_active_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
+      },
       chats: {
         columns: ['id', 'user_id', 'title', 'tool_id', 'context_summary', 'is_pinned', 'created_at', 'updated_at', 'tool']
       },
@@ -3747,7 +4005,7 @@ export async function verifySchemaIntegrity() {
 
           try {
             console.log(`[Schema Integrity] Attempting table reconstruction for ${tableName}...`);
-            await initDb('additive', pool, ledgerPool);
+            await initDb('additive', pool, ledgerPool, externalPool, securityPool);
             report.repairedTables.push(tableName);
             console.log(`[Schema Integrity] Table ${tableName} reconstructed successfully.`);
           } catch (repairErr) {

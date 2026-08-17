@@ -4,7 +4,7 @@ import { usePwaContext } from '../context/PwaContext';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { safeStorageGet } from '../utils/safeStorage';
 import { motion, AnimatePresence } from 'motion/react';
-import { Smartphone, Download, X, Share2, PlusSquare, Sparkles, Check, ExternalLink, Loader2, CheckCircle2, Monitor } from 'lucide-react';
+import { Smartphone, Download, X, Share2, PlusSquare, Sparkles, Check, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
 
 export const PwaInstallBanner: React.FC = () => {
   const { siteSettings, language, theme } = useAppContext();

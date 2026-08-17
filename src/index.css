@@ -463,14 +463,52 @@ html, body, #root {
 /* Anti-Jitter & Strict Layout Freeze Protocol */
 *, *::before, *::after {
   overflow-anchor: none;
+  scrollbar-gutter: stable;
 }
 
-body {
+body, html, #root {
   transform: translateZ(0);
   backface-visibility: hidden;
   perspective: 1000px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable;
+}
+
+/* Global Smooth Motion & Content Sizing Stability */
+.motion-reduce,
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: scroll !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    transition-delay: -1ms !important;
+  }
+}
+
+/* Enforce physical layer separation for layout-critical containers to prevent repaint jitter */
+.strict-layout-freeze,
+.layout-locked,
+.ad-dashboard-card,
+.ad-card,
+.ads-management-container,
+aside,
+main,
+header,
+.chat-page-container {
+  backface-visibility: hidden !important;
+  transform: translate3d(0, 0, 0) !important;
+  transform-style: preserve-3d !important;
+  will-change: transform, opacity !important;
+}
+
+/* Prevent dynamic image or media loading from causing cumulative layout shifts */
+img, video, iframe {
+  aspect-ratio: attr(width) / attr(height);
+  content-visibility: auto;
 }
 
 ::-webkit-scrollbar {

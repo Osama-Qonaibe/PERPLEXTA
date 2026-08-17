@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { useToast } from "../hooks/useToast";
 import { motion, AnimatePresence } from "motion/react";
 import { perplextaPageTransition } from "../constants/motions";
@@ -113,6 +114,7 @@ import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 import { SeoCenterView } from "../components/SeoCenterView";
 import { AdminDiagnosticTool } from "../components/AdminDiagnosticTool";
 import { PagePreviewModal } from "../components/PagePreviewModal";
+import { DatabasePoolSummaryView } from "../components/DatabasePoolSummaryView";
 
 // --- Command Center View ---
 const CommandCenterView = ({
@@ -2919,7 +2921,7 @@ const ApiKeysVaultView = ({
   );
 };
 
-// --- Database Orchestration View ---
+
 const DatabaseOrchestrationView = ({
   theme,
   t,
@@ -2939,9 +2941,10 @@ const DatabaseOrchestrationView = ({
   } | null>(null);
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
   } | null>(null);
   const [openBackupMenuId, setOpenBackupMenuId] = useState<string | null>(null);
+  const [isTestingAll, setIsTestingAll] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string | { ar: string; en: string };
@@ -2984,16 +2987,20 @@ const DatabaseOrchestrationView = ({
               color = "teal";
             }
 
+            const isLocal = db.host === 'localhost' || db.host === '127.0.0.1' || 
+                           (db.connection_string && (db.connection_string.includes('@localhost') || db.connection_string.includes('@127.0.0.1')));
+            const autoType = isLocal ? "local" : "cloud";
+
             return {
               ...db,
-              type: db.type === "postgres" ? "local" : db.type || "local",
+              type: autoType,
               titleKey,
               descKey,
               icon,
               color,
               isTesting: false,
               showPassword: false,
-              connectionTested: db.status === "healthy",
+              connectionTested: db.status === "healthy" || db.status === "saturated",
             };
           }),
         );
@@ -3005,9 +3012,8 @@ const DatabaseOrchestrationView = ({
 
   useEffect(() => {
     if (token) fetchDatabases();
-
     if (socket) {
-      socket.on("db_alert", (data) => {
+      socket.on("db_alert", (data: any) => {
         fetchDatabases();
         showToast(
           `⚠️ Alert: Database ${data.provider} is ${data.status}!`,
@@ -3015,14 +3021,13 @@ const DatabaseOrchestrationView = ({
         );
       });
     }
-
     return () => {
       if (socket) socket.off("db_alert");
     };
   }, [token, socket]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
+  const showToast = (message: string, type: "success" | "error" | "warning") => {
+    setToast({ message, type: type === "warning" ? "error" : type });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -3035,33 +3040,30 @@ const DatabaseOrchestrationView = ({
     );
 
     try {
-      const res = await fetch("/api/admin/databases/test", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, type: db.type, config: db }),
-      });
-
+      const res = await fetch("/api/health/db");
       const data = await res.json();
-      if (res.ok && data.success) {
+      
+      const poolMetrics = data.pools?.[id];
+
+      if (res.ok && poolMetrics && poolMetrics.available) {
         setDatabases((dbs) =>
           dbs.map((d) =>
-            d.id === id ? { ...d, isTesting: false, status: "healthy", connectionTested: true } : d,
+            d.id === id ? { ...d, isTesting: false, status: poolMetrics.saturated ? "saturated" : "healthy", connectionTested: true } : d,
           ),
         );
-        showToast(t("dbTestSuccess") || "Connection successful!", "success");
+        showToast(
+          poolMetrics.saturated 
+            ? t("dbTestSaturated") || "Connection active but saturated (Queue full)" 
+            : t("dbTestSuccess") || "Connection active & healthy!", 
+          poolMetrics.saturated ? "warning" : "success"
+        );
       } else {
         setDatabases((dbs) =>
           dbs.map((d) =>
             d.id === id ? { ...d, isTesting: false, status: "error", connectionTested: false } : d,
           ),
         );
-        showToast(
-          data.error || t("dbTestFailed") || "Connection failed",
-          "error",
-        );
+        showToast(t("dbTestFailed") || "Connection inactive or failed", "error");
       }
     } catch (error) {
       setDatabases((dbs) =>
@@ -3073,19 +3075,66 @@ const DatabaseOrchestrationView = ({
     }
   };
 
+  const handleTestAllConnections = async () => {
+    if (databases.length === 0) return;
+    setIsTestingAll(true);
+    setDatabases((dbs) =>
+      dbs.map((d) => ({ ...d, isTesting: true })),
+    );
+
+    try {
+      const res = await fetch("/api/health/db");
+      const data = await res.json();
+
+      if (res.ok && data.pools) {
+        setDatabases((dbs) =>
+          dbs.map((d) => {
+            const poolMetrics = data.pools[d.id];
+            if (poolMetrics && poolMetrics.available) {
+              return {
+                ...d,
+                isTesting: false,
+                status: poolMetrics.saturated ? "saturated" : "healthy",
+                connectionTested: true,
+              };
+            } else {
+              return {
+                ...d,
+                isTesting: false,
+                status: "error",
+                connectionTested: false,
+              };
+            }
+          }),
+        );
+        const msg = language === "ar"
+          ? "تم فحص جميع اتصالات قواعد البيانات بالتوازي بنجاح!"
+          : "All database connections checked in parallel successfully!";
+        showToast(msg, "success");
+      } else {
+        setDatabases((dbs) =>
+          dbs.map((d) => ({ ...d, isTesting: false, status: "error", connectionTested: false })),
+        );
+        showToast(t("dbTestFailed") || "Connections check failed", "error");
+      }
+    } catch (error) {
+      setDatabases((dbs) =>
+        dbs.map((d) => ({ ...d, isTesting: false, status: "error", connectionTested: false })),
+      );
+      showToast(t("dbTestError") || "Error testing connections", "error");
+    } finally {
+      setIsTestingAll(false);
+    }
+  };
+
   const handleSaveConfig = (id: string) => {
     const db = databases.find((d) => d.id === id);
-    if (!db) return;
-
-    if (!db.connectionTested) {
-      showToast(
-        dir === "rtl"
-          ? "يجب اختبار الاتصال بنجاح أولاً قبل حفظ التعديلات."
-          : "Please successfully test the connection before saving configuration.",
-        "error"
-      );
+    if (!db) {
+      console.warn("[DatabaseOrchestration] Save abort: database ID not found in current states:", id);
       return;
     }
+
+    console.log("[DatabaseOrchestration] Save triggered for ID:", id, "current config state:", db);
 
     const confirmMsg = language === "ar"
       ? "هل أنت متأكد من حفظ وتغيير إعدادات وسلاسل الاتصال لقاعدة البيانات هذه؟ قد يؤثر استبدال سلاسل الاتصال النشطة على العمليات الجارية."
@@ -3097,6 +3146,28 @@ const DatabaseOrchestrationView = ({
       description: confirmMsg,
       variant: "warning",
       onConfirm: async () => {
+        console.log("[DatabaseOrchestration] Save modal confirmation received. Setting isSaving state for:", id);
+        setDatabases((dbs) =>
+          dbs.map((d) => (d.id === id ? { ...d, isSaving: true } : d)),
+        );
+        const requestPayload = {
+          id: db.id,
+          config: {
+            provider: db.provider,
+            type: db.type,
+            host: db.host || null,
+            port: db.port || null,
+            dbName: db.db_name || db.dbName || null,
+            username: db.username || null,
+            password: db.password || null,
+            connectionString:
+              db.connection_string || db.connectionString || null,
+            sslMode: db.ssl_mode || db.sslMode || null,
+            poolSize: db.pool_size || db.poolSize || 10,
+          },
+          activate: db.is_active || false,
+        };
+        console.log("[DatabaseOrchestration] Sending POST /api/admin/databases/save with payload:", requestPayload);
         try {
           const res = await fetch("/api/admin/databases/save", {
             method: "POST",
@@ -3104,26 +3175,14 @@ const DatabaseOrchestrationView = ({
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              id: db.id,
-              config: {
-                provider: db.provider,
-                type: db.type,
-                host: db.host || null,
-                port: db.port || null,
-                dbName: db.db_name || db.dbName || null,
-                username: db.username || null,
-                password: db.password || null,
-                connectionString:
-                  db.connection_string || db.connectionString || null,
-                sslMode: db.ssl_mode || db.sslMode || null,
-                poolSize: db.pool_size || db.poolSize || 10,
-              },
-              activate: db.is_active || false,
-            }),
+            body: JSON.stringify(requestPayload),
           });
 
+          console.log("[DatabaseOrchestration] POST Response status:", res.status, "statusText:", res.statusText);
+
           if (res.ok) {
+            const data = await res.json();
+            console.log("[DatabaseOrchestration] Save completed successfully, response body:", data);
             showToast(
               t("dbSaveSuccess") || "Configuration saved successfully",
               "success",
@@ -3131,10 +3190,17 @@ const DatabaseOrchestrationView = ({
             fetchDatabases();
           } else {
             const data = await res.json();
+            console.error("[DatabaseOrchestration] Save request returned non-OK status. Response body error:", data);
             showToast(data.error || "Failed to save configuration", "error");
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.error("[DatabaseOrchestration] Network error or exception thrown during save request:", error.message, error);
           showToast("Error saving configuration", "error");
+        } finally {
+          console.log("[DatabaseOrchestration] Completing save operation. Clearing isSaving state for:", id);
+          setDatabases((dbs) =>
+            dbs.map((d) => (d.id === id ? { ...d, isSaving: false } : d)),
+          );
         }
       }
     });
@@ -3198,20 +3264,20 @@ const DatabaseOrchestrationView = ({
 
     const confirmMsg =
       dir === "rtl"
-        ? `هل أنت متأكد من رغبتك في تصدير نسخة احتياطية لقاعدة البيانات: "${dbName}" (${targetType})؟\n\nاسم ملف النسخة الاحتياطية الذي سيتم توليده وحفظه سيكون:\n📎 "${filename}"\n\nاضغط موافق للتأكيد وتنزيل الملف وتسجيل هذه العملية في سجل التدقيق الأمني للقوانين والامتثال المالي.`
-        : `Are you sure you want to export a backup for database: "${dbName}" (${targetType})?\n\nBackup filename to be generated and saved:\n📎 "${filename}"\n\nClick OK to confirm download and commit this administrative action to the secure compliance audit trail.`;
+        ? `هل أنت متأكد من رغبتك في تصدير نسخة احتياطية لقاعدة البيانات: "${dbName}" (${targetType})؟\n\nاسم ملف النسخة الاحتياطية الذي سيتم توليده وحفظه سيكون:\n📎 "${filename}"\n\nاضغط موافق لتوليد النسخة وتنزيلها مع كامل الجداول والسجلات.`
+        : `Are you sure you want to export a backup for database: "${dbName}" (${targetType})?\n\nBackup filename:\n📎 "${filename}"\n\nClick OK to generate and download the full backup.`;
 
     setConfirmModal({
       isOpen: true,
-      title: { ar: "تصدير نسخة احتياطية؟", en: "Export Database Backup?" },
+      title: { ar: `تصدير نسخة احتياطية (${dbName})`, en: `Export Backup (${dbName})` },
       description: confirmMsg,
       variant: "success",
       onConfirm: async () => {
         try {
           showToast(
             dir === "rtl"
-              ? `جاري تصدير نسخة احتياطية لـ ${dbName} (${targetType})...`
-              : `Exporting backup for ${dbName} (${targetType})...`,
+              ? `جاري تصدير نسخة احتياطية شاملة لقاعدة ${dbName}...`
+              : `Exporting comprehensive backup for ${dbName}...`,
             "success",
           );
 
@@ -3230,7 +3296,6 @@ const DatabaseOrchestrationView = ({
 
           const backupData = await res.json();
           
-          // Use actual database name returned from backend or fallback to dbName
           const actualDbName = backupData.database_name || dbName;
           const actualDisplayLabel = actualDbName.replace(/[^a-z0-9_-]/gi, "_").toLowerCase();
           const finalFilename = `${targetType}_${actualDisplayLabel}_backup_${new Date().toISOString().split("T")[0]}.json`;
@@ -3247,15 +3312,18 @@ const DatabaseOrchestrationView = ({
           a.remove();
           window.URL.revokeObjectURL(url);
 
+          const tableCount = backupData.summary?.table_count ?? Object.keys(backupData.data || {}).length;
+          const totalRows = backupData.summary?.total_rows ?? Object.values(backupData.data || {}).reduce((acc: number, val: any) => acc + (Array.isArray(val) ? val.length : 0), 0);
+
           showToast(
             dir === "rtl"
-              ? `تم تصدير النسخة احتياطياً بنجاح لقاعدة البيانات: ${actualDbName} (${targetType})`
-              : `Backup successfully exported for database: ${actualDbName} (${targetType})`,
+              ? `تم تصدير النسخة الاحتياطية بنجاح (${tableCount} جدول، ${totalRows} سجل) لقاعدة: ${actualDbName}`
+              : `Backup exported successfully (${tableCount} tables, ${totalRows} records) for: ${actualDbName}`,
             "success",
           );
         } catch (error: any) {
           console.error("Export error:", error);
-          showToast(error.message, "error");
+          showToast(error.message || "Export failed", "error");
         }
       }
     });
@@ -3265,6 +3333,13 @@ const DatabaseOrchestrationView = ({
     id: string,
     type: "scratch" | "additive",
   ) => {
+    const db = databases.find((d) => d.id === id);
+    const targetLabel = db ? (db.db_name || db.dbName || id) : id;
+    const targetTypeName = id === "ledger" ? (dir === "rtl" ? "المحفظة والمعاملات المالية" : "Finance & Ledger") :
+      id === "external" ? (dir === "rtl" ? "المدونة والمقالات" : "Blog & External") :
+      id === "security" ? (dir === "rtl" ? "الحماية والأمان" : "Security & Logs") :
+      (dir === "rtl" ? "العمليات الأساسية والمستخدمين" : "Core Operations & Users");
+
     const perform = async () => {
       setIsMigrating({ id, type });
       try {
@@ -3280,18 +3355,24 @@ const DatabaseOrchestrationView = ({
         const data = await res.json();
         if (res.ok) {
           showToast(
-            t("dbMigrationSuccess") || "Migrations completed successfully",
+            type === "scratch"
+              ? (dir === "rtl"
+                  ? `تمت إعادة تهيئة جداول (${targetTypeName}) من الصفر بنجاح تام وبناء الفهارس الإلزامية.`
+                  : `Tables for (${targetTypeName}) successfully re-initialized from scratch with indexes.`)
+              : (dir === "rtl"
+                  ? `تمت مزامنة وتحديث هيكل جداول (${targetTypeName}) بنجاح.`
+                  : `Schema for (${targetTypeName}) synchronized successfully.`),
             "success",
           );
-          fetchDatabases(); // Refresh status after migration
+          fetchDatabases();
         } else {
           showToast(
             data.error || t("dbMigrationFailed") || "Failed to run migrations",
             "error",
           );
         }
-      } catch (error) {
-        showToast(t("dbMigrationError") || "Error running migrations", "error");
+      } catch (error: any) {
+        showToast(error.message || t("dbMigrationError") || "Error running migrations", "error");
       } finally {
         setIsMigrating(null);
       }
@@ -3300,10 +3381,13 @@ const DatabaseOrchestrationView = ({
     if (type === "scratch") {
       setConfirmModal({
         isOpen: true,
-        title: { ar: "مسح البيانات وبناء الهيكل من الصفر؟", en: "Wipe Data and Rebuild Schema?" },
+        title: { 
+          ar: `إعادة تهيئة جداول (${targetTypeName}) من الصفر؟`, 
+          en: `Re-initialize (${targetTypeName}) from scratch?` 
+        },
         description: dir === "rtl"
-          ? "⚠️ تحذير: هذا الإجراء سيقوم بحذف كافة البيانات وإعادة بناء المخطط من الصفر. هل تريد الاستمرار؟"
-          : "⚠️ WARNING: This will wipe all data and rebuild the schema from scratch. Continue?",
+          ? `⚠️ تحذير احترافي ومحمي:\nسيتم مسح وإعادة بناء الجداول والفهارس التابعة لقاعدة (${targetTypeName} - ${targetLabel}) فقط من الصفر، مع تهيئة الحسابات الإلزامية.\n\nلن تتأثر إعدادات الاتصال المخزنة في النظام أو قواعد البيانات الأخرى. هل تريد الاستمرار؟`
+          : `⚠️ Professional Safety Warning:\nThis will wipe and rebuild only the tables and indexes belonging to (${targetTypeName} - ${targetLabel}) from scratch, then re-seed mandatory default configurations.\n\nYour saved database connection configurations and other databases will NOT be affected. Do you want to proceed?`,
         variant: "danger",
         onConfirm: perform
       });
@@ -3324,77 +3408,92 @@ const DatabaseOrchestrationView = ({
 
     const targetType = db.id === "ledger" ? "ledger" : (db.id === "external" ? "external" : (db.id === "security" ? "security" : "core"));
     const dbName = db.db_name || db.dbName || targetType;
-
-    const confirmMsg =
-      dir === "rtl"
-        ? `⚠️ تحذير شديد: استعادة النسخة إلى (${dbName}) سيؤدي لمسح كافة البيانات الحالية بشكل نهائي واستبدالها بالنسخة. هل أنت متأكد تماماً؟`
-        : `⚠️ CRITICAL WARNING: Restoring backup to (${dbName}) will PERMANENTLY WIPE all current data and replace it with the backup content. Are you absolutely sure?`;
-
     const target = event.target;
 
-    setConfirmModal({
-      isOpen: true,
-      title: { ar: "استعادة نسخة احتياطية؟", en: "Restore Database Backup?" },
-      description: confirmMsg,
-      variant: "danger",
-      onConfirm: async () => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const backup = JSON.parse(e.target?.result as string);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const backup = JSON.parse(e.target?.result as string);
+        if (!backup || typeof backup !== "object") {
+          throw new Error(dir === "rtl" ? "هيكل ملف النسخة الاحتياطية غير صالح" : "Invalid backup file structure");
+        }
 
-            if (backup.type !== targetType) {
+        const backupData = backup.data || backup;
+        const backupType = backup.type || targetType;
+
+        if (backup.type && backup.type !== targetType) {
+          showToast(
+            dir === "rtl"
+              ? `خطأ: نوع النسخة الاحتياطية (${backup.type}) لا يتطابق مع قاعدة البيانات المحددة (${targetType})`
+              : `Error: Backup type (${backup.type}) mismatch with target (${targetType})`,
+            "error",
+          );
+          if (target) target.value = "";
+          return;
+        }
+
+        const tableKeys = Object.keys(backupData);
+        const tableCount = tableKeys.length;
+        const totalRecords = tableKeys.reduce((acc, k) => acc + (Array.isArray(backupData[k]) ? backupData[k].length : 0), 0);
+
+        const confirmMsg =
+          dir === "rtl"
+            ? `📄 تم فحص ملف النسخة الاحتياطية بنجاح:\n• قاعدة البيانات الهدف: ${dbName} (${targetType})\n• عدد الجداول المكتشفة: ${tableCount}\n• إجمالي السجلات: ${totalRecords}\n• تاريخ النسخة: ${backup.timestamp || "غير محدد"}\n\n⚠️ تحذير: استعادة النسخة سيقوم بإعادة كتابة بيانات جداول (${targetType}) بدقة ومزامنة السلاسل الرقمية (ID Sequences). هل أنت متأكد من رغبتك في البدء؟`
+            : `📄 Backup file inspected successfully:\n• Target Database: ${dbName} (${targetType})\n• Detected Tables: ${tableCount}\n• Total Records: ${totalRecords}\n• Timestamp: ${backup.timestamp || "N/A"}\n\n⚠️ Warning: Restoring will overwrite (${targetType}) tables and synchronize ID sequences. Are you sure you want to proceed?`;
+
+        setConfirmModal({
+          isOpen: true,
+          title: { ar: `استعادة دقيقة لقاعدة (${dbName})؟`, en: `Precision restore for (${dbName})?` },
+          description: confirmMsg,
+          variant: "danger",
+          onConfirm: async () => {
+            try {
               showToast(
                 dir === "rtl"
-                  ? `خطأ: نوع النسخة (${backup.type}) لا يتطابق مع قاعدة البيانات الهدف (${targetType})`
-                  : `Error: Backup type (${backup.type}) mismatch with target (${targetType})`,
-                "error",
-              );
-              return;
-            }
-
-            showToast(
-              dir === "rtl"
-                ? "جاري استعادة البيانات بدقة... يرجى عدم إغلاق الصفحة"
-                : "Restoring data with high precision... Please do not close the page",
-              "success",
-            );
-
-            const res = await fetch("/api/admin/databases/import", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ backup, targetType }),
-            });
-
-            if (res.ok) {
-              showToast(
-                dir === "rtl"
-                  ? "تمت استعادة قاعدة البيانات بنجاح تام"
-                  : "Database restored successfully with precision",
+                  ? "جاري استعادة البيانات وفهرسة السلاسل بدقة متناهية... يرجى عدم إغلاق الصفحة"
+                  : "Restoring database tables and synchronizing sequences... Please do not close the page",
                 "success",
               );
-              fetchDatabases();
-            } else {
-              const data = await res.json();
-              showToast(data.error || "Import failed", "error");
+
+              const res = await fetch("/api/admin/databases/import", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ backup, targetType }),
+              });
+
+              const resultData = await res.json();
+              if (res.ok) {
+                showToast(
+                  dir === "rtl"
+                    ? `تمت استعادة قاعدة البيانات بنجاح تام (${resultData.restored_tables || tableCount} جدول، ${resultData.total_rows_imported || totalRecords} سجل)`
+                    : `Database restored successfully (${resultData.restored_tables || tableCount} tables, ${resultData.total_rows_imported || totalRecords} records)!`,
+                  "success",
+                );
+                fetchDatabases();
+              } else {
+                showToast(resultData.error || "Import failed", "error");
+              }
+            } catch (err: any) {
+              showToast(err.message || (dir === "rtl" ? "حدث خطأ أثناء الاستيراد" : "Error during import"), "error");
+            } finally {
+              if (target) target.value = "";
             }
-          } catch (err) {
-            showToast(
-              dir === "rtl"
-                ? "ملف غير صالح أو تالف"
-                : "Invalid or corrupted backup file",
-              "error",
-            );
-          } finally {
-            if (target) target.value = "";
           }
-        };
-        reader.readAsText(file);
+        });
+      } catch (parseErr: any) {
+        showToast(
+          dir === "rtl"
+            ? `ملف غير صالح أو تالف: ${parseErr.message}`
+            : `Invalid or corrupted backup file: ${parseErr.message}`,
+          "error",
+        );
+        if (target) target.value = "";
       }
-    });
+    };
+    reader.readAsText(file);
   };
 
   const handleChange = (id: string, field: string, value: string | boolean) => {
@@ -3442,6 +3541,41 @@ const DatabaseOrchestrationView = ({
           <span className="font-medium text-sm">{toast.message}</span>
         </div>
       )}
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--border-main)] pb-4">
+        <div>
+          <h2 className="text-xl font-bold text-[var(--text-primary)] font-sans">
+            {language === "ar" ? "اتصالات قاعدة البيانات والتنظيم" : "Database Connections & Orchestration"}
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">
+            {language === "ar"
+              ? "تحكم كامل وتوزيع ديناميكي للمجموعات التشغيلية والمالية مع الفحص المباشر للأداء."
+              : "Complete control and dynamic allocation of operational & financial pools with live performance telemetry."}
+          </p>
+        </div>
+        <button
+          onClick={handleTestAllConnections}
+          disabled={isTestingAll || databases.length === 0}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-[var(--radius)] font-bold transition-theme border border-accent text-accent hover:bg-accent/10 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+        >
+          {isTestingAll ? (
+            <span className="animate-spin inline-block w-4 h-4 border-2 border-accent border-t-transparent rounded-full" />
+          ) : (
+            <Activity size={16} />
+          )}
+          <span>{language === "ar" ? "فحص جميع الاتصالات" : "Test All Connections"}</span>
+        </button>
+      </div>
+
+      <DatabasePoolSummaryView
+        token={token}
+        language={language}
+        dir={dir}
+        theme={theme}
+        onRefreshRegistry={fetchDatabases}
+        showToast={showToast}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {databases.map((db) => {
           const Icon = db.icon;
@@ -3486,11 +3620,15 @@ const DatabaseOrchestrationView = ({
                   )}
                   {db.status === "healthy" ? (
                     <span className="text-[11px] font-medium text-accent bg-accent/10 border border-accent/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 size={12} /> {t("statusConnected")}
+                      <CheckCircle2 size={12} /> {t("statusConnected") || "Active"}
+                    </span>
+                  ) : db.status === "saturated" ? (
+                    <span className="text-[11px] font-medium text-orange-500 bg-orange-500/10 border border-orange-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <AlertTriangle size={12} /> {t("statusSaturated") || "Saturated"}
                     </span>
                   ) : (
                     <span className="text-[11px] font-medium text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <XCircle size={12} /> {t("statusDisconnected")}
+                      <XCircle size={12} /> {t("statusDisconnected") || "Inactive"}
                     </span>
                   )}
                 </div>
@@ -3711,10 +3849,20 @@ const DatabaseOrchestrationView = ({
                   </button>
                   <button
                     onClick={() => handleSaveConfig(db.id)}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]`}
+                    disabled={db.isSaving}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-sm border transition-theme font-bold text-xs bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] disabled:opacity-50`}
                   >
-                    <Save size={14} className="text-gray-400" />{" "}
-                    {t("saveDbConfig")}
+                    {db.isSaving ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin text-accent" />
+                        {language === "ar" ? "جاري الحفظ..." : "Saving..."}
+                      </>
+                    ) : (
+                      <>
+                        <Save size={14} className="text-gray-400" />{" "}
+                        {t("saveDbConfig")}
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -6332,8 +6480,8 @@ const PlansSubscriptionsView = ({
   t: (key: string, replacements?: any) => string;
   dir: string;
 }) => {
-  const { plans, setPlans, token, language, setIsOperationPending } =
-    useAppContext();
+  const confirm = useConfirm();
+  const { plans, setPlans, token, language, setIsOperationPending } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -6548,7 +6696,8 @@ const PlansSubscriptionsView = ({
   };
 
   const handleDeletePlan = async (id: string) => {
-    if (!window.confirm(t("deletePlanConfirm"))) return;
+    const isConfirmed = await confirm({ title: t("deletePlanConfirm"), description: "", variant: "danger" as const });
+    if (!isConfirmed) return;
 
     try {
       const res = await fetch(`/api/admin/plans/${id}`, {
@@ -7570,6 +7719,7 @@ const LegacyUserManagementView = ({
   showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { plans, token, user: currentUser, refreshUser } = useAppContext();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -8151,14 +8301,14 @@ const LegacyUserManagementView = ({
       return;
     }
 
-    if (
-      !confirm(
-        dir === "rtl"
+    const isConfirmed = await confirm({
+      title: dir === "rtl" ? "حذف المستخدم" : "Delete User",
+      description: dir === "rtl"
           ? "هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف جميع بياناته ومحفظته نهائياً."
           : "Are you sure you want to delete this user? All their data and wallet will be permanently removed.",
-      )
-    )
-      return;
+      variant: "danger" as const
+    });
+    if (!isConfirmed) return;
 
     setIsUpdating(true);
     try {
@@ -9064,13 +9214,14 @@ const LegacyUserManagementView = ({
                               </div>
                               <button
                                 onClick={async () => {
-                                  if (
-                                    confirm(
-                                      dir === "rtl"
+                                  const isConfirmed = await confirm({
+                                    title: dir === "rtl" ? "حذف الصورة" : "Delete Selfie",
+                                    description: dir === "rtl"
                                         ? "هل أنت متأكد من حذف الصورة؟ لا يمكن التراجع عن هذا الإجراء."
                                         : "Are you sure you want to delete this selfie? This action cannot be undone.",
-                                    )
-                                  ) {
+                                    variant: "danger" as const
+                                  });
+                                  if (isConfirmed) {
                                     try {
                                       const res = await fetch(
                                         `/api/admin/users/${selectedUser.id}/kyc-selfie`,
@@ -9311,13 +9462,14 @@ const LegacyUserManagementView = ({
                           return;
                         }
 
-                        if (
-                          confirm(
-                            dir === "rtl"
+                        const isConfirmed = await confirm({
+                            title: dir === "rtl" ? "تأكيد المعاملة" : "Confirm Transaction",
+                            description: dir === "rtl"
                               ? `هل أنت متأكد من تنفيذ عملية ${ledgerAction === "add" ? "إيداع" : "سحب"} بقيمة ${ledgerAmount} ${ledgerUnit}؟`
                               : `Are you sure you want to execute a ${ledgerAction === "add" ? "deposit" : "withdrawal"} of ${ledgerAmount} ${ledgerUnit}?`,
-                          )
-                        ) {
+                            variant: "warning" as const
+                          });
+                        if (isConfirmed) {
                           await handleUpdateBalance(
                             selectedUser.id,
                             amount,
@@ -9567,8 +9719,8 @@ const SmartEmailHubView = ({
     "settings",
   );
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const { token, language, siteSettings, setIsOperationPending } =
-    useAppContext();
+  const confirm = useConfirm();
+  const { token, language, siteSettings, setIsOperationPending } = useAppContext();
 
   const [settings, setSettings] = useState<any>({
     mailer_type: "smtp",
@@ -9653,14 +9805,14 @@ const SmartEmailHubView = ({
   }, [token]);
 
   const handleImportDefaults = async () => {
-    if (
-      !window.confirm(
-        dir === "rtl"
-          ? "هل أنت متأكد من جلب القوالب الافتراضية؟ سيتم تحديث القوالب الموجودة."
-          : "Are you sure you want to fetch default templates? Existing system templates will be updated.",
-      )
-    )
-      return;
+    const isConfirmed = await confirm({
+      title: dir === "rtl" ? "استيراد القوالب الافتراضية" : "Import Default Templates",
+      description: dir === "rtl"
+        ? "هل أنت متأكد من جلب القوالب الافتراضية؟ سيتم تحديث القوالب الموجودة."
+        : "Are you sure you want to fetch default templates? Existing system templates will be updated.",
+      variant: "warning"
+    });
+    if (!isConfirmed) return;
 
     setIsImportingDefaults(true);
     try {
@@ -9847,7 +9999,8 @@ const SmartEmailHubView = ({
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+    const isConfirmed = await confirm({ title: "Delete Template", description: "Are you sure you want to delete this template?", variant: "danger" as const });
+    if (!isConfirmed) return;
     try {
       const token = localStorage.getItem("app_token");
       const res = await fetch(`/api/mail-services-v3/templates/${id}`, {
@@ -12135,8 +12288,8 @@ const SystemSettingsView = ({
   t: (key: string, replacements?: any) => string;
   dir: string;
 }) => {
-  const { siteSettings, setSiteSettings, token, setIsOperationPending, language } =
-    useAppContext();
+  const confirm = useConfirm();
+  const { siteSettings, setSiteSettings, token, setIsOperationPending, language } = useAppContext();
 
   const [siteName, setSiteName] = useState(siteSettings.siteName);
   const [siteNameAr, setSiteNameAr] = useState(siteSettings.siteNameAr || "");
@@ -12444,7 +12597,12 @@ const SystemSettingsView = ({
   };
 
   const handleDeleteRouteSeo = async (id: number) => {
-    if (!window.confirm(dir === "rtl" ? "هل أنت تأكد من حذف إعدادات هذا المسار؟" : "Are you sure you want to delete this route SEO setting?")) return;
+    const isConfirmed = await confirm({
+      title: dir === "rtl" ? "حذف إعدادات المسار" : "Delete Route SEO",
+      description: dir === "rtl" ? "هل أنت تأكد من حذف إعدادات هذا المسار؟" : "Are you sure you want to delete this route SEO setting?",
+      variant: "danger"
+    });
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/admin/seo-routes/${id}`, {
         method: "DELETE",

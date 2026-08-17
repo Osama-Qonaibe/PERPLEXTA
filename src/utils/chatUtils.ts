@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 
-export const FOLLOW_UP_PATTERN = /(?:\[(?:FOLLOW_?UPS?(?:_START)?|FOLLOW[\s-_]UPS?|أسئلة[_\s-]متابعة|اسئلة[_\s-]متابعة|أسئلة[_\s-]المتابعة|اسئلة[_\s-]المتابعة|أسئلة[_\s-]متابعة[_\s-]مقترحة|اسئلة[_\s-]متابعة[_\s-]مقترحة|فوللو[_\s-]?(?:ابس|اب)|فولو[_\s-]?(?:ابس|اب)|اقتراحات[_\s-]متابعة|اقتراحات[_\s-]المتابعة|اقتراحات[_\s-]تفاعلية|اقتراحات|أسئلة[_\s-]مقترحة|اسئلة[_\s-]مقترحة|Follow-?ups?|Follow-?up[\s_]Questions|Suggested[\s_]Questions|Related[\s_]Questions|NEXT_STEPS|SUGGESTIONS)\]|(?:\*\*|#{1,4}\s*|\[)?(?:أسئلة[_\s-]المتابعة|أسئلة[_\s-]متابعة|اسئلة[_\s-]متابعة|فوللو[_\s-]ابس|فولو[_\s-]ابس|فوللو[_\s-]اب|فولو[_\s-]اب|Follow-?ups?|Follow-?up[\s_]Questions|Suggested[\s_]Questions|أسئلة[_\s-]مقترحة|اسئلة[_\s-]مقترحة|FOLLOW_?UPS?(?:_START)?|FOLLOW[\s-_]UPS?|اقتراحات[_\s-]متابعة|اقتراحات[_\s-]المتابعة|اقتراحات[_\s-]تفاعلية|اقتراحات|SUGGESTIONS|NEXT_STEPS)(?:\*\*|:|\])?)\n?([\s\S]*)$/i;
+const FOLLOW_UP_PATTERN = /(?:\[(?:FOLLOW_?UPS?(?:_START)?|FOLLOW[\s-_]UPS?|أسئلة[_\s-]متابعة|اسئلة[_\s-]متابعة|أسئلة[_\s-]المتابعة|اسئلة[_\s-]المتابعة|أسئلة[_\s-]متابعة[_\s-]مقترحة|اسئلة[_\s-]متابعة[_\s-]مقترحة|فوللو[_\s-]?(?:ابس|اب)|فولو[_\s-]?(?:ابس|اب)|اقتراحات[_\s-]متابعة|اقتراحات[_\s-]المتابعة|اقتراحات[_\s-]تفاعلية|اقتراحات|أسئلة[_\s-]مقترحة|اسئلة[_\s-]مقترحة|Follow-?ups?|Follow-?up[\s_]Questions|Suggested[\s_]Questions|Related[\s_]Questions|NEXT_STEPS|SUGGESTIONS)\]|(?:\*\*|#{1,4}\s*|\[)?(?:أسئلة[_\s-]المتابعة|أسئلة[_\s-]متابعة|اسئلة[_\s-]متابعة|فوللو[_\s-]ابس|فولو[_\s-]ابس|فوللو[_\s-]اب|فولو[_\s-]اب|Follow-?ups?|Follow-?up[\s_]Questions|Suggested[\s_]Questions|أسئلة[_\s-]مقترحة|اسئلة[_\s-]مقترحة|FOLLOW_?UPS?(?:_START)?|FOLLOW[\s-_]UPS?|اقتراحات[_\s-]متابعة|اقتراحات[_\s-]المتابعة|اقتراحات[_\s-]تفاعلية|اقتراحات|SUGGESTIONS|NEXT_STEPS)(?:\*\*|:|\])?)\n?([\s\S]*)$/i;
 
 export function formatActionableSuggestion(suggestion: string): string {
   if (!suggestion) return '';
@@ -105,8 +105,4 @@ export const showSuccessToast = (dir: 'rtl' | 'ltr', msgAr: string, msgEn: strin
 
 export const showErrorToast = (dir: 'rtl' | 'ltr', msgAr: string, msgEn: string) => {
   toast.error(dir === 'rtl' ? msgAr : msgEn);
-};
-
-export const showInfoToast = (dir: 'rtl' | 'ltr', msgAr: string, msgEn: string) => {
-  toast.info(dir === 'rtl' ? msgAr : msgEn);
 };

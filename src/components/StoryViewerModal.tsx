@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Eye, Play, Pause, Volume2, VolumeX, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Eye, Volume2, VolumeX, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
