@@ -50,7 +50,7 @@ router.get("/settings", async (req, res) => {
       stripe_active: isStripeActive,
       paypal_active: isPaypalActive
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });
@@ -164,7 +164,7 @@ router.get("/economy", async (req, res) => {
       delete economy.paypal_email;
     }
     res.json(economy);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });
@@ -347,7 +347,7 @@ router.get("/admin/settings", authenticateAdmin, async (req, res) => {
   try {
     const settings = await getSystemSettings();
     res.json(settings);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });

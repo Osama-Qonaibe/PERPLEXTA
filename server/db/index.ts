@@ -655,7 +655,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     pool = patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000, connectionString || url || normCoreUrl || safeConnStr || undefined),
+      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000, url),
     }));
     pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
     await pool.query('SELECT 1');
@@ -668,7 +668,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     ledgerPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
+      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000, url),
     }));
     if (ledgerPool !== pool) {
       ledgerPool.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
@@ -683,7 +683,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     externalPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
+      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000, url),
     }));
     if (externalPool !== pool) {
       externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
@@ -698,7 +698,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     securityPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
+      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000, url),
     }));
     if (securityPool !== pool) {
       securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));

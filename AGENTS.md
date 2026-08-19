@@ -265,6 +265,10 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Segmented Plans & Subscriptions Display**: Optimized the frontend `SubscriptionPage` with a dual-segmented interactive sliding switch separating consumer "Performance Plans" from developer-agent "Developer & Agent Plans".
     - **Reactive Limit Visualization**: Implemented dynamic context-aware limit presentations inside package cards. Selecting Developer plans automatically swaps standard user conversational meters (chats, analysis tools) with programmatic-specific meters (`x402 API Requests`) and Storage quotas.
     - **Bilingual Schema Migration & Seeding**: Added safe migration and auto-seeding blocks for corporate API packages (`Developer Lite` and `Developer Scale`) under the new `plan_type` schema constraint, keeping structural fields updated in user editing panels.
+- **Database Resilience & Dynamic SSL Connectivity (Completed Today - August 19, 2026):**
+    - **Dynamic SSL Handling**: Redesigned `getSslConfig` in `server/db/index.ts` to be fully context-aware. The system now dynamically disables SSL when connecting to a local PostgreSQL instance on `localhost` (resolving the fatal connection error "The server does not support SSL connections"), while automatically preserving high-security SSL configurations for remote databases like Neon/AWS (avoiding "connection is insecure" issues).
+    - **Auto-Schema Repair for Activity Logs**: Integrated `user_activity_logs` into the boot-time schema integrity checks (`verifySchemaIntegrity`) in `server/db/migrations.ts`. On startup, the system now automatically audits and repairs any missing columns (e.g. `event_type`, `event_details`, `user_agent`) via a non-destructive schema patching layer.
+    - **Validated Clean Boot**: Successfully verified 100% clean, error-free database pool initialization on the production PM2 instance.
 - **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MAJESTIC CALM ACHIEVED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
