@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const useFollowUpSuggestions = (lastMessage: string | undefined) => {
+export const useFollowUpSuggestions = (lastMessage: string | undefined, userQuery?: string) => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +16,7 @@ export const useFollowUpSuggestions = (lastMessage: string | undefined) => {
         const response = await fetch('/api/ai/generate-followups', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lastMessage }),
+          body: JSON.stringify({ lastMessage, userQuery }),
         });
         const data = await response.json();
         if (response.status === 401) {

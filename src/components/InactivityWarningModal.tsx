@@ -9,9 +9,7 @@ export const InactivityWarningModal: React.FC = () => {
     inactivityCountdown,
     extendSession,
     logout,
-    language,
-    dir,
-    t
+    dir
   } = useAppContext();
 
   if (!showInactivityWarning) return null;

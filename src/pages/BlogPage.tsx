@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ContentContainer } from '../components/ContentContainer';
 import { toast } from 'sonner';
 import { useRenderMetrics } from '../hooks/useRenderMetrics';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -687,7 +688,8 @@ export const BlogPage: React.FC = () => {
                 </div>
               </aside>
 
-              <main className="flex-1 px-8 sm:px-4 md:p-6 lg:p-8 py-4 overflow-y-auto scrollbar-none">
+              <main className="flex-1 overflow-y-auto scrollbar-none">
+                <ContentContainer className="py-4 pb-24 space-y-6 md:space-y-10">
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
@@ -949,18 +951,19 @@ export const BlogPage: React.FC = () => {
                     {isRtl ? 'الموقع محفوظ لـ ViralLinkUp 2026 ©' : 'All Sovereignties Reserved ViralLinkUp 2026 ©'}
                   </div>
                 </div>
-              </main>
+              </ContentContainer>
+            </main>
 
             </div>
           </motion.div>
         ) : (
-          <motion.div
+          <ContentContainer
             key="article-detail"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="max-w-6xl mx-auto w-full flex-1 flex flex-col overflow-hidden h-full pb-4"
+            className="w-full flex-1 flex flex-col overflow-hidden h-full pb-4"
           >
             {/* Desktop Immersive Reader Layout */}
             <div className="hidden md:flex flex-col h-full overflow-hidden w-full animate-fade-in">
@@ -1550,7 +1553,7 @@ export const BlogPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </ContentContainer>
         )}
       </AnimatePresence>
 

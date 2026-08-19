@@ -77,7 +77,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
               const agentPayload = jwt.verify(token, publicKeyPem, { algorithms: ['RS256'] }) as any;
               if (agentPayload && (agentPayload.client_id || agentPayload.sub)) {
                 const clientId = agentPayload.client_id || agentPayload.sub;
-                const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
+                const agentCheck = await getSecurityPool().query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
                 if (agentCheck.rows.length > 0) {
                   const agent = agentCheck.rows[0];
                   if (agent.is_active === false) {
@@ -157,7 +157,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         if (userPayload.isAgent || userPayload.role === 'agent' || userPayload.client_id) {
           const clientId = userPayload.client_id || userPayload.sub;
           if (clientId) {
-            const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
+            const agentCheck = await getSecurityPool().query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
             if (agentCheck.rows.length > 0) {
               const agent = agentCheck.rows[0];
               if (agent.is_active === false) {

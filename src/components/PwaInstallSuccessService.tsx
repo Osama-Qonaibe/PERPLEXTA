@@ -24,7 +24,17 @@ export const PwaInstallSuccessService: React.FC = () => {
   const logoUrl = rawLogo ? resolveImageUrl(rawLogo) : null;
 
   useEffect(() => {
+    const isStandaloneMode = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+    const alreadyCelebrated = localStorage.getItem('perplexta_install_celebrated') === 'true';
+
+    // If already in standalone and already celebrated, do nothing
+    if (isStandaloneMode && alreadyCelebrated) {
+      return;
+    }
+
     const handleInstalled = () => {
+      if (localStorage.getItem('perplexta_install_celebrated') === 'true') return;
+      localStorage.setItem('perplexta_install_celebrated', 'true');
       setShowModal(true);
       setCountdown(5);
       setAutoRedirectPaused(false);

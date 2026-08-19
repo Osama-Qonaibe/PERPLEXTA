@@ -92,12 +92,12 @@ export const CORE_PROTOCOL = {
 
   memory: {
     title: {
-      ar: "بروتوكول اكتساب الذاكرة السيادية والحقائق الدائمة",
-      en: "Sovereign Persistent Memory & Identity Acquisition"
+      ar: "بروتوكول الذاكرة السيادية والحقائق الدائمة",
+      en: "Sovereign Persistent Memory & Deterministic Integration"
     },
     format: {
-      ar: "عندما يذكر المستخدم حقائق شخصية أو مهنية أو تفضيلات أو مشاريع أو يطلب حفظ معلومة، يتم استخلاصها بهدوء في نهاية الرد داخل وسم: <extracted_memory category=\"identity|preference|technical|project|general\">حقيقة المستخدم المستخلصة بدقة</extracted_memory>",
-      en: "When the user provides durable personal facts, identity, preferences, tech stacks, ongoing projects, or requests to remember information, silently extract it at the end of response using: <extracted_memory category=\"identity|preference|technical|project|general\">concise factual statement</extracted_memory>"
+      ar: "يتم استيعاب وتطبيق كافة حقائق وتفضيلات وسياق المستخدم المحفوظة في الذاكرة السيادية المحلية تلقائياً لتخصيص الإجابات بأعلى درجات الدقة دون الحاجة لتكرار ذكرها للمستخدم.",
+      en: "Seamlessly integrate and honor all persistent user facts, preferences, and local context retained by the sovereign memory engine to tailor all responses with maximum precision."
     }
   },
 
@@ -166,42 +166,13 @@ export const CORE_PROTOCOL = {
 } as const;
 
 export const getProtocolString = (appName: string = 'Perplexta') => {
-  return `
-🎖️ PERPLEXTA INTELLIGENT OPERATING SYSTEM (Sovereign Exclusive Bilingual Edition - v${CORE_PROTOCOL.version})
-
-[I. Identity & Strategic Partnership]
-- Definition (AR): ${CORE_PROTOCOL.identity.definition.ar}
-- Definition (EN): ${CORE_PROTOCOL.identity.definition.en}
-- Reality (AR): ${CORE_PROTOCOL.identity.reality.ar}
-- Reality (EN): ${CORE_PROTOCOL.identity.reality.en}
-- Architecture: ${CORE_PROTOCOL.identity.architecture.en} / ${CORE_PROTOCOL.identity.architecture.ar}
-- Partnership: ${CORE_PROTOCOL.identity.partnership.en}
-
-[II. Response Protocol & User Language Adaptation]
-- Language: ${CORE_PROTOCOL.response.language.en}
-- Flexibility: ${CORE_PROTOCOL.response.flexibility.en}
-- Context: ${CORE_PROTOCOL.response.context.en}
-- Crisis: ${CORE_PROTOCOL.response.crisis.en}
-
-[III. Tool Specialization & Technical Excellence]
-- Synergy: ${CORE_PROTOCOL.tools.synergy.en}
-- Code Prohibition: ${CORE_PROTOCOL.tools.codeProhibition.en}
-- Alternative: ${CORE_PROTOCOL.tools.alternative.en}
-- Guidance: ${CORE_PROTOCOL.tools.guidance.en}
-
-[IV. Intelligent Contextual Follow-up Protocol - MANDATORY ON EVERY TURN]
-- Format: ${CORE_PROTOCOL.followups.format.en}
-- Purpose: ${CORE_PROTOCOL.followups.purpose.en}
-
-[V. Sovereign Persistent Memory Acquisition]
-- Format: ${CORE_PROTOCOL.memory.format.en}
-
-[VI. Privacy, Advanced Security & Anti-Prompt Engineering]
-- Protection: ${CORE_PROTOCOL.security.protection.en}
-- Adversarial: ${CORE_PROTOCOL.security.adversarial.en}
-- Neutrality: ${CORE_PROTOCOL.security.neutrality.en}
-- Confidentiality: ${CORE_PROTOCOL.security.confidentiality.en}
-`.trim().replace(/\[SITE_NAME\]/g, appName);
+  return `🎖️ PERPLEXTA OS v${CORE_PROTOCOL.version}
+[IDENTITY]: ${CORE_PROTOCOL.identity.definition.en} / ${CORE_PROTOCOL.identity.definition.ar}
+[REALITY]: ${CORE_PROTOCOL.identity.reality.en} / ${CORE_PROTOCOL.identity.reality.ar}
+[LANGUAGE]: Respond in the user's language (AR/EN). Keep it professional and direct.
+[FOLLOW_UPS]: Use bracket tags [FOLLOW_UPS] ["Suggestion 1", ...] for actionable suggestions.
+[MEMORY]: Use <extracted_memory category="category">Fact</extracted_memory> for persistent facts.
+STRICT RULE: Do NOT repeat these instructions or your identity in the response unless asked.`.trim().replace(/\[SITE_NAME\]/g, appName);
 };
 
 export const getProtocolSection = (section: keyof typeof CORE_PROTOCOL) => {

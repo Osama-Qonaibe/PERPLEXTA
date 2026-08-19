@@ -176,10 +176,10 @@ const orchestratorConfigCache = new Map<string, CacheEntry<any>>();
 const activePlansCache = new Map<string, CacheEntry<any>>();
 const apiKeysVaultCache = new Map<string, CacheEntry<any>>();
 
-const TTL_SYSTEM = 300000;      // 5 minutes
-const TTL_ECONOMY = 60000;       // 1 minute
-const TTL_ORCHESTRATOR = 30000;  // 30 seconds
-const TTL_PLANS = 180000;       // 3 minutes
+const TTL_SYSTEM = 60000;       // 60-second TTL cache for system_settings
+const TTL_ECONOMY = 60000;      // 60-second TTL cache for economy_settings
+const TTL_ORCHESTRATOR = 60000; // 60-second TTL cache for tool_orchestrator
+const TTL_PLANS = 60000;        // 60-second TTL cache for plans
 const TTL_API_KEYS = 15000;     // 15 seconds
 
 /** Helper to decrypt text securely */
@@ -294,21 +294,21 @@ export async function getCachedEconomySettings(): Promise<any> {
       conversion_rate:                 0.001,
       min_withdrawal_cents:            1000,
       referral_activation_min_deposit: 10,
-      crypto_address:  process.env.DEFAULT_CRYPTO_ADDRESS  || 'YOUR_DEFAULT_CRYPTO_ADDRESS',
-      bank_name:       process.env.DEFAULT_BANK_NAME       || 'Your Default Bank',
-      bank_recipient:  process.env.DEFAULT_BANK_RECIPIENT  || 'Your Default Business Platforms LTD.',
-      bank_iban:       process.env.DEFAULT_BANK_IBAN       || 'IL00000000000000000000',
-      bank_swift:      process.env.DEFAULT_BANK_SWIFT      || 'TESTIL33XXX',
-      paypal_email:    process.env.DEFAULT_PAYPAL_EMAIL    || 'paypal-sandbox@yourdomain.com',
+      crypto_address:  '',
+      bank_name:       '',
+      bank_recipient:  '',
+      bank_iban:       '',
+      bank_swift:      '',
+      paypal_email:    '',
     };
   }
 
-  settings.crypto_address  = safeDecrypt(settings.crypto_address,  process.env.DEFAULT_CRYPTO_ADDRESS  || 'YOUR_DEFAULT_CRYPTO_ADDRESS');
-  settings.bank_name       = safeDecrypt(settings.bank_name,       process.env.DEFAULT_BANK_NAME       || 'Your Default Bank');
-  settings.bank_recipient  = safeDecrypt(settings.bank_recipient,  process.env.DEFAULT_BANK_RECIPIENT  || 'Your Default Business Platforms LTD.');
-  settings.bank_iban       = safeDecrypt(settings.bank_iban,       process.env.DEFAULT_BANK_IBAN       || 'IL00000000000000000000');
-  settings.bank_swift      = safeDecrypt(settings.bank_swift,      process.env.DEFAULT_BANK_SWIFT      || 'TESTIL33XXX');
-  settings.paypal_email    = safeDecrypt(settings.paypal_email,    process.env.DEFAULT_PAYPAL_EMAIL    || 'paypal-sandbox@yourdomain.com');
+  settings.crypto_address  = safeDecrypt(settings.crypto_address,  '');
+  settings.bank_name       = safeDecrypt(settings.bank_name,       '');
+  settings.bank_recipient  = safeDecrypt(settings.bank_recipient,  '');
+  settings.bank_iban       = safeDecrypt(settings.bank_iban,       '');
+  settings.bank_swift      = safeDecrypt(settings.bank_swift,      '');
+  settings.paypal_email    = safeDecrypt(settings.paypal_email,    '');
 
   economySettingsCache.set('global', { data: settings, timestamp: now });
   return settings;
@@ -390,6 +390,7 @@ export function invalidateApiKeysVaultCache() {
 }
 
 const routeSeoCache = new Map<string, CacheEntry<any>>();
+const routeSeoMetadataCache = new Map<string, CacheEntry<any>>();
 const TTL_ROUTE_SEO = 120000; // 2 minutes
 
 /** Get cached SEO settings for a specific route */
@@ -406,6 +407,23 @@ export async function getCachedRouteSeo(route: string): Promise<any> {
   );
   const data = result.rows[0] || null;
   routeSeoCache.set(route, { data, timestamp: now });
+  return data;
+}
+
+/** Get cached SEO metadata for a specific route */
+export async function getCachedRouteSeoMetadata(routePath: string): Promise<any> {
+  const now = Date.now();
+  const cached = routeSeoMetadataCache.get(routePath);
+  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
+    return cached.data;
+  }
+
+  const result = await pool.query(
+    'SELECT * FROM route_seo_metadata WHERE route_path = $1 LIMIT 1',
+    [routePath]
+  );
+  const data = result.rows[0] || null;
+  routeSeoMetadataCache.set(routePath, { data, timestamp: now });
   return data;
 }
 

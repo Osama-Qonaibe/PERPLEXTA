@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Sliders,
   X,
-  
-  Bell,
   AlertTriangle,
   AlertCircle,
   Sparkles,

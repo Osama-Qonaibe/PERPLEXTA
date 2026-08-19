@@ -75,7 +75,7 @@ export function applyLanguageFont(lang: 'ar' | 'en', config?: FontLoadingConfig 
     }
 
     // 3. Set primary font family variable
-    const fontStack = `"${currentConfig.ar.fontFamily}", ui-sans-serif, system-ui, sans-serif`;
+    const fontStack = `"${currentConfig.ar.fontFamily}", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
     document.documentElement.style.setProperty('--font-sans', fontStack);
   } else {
     // When active language is English ('en'):
@@ -98,7 +98,7 @@ export function applyLanguageFont(lang: 'ar' | 'en', config?: FontLoadingConfig 
     }
 
     // 3. Set primary font family variable
-    const fontStack = `"${currentConfig.en.fontFamily}", ui-sans-serif, system-ui, sans-serif`;
+    const fontStack = `"${currentConfig.en.fontFamily}", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
     document.documentElement.style.setProperty('--font-sans', fontStack);
   }
 }

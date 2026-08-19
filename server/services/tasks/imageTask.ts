@@ -444,10 +444,12 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
       } else if (providerId === 'google' || providerId === 'gemini') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
-        let cleanModel = modelToUse && modelToUse !== 'default' && !modelToUse.includes('flash-lite') 
-          ? modelToUse 
-          : (imageSettings.quality === 'Ultra' || imageSettings.quality === 'HD' ? 'gemini-3-pro-image-preview' : 'gemini-3.1-flash-image-preview');
+        let cleanModel = modelToUse || '';
         
+        if (!cleanModel || cleanModel === 'default') {
+          throw new Error('Image Orchestrator: Google/Gemini model is not configured in the Admin Panel.');
+        }
+
         if (cleanModel.startsWith('models/')) {
           cleanModel = cleanModel.substring(7);
         }

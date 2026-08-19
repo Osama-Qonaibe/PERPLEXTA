@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
+import { ContentContainer } from '../components/ContentContainer';
 import { ALL_TOOLS } from '../constants';
 import { toast } from 'sonner';
 
@@ -242,12 +243,12 @@ export const SubscriptionPage: React.FC = () => {
   };
 
   return (
-    <motion.div 
+    <ContentContainer 
       initial="initial"
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="max-w-6xl mx-auto px-4 pb-12"
+      className="pb-12"
     >
       {isVerifying && (
         <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-md">
@@ -717,6 +718,6 @@ export const SubscriptionPage: React.FC = () => {
           )}
         </AnimatePresence>
       </ModalPortal>
-    </motion.div>
+    </ContentContainer>
   );
 };

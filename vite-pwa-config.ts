@@ -71,17 +71,17 @@ export const pwaConfig: Partial<VitePWAOptions> = {
     skipWaiting: true,
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [
-      /^\/api\//i,
-      /^\/v1\//i,
-      /^\/uploads\//i,
-      /^\/socket\.io\//i,
-      /^\/health$/i,
-      /^\/\.well-known\//i,
-      /^\/sw\.js$/i,
-      /^\/workbox-.*\.js$/i,
-      /^\/manifest.*/i,
-      /^\/robots\.txt$/i,
-      /^\/sitemap\.xml$/i,
+      /\/api\//i,
+      /\/v1\//i,
+      /\/uploads\//i,
+      /\/socket\.io\//i,
+      /\/health$/i,
+      /\/\.well-known\//i,
+      /\/sw\.js$/i,
+      /\/workbox-.*\.js$/i,
+      /manifest.*/i,
+      /robots\.txt$/i,
+      /sitemap\.xml$/i,
     ],
     globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,woff,woff2,json}'],
     globIgnores: [
@@ -94,7 +94,7 @@ export const pwaConfig: Partial<VitePWAOptions> = {
     runtimeCaching: [
       {
         // NetworkFirst strategy for API routes to always ensure dynamic data freshness
-        urlPattern: /^\/(?:api|v1)\/.*/i,
+        urlPattern: /\/(?:api|v1)\//i,
         handler: 'NetworkFirst',
         options: {
           cacheName: 'perplexta-api-cache-v1',
@@ -110,7 +110,7 @@ export const pwaConfig: Partial<VitePWAOptions> = {
       },
       {
         // NetworkFirst strategy for user uploaded images & attachments to avoid missing files or staleness
-        urlPattern: /^\/uploads\/.*/i,
+        urlPattern: /\/uploads\//i,
         handler: 'NetworkFirst',
         options: {
           cacheName: 'perplexta-uploads-cache-v1',

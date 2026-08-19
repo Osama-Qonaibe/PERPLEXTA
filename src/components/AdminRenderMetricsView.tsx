@@ -9,8 +9,7 @@ import {
   Tooltip, 
   CartesianGrid, 
   BarChart, 
-  Bar, 
-  Legend 
+  Bar 
 } from 'recharts';
 import { Activity, Clock, Cpu, RefreshCw, Server, Users, Zap } from 'lucide-react';
 import { toast } from 'sonner';

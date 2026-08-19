@@ -212,10 +212,6 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey });
 
-    if (model === 'lyria-3-clip-preview') {
-       modelName = 'lyria-3-clip-preview';
-    }
-
     let fullPrompt = prompt;
     if (modelName === 'lyria-3-pro-preview' && userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {
       fullPrompt = `${prompt}\n\nLyrics:\n${userLyrics}`;

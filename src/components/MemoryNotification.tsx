@@ -11,7 +11,7 @@ interface MemoryNotificationProps {
 }
 
 export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisible, onClose, type = 'success', customDesc }) => {
-  const { dir, theme, isMobile } = useAppContext();
+  const { dir, isMobile } = useAppContext();
 
   useEffect(() => {
     if (isVisible) {

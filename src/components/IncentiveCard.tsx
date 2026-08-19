@@ -51,8 +51,7 @@ export const IncentiveCard: React.FC = () => {
 
   if (!milestoneData) return null;
 
-  const { percentage, toolId, planNameEn, planNameAr } = milestoneData;
-  const planName = dir === 'rtl' ? planNameAr : planNameEn;
+  const { percentage } = milestoneData;
   
   const referralLink = `${window.location.origin}/?ref=${user?.referral_code || user?.id || 'elite'}`;
 

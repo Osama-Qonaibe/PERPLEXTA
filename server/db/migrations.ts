@@ -64,6 +64,7 @@ export const TABLE_POOL_REGISTRY: Record<string, 'core' | 'ledger' | 'external' 
   bulletin_ad_comments: 'core',
   bulletin_ad_messages: 'core',
   route_seo_settings: 'core',
+  route_seo_metadata: 'core',
   asset_metadata: 'core',
   user_recommendation_interactions: 'core',
   user_recommendation_preferences: 'core',
@@ -188,7 +189,6 @@ async function safeQueryClient(clientObj: PgPoolClient | null, fallbackClient: P
   } catch (err: any) {
     const msg = err?.message || String(err);
     if (/not queryable|connection error|terminated unexpectedly|ECONNRESET|ETIMEDOUT|closed/i.test(msg) && target !== fallbackClient) {
-      console.warn(`[Migrations] Client encountered connection error ("${msg}"). Falling back to fallbackClient.`);
       return await fallbackClient.query(queryText, params);
     }
     throw err;
@@ -610,60 +610,13 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
 
       if (securityClient && securityClient !== client) {
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS token_blacklist (
-            id SERIAL PRIMARY KEY,
-            token TEXT UNIQUE NOT NULL,
-            expires_at TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS security_alerts (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER,
-            type VARCHAR(100) NOT NULL,
-            severity VARCHAR(50) DEFAULT 'medium',
-            description TEXT,
-            metadata JSONB DEFAULT '{}',
-            is_resolved BOOLEAN DEFAULT false,
-            ip_address VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS admin_audit_logs (
-            id SERIAL PRIMARY KEY,
-            admin_id INTEGER,
-            admin_email VARCHAR(255),
-            action VARCHAR(100) NOT NULL,
-            target_resource VARCHAR(100),
-            details JSONB DEFAULT '{}',
-            ip_address VARCHAR(100),
-            user_agent TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        await client.query(`
-          CREATE TABLE IF NOT EXISTS registered_agents (
-            id SERIAL PRIMARY KEY,
-            client_id VARCHAR(255) UNIQUE NOT NULL,
-            client_secret VARCHAR(255),
-            api_key_hash VARCHAR(255),
-            client_name VARCHAR(255) NOT NULL,
-            identity_type VARCHAR(50) DEFAULT 'agent',
-            credential_type VARCHAR(50) DEFAULT 'client_credentials',
-            redirect_uris TEXT[],
-            jwks_uri VARCHAR(500),
-            user_agent VARCHAR(500),
-            signature_keys JSONB,
-            permissions JSONB DEFAULT '[]',
-            is_active BOOLEAN DEFAULT true,
-            user_id INTEGER,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
+        // Drop legacy duplicate tables from Core DB now that Security DB handles 100% of security queries
+        try {
+          await client.query(`DROP TABLE IF EXISTS token_blacklist, security_alerts, admin_audit_logs, registered_agents CASCADE;`);
+          console.log('[Migrations] Successfully cleaned up 4 legacy duplicate security tables from Core DB.');
+        } catch (dropErr: any) {
+          console.warn('[Migrations] Warning during Core DB duplicate table cleanup:', dropErr?.message || dropErr);
+        }
       }
     } catch (error) {
       console.warn('[Migrations] Failed to inspect/initialize security database tables:', error instanceof Error ? error.message : 'Unknown error');
@@ -1160,6 +1113,20 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v9_route_seo_metadata_table', 'Creating route_seo_metadata table', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS route_seo_metadata (
+          route_path VARCHAR(255) PRIMARY KEY,
+          title_ar TEXT,
+          title_en TEXT,
+          description_ar TEXT,
+          description_en TEXT,
+          og_image_url TEXT,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    });
+
     await runVersioned('v8_security_hardening', 'Enforcing encryption on all sensitive system settings', async (tx) => {
       const settingsRes = await tx.query('SELECT id, stripe_secret_key, stripe_publishable_key, stripe_webhook_secret FROM system_settings');
       const encryptionPattern = /^[0-9a-fA-F]{32}:[0-9a-fA-F]+$/;
@@ -1454,8 +1421,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'Algorithmic Scaling and Quantum Market Modeling in 2026',
               'تطوير النمذجة الرياضية الكمية وتوسيع خوارزميات التداول لعام ٢٠٢٦',
               'In the rapidly fragmenting global liquidity landscape of 2026, quantitative trading houses are shifting from classical statistical arbitrage toward post-classical quantum stochastic simulations.',
-              'في ظل التفتت المتسارع لساحات السيولة العالمية لعام ٢٠٢٦، تشهد بيوت التداول الكمي تحولاً جذرياً من أساليب التحكيم الإحصائي التقليدية إلى محاكاة العمليات التصادفيه الكمية.',
-              '/static/blog1.jpg',
+              'في ظل التفتت المتسارع لساحات السيولة العالمية لعام ٢٠٢٦، تشهد بيوت التداول الكمي تحولاً جذرياً من أساليب التحكيم الإحصائي التقليدية إلى محاكاة العمليات التصادفه الكمية.',
+              'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&h=1080&fit=crop',
               'Quantitative Development',
               'التطوير الكمي',
               134
@@ -1467,7 +1434,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'تشفير الدفاتر اللامركزية: تقييم نواقل التهديد الكمي لشبكات الأصول الرقمية',
               'Modern blockchain networks rely heavily on elliptic curve signatures to safeguard ledger state. However, the rise of powerful quantum computing arrays threatens this cryptographic paradigm.',
               'تعتمد شبكات الدفاتر الموزعة المعاصرة على توقيعات المنحنى الإهليلجي لحماية سلامة الأرصدة والحسابات. ومع ذلك، فإن النضوج المتسارع للحوسبة الكمية يمثل تهديداً مباشراً لهذا النموذج الأمني العالمي.',
-              '/static/blog2.jpg',
+              'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1080&h=1080&fit=crop',
               'Cryptographic Intelligence',
               'الذكاء التشفيري',
               98
@@ -1479,7 +1446,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
               'تصدعات السيولة الجيوسياسية: آليات التحوط الوقائي للمحافظ الاستثمارية المتعددة',
               'Sanction compliance registries, multi-currency pricing hubs, and shifting regional coalitions are introducing unprecedented friction inside global cross-border payments.',
               'إن اتساع سلاسل العقوبات العالمية، وتباين تسعير العملات الإقليمية، وتغير التحالفات التجارية الكبرى قد فرض ضغوطاً غير مسبوقة على خطوط حركة المدفوعات والتمويل العابر للحدود.',
-              '/static/blog3.jpg',
+              'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1080&h=1080&fit=crop',
               'Macro Strategies',
               'الاستراتيجيات الكلية',
               245
@@ -2291,6 +2258,25 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       });
     });
 
+    await runVersioned('v82_update_blog_article_images', 'Updating blog articles to use valid Unsplash images', async (tx) => {
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
+        UPDATE blog_articles 
+        SET image_url = 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&h=1080&fit=crop'
+        WHERE slug = 'algorithmic-scaling-quantum-modeling-2026'
+      `);
+      await extTarget.query(`
+        UPDATE blog_articles 
+        SET image_url = 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1080&h=1080&fit=crop'
+        WHERE slug = 'decentralized-ledger-cryptography-threat-vectors'
+      `);
+      await extTarget.query(`
+        UPDATE blog_articles 
+        SET image_url = 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1080&h=1080&fit=crop'
+        WHERE slug = 'geopolitical-liquidity-fractures-multi-asset-hedging'
+      `);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
 
     if (migrationMetrics.total > 0) {
@@ -2968,6 +2954,18 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         ip_address VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
+    {
+      name: 'user_activity_logs',
+      query: `CREATE TABLE IF NOT EXISTS user_activity_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        event_type VARCHAR(100) NOT NULL,
+        event_details JSONB DEFAULT '{}',
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
     },
     {
@@ -3664,9 +3662,16 @@ export async function monitorDatabases() {
           connectionString = safelyDecryptConnectionString(reg.connection_string);
         } catch {
           console.warn(`[Monitor] Skipping database ${reg.id} - decryption failed`);
-          continue;
         }
       }
+
+      if (!connectionString || !connectionString.startsWith('postgres')) {
+        if (reg.id === 'core') connectionString = process.env.DATABASE_URL || '';
+        else if (reg.id === 'ledger') connectionString = process.env.LEDGER_DATABASE_URL || process.env.DATABASE_URL || '';
+        else if (reg.id === 'external') connectionString = process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || '';
+        else if (reg.id === 'security') connectionString = process.env.SECURITY_DATABASE_URL || process.env.DATABASE_URL || '';
+      }
+
       if (!connectionString.startsWith('postgres')) continue;
 
       const TestPool = createInternalPool(connectionString);
@@ -3768,7 +3773,16 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high']
       },
       bulletin_ads: {
-        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button']
+        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        repairCols: {
+          meta_title_en: { type: 'VARCHAR(255)' },
+          meta_title_ar: { type: 'VARCHAR(255)' },
+          meta_description_en: { type: 'TEXT' },
+          meta_description_ar: { type: 'TEXT' },
+          keywords_en: { type: 'TEXT' },
+          keywords_ar: { type: 'TEXT' },
+          og_image_url: { type: 'TEXT' }
+        }
       },
       bulletin_pages: {
         columns: ['id', 'user_id', 'name', 'slug', 'category', 'city', 'address', 'description', 'avatar_url', 'cover_url', 'whatsapp_number', 'phone_number', 'website_url', 'is_verified', 'followers_count', 'ads_count', 'created_at', 'updated_at']
@@ -3783,7 +3797,17 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at']
       },
       marketplace_items: {
-        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        repairCols: {
+          slug: { type: 'VARCHAR(255)' },
+          meta_title_en: { type: 'VARCHAR(255)' },
+          meta_title_ar: { type: 'VARCHAR(255)' },
+          meta_description_en: { type: 'TEXT' },
+          meta_description_ar: { type: 'TEXT' },
+          keywords_en: { type: 'TEXT' },
+          keywords_ar: { type: 'TEXT' },
+          og_image_url: { type: 'TEXT' }
+        }
       },
       marketplace_purchases: {
         columns: ['id', 'user_id', 'item_id', 'price_paid', 'license_type', 'referrer_id', 'commission_paid', 'download_token', 'created_at']
@@ -3843,7 +3867,16 @@ export async function verifySchemaIntegrity() {
     },
     external: {
       blog_articles: {
-        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at']
+        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        repairCols: {
+          meta_title_en: { type: 'VARCHAR(255)' },
+          meta_title_ar: { type: 'VARCHAR(255)' },
+          meta_description_en: { type: 'TEXT' },
+          meta_description_ar: { type: 'TEXT' },
+          keywords_en: { type: 'TEXT' },
+          keywords_ar: { type: 'TEXT' },
+          og_image_url: { type: 'TEXT' }
+        }
       },
       blog_comments: {
         columns: ['id', 'article_id', 'user_id', 'content', 'created_at', 'updated_at']

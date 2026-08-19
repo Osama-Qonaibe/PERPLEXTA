@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { ContentContainer } from '../components/ContentContainer';
 import {
   Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
   Rocket, Megaphone, Gamepad2, BookOpen, RefreshCw, Code, Package, Eye, Play,
@@ -1870,7 +1871,8 @@ export const MarketplacePage: React.FC = () => {
             </aside>
 
             {/* Main Product Catalog Grid */}
-            <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto">
+              <ContentContainer className="p-6 md:p-8 pb-24 space-y-6 md:space-y-10">
               
               {/* Recommendation Widget Bar */}
               <RecommendationWidget 
@@ -2040,6 +2042,7 @@ export const MarketplacePage: React.FC = () => {
                 </motion.div>
               )}
 
+              </ContentContainer>
             </main>
           </div>
 

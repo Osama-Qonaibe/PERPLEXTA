@@ -137,6 +137,7 @@ interface AppContextType {
   inactivityCountdown: number;
   setInactivityCountdown: (val: number) => void;
   extendSession: () => void;
+  logUserActivity: (eventType: string, eventDetails?: any) => Promise<void>;
 }
 
 const translations = {
@@ -1619,6 +1620,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('perplexta_last_activity', Date.now().toString());
     setShowInactivityWarning(false);
   };
+
   const [user, setUser] = useState<User | null>(() => {
     try {
       const stored = localStorage.getItem('app_user_profile');
@@ -1633,6 +1635,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const userRef = useRef<User | null>(user);
   const isSyncingAuth = useRef(false);
+
+  const logUserActivity = useCallback(async (eventType: string, eventDetails?: any) => {
+    try {
+      await fetch('/api/activity/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType,
+          eventDetails,
+          userId: userRef.current?.id || null
+        })
+      });
+    } catch (err) {
+      // Silent telemetry catch
+    }
+  }, []);
+
+  useEffect(() => {
+    logUserActivity('SESSION_START', { path: window.location.pathname });
+  }, [logUserActivity]);
   useEffect(() => {
     userRef.current = user;
     try {
@@ -1852,6 +1874,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isOperationPending]);
 
+  const triggerAuthSuccessToast = (type: 'login' | 'signup') => {
+    const isAr = (localStorage.getItem('language') || language) === 'ar';
+    if (type === 'login') {
+      toast.success(isAr ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
+    } else {
+      toast.success(isAr ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
+    }
+  };
+
   const handleAuthSuccess = (userData: any) => {
     if (isSyncingAuth.current) return;
     if (localStorage.getItem('app_oauth_syncing') === 'true') return;
@@ -1898,7 +1929,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isSyncingAuth.current = false;
       localStorage.removeItem('app_oauth_syncing');
       if (isSamePage) {
-        toast.success(localStorage.getItem('language') === 'ar' ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
+        triggerAuthSuccessToast('login');
       } else {
         localStorage.setItem('app_force_refresh', '1');
         window.location.href = targetRef || '/';
@@ -2398,6 +2429,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           navigate('/chat');
+          triggerAuthSuccessToast('login');
+          logUserActivity('LOGIN_SUCCESS', { email });
 
           return { success: true };
         } else {
@@ -2439,7 +2472,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           localStorage.setItem('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           navigate('/chat');
-          toast.success(dir === 'rtl' ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
+          triggerAuthSuccessToast('signup');
+          logUserActivity('SIGNUP_SUCCESS', { email });
 
           return { success: true };
         } else {
@@ -2492,6 +2526,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [socket, queryClient]);
 
   const logout = async (forceRedirect = true) => {
+    logUserActivity('LOGOUT');
     if (!token && !user) {
       purgeSession(forceRedirect);
       return;
@@ -3376,7 +3411,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setShowInactivityWarning,
       inactivityCountdown,
       setInactivityCountdown,
-      extendSession
+      extendSession,
+      logUserActivity
     }}>
       {children}
     </AppContext.Provider>

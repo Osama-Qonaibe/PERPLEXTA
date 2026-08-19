@@ -27,8 +27,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
-import { TypewriterMotive } from '../components/TypewriterMotive';
-import { ToolsGallerySlider } from '../components/ToolsGallerySlider';
 import { generateProceduralTrack } from '../utils/audioGenerator';
 import { HighlightText } from '../components/HighlightText';
 import { useFollowUpSuggestions } from '../hooks/useFollowUpSuggestions';
@@ -38,6 +36,7 @@ import { formatExactTimestamp } from '../utils/adminUtils';
 import { ChatService } from '../services/chatService';
 
 import { ResponseSkeleton } from '../components/ResponseSkeleton';
+import { VisitorShell } from '../components/VisitorShell';
 import { ASPECT_RATIO_CLASSES } from '../constants/chat';
 
 import { ImageGenerationPlaceholder } from '../components/ImageGenerationPlaceholder';
@@ -588,7 +587,7 @@ const UnifiedVideoMessageWidget = ({
       duration={videoSettings.duration}
       t={t}
       isFailed={failedState}
-      errorMessage={generationError || msg.content || (dir === 'rtl' ? 'تم إيقاف توليد وإعداد الفيديو من قبل العميل أو لعدم الاتصال' : 'Video generation stopped or halted.')}
+      errorMessage={generationError || msg.content || (dir === 'rtl' ? 'عذراً، النظام قيد التطوير والتحسين المستمر لضمان أفضل تجربة ذكاء اصطناعي. شكراً لصبرك.' : 'Sorry, the system is under development and continuous improvement to ensure the best AI experience. Thank you for your patience.')}
       progressData={progressData}
       onRetry={onRetry}
     />
@@ -4249,7 +4248,11 @@ export const ChatPage: React.FC = () => {
     return [...messages].reverse().find(m => m.role === 'assistant')?.content;
   }, [messages]);
 
-  const { suggestions: aiSuggestions } = useFollowUpSuggestions(lastAssistantMessage);
+  const lastUserQuery = useMemo(() => {
+    return [...messages].reverse().find(m => m.role === 'user')?.content;
+  }, [messages]);
+
+  const { suggestions: aiSuggestions } = useFollowUpSuggestions(lastAssistantMessage, lastUserQuery);
 
   useEffect(() => {
     if (chatId) {
@@ -5402,25 +5405,33 @@ export const ChatPage: React.FC = () => {
       let quotaData = null;
 
       try {
-
         const parsed = JSON.parse(data.message);
-        errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
         if (parsed.type === 'QUOTA_EXCEEDED') {
+          errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
           isQuota = true;
           quotaData = parsed;
         } else if (parsed.type === 'INSUFFICIENT_FUNDS') {
+          errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
           isFunds = true;
           quotaData = parsed;
         } else if (parsed.type === 'TOKEN_EXPIRED') {
           errorMessage = dir === 'rtl' ? 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة أو تسجيل الدخول مرة أخرى.' : 'Session expired. Please refresh the page or login again.';
           setTimeout(() => window.location.reload(), 3000);
         } else if (parsed.type === 'SYSTEM_INACTIVE') {
+          errorMessage = dir === 'rtl' ? (parsed.error_ar || parsed.error) : (parsed.error || parsed.error_ar);
           isInactive = true;
           quotaData = parsed;
+        } else {
+          // Unify general technical errors to the professional message
+          errorMessage = dir === 'rtl' 
+            ? 'عذراً، النظام قيد التطوير والتحسين المستمر لضمان أفضل تجربة ذكاء اصطناعي. شكراً لصبرك.' 
+            : 'Sorry, the system is under development and continuous improvement to ensure the best AI experience. Thank you for your patience.';
         }
       } catch (e) {
-
-        errorMessage = dir === 'rtl' ? `حدث خطأ: ${data.message}` : `Error: ${data.message}`;
+        // Fallback for non-JSON or unexpected error formats
+        errorMessage = dir === 'rtl' 
+          ? 'عذراً، النظام قيد التطوير والتحسين المستمر لضمان أفضل تجربة ذكاء اصطناعي. شكراً لصبرك.' 
+          : 'Sorry, the system is under development and continuous improvement to ensure the best AI experience. Thank you for your patience.';
       }
 
       setMessages(prev => {
@@ -6828,48 +6839,9 @@ export const ChatPage: React.FC = () => {
           </AnimatePresence>
 
           {(!user || !token) ? (
-            <div className="flex-1 flex flex-col items-center justify-between w-full min-h-[calc(100dvh-120px)] sm:min-h-[calc(100dvh-140px)] max-w-4xl mx-auto px-4 md:px-6 py-6 relative z-10">
-              <div className="w-full text-[var(--text-primary)] my-auto">
-                <AnimatePresence mode="wait">
-                  {messages.length === 0 ? (
-                    <motion.div
-                      key="welcome-and-slider-wrapper-guest"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ 
-                        opacity: 0, 
-                        y: -20,
-                        transition: { duration: 0.25, ease: "easeInOut" } 
-                      }}
-                      className="w-full flex flex-col items-center gap-6"
-                    >
-                      <TypewriterMotive isVisible={true} />
-                      <ToolsGallerySlider />
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-
-                <div className="w-full mt-6">
-                  {renderInputArea()}
-                </div>
-              </div>
-
-              <div className="w-full pt-4 border-t border-gray-250/20 dark:border-gray-800/10 text-center select-none flex flex-col gap-2">
-                <div className="flex items-center justify-center gap-2.5 text-[9.5px] text-accent font-bold">
-                  <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'من نحن' : 'About Us'}</span>
-                  <span className="text-gray-500/20">•</span>
-                  <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
-                  <span className="text-gray-500/20">•</span>
-                  <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{dir === 'rtl' ? 'الخصوصية' : 'Privacy'}</span>
-                </div>
-                <p className="text-[9.5px] sm:text-[10px] text-gray-400 dark:text-gray-500 font-sans tracking-wide leading-relaxed px-4">
-                  {dir === 'rtl' 
-                    ? "الملكية الفكرية محفوظة لـ ViralLinkUp 2026 ©"
-                    : "Intellectual Property Protected by ViralLinkUp 2026 ©"
-                  }
-                </p>
-              </div>
-            </div>
+            <VisitorShell>
+              {renderInputArea()}
+            </VisitorShell>
           ) : (
             <>
               <AnimatePresence>
@@ -8286,3 +8258,5 @@ export const ChatPage: React.FC = () => {
     </ErrorBoundary>
   );
 };
+
+export default ChatPage;

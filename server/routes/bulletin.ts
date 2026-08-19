@@ -1,5 +1,5 @@
 import express from 'express';
-import { pool, ledgerPool } from '../db/index.js';
+import { pool, ledgerPool, getExternalPool } from '../db/index.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { createNotification } from '../services/notifications.js';
 import { createChat, addChatMessage } from '../services/chat.js';
@@ -17,11 +17,13 @@ export async function ensureBulletinSeedData() {
   if (isBulletinTablesEnsured || !pool) return;
   console.log('[Bulletin] Ensuring bulletin initial data state...');
   try {
+    try {
+      await getExternalPool().query("UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'").catch(() => {});
+    } catch (e: any) {}
     const cleanupQueries = [
       "UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
       "UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%'",
       "UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
-      "UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
       "UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%'",
       "UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%'"
     ];

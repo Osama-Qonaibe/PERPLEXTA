@@ -56,8 +56,6 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-  const isHeaderThemeDark = theme === 'dark';
-
   const [chatTitle, setChatTitle] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
@@ -179,18 +177,18 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 h-[72px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
+    <header className={`fixed top-0 left-0 right-0 h-[64px] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)] transition-theme`} />
       
       <div className="w-full flex justify-between items-center h-full">
         <div className="flex items-center h-full">
-          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[240px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
+          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[220px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
               <NavLink 
                 to="/chat" 
                 onClick={handleNewChat} 
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
-                <div className={`${isMobileView ? 'w-10' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
+                <div className={`${isMobileView ? 'w-10' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
                     <motion.div 
                       className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}

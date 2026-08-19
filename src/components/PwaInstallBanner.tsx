@@ -20,6 +20,10 @@ export const PwaInstallBanner: React.FC = () => {
     dismissBanner
   } = usePwaContext();
 
+  // STRICT Guard: Never render if already installed or in standalone mode
+  const isStandaloneMode = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+  if (installState === 'installed' || isStandaloneMode) return null;
+
   const isDark = theme === 'dark';
   const isAr = language === 'ar';
 
@@ -43,7 +47,7 @@ export const PwaInstallBanner: React.FC = () => {
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
     
     // Hide if installed OR already running standalone OR dismissed
-    if (isStandaloneMode || installState === 'installed' || installState === 'dismissed' || isCooldownActive) {
+    if (isStandaloneMode || (installState as string) === 'installed' || installState === 'dismissed' || isCooldownActive) {
       setIsVisible(false);
       return;
     }
@@ -58,7 +62,7 @@ export const PwaInstallBanner: React.FC = () => {
 
   const handleAction = async () => {
     // 1. If installed, just open the app
-    if (installState === 'installed') {
+    if ((installState as string) === 'installed') {
       openApp();
       return;
     }
@@ -125,7 +129,7 @@ export const PwaInstallBanner: React.FC = () => {
                     <Smartphone size={22} className="text-accent absolute hidden only:block" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-accent flex items-center justify-center text-black text-[9px] font-black">
-                    {installState === 'installed' ? (
+                    {(installState as string) === 'installed' ? (
                       <Check size={10} className="stroke-[3]" />
                     ) : (
                       <Sparkles size={10} className="fill-current" />
@@ -139,7 +143,7 @@ export const PwaInstallBanner: React.FC = () => {
                     <h4 className="font-extrabold text-sm tracking-tight truncate">
                       {siteName}
                     </h4>
-                    {installState === 'installed' ? (
+                    {(installState as string) === 'installed' ? (
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-accent/20 border border-accent/40 text-accent uppercase tracking-wider flex items-center gap-1">
                         <CheckCircle2 size={10} />
                         {isAr ? 'مثبّت الآن' : 'Installed'}
@@ -152,7 +156,7 @@ export const PwaInstallBanner: React.FC = () => {
                   </div>
 
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                    {installState === 'installed'
+                    {(installState as string) === 'installed'
                       ? isAr
                         ? 'تم تثبيت التطبيق بنجاح! يمكنك الآن فتحه واستخدامه بتجربة مستقلة بالكامل.'
                         : 'App installed successfully! Launch it now for a full native experience.'
@@ -163,7 +167,7 @@ export const PwaInstallBanner: React.FC = () => {
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 mt-3">
-                    {installState === 'installed' ? (
+                    {(installState as string) === 'installed' ? (
                       <button
                         type="button"
                         onClick={handleAction}

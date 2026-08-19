@@ -17,6 +17,9 @@ import { OrchestratorRegistry } from './orchestratorRegistry.js';
 import { withTimeout, safeDecrementOnFailure, safeParseResponse, AI_CALL_TIMEOUT_MS, TTS_TIMEOUT_MS, STT_TIMEOUT_MS } from './tasks/utils.js';
 import { sanitizeHTMLAndXSS, validatePromptLength, MAX_CUMULATIVE_HISTORY_CHARS, MAX_DOC_EXTRACT_SIZE } from '../utils/security.js';
 import { userLoader, getCachedOrchestratorConfig, getCachedSystemSettings, getCachedApiKeysVault, invalidateApiKeysVaultCache } from '../db/queries.js';
+import { extractDirectUserMemories, updateChatContextSummary, consolidateAllUserMemories } from './memory.js';
+
+export { extractDirectUserMemories, updateChatContextSummary };
 
 const MEMORY_TAG_REGEX = /<extracted_memory(?:\s+category\s*=\s*["']?([^"'>]+)["']?)?\s*>([\s\S]*?)<\/extracted_memory>/gi;
 const SEARCH_TAG_REGEX = /<search_query>([\s\S]*?)<\/search_query>/gi;
@@ -55,18 +58,18 @@ export const isSocialGreeting = (text: string): boolean => {
   return socialKeywords.some(keyword => cleaned === keyword || cleaned.includes(keyword) && cleaned.length < 25);
 };
 
-function scheduleChatSummaryUpdate(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
+function scheduleChatSummaryUpdate(chatIdNum: number, userId: number) {
   setImmediate(() => {
-    updateChatContextSummary(chatIdNum, userId, provider, model, apiKey).catch(err => {
+    updateChatContextSummary(chatIdNum, userId).catch(err => {
       console.error('[Orchestrator Task Scheduler] Progressive summarization error:', err);
       logSystemActivity(userId, 'SUMMARIZATION_FAILED', `Context summary update failed for chat ${chatIdNum}: ${err.message}`, { chatIdNum }).catch(() => {});
     });
   });
 }
 
-function scheduleMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {
+function scheduleMemoryConsolidation(userId: number) {
   setImmediate(() => {
-    runMemoryConsolidation(userId, chatIdNum, provider, model, apiKey).catch(err => {
+    consolidateAllUserMemories({ targetUserId: userId, threshold: 10 }).catch(err => {
       console.error('[Orchestrator Task Scheduler] Memory consolidation error:', err);
       logSystemActivity(userId, 'MEMORY_CONSOLIDATION_FAILED', `Memory consolidation failed for user ${userId}: ${err.message}`, { userId }).catch(() => {});
     });
@@ -79,43 +82,6 @@ function getDynamicHistoryLimit(totalMessages: number, maxDepth: number = 16): n
   if (totalMessages <= 14) return Math.min(8, maxDepth);
   if (totalMessages <= 30) return Math.min(12, maxDepth);
   return maxDepth;
-}
-
-export function extractDirectUserMemories(prompt: string): { fact: string; category: string }[] {
-  if (!prompt || prompt.trim().length < 4) return [];
-  const results: { fact: string; category: string }[] = [];
-  const trimmed = prompt.trim();
-
-  // Arabic explicit and implicit memory intents
-  const arPatterns = [
-    { regex: /(?:تذكر\s+(?:أن|ان|دائماً|دائما)?|احفظ\s+(?:أن|ان|عندي|لديك)?|لا\s+تنسى\s+(?:أن|ان)?|خزن\s+(?:أن|ان)?|سجل\s+(?:أن|ان)?)\s*[:،,-]?\s*(.+)/i, category: 'preference' },
-    { regex: /(?:اسمي\s+هو|اسمي|أنا\s+ادعى|انا\s+ادعى)\s+([^\.\n،]+)/i, category: 'identity', template: (m: string) => `اسم المستخدم هو ${m.trim()}` },
-    { regex: /(?:أنا\s+أعمل\s+(?:كـ|ك|في)?|انا\s+اعمل\s+(?:كـ|ك|في)?|مهنتي\s+هي|وظيفتي\s+هي|تخصصي\s+هو)\s+([^\.\n،]+)/i, category: 'professional', template: (m: string) => `تخصص/مهنة المستخدم: ${m.trim()}` },
-    { regex: /(?:أعيش\s+في|اعيش\s+في|أنا\s+من|انا\s+من|بلدي\s+هو|دولتي\s+هي|مدينتي\s+هي)\s+([^\.\n،]+)/i, category: 'identity', template: (m: string) => `مكان إقامة أو بلد المستخدم: ${m.trim()}` },
-    { regex: /(?:مشروعي\s+(?:الحالي|الجديد|القادم)?\s*(?:هو|عبارة عن)?)\s+([^\.\n،]+)/i, category: 'project', template: (m: string) => `مشروع المستخدم: ${m.trim()}` }
-  ];
-
-  // English explicit and implicit memory intents
-  const enPatterns = [
-    { regex: /(?:remember\s+(?:that|always)?|save\s+(?:that|this)?|keep\s+in\s+mind\s+(?:that)?|don't\s+forget\s+(?:that)?|note\s+(?:that)?)\s*[:,-]?\s*(.+)/i, category: 'preference' },
-    { regex: /(?:my\s+name\s+is|i\s+am|i'm\s+called)\s+([^\.\n,]+)/i, category: 'identity', template: (m: string) => `User's name is ${m.trim()}` },
-    { regex: /(?:i\s+work\s+as\s+(?:a|an)?|my\s+profession\s+is|my\s+job\s+is|my\s+specialty\s+is)\s+([^\.\n,]+)/i, category: 'professional', template: (m: string) => `User's profession: ${m.trim()}` },
-    { regex: /(?:i\s+live\s+in|i'm\s+from|i\s+am\s+from|my\s+country\s+is)\s+([^\.\n,]+)/i, category: 'identity', template: (m: string) => `User's location: ${m.trim()}` },
-    { regex: /(?:my\s+project\s+is|i\s+am\s+building|currently\s+working\s+on)\s+([^\.\n,]+)/i, category: 'project', template: (m: string) => `User's project: ${m.trim()}` }
-  ];
-
-  for (const p of [...arPatterns, ...enPatterns]) {
-    const match = trimmed.match(p.regex);
-    if (match && match[1]) {
-      const raw = match[1].trim();
-      if (raw.length >= 3 && raw.length <= 250) {
-        const fact = p.template ? p.template(raw) : raw;
-        results.push({ fact, category: p.category });
-      }
-    }
-  }
-
-  return results;
 }
 
 export function cleanAIOutput(text: string): string {
@@ -323,8 +289,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   const appName = getAppName(userLang);
   const protocol = getProtocolString(appName);
 
-  const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt) &&
-    SEARCH_KEYWORDS.some(kw => cleanUserPrompt.toLowerCase().includes(kw));
+  const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt);
 
   if (chatWantsSearch) {
     try {
@@ -344,7 +309,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
           index: idx + 1,
           snippet: r.snippet
         }));
-        const searchContext = searchResults.map((r: any) => `Source: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n');
+        const searchContext = searchResults.map((r: any, idx: number) => `[Source Index: ${idx + 1}]\nURL: ${r.link}\nTitle: ${r.title}\nSnippet: ${r.snippet}`).join('\n\n---\n\n');
         finalPrompt = `LIVE WEB CONTEXT:\n${searchContext}\n\nUSER PROMPT:\n${cleanUserPrompt}`;
         
         if (io) {
@@ -380,13 +345,14 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     try {
       const voiceId = reqBody.voice_id || '21m00Tcm4TlvDq8ikWAM';
       const modelId = route.primary_model;
+      const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
       const audioBuffer = await withTimeout(
-        perplextaTTS(cleanUserPrompt, voiceId, modelId),
+        perplextaTTS(cleanUserPrompt, voiceId, modelId, providerId),
         TTS_TIMEOUT_MS,
         'tts'
       );
 
-       await recordProviderUsage(route.primary_provider, route);
+       await recordProviderUsage(providerId, route);
 
       await logSystemActivity(userId, 'PERPLEXTA_EXECUTION', `TTS generated via ElevenLabs voice=${voiceId}`, { toolIdStr });
       await onSuccess('');
@@ -410,14 +376,13 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       }
 
       const providerId = route.primary_provider.toLowerCase().replace(/\s+/g, '');
-      const cachedRow = activeKeys.find(k => k.provider.toLowerCase().replace(/\s+/g, '') === providerId);
       const apiKey = await getProviderKey(providerId);
 
       if (!apiKey) {
         await safeDecrementOnFailure(quotaCheck, userId, toolIdStr, walletCharged);
         throw new Error(JSON.stringify({
-          error: "Speech-to-text service is temporarily unavailable. No active API key found.",
-          error_ar: "خدمة تحويل الصوت إلى نص غير متاحة حالياً. لا يوجد مفتاح API نشط.",
+          error: `Speech-to-text service is temporarily unavailable. API key for provider '${providerId}' not found in vault.`,
+          error_ar: `خدمة تحويل الصوت إلى نص غير متاحة حالياً. لم يتم العثور على مفتاح API للمزود '${providerId}' في الخزينة.`,
           type: "SYSTEM_INACTIVE"
         }));
       }
@@ -429,8 +394,13 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
       formData.append('model', route.primary_model);
       if (cleanUserPrompt) formData.append('prompt', cleanUserPrompt);
 
-      const customUrl = cachedRow ? cachedRow.url_key : (await getProviderUrlKey(providerId));
-      const sttEndpoint = customUrl || 'https://api.openai.com/v1/audio/transcriptions';
+      const vaultRow = activeKeys.find(k => k.provider.toLowerCase().replace(/\s+/g, '') === providerId);
+      const customUrl = vaultRow ? vaultRow.url_key : (await getProviderUrlKey(providerId));
+      const sttEndpoint = customUrl;
+
+      if (!sttEndpoint) {
+        throw new Error(`STT Orchestrator: Provider '${providerId}' is missing a registered endpoint URL (url_key) in the vault.`);
+      }
 
       const res = await withTimeout(
         fetch(sttEndpoint, {
@@ -472,36 +442,19 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
   }
 
   let userMemoriesStr = '';
-  if (memoryRes && memoryRes.rows && memoryRes.rows.length > 0) {
-    const facts = memoryRes.rows.map((m: any) => `• ${m.fact}`).join('\n');
-    userMemoriesStr = `\n\n[USER PERSISTENT MEMORY & VERIFIED FACTS]
-The sovereign system holds the following persistent verified facts regarding this user:
-${facts}
-CRITICAL INSTRUCTION: You MUST actively leverage, respect, and apply these remembered facts seamlessly throughout your reasoning and answers without reciting the raw list unless directly asked.\n`;
+  if (memoryRes?.rows?.length > 0) {
+    userMemoriesStr = `\n[MEMORY]: ${memoryRes.rows.map((m: any) => m.fact).join('; ')}\n`;
   }
 
   const taskDesc = userLang === 'ar' ? route.task_description_ar : route.task_description;
   const contextSummary = chatRes.rows[0]?.context_summary 
-    ? `\n[CONVERSATION CONTEXT SUMMARY]
-The following is a dense, stored summary of the ongoing conversation:
-${chatRes.rows[0].context_summary}
-CRITICAL INSTRUCTION: You MUST actively leverage this conversation summary and the recent message history to tailor your response. Specifically, you are STRICTLY PROHIBITED from generating generic greetings, default introductory templates, or generic follow-up suggestions. Every interaction proposal and suggested prompt under your [FOLLOW_UPS] tag MUST be highly specific, contextual, and directly derived from the topics, entities, and state of this particular ongoing dialogue.\n`
+    ? `\n[CONTEXT]: ${chatRes.rows[0].context_summary}\n`
     : '';
 
   let refinedSystemPromptSegment = '';
 
   if (toolIdStr === 'sovereign_memory') {
-    const memoryInstructions = `[MEMORY ENGINE]
-Extract long-term user facts from this conversation. For each worthy fact, output:
-<extracted_memory category="general|professional|preference|identity">fact here</extracted_memory>
-Discuss memory state and provide a dense synthesis. Do not show raw XML in your reply text.
-يجب إخراج وسم <extracted_memory> لكل حقيقة مستخلصة لضمان حفظها في قاعدة البيانات.`.trim();
-    refinedSystemPromptSegment = memoryInstructions;
-  } else if (isChatOnly) {
-    const conversationalMemoryInstructions = `[MEMORY ACQUISITION]
-If you detect any durable user fact, preference, or rule, silently output: <extracted_memory category="general|professional|preference|identity">fact</extracted_memory>
-Do not mention this in your reply.`.trim();
-    refinedSystemPromptSegment = conversationalMemoryInstructions;
+    refinedSystemPromptSegment = '[MEMORY_MODE]: Inspect and manage user memories.';
   } else if (toolIdStr === 'canvas') {
     const audioSet = audio_settings || {};
     let moodLabel = audioSet.mood || 'Epic';
@@ -510,111 +463,34 @@ Do not mention this in your reply.`.trim();
 
     const promptLower = (prompt || '').toLowerCase();
     
-    if (promptLower.includes('ملحمية') || promptLower.includes('أوركسترا') || promptLower.includes('epic') || promptLower.includes('orchestra') || promptLower.includes('orchestral')) {
-      moodLabel = 'Epic';
-    } else if (promptLower.includes('طرب') || promptLower.includes('شرقي') || promptLower.includes('مقام') || promptLower.includes('tarab') || promptLower.includes('maqam')) {
-      moodLabel = 'Tarab';
-    } else if (promptLower.includes('إلكترونك') || promptLower.includes('دي جي') || promptLower.includes('تقنو') || promptLower.includes('تكنو') || promptLower.includes('edm') || promptLower.includes('techno') || promptLower.includes('electronic')) {
-      moodLabel = 'EDM';
-    } else if (promptLower.includes('غيتار') || promptLower.includes('تخت') || promptLower.includes('هادئ') || promptLower.includes('acoustic') || promptLower.includes('guitar') || promptLower.includes('soft') || promptLower.includes('كلاسيك')) {
-      moodLabel = 'Acoustic';
-    } else if (promptLower.includes('لوفاي') || promptLower.includes('لو-فاي') || promptLower.includes('lofi') || promptLower.includes('lo-fi') || promptLower.includes('chill')) {
-      moodLabel = 'LoFi';
-    } else if (promptLower.includes('جاز') || promptLower.includes('بلوز') || promptLower.includes('jazz') || promptLower.includes('blues')) {
-      moodLabel = 'Jazz';
-    } else if (promptLower.includes('بوب') || promptLower.includes('حماسي') || promptLower.includes('pop') || promptLower.includes('upbeat')) {
-      moodLabel = 'Pop';
-    }
+    if (promptLower.includes('ملحمية') || promptLower.includes('epic')) moodLabel = 'Epic';
+    else if (promptLower.includes('طرب') || promptLower.includes('tarab')) moodLabel = 'Tarab';
+    else if (promptLower.includes('تكنو') || promptLower.includes('techno')) moodLabel = 'EDM';
 
-    if (promptLower.includes('كورال') || promptLower.includes('choir') || promptLower.includes('choral')) {
-      vocalTypeLabel = 'Choir';
-    } else if (promptLower.includes('أنثوي') || promptLower.includes('سوبرانو') || promptLower.includes('female') || promptLower.includes('soprano')) {
-      vocalTypeLabel = 'Female';
-    } else if (promptLower.includes('ذكوري') || promptLower.includes('تينور') || promptLower.includes('male') || promptLower.includes('baritone')) {
-      vocalTypeLabel = 'Male';
-    } else if (promptLower.includes('روبوت') || promptLower.includes('سنتسيزر') || promptLower.includes('vocaloid') || promptLower.includes('ai synth')) {
-      vocalTypeLabel = 'Vocaloid';
-    } else if (promptLower.includes('بدون غناء') || promptLower.includes('موسيقى فقط') || promptLower.includes('عزف') || promptLower.includes('instrumental') || promptLower.includes('no vocals') || promptLower.includes('none')) {
-      vocalTypeLabel = 'Instrumental';
-    }
-
-    const normalizedPrompt = normalizeArabicNumerals(promptLower);
-    const durationMatch = normalizedPrompt.match(/(?:المدة|duration|المدة الزمنية|طول)\s*:\s*\*?(\d+)/) || 
-                          normalizedPrompt.match(/(\d+)\s*(?:ثانية|ثوانٍ|seconds|secs|s)/);
-    if (durationMatch) {
-      const durVal = parseInt(durationMatch[1], 10);
-      if (!isNaN(durVal) && durVal >= 10 && durVal <= 120) {
-        durationCount = durVal;
-      }
-    }
-
-    const canvasInstructions = `[AUDIO ORCHESTRATION MODE]
-The user is working in the high-performance Audio & Soundtrack Production Studio (استوديو تأليف الموسيقى والمؤثرات).
-Your primary task is to generate and synthesize an immersive musical/creative composition concept using the PERPLEXTA CREATIVE PRODUCTION PROTOCOL.
-
-CRITICAL INSTRUCTION: You MUST strictly configure and respect the exact parameters extracted from the user's prompt (Mood/Genre: ${moodLabel}, Vocals: ${vocalTypeLabel}, Duration: ${durationCount}s).
-Any dynamic choice or recommendation must match these values exactly. DO NOT offer arbitrary variations, unrequested suggestions, or conversational hallucinations.
-
-You MUST structure your response into EXACTLY 3 phases using the bracket tags to trigger the visual production suite on the frontend:
-
-[I. Cover & Mood Art]
-Provide an elegant, detailed visual description of the album/soundtrack cover art.
-Include exactly one Markdown image tag pointing to a professional royalty-free cover art image related to the music mood and scenery. Ensure Referrer-Policy "no-referrer" is supported.
-
-[II. Audio Suite Environment / البيئة الصوتية]
-Describe the soundscape, instrumentation, tempo, scales, key, and production techniques in professional terms.
-Present the chosen parameters clearly using bullet points:
-- **النمط والموسيقى (Style/Genre)**: ${moodLabel}
-- **نوع صوت الأداء (Vocal Selection)**: ${vocalTypeLabel}
-- **المدة الزمنية (Duration)**: ${durationCount} ثانية (seconds)
-
-[III. Sonic Orchestration / المقطع الموسيقي]
-This is where the direct player and visualizer reside.
-Write a rich narrative describing the masterpiece's audio progression, section by section (Intro, Verse, Chorus, Outro/Epic Solo) following the user specifications.
-If vocal style is not Instrumental, write beautiful poetic original lyrics (in Arabic or English, matching user intent). If Instrumental, describe the instrumental solo layers, chord progressions, and synths.
-End with a professional, authoritative, and inspiring summary of the sonic results in Tajawal-style elegant vocabulary.
-
-Your response MUST be highly creative, authoritative, elite, and inspiring. Use elegant, high-profile vocabulary. Keep the structure bracket tags like "[I. Cover & Mood Art]" exactly as they are so the frontend parsing handles them correctly.`.trim();
-
-    refinedSystemPromptSegment = canvasInstructions;
+    refinedSystemPromptSegment = `[AUDIO_MODE]: Mood: ${moodLabel}, Vocals: ${vocalTypeLabel}, Duration: ${durationCount}s.
+Structure: [I. Cover & Mood Art], [II. Audio Suite Environment], [III. Sonic Orchestration].`.trim();
+  } else if (toolIdStr === 'perplexta_analysis') {
+    refinedSystemPromptSegment = '[ANALYSIS_MODE]: Perform elite file audit and deep analysis.';
   }
 
   if (chatWantsSearch) {
-    const searchInstructions = `[SEARCH ENGINE]
-Synthesize the live web context against the user query. Eliminate bias, structure findings with headers and bullets, cite sources precisely.
-CRITICAL CITATION RULES:
-1. You MUST provide inline link sources of any factual claims by using bracket numbered notation like [1], [2], [3], etc. 
-2. These numbers MUST correspond exactly with the index of the search result source URLs.
-3. Every sentence making an informative or data assertion that is supported by the search results must end with its corresponding index marker (e.g. "...as reported recently [1].").
-4. Under no circumstances should you generate fake placeholder brackets. Only cite matching indices from the actual live web context.
-Always leverage the provided LIVE WEB CONTEXT to respond truthfully.`.trim();
-    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${searchInstructions}` : searchInstructions;
-  }
-
-  if (toolIdStr === 'perplexta_analysis') {
-    const analysisInstructions = `[PERPLEXTA FILE AUDIT & DEEP ANALYSIS ENGINE]
-You are operating as the Chief Digital Forensics and Compliance Auditor. 
-Your primary task is to perform an elite, multi-layered audit of the user's provided files, structures, and inquiries.
-- If files/PDFs are uploaded, perform thorough context inspection, compliance auditing, structure checks, and hidden content analyses.
-- Present clean, structured expert conclusions with clear headers, security disclosures, and precise textual proof.
-- Direct your output structure into scientific, executive levels. Avoid general or superficial summaries. Ensure peak professional vocabulary in Tajawal style.`.trim();
-    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n\n${analysisInstructions}` : analysisInstructions;
+    const searchInstructions = `
+[SEARCH_MODE - CRITICAL DIRECTIVE]: 
+You are equipped with a LIVE WEB CONTEXT block below.
+1. You MUST ONLY use facts, statistics, and information present in the provided LIVE WEB CONTEXT.
+2. If the context does not contain the answer, explicitly state: "لا تتوفر معلومات دقيقة في المصادر الحية الحالية" (No precise information available in current live sources).
+3. Do NOT hallucinate, infer, or fabricate sources, dates, or facts.
+4. You MUST cite your sources using inline brackets, e.g., [1], [2], corresponding exactly to the Source indices provided in the context.`.trim();
+    refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n${searchInstructions}` : searchInstructions;
   }
 
   const toolBoundary = isChatOnly
-    ? `Active tool: chat. Do NOT simulate image/video/search/audio generation — direct user to the appropriate tool instead.
-[CRITICAL SECURITY PROTOCOL]: Since you are inside the active chat-only tool ("${toolIdStr}"), you are STRICTLY PROHIBITED and FORBIDDEN from writing, generating, or formatting functional, complete, or executable programming code blocks or scripts (such as Javascript, Python, HTML/CSS, C++, SQLite, etc.) inside the response. If the user asks for code, programming, or script creation, you MUST explain the concepts conceptually or in pseudocode paragraphs, and output the exact disclosure:
-- English: "To generate complete, production-ready code blocks and scripts, please switch to the dedicated 'Elite Engineering Workstation (Code)' tool."
-- Arabic: "للحصول على الأكواد الكاملة الجاهزة للتشغيل، يرجى التبديل إلى 'بيئة هندسة برمجيات (Code)' المخصصة لهذا الغرض."
-This is a critical resource conservation rule.`
-    : `Active tool: "${toolIdStr}". Stay strictly within this tool's domain.`;
+    ? `[TOOL: chat]: No direct code blocks. For code, output specific En/Ar workstation disclosure.`
+    : `[TOOL: ${toolIdStr}]`;
 
   const finalSystemPrompt = `${protocol}
-
-OBJECTIVE: ${taskDesc || 'Execute the user request with highest professional precision.'}
-
-${toolBoundary}
-${contextSummary}${userMemoriesStr}
+[OBJECTIVE]: ${taskDesc || 'Professional precision execution.'}
+${toolBoundary}${contextSummary}${userMemoriesStr}
 ${refinedSystemPromptSegment}`.trim();
 
   const modelsToTry = [
@@ -655,15 +531,10 @@ ${refinedSystemPromptSegment}`.trim();
         let urlKey: string | null = null;
 
         if (cachedRow) {
-          isProviderActive = cachedRow.is_active;
           dailyBudget = parseFloat(cachedRow.daily_budget || '0');
           usedToday = parseFloat(cachedRow.used_today || '0');
           urlKey = cachedRow.url_key;
-        } else {
-          isProviderActive = false;
         }
-
-        if (!isProviderActive) continue;
 
         const apiKey = await getProviderKey(providerId);
         if (!apiKey) continue;
@@ -723,36 +594,19 @@ ${refinedSystemPromptSegment}`.trim();
         await recordProviderUsage(target.provider, route);
 
         if (chatIdNum > 0) {
-          scheduleChatSummaryUpdate(chatIdNum, userId, target.provider, target.model, apiKey);
+          scheduleChatSummaryUpdate(chatIdNum, userId);
         }
 
         try {
-          const extractedFacts: { fact: string; category: string }[] = [];
-          const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
-          let match;
-
-          while ((match = memRegex.exec(generatedText)) !== null) {
-            const category = match[1] || 'general';
-            const fact = match[2]?.trim();
-            if (fact && fact.length >= 3) {
-              extractedFacts.push({ fact, category });
-            }
-          }
-
-          // Extract direct user facts from user prompt as well
+          // Extract direct user facts from user prompt deterministically (Zero AI / Full Sovereign Local Engine)
           const directUserFacts = extractDirectUserMemories(cleanUserPrompt);
-          for (const duf of directUserFacts) {
-            if (!extractedFacts.some(ef => ef.fact.toLowerCase() === duf.fact.toLowerCase())) {
-              extractedFacts.push(duf);
-            }
-          }
 
-          if (extractedFacts.length > 0) {
+          if (directUserFacts.length > 0) {
             const countRes = await pool.query('SELECT count(*) FROM chat_memories WHERE user_id = $1', [userId]);
             const currentCount = parseInt(countRes.rows[0].count);
 
             let newInsertedCount = 0;
-            for (const item of extractedFacts) {
+            for (const item of directUserFacts) {
               // Deduplication check: only insert if not already recorded
               const existing = await pool.query(
                 'SELECT id FROM chat_memories WHERE user_id = $1 AND LOWER(fact) = LOWER($2) LIMIT 1',
@@ -760,7 +614,7 @@ ${refinedSystemPromptSegment}`.trim();
               );
               if (existing.rows.length === 0) {
                 const insertRes = await pool.query(
-                  "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'ai') RETURNING *",
+                  "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'user') RETURNING *",
                   [userId, chatIdNum || null, item.fact, item.category]
                 );
                 newInsertedCount++;
@@ -776,16 +630,17 @@ ${refinedSystemPromptSegment}`.trim();
 
             const totalNow = currentCount + newInsertedCount;
             if (totalNow >= memoryLimit) {
-              scheduleMemoryConsolidation(userId, chatIdNum, target.provider, target.model, apiKey);
+              scheduleMemoryConsolidation(userId);
               if (io) {
                 io.to(`user_${userId}`).emit('memory_warning', { currentCount: totalNow });
               }
             }
           }
 
+          const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
           generatedText = generatedText.replace(memRegex, '').trim();
         } catch (memProcErr) {
-          console.error('[Orchestrator] Error during Perplexta memory parsing & extraction:', memProcErr);
+          console.error('[Orchestrator] Error during deterministic memory extraction:', memProcErr);
         }
 
         break; // exit trials on model execution success
@@ -816,30 +671,15 @@ ${refinedSystemPromptSegment}`.trim();
             errMessage.includes('upgrade')
           );
 
-        if (isQuotaOrAuthExhausted && !errMessage.includes('AI_TIMEOUT')) {
-          try {
-            const provLower = target.provider.toLowerCase();
-            await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [provLower]);
-            invalidateVaultCache(provLower);
-            invalidateApiKeysVaultCache();
-            console.warn(`[Orchestrator] Auto-deactivated provider "${target.provider}" due to quota exhaustion, subscription restriction or auth failure.`);
-            await logSecurityAlert(
-              userId,
-              'PROVIDER_AUTO_DEACTIVATED',
-              'high',
-              `Provider "${target.provider}" was automatically deactivated due to API exhaustion/quota failure. Error details: ${errMessage}`,
-              { provider: target.provider, error: errMessage }
-            );
-          } catch (dbErr) {
-            console.error('[Orchestrator] Error deactivating failed provider in DB:', dbErr);
-          }
-        }
+        // Key status remains preserved; runtime errors do not deactivate provider keys.
       }
     }
 
     if (!successfulModel && modelsToTry.length > 0) {
       throw new Error('All models requested under active orchestrator strategies failed to return a validated solution.');
     }
+
+
 
     if (!generatedText) {
       await logSystemActivity(userId, 'ORCHESTRATION_SUSPENDED', `Tool "${toolIdStr}" is temporarily suspended or capacity is hit. No active model connection succeeded.`, { toolIdStr, modelsTried: modelsToTry });
@@ -871,109 +711,3 @@ ${refinedSystemPromptSegment}`.trim();
     };
   });
 };
-
-async function runMemoryConsolidation(userId: number, chatIdNum: number, provider: string, model: string, apiKey: string) {
-  const oldestRes = await pool.query(
-    'SELECT id, fact, category, chat_id FROM chat_memories WHERE user_id = $1 ORDER BY created_at ASC LIMIT 15',
-    [userId]
-  );
-
-  if (oldestRes.rows.length === 0) return;
-
-  const oldestIds = oldestRes.rows.map((r: any) => r.id);
-  const factsToCondense = oldestRes.rows.map((r: any) => `- [${r.category}] ${r.fact}`).join('\n');
-
-  const chatIdCounts: Record<number, number> = {};
-  for (const m of oldestRes.rows) {
-    if (m.chat_id) {
-      chatIdCounts[m.chat_id] = (chatIdCounts[m.chat_id] || 0) + 1;
-    }
-  }
-  let associatedChatId = chatIdNum || null;
-  let maxCount = 0;
-  for (const [cidStr, count] of Object.entries(chatIdCounts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      associatedChatId = parseInt(cidStr, 10);
-    }
-  }
-
-  const consolidationPrompt = `You are a memory consolidation engine. Below are ${oldestRes.rows.length} raw memory facts extracted from a user's conversation history. Your task is to merge, deduplicate, and synthesize them into a smaller set of dense, precise facts. Output each consolidated fact as:
-<extracted_memory category="general|professional|preference|identity">consolidated fact</extracted_memory>
-
-Raw facts to consolidate:
-${factsToCondense}
-
-Produce the minimum number of consolidated facts needed to preserve all key information.`;
-
-  try {
-    const consolidatedText = await withTimeout(
-      callAIProvider(provider, model, apiKey, consolidationPrompt, 'You are a memory consolidation engine. Be concise and precise.', undefined, [], {}, undefined),
-      AI_CALL_TIMEOUT_MS,
-      'memory-consolidation'
-    );
-
-    const consolidatedFacts: { fact: string; category: string }[] = [];
-    const memRegex = new RegExp(MEMORY_TAG_REGEX.source, 'gi');
-    let match;
-    while ((match = memRegex.exec(consolidatedText)) !== null) {
-      const category = match[1] || 'general';
-      const fact = match[2]?.trim();
-      if (fact) consolidatedFacts.push({ fact, category });
-    }
-
-    if (consolidatedFacts.length > 0) {
-      await pool.query('DELETE FROM chat_memories WHERE id = ANY($1)', [oldestIds]);
-      const insertPromises = consolidatedFacts.map(item =>
-        pool.query(
-          "INSERT INTO chat_memories (user_id, chat_id, fact, category, source) VALUES ($1, $2, $3, $4, 'consolidated')",
-          [userId, associatedChatId, item.fact, item.category]
-        )
-      );
-      await Promise.all(insertPromises);
-      console.log(`[Memory Consolidation] User ${userId}: Replaced ${oldestIds.length} facts with ${consolidatedFacts.length} consolidated facts.`);
-    }
-  } catch (consolidationErr: any) {
-    console.error('[Memory Consolidation] AI call failed:', consolidationErr.message);
-  }
-}
-
-export async function updateChatContextSummary(chatIdNum: number, userId: number, provider: string, model: string, apiKey: string) {
-  try {
-    const msgCountRes = await pool.query('SELECT count(*) FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != \'\'', [chatIdNum]);
-    const msgCount = parseInt(msgCountRes.rows[0].count, 10);
-    
-    // Generate context summary if there are at least 2 messages (1 user prompt + 1 assistant reply)
-    // to ensure early context is captured, and update it on every turn to keep it fresh and detailed.
-    if (msgCount < 2) return;
-
-    const recentMessages = await pool.query(
-      `SELECT role, content FROM messages WHERE chat_id = $1 AND content IS NOT NULL AND content != '' ORDER BY created_at DESC LIMIT ${UPDATE_SUMMARY_LIMIT}`,
-      [chatIdNum]
-    );
-
-    if (recentMessages.rows.length < 2) return;
-
-    const conversationText = [...recentMessages.rows].reverse()
-      .map((m: any) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
-      .join('\n');
-
-    const summaryPrompt = `Summarize this conversation in 2-3 dense sentences in the language of the conversation (Arabic or English) capturing the main topics, decisions, and user context. Be factual and brief.\n\n${conversationText}`;
-
-    const summary = await withTimeout(
-      callAIProvider(provider, model, apiKey, summaryPrompt, 'You are a concise conversation summarizer. Output only the summary, no preamble.', undefined, [], {}, undefined),
-      UPDATE_SUMMARY_TIMEOUT_MS,
-      'context-summary'
-    );
-
-    if (summary && summary.trim()) {
-      await pool.query(
-        'UPDATE chats SET context_summary = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-        [summary.trim().substring(0, 1000), chatIdNum]
-      );
-    }
-  } catch (err: any) {
-    console.error('[updateChatContextSummary] Failed:', err.message);
-    throw err;
-  }
-}

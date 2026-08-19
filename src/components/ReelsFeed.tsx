@@ -21,19 +21,13 @@ import {
   MapPin,
   Sparkles,
   ChevronUp,
-  ChevronDown,
-  UserPlus,
-  UserCheck,
   Eye,
-  Camera,
-  Film,
   Flag,
   EyeOff,
   User,
   Copy,
   ExternalLink,
-  MessageSquare,
-  ShieldAlert
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';

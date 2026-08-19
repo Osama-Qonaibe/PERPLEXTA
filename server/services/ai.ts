@@ -1,3 +1,16 @@
+
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
+
+const httpAgent = new HttpAgent({ keepAlive: true, timeout: 60000 });
+const httpsAgent = new HttpsAgent({ keepAlive: true, timeout: 60000 });
+
+// Override global fetch or specify dispatcher (for node-fetch or undici).
+// Note: native fetch in Node 18+ uses undici. We can pass a custom dispatcher.
+import { setGlobalDispatcher, Agent } from 'undici';
+if (typeof setGlobalDispatcher === 'function') {
+  setGlobalDispatcher(new Agent({ connections: 100, pipelining: 10, keepAliveTimeout: 60000, keepAliveMaxTimeout: 600000 }));
+}
 import fs from 'fs/promises';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -252,8 +265,6 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
     return { models, count };
   } catch (error) {
     console.error(`[SyncInternal] Error syncing ${providerId}:`, error);
-    await pool.query('UPDATE api_keys_vault SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE provider = $1', [providerId]);
-    invalidateApiKeysVaultCache();
     throw error;
   } finally {
     clearTimeoutTimer();
@@ -268,16 +279,6 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   const normProvider = provider.toLowerCase().replace(/\s+/g, '');
   const now = Date.now();
   
-  if (normProvider === 'google' || normProvider === 'gemini') {
-    const envKey = process.env.GEMINI_API_KEY;
-    if (envKey) {
-      const trimmed = envKey.trim();
-      if (trimmed && trimmed.startsWith('AIzaSy')) {
-        return trimmed;
-      }
-    }
-  }
-
   if (vaultCache.has(normProvider)) {
     const cached = vaultCache.get(normProvider)!;
     if (now < cached.expiresAt) {
@@ -301,24 +302,8 @@ export async function getProviderKey(provider: string): Promise<string | null> {
   } catch (_) {}
 
   if (decryptedKey !== null) {
-    if (normProvider === 'google' || normProvider === 'gemini') {
-      const startsWithAIza = decryptedKey.startsWith('AIzaSy');
-      const envKey = process.env.GEMINI_API_KEY;
-      if (!startsWithAIza && envKey && envKey.trim().startsWith('AIzaSy')) {
-        decryptedKey = envKey.trim();
-      }
-    }
     vaultCache.set(normProvider, { value: decryptedKey, expiresAt: now + CACHE_TTL_MS });
     return decryptedKey;
-  }
-
-  if (normProvider === 'google' || normProvider === 'gemini') {
-    const envKey = process.env.GEMINI_API_KEY;
-    if (envKey) {
-      const trimmed = envKey.trim();
-      vaultCache.set(normProvider, { value: trimmed, expiresAt: now + CACHE_TTL_MS });
-      return trimmed;
-    }
   }
 
   return null;
@@ -752,7 +737,7 @@ export async function callAIProvider(
            errorText = await response.text();
          } catch (_) {}
        }
-       console.error(`[AI Service] Provider Error (${response.status}) for ${normProvider}/${cleanModel}: ${errorText.substring(0, 300)}`);
+       if (response.status === 429) { console.warn(`[AI Service] Rate Limit Hit (429) for ${normProvider}/${cleanModel}: ${extractedMessage.substring(0, 150) || 'Provider quota or rate limit exceeded.'}`); } else { console.error(`[AI Service] Provider Error (${response.status}) for ${normProvider}/${cleanModel}: ${errorText.substring(0, 300)}`); }
        
        const baseErrorMessage = extractedMessage 
          ? `The AI provider encountered an issue (${response.status}): ${extractedMessage}`
@@ -834,8 +819,18 @@ export async function callAIProvider(
     else if (normProvider === 'mistral') url = 'https://api.mistral.ai/v1/chat/completions';
     
     headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    if (normProvider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://perplexta.ai';
+      headers['X-Title'] = 'Perplexta Platform';
+      // OpenRouter sometimes hangs on standard streaming parsing if provider doesn't support it well, but stream is true here
+    }
     const mappedMessages = transformMessagesForOpenAI(messages);
     body = { model: cleanModel, messages: mappedMessages, stream: isStreaming };
+    
+    // OpenRouter Optimization: Prevent aggressive upstream fallback chaining which causes 30s+ latency
+    if (normProvider === 'openrouter') {
+      body.route = 'fallback'; // Ensures it doesn't get stuck in deep queues if primary upstream is dead
+    }
   } else if (normProvider === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
     headers['x-api-key'] = cleanApiKey;
@@ -855,7 +850,9 @@ export async function callAIProvider(
     headers['x-goog-api-key'] = cleanApiKey;
     const isTtsModel = cleanModel.toLowerCase().includes('tts');
     const geminiContents = transformMessagesForGemini(messages);
-    body = { contents: geminiContents };
+    body = { 
+      contents: geminiContents
+    };
     if (systemPrompt) {
       if (isTtsModel) {
         if (geminiContents.length > 0 && geminiContents[0].parts && geminiContents[0].parts.length > 0) {
@@ -910,10 +907,13 @@ export async function callAIProvider(
     }
   } else {
     const resolvedUrl = preloadedUrlKey ?? (await getProviderUrlKey(normProvider)) ?? '';
-    let cleanUrl = resolvedUrl ? (resolvedUrl.endsWith('/') ? resolvedUrl.slice(0, -1) : resolvedUrl) : 'https://api.openai.com/v1';
+    let cleanUrl = resolvedUrl ? (resolvedUrl.endsWith('/') ? resolvedUrl.slice(0, -1) : resolvedUrl) : '';
     
+    if (!cleanUrl) {
+      throw new Error(`Custom provider '${provider}' is missing a registered endpoint URL (url_key) in the vault.`);
+    }
+
     if (cleanUrl.endsWith('/chat/completions')) {
-      cleanUrl = cleanUrl.replace('/chat/completions', '');
     } else if (cleanUrl.endsWith('/models')) {
       cleanUrl = cleanUrl.replace('/models', '');
     } else if (cleanUrl.endsWith('/api/chat')) {
@@ -951,31 +951,6 @@ export async function callAIProvider(
       const errJson = await clonedRes.json();
       const errorDetail = JSON.stringify(errJson);
       
-      const isExpiredOrInvalid = errorDetail.includes('API key expired') || 
-                                errorDetail.includes('API_KEY_INVALID') || 
-                                errorDetail.includes('API key') ||
-                                res.status === 400 && (errorDetail.includes('INVALID_ARGUMENT') || errorDetail.includes('key'));
-
-      if (isExpiredOrInvalid && process.env.GEMINI_API_KEY && cleanApiKey !== process.env.GEMINI_API_KEY.trim()) {
-        console.warn(`[AI Service] Active API Key for Google/Gemini is expired or invalid. Retrying with system environment key...`);
-        const envKey = process.env.GEMINI_API_KEY.trim();
-        headers['x-goog-api-key'] = envKey;
-        const retryResEnv = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-        if (retryResEnv.ok) {
-          console.log(`[AI Service] Self-healed successfully using system environment API key.`);
-          return handleResponse(retryResEnv);
-        } else {
-          if (url.includes('/v1beta/')) {
-            const stableUrl = url.replace('/v1beta/', '/v1/');
-            const retryResEnvStable = await fetch(stableUrl, { method: 'POST', headers, body: JSON.stringify(body) });
-            if (retryResEnvStable.ok) {
-              console.log(`[AI Service] Self-healed successfully using system environment API key on stable v1 endpoint.`);
-              return handleResponse(retryResEnvStable);
-            }
-          }
-        }
-      }
-
       const is404 = res.status === 404 || errorDetail.includes('NOT_FOUND') || errorDetail.includes('is not found') || errorDetail.includes('not found');
       
       if (is404) {

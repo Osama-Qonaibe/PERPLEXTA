@@ -1,54 +1,59 @@
 import express from 'express';
-import { GoogleGenAI } from "@google/genai";
-import { getProviderKey } from '../services/ai.js';
+import { callAIProvider, getProviderKey, getProviderUrlKey } from '../services/ai.js';
+import { getCachedOrchestratorConfig } from '../db/queries.js';
+import { generateContextualFollowUpsFallback } from '../utils/helpers.js';
 
 const router = express.Router();
 
 router.post('/generate-followups', async (req, res) => {
-  const { lastMessage } = req.body;
+  const { lastMessage, userQuery } = req.body;
   if (!lastMessage) return res.status(400).json({ error: 'Last message is required' });
 
   try {
-    let apiKey: string | null = await getProviderKey('google');
-    if (!apiKey) {
-      apiKey = process.env.GEMINI_API_KEY || null;
+    const orchestrator = await getCachedOrchestratorConfig('chat');
+    const provider = orchestrator?.primary_provider;
+    const model = orchestrator?.primary_model;
+
+    if (!provider || !model) {
+      return res.json(generateContextualFollowUpsFallback(userQuery || '', lastMessage, 'ar', 'chat'));
     }
 
+    let apiKey: string | null = await getProviderKey(provider);
+    let urlKey: string | null = await getProviderUrlKey(provider);
+
     if (!apiKey) {
-      return res.status(503).json({ error: 'AI features disabled' });
+      return res.json(generateContextualFollowUpsFallback(userQuery || '', lastMessage, 'ar', 'chat'));
     }
 
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
-
-    const prompt = `Based on this assistant response, generate 3 context-aware, highly actionable user prompt suggestions. 
+    const prompt = `Based on the user query and the assistant response, generate 3 context-aware, highly actionable follow-up question suggestions that the user would naturally ask next to dive deeper into the exact topic.
     Return the result strictly as a JSON list of strings: ["Suggestion 1", "Suggestion 2", "Suggestion 3"].
     
+    User Query: ${userQuery || ''}
     Assistant Response: ${lastMessage}`;
     
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-      config: { responseMimeType: "application/json" }
-    }).catch((err: any) => {
-        if (err?.status === 400 || err?.message?.includes('API key')) {
-            throw new Error('INVALID_API_KEY');
-        }
-        throw err;
-    });
+    const messages = [{ role: 'user', content: prompt }];
 
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
-    
-    res.json(JSON.parse(text));
-  } catch (err: any) {
-    if (err.message === 'INVALID_API_KEY') {
-        return res.json([]);
+    try {
+      let text = await callAIProvider(provider, model, apiKey, prompt, '', undefined, messages, {}, urlKey || undefined);
+      
+      // Cleanup common markdown JSON blocks
+      if (text.startsWith('```json')) text = text.replace(/```json\n?/, '');
+      if (text.startsWith('```')) text = text.replace(/```\n?/, '');
+      if (text.endsWith('```')) text = text.replace(/\n?```/, '');
+
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return res.json(parsed);
+      }
+    } catch (err: any) {
+      // Ignore provider specific errors and fallback
     }
-    console.error('AI follow-up suggestion error:', err);
-    res.status(500).json({ error: 'Failed to generate suggestions' });
+
+    // Fallback to local contextual generator
+    return res.json(generateContextualFollowUpsFallback(userQuery || '', lastMessage, 'ar', 'chat'));
+  } catch (err: any) {
+    console.warn('AI follow-up suggestion error handled gracefully:', err?.message || err);
+    return res.json(generateContextualFollowUpsFallback(userQuery || '', lastMessage, 'ar', 'chat'));
   }
 });
 
@@ -57,36 +62,31 @@ router.post('/suggest-meta', async (req, res) => {
   if (!content) return res.status(400).json({ error: 'Content is required' });
 
   try {
-    // Dynamically retrieve the API key configured by the Admin, falling back to process.env
-    let apiKey: string | null = await getProviderKey('google');
-    if (!apiKey) {
-      apiKey = process.env.GEMINI_API_KEY || null;
+    const orchestrator = await getCachedOrchestratorConfig('perplexta_analysis');
+    const provider = orchestrator?.primary_provider;
+    const model = orchestrator?.primary_model;
+
+    if (!model || !provider) {
+      return res.status(503).json({ error: 'Orchestrator not configured' });
     }
 
-    if (!apiKey) {
-      return res.status(503).json({ 
-        error: 'AI features are currently disabled. Please configure your Google Gemini API key in the Admin Panel.',
-        error_ar: 'خدمات الذكاء الاصطناعي معطلة حالياً. يرجى تهيئة مفتاح API الخاص بـ Google Gemini من لوحة التحكم.'
-      });
-    }
+    let apiKey: string | null = await getProviderKey(provider);
+    let urlKey: string | null = await getProviderUrlKey(provider);
 
-    // Lazily initialize client
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    if (!apiKey) {
+      return res.status(503).json({ error: 'AI key not found in vault for provider: ' + provider });
+    }
 
     const prompt = `Based on the following body content, suggest a high-performing meta-title (max 60 chars) and meta-description (max 160 chars). Return the result strictly in JSON format: {"metaTitle": "...", "metaDescription": "..."}. \n\nContent: ${content}`;
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Using standard stable flash model
-      contents: prompt,
-      config: { responseMimeType: "application/json" }
-    });
+    const messages = [{ role: 'user', content: prompt }];
 
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
+    let text = await callAIProvider(provider, model, apiKey, prompt, '', undefined, messages, {}, urlKey || undefined);
     
+    // Cleanup JSON markdown
+    if (text.startsWith('```json')) text = text.replace(/```json\n?/, '');
+    if (text.startsWith('```')) text = text.replace(/```\n?/, '');
+    if (text.endsWith('```')) text = text.replace(/\n?```/, '');
+
     res.json(JSON.parse(text));
   } catch (err: any) {
     console.error('AI suggest meta error:', err);

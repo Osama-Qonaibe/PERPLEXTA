@@ -8,7 +8,8 @@ import { SkeletonLoader } from './SkeletonLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
-import { useSwipeToClose } from '../utils/swipe';
+import { useSwipeToClose, useSwipeNavigation } from '../utils/swipe';
+import { FloatingPopover } from './FloatingPopover';
 const sidebarTransition = SIDEBAR_TRANSITION;
 const sidebarSpring = SIDEBAR_MOTION_TRANSITION;
 const elasticSpring = SIDEBAR_TRANSITION;
@@ -40,6 +41,14 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     isMobile
   });
 
+  useSwipeNavigation({
+    isOpen: isSidebarOpen,
+    onOpen: () => setIsSidebarOpen(true),
+    onClose: () => setIsSidebarOpen(false),
+    dir: dir as 'rtl' | 'ltr',
+    isMobile
+  });
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [recentChats, setRecentChats] = useState<any[]>(() => {
@@ -61,7 +70,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [deletingChatConfirmId, setDeletingChatConfirmId] = useState<string | null>(null);
-  const [activeOptionsMenuChatId, setActiveOptionsMenuChatId] = useState<string | null>(null);
+  const [optionsMenuTarget, setOptionsMenuTarget] = useState<{ chatId: string; rect: DOMRect } | null>(null);
+  const activeOptionsMenuChatId = optionsMenuTarget?.chatId || null;
   const deletingChat = recentChats.find((c: any) => c.id?.toString() === deletingChatConfirmId?.toString());
   const deletingChatTitle = deletingChat ? deletingChat.title : '';
   const navigate = useNavigate();
@@ -149,7 +159,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   useEffect(() => {
     const handleGlobalClick = () => {
-      setActiveOptionsMenuChatId(null);
+      setOptionsMenuTarget(null);
     };
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
@@ -307,7 +317,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isMobile ? (isSidebarOpen ? '175px' : 0) : (isSidebarOpen ? 220 : 80),
+          width: isMobile ? (isSidebarOpen ? '175px' : 0) : (isSidebarOpen ? 220 : 56),
           x: isMobile && !isSidebarOpen ? (dir === 'rtl' ? 300 : -300) : 0,
           opacity: isMobile && !isSidebarOpen ? 0 : 1
         }}
@@ -315,10 +325,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         onTouchStart={swipeHandlers.onTouchStart}
         onTouchMove={swipeHandlers.onTouchMove}
         onTouchEnd={swipeHandlers.onTouchEnd}
-        className={`fixed top-[72px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100dvh-72px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
+        className={`fixed top-[64px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100dvh-64px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
           isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
         }`}
-        style={{ contain: 'layout', maxHeight: 'calc(100dvh - 72px)' }}
+        style={{ contain: 'layout', maxHeight: 'calc(100dvh - 64px)' }}
       >
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -355,7 +365,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       const active = isActive;
                       return (
                         <div className={`${(item as any).className || 'flex'} items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}>
-                          <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
+                          <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
                             <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme ${
                               active ? 'bg-accent/10 border-accent/20' : 'group-hover:bg-[var(--bg-hover)]'
                             }`} />
@@ -395,7 +405,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       onClick={handleNewChat}
                       className={`flex items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}
                     >
-                      <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
+                      <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
                         <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme bg-accent/5 border-accent/10 group-hover:bg-accent/15 group-hover:border-accent/20`} />
                         <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-theme text-accent`} />
                       </div>
@@ -420,19 +430,19 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
             {user && token && (
               <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className={`pt-2 mt-2 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-8 overflow-hidden ${isMobile ? 'px-3.5' : ''}`}>
-                  <div className={`${isMobile ? 'w-8' : 'w-[80px]'} flex-shrink-0`} />
+                <div className={`pt-2.5 pb-1 mt-1 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-7 overflow-hidden`}>
+                  <div className={`${isMobile ? 'w-8' : 'w-[56px]'} flex-shrink-0`} />
                   <AnimatePresence initial={false}>
                     {isSidebarOpen && (
-                      <motion.h3 
+                      <motion.span 
                         initial={false}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={elasticSpring}
-                        className="flex-1 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest whitespace-nowrap truncate text-start transition-theme"
+                        className={`flex-1 text-[10.5px] font-semibold text-gray-500 dark:text-gray-400/80 uppercase ${dir === 'rtl' ? 'tracking-normal mr-1' : 'tracking-wider ml-1'} whitespace-nowrap truncate text-start transition-theme`}
                       >
                         {dir === 'rtl' ? 'المحادثات السابقة' : 'Recent Chats'}
-                      </motion.h3>
+                      </motion.span>
                     )}
                   </AnimatePresence>
                 </div>
@@ -471,7 +481,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 }}
                                 className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                               >
-                                <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
+                                <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
                                   <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme ${isActive ? 'bg-transparent' : 'group-hover:bg-[var(--bg-hover)]'}`} />
                                   <MessageSquare 
                                     size={isMobile ? 16 : 16} 
@@ -511,76 +521,28 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1 ${activeOptionsMenuChatId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-theme ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
+                                    className={`flex items-center gap-1 ${optionsMenuTarget?.chatId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-theme ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
                                   >
-                                    <div className="relative">
-                                      <button 
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setActiveOptionsMenuChatId(activeOptionsMenuChatId === chat.id ? null : chat.id);
-                                        }}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
-                                          activeOptionsMenuChatId === chat.id 
-                                            ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)]' 
-                                            : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
-                                        }`}
-                                        title={language === 'ar' ? 'خيارات' : 'Options'}
-                                      >
-                                        <MoreHorizontal size={isMobile ? 14 : 13} />
-                                      </button>
-                                      
-                                      <AnimatePresence>
-                                        {activeOptionsMenuChatId === chat.id && (
-                                          <motion.div
-                                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                            transition={{ duration: 0.15 }}
-                                            className={`absolute ${dir === 'rtl' ? 'left-0' : 'right-0'} mt-1 z-50 min-w-[130px] rounded-lg p-1 shadow-2xl border transition-theme ${
-                                              theme === 'dark' 
-                                                ? 'bg-[#18181a] border-[#27272a]' 
-                                                : 'bg-white border-gray-200'
-                                            }`}
-                                          >
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingChatId(chat.id);
-                                                setNewTitle(chat.title);
-                                                setActiveOptionsMenuChatId(null);
-                                              }}
-                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
-                                                theme === 'dark' 
-                                                  ? 'text-gray-300 hover:bg-[var(--surface-inset)] hover:text-[var(--text-primary)]' 
-                                                  : 'text-gray-700 hover:bg-[var(--surface-inset)] hover:text-[var(--text-primary)]'
-                                              }`}
-                                            >
-                                              <Edit2 size={12} className="text-gray-400" />
-                                              <span>{language === 'ar' ? 'إعادة تسمية' : 'Rename'}</span>
-                                            </button>
-                                            
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeletingChatConfirmId(chat.id);
-                                                setActiveOptionsMenuChatId(null);
-                                              }}
-                                              className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs rounded-[4px] font-sans transition-theme text-start ${
-                                                theme === 'dark' 
-                                                  ? 'text-[var(--text-primary)] hover:bg-[var(--surface-inset)]' 
-                                                  : 'text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
-                                              }`}
-                                            >
-                                              <Trash2 size={12} className="text-[var(--text-primary)]" />
-                                              <span>{language === 'ar' ? 'حذف' : 'Delete'}</span>
-                                            </button>
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
-                                    </div>
+                                    <button 
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (optionsMenuTarget?.chatId === chat.id) {
+                                          setOptionsMenuTarget(null);
+                                        } else {
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          setOptionsMenuTarget({ chatId: chat.id, rect });
+                                        }
+                                      }}
+                                      className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
+                                        optionsMenuTarget?.chatId === chat.id 
+                                          ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)]' 
+                                          : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
+                                      }`}
+                                      title={language === 'ar' ? 'خيارات' : 'Options'}
+                                    >
+                                      <MoreHorizontal size={isMobile ? 14 : 13} />
+                                    </button>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -849,7 +811,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme`}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
-                        <div className={`${isMobile ? 'w-8' : 'w-[80px]'} ${isMobile ? 'h-[44px]' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
+                        <div className={`${isMobile ? 'w-8' : 'w-[56px]'} ${isMobile ? 'h-[44px]' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
                           <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]`} />
                           <div 
                             className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-[var(--border-accent)] shadow-sm group-hover:scale-105`}
@@ -908,7 +870,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       }
                     }}
                   >
-                    <div className={`${isMobile ? 'w-8' : 'w-[80px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
+                    <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
                       <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]`} />
                       <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]`}>
                         <User size={isMobile ? 16 : 18} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
@@ -1126,6 +1088,53 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           </div>
         )}
       </AnimatePresence>
+
+      <FloatingPopover
+        isOpen={!!optionsMenuTarget}
+        onClose={() => setOptionsMenuTarget(null)}
+        triggerRect={optionsMenuTarget?.rect || null}
+        direction={dir}
+        placement="outward-sidebar"
+        width={145}
+      >
+        {optionsMenuTarget && (
+          <div className="flex flex-col gap-0.5 p-0.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const targetChat = recentChats.find((c: any) => c.id?.toString() === optionsMenuTarget.chatId?.toString());
+                if (targetChat) {
+                  setEditingChatId(targetChat.id);
+                  setNewTitle(targetChat.title);
+                }
+                setOptionsMenuTarget(null);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg font-sans transition-theme text-start font-medium cursor-pointer ${
+                theme === 'dark' 
+                  ? 'text-gray-200 hover:bg-[var(--surface-inset)] hover:text-white' 
+                  : 'text-gray-700 hover:bg-[var(--surface-inset)] hover:text-black'
+              }`}
+            >
+              <Edit2 size={13} className="text-gray-400" />
+              <span>{language === 'ar' ? 'إعادة تسمية' : 'Rename'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeletingChatConfirmId(optionsMenuTarget.chatId);
+                setOptionsMenuTarget(null);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs rounded-lg font-sans transition-theme text-start font-medium text-[var(--fg-danger,#ef4444)] hover:bg-[var(--surface-inset)] active:scale-95 cursor-pointer"
+            >
+              <Trash2 size={13} className="text-[var(--fg-danger,#ef4444)]" />
+              <span>{language === 'ar' ? 'حذف' : 'Delete'}</span>
+            </button>
+          </div>
+        )}
+      </FloatingPopover>
     </>
   );
 };

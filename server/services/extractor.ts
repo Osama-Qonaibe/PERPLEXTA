@@ -189,7 +189,7 @@ export const forensicScanPDF = (dataBuffer: Buffer): ForensicReport => {
 };
 
 export const perplextaMultimodalSense = async (dataBuffer: Buffer, mimeType: string, fileName: string): Promise<string> => {
-  const config = await getCachedOrchestratorConfig('perplexta_analysis') || await getCachedOrchestratorConfig('chat_fast');
+  const config = await getCachedOrchestratorConfig('perplexta_analysis');
   if (!config) return 'Multimodal extraction unavailable: No orchestrator configuration found.';
 
   let provider = config.primary_provider;

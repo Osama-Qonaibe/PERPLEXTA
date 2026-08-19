@@ -4,6 +4,7 @@ import { ThemeEngineProvider } from './context/ThemeContext';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { PwaProvider } from './context/PwaContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
@@ -284,11 +285,12 @@ export default function App() {
     <BrowserRouter>
       <ThemeEngineProvider>
         <AppProvider>
-          <PwaProvider>
-            <VideoResourceProvider>
-              <ErrorBoundary name="Perplexta Core Runtime">
-                <PWAWrapper>
-                  <Routes>
+          <NotificationProvider>
+            <PwaProvider>
+              <VideoResourceProvider>
+                <ErrorBoundary name="Perplexta Core Runtime">
+                  <PWAWrapper>
+                    <Routes>
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Navigate to="/chat" replace />} />
                 <Route path="rewards" element={<ProtectedRoute><RewardsPage /></ProtectedRoute>} />
@@ -323,7 +325,8 @@ export default function App() {
         </ErrorBoundary>
       </VideoResourceProvider>
     </PwaProvider>
-    </AppProvider>
+  </NotificationProvider>
+</AppProvider>
     </ThemeEngineProvider>
     </BrowserRouter>
   );

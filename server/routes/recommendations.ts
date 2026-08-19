@@ -1,28 +1,9 @@
 import express from 'express';
-import { pool } from '../db/index.js';
+import { pool, getExternalPool } from '../db/index.js';
 import { authenticateToken } from '../middleware/auth.js';
-import jwt from 'jsonwebtoken';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 
-const optionalAuth = (req: any, res: any, next: any) => {
-  const authHeader = req.headers['authorization'];
-  let token = authHeader && authHeader.split(' ')[1];
-  if (token) {
-    if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
-    try {
-      const decoded: any = jwt.verify(token, JWT_SECRET);
-      req.user = decoded;
-    } catch (e) {
-    }
-  }
-  next();
-};
-
-/**
- * Helper to compute recommendation scores for Marketplace, Bulletin, Tools & Articles
- */
 async function generateRecommendationsForUser(userId?: number, options: { limit?: number; categoryFilter?: string; typeFilter?: string } = {}) {
   const limit = options.limit || 12;
 
@@ -32,6 +13,7 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
   let preferredCategories: string[] = [];
   let preferredPriceMin = 0;
   let preferredPriceMax = 10000;
+  let userMemories: any[] = [];
 
   if (userId) {
     try {
@@ -47,6 +29,12 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
           preferredPriceMax = p.preferred_price_range.max ?? 10000;
         }
       }
+
+      const memoriesRes = await pool.query(
+        'SELECT fact, category FROM chat_memories WHERE user_id = $1',
+        [userId]
+      );
+      userMemories = memoriesRes.rows;
 
       const fbRes = await pool.query(
         'SELECT item_type, item_id, item_key FROM recommendation_feedback WHERE user_id = $1 AND feedback_type IN (\'not_interested\', \'dismissed\')',
@@ -116,7 +104,7 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
      LIMIT 30`
   );
 
-  const blogRes = await pool.query(
+  const blogRes = await getExternalPool().query(
     `SELECT id, slug, title_en, title_ar, content_en, content_ar, category_en, category_ar, image_url, views, created_at
      FROM blog_articles
      ORDER BY views DESC, id DESC LIMIT 20`
@@ -147,6 +135,38 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
       reasons_en.push(`Matches your saved preference: ${item.category_en || item.category}`);
       reasons_ar.push(`يتطابق مع تفضيلاتك المسجلة: ${item.category_ar || item.category}`);
     }
+
+    // Dynamic Sovereign Memory System Integration
+    userMemories.forEach((mem: any) => {
+      const factText = (mem.fact || '').toLowerCase();
+      const itemTitleEn = (item.title_en || item.name || item.nameEn || item.tool_id || item.slug || '').toLowerCase();
+      const itemDescEn = (item.description_en || item.descEn || item.task_description || '').toLowerCase();
+
+      const memWords = factText.split(/[\s,،\.\-\[\]\:\(\)\|\/\'\"]+/).filter((w: string) => w.length > 3);
+      const hasWordOverlap = memWords.some((word: string) => {
+        if (['that', 'this', 'user', 'with', 'from', 'have', 'your', 'about', 'some', 'they', 'want', 'like', 'need', 'work', 'live'].includes(word)) return false;
+        return itemTitleEn.includes(word) || itemDescEn.includes(word);
+      });
+
+      const memCat = (mem.category || '').toLowerCase();
+      let categoryCorrelation = false;
+      if (memCat === 'technical' && (cat.includes('tech') || cat.includes('ai_tools') || cat.includes('code') || cat.includes('developer'))) {
+        categoryCorrelation = true;
+      } else if (memCat === 'project' && (cat.includes('project') || cat.includes('business') || cat.includes('marketing') || cat.includes('marketplace'))) {
+        categoryCorrelation = true;
+      } else if (memCat === 'professional' && (cat.includes('job') || cat.includes('professional') || cat.includes('service') || cat.includes('consulting'))) {
+        categoryCorrelation = true;
+      }
+
+      if (hasWordOverlap || categoryCorrelation) {
+        score += 35;
+        let snippet = mem.fact;
+        if (snippet.length > 40) snippet = snippet.substring(0, 37) + '...';
+        
+        reasons_en.push(`Derived from your memory: "${snippet}"`);
+        reasons_ar.push(`تم ترشيحه من ذاكرتك الموثقة: "${snippet}"`);
+      }
+    });
 
     if (item.is_boosted || item.highlight_tag || item.is_featured) {
       score += 18;

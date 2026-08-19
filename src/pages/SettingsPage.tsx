@@ -417,15 +417,15 @@ export const SettingsPage: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             className={`fixed bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              toast.type === 'success' 
+              (toast as any).type === 'success' 
                 ? 'bg-accent/10 border-accent/20 text-accent' 
                 : 'bg-red-500/10 border-red-500/20 text-red-500'
             }`}
-            style={{ boxShadow: toast.type === 'success' ? '0 10px 30px rgba(156,163,175,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
+            style={{ boxShadow: (toast as any).type === 'success' ? '0 10px 30px rgba(156,163,175,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
           >
-            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${(toast as any).type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
             <span className="font-bold text-sm tracking-tight">
-              {typeof toast.message === 'string' ? toast.message.replace(/[<>]/g, '') : toast.message}
+              {typeof (toast as any).message === 'string' ? (toast as any).message.replace(/[<>]/g, '') : (toast as any).message}
             </span>
           </motion.div>
         )}

@@ -11,19 +11,11 @@ import {
   ShoppingBag,
   FileText,
   Zap,
-  ChevronRight,
-  ChevronDown,
-  Info,
-  Sliders,
-  ExternalLink,
   ShieldCheck,
   TrendingUp,
   Tag,
   Wand2,
-  Check,
-  Edit3,
-  Copy,
-  ArrowRightLeft
+  Check
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 

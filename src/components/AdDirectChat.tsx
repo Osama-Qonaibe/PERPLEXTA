@@ -1,24 +1,20 @@
-import { safeStorageGet } from "@/utils/safeStorage";
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, 
   Send, 
-  Image as 
   X, 
   Loader2, 
   Check, 
   CheckCheck, 
   ShieldCheck, 
-  Sparkles,
-  MessageSquare,
-  ChevronDown,
-  User,
-  Paperclip
+  MessageSquare, 
+  Paperclip,
+  User
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { safeStorageGet } from '../utils/safeStorage';
 
 export interface AdDirectMessage {
   id: number;

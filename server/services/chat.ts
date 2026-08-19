@@ -81,97 +81,69 @@ export async function updateUserChatContextSummary(chatId: string, userId: strin
 }
 
 export async function handleChatMessage(socket: any, data: any) {
-  const { chatId, toolId, userId, token, data_p, data_s, tool_id, chat_id, file_data, forensic_mode, image_settings, video_settings, audio_settings } = data;
+  const { userId, token, file_data, forensic_mode, image_settings, video_settings, audio_settings } = data;
   
+  const chatId = data.chatId || data.chat_id;
+  const toolId = data.toolId || data.tool_id || 'chat';
+  const prompt = data.content || (data.data_p ? decrypt(data.data_p) : '');
+
   let authenticatedUserId = userId;
   if (!authenticatedUserId && token) {
     try {
       const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        console.error('[ChatService] JWT_SECRET is not set');
-        return socket.emit('chat_error', { message: 'Unauthorized' });
-      }
+      if (!jwtSecret) throw new Error('JWT_SECRET missing');
       const decoded = jwt.verify(token, jwtSecret) as any;
       authenticatedUserId = decoded.id;
     } catch (e) {
-      const err = e as any;
-      if (err.name === 'TokenExpiredError') {
+      if ((e as any).name === 'TokenExpiredError') {
         return socket.emit('chat_error', { message: JSON.stringify({ error: 'TokenExpiredError', type: 'TOKEN_EXPIRED' }) });
       }
-      console.error('[ChatService] Token verification failed:', e);
       return socket.emit('chat_error', { message: 'Unauthorized' });
     }
   }
 
   if (!authenticatedUserId) return socket.emit('chat_error', { message: 'Unauthorized' });
 
-  const finalChatId = chatId || chat_id;
-  const finalToolId = toolId || tool_id || 'chat';
-  
-  let finalPrompt = data.content;
-  if (!finalPrompt && data_p) {
-    finalPrompt = decrypt(data_p);
-  }
-
   // Early client request length audit
   try {
     const { validatePromptLength } = await import('../utils/security.js');
-    validatePromptLength(finalPrompt);
+    validatePromptLength(prompt);
   } catch (lengthErr: any) {
     try {
       const parsedErr = JSON.parse(lengthErr.message);
-      let userLang = 'en';
-      try {
-        const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
-        if (uRes.rows.length > 0) userLang = uRes.rows[0].language || 'en';
-      } catch (_) {}
-      const errorMsg = userLang === 'ar' ? parsedErr.error_ar : parsedErr.error;
-      return socket.emit('chat_error', { message: errorMsg });
+      const uRes = await pool.query('SELECT language FROM users WHERE id = $1', [authenticatedUserId]);
+      const userLang = uRes.rows[0]?.language || 'en';
+      return socket.emit('chat_error', { message: userLang === 'ar' ? parsedErr.error_ar : parsedErr.error });
     } catch (_) {
       return socket.emit('chat_error', { message: 'Security Alert: Prompt exceeds maximum available limit.' });
     }
   }
 
-  let customInstructions = '';
-
   let assistantMessageId: number | undefined;
   try {
     if (!pool) throw new Error('Database not ready');
 
-    // Notify that the assistant is actively typing/thinking
-    socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta' });
+    socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta', chatId });
 
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [finalChatId, 'assistant', '', finalToolId, finalToolId]
+      [chatId, 'assistant', '...', toolId, toolId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 
     const generationStart = Date.now();
 
     const result = await executeTaskLogic(
-      { 
-        tool_id: finalToolId, 
-        prompt: finalPrompt, 
-        chat_id: finalChatId,
-        system_prompt: customInstructions,
-        file_data,
-        forensic_mode,
-        image_settings,
-        video_settings,
-        audio_settings
-      }, 
+      { tool_id: toolId, prompt, chat_id: chatId, file_data, forensic_mode, image_settings, video_settings, audio_settings }, 
       authenticatedUserId, 
       undefined, 
       (chunk) => {
-        socket.emit('chat_chunk', { chunk, chatId: finalChatId, isFinal: false });
+        socket.emit('chat_chunk', { chunk, chatId, isFinal: false });
       },
       socket
     );
 
     const generationTimeSeconds = parseFloat(((Date.now() - generationStart) / 1000).toFixed(2));
-
-    // Final response sanitization to remove internal reasoning tags and technical markers
     const sanitizedResult = cleanAIOutput(result.result);
     const { cleanText, followUps } = extractFollowUps(sanitizedResult);
     const finalFollowUps = (result.follow_ups && result.follow_ups.length > 0) ? result.follow_ups : followUps;
@@ -181,94 +153,47 @@ export async function handleChatMessage(socket: any, data: any) {
       [cleanText, generationTimeSeconds, JSON.stringify(result.citations || []), JSON.stringify(finalFollowUps || []), assistantMessageId]
     );
 
-    // Link video generation output to assistant message ID 
-    if (finalToolId === 'video' && result.result && assistantMessageId) {
-      try {
-        await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result);
-      } catch (assocErr: any) {
-        console.warn('[ChatService] Safe warning: Failed to associate message with video:', assocErr.message);
-      }
+    if (toolId === 'video' && result.result && assistantMessageId) {
+      await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result).catch(() => {});
     }
 
-    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [finalChatId]);
+    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
 
-    const chatIdNum = finalChatId ? parseInt(String(finalChatId), 10) : 0;
-    if (chatIdNum > 0 && result.provider && result.model && result.apiKey) {
-      updateChatContextSummary(chatIdNum, authenticatedUserId, result.provider, result.model, result.apiKey).catch((err: any) => {
-        console.error('[ChatService] Error updating chat context summary:', err.message);
-      });
+    if (chatId) {
+      const chatIdNum = parseInt(String(chatId), 10);
+      if (chatIdNum > 0) updateChatContextSummary(chatIdNum, authenticatedUserId).catch(() => {});
     }
 
-    // Reset typing state
     socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
-
-    socket.emit('chat_chunk', { chunk: '', chatId: finalChatId, isFinal: true });
+    socket.emit('chat_chunk', { chunk: '', chatId, isFinal: true });
     socket.emit('chat_response', { 
       result: cleanText, 
-      chatId: finalChatId, 
+      chatId, 
       message_id: assistantMessageId,
-      tool: finalToolId,
+      tool: toolId,
       generation_time: generationTimeSeconds,
       citations: result.citations || [],
       follow_ups: finalFollowUps || []
     });
 
-    // Broadcast updated stats (including new ai generations count) to active admins in real-time
     import('./admin.js').then(({ broadcastAdminStats }) => {
-      broadcastAdminStats().catch(err => console.error('[Socket] Failed to broadcast admin stats on new message:', err));
-    }).catch(err => console.error('[Socket] Failed to load admin service on new message:', err));
+      broadcastAdminStats().catch(() => {});
+    }).catch(() => {});
 
   } catch (error: any) {
-    // Reset typing state on error
     socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
-
-    let isSystemInactive = false;
-    try {
-      const parsedErr = JSON.parse(error.message);
-      if (parsedErr && parsedErr.type === 'SYSTEM_INACTIVE') {
-        isSystemInactive = true;
-      }
-    } catch (_) {}
-
-    if (isSystemInactive) {
-      console.info(`[ChatService] Service temporarily suspended or inactive tool processed gracefully for user: ${authenticatedUserId}`);
-    } else {
-      console.error('[ChatService] Error:', error);
-    }
-
-    if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
-      pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[ChatService] Placeholder deletion failed:', e));
+    if (assistantMessageId) {
+      pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch(() => {});
     }
     
-    let finalJsonMessage = '';
     try {
-      // Check if it is already a structured JSON error
       const parsed = JSON.parse(error.message);
       if (parsed && (parsed.error || parsed.error_ar)) {
-        finalJsonMessage = error.message;
+        return socket.emit('chat_error', { message: error.message });
       }
     } catch (e) {}
-
-    if (!finalJsonMessage) {
-      let isSystemInactive = false;
-      try {
-        const parsedErr = JSON.parse(error.message);
-        if (parsedErr && parsedErr.type === 'SYSTEM_INACTIVE') {
-          isSystemInactive = true;
-        }
-      } catch (_) {}
-
-      const rawMsg = error.message || 'An unexpected system error occurred. Please try again later.';
-      const rawMsgAr = error.message || 'حدث خطأ غير متوقع في النظام. يرجى المحاولة مرة أخرى لاحقاً.';
-      
-      finalJsonMessage = JSON.stringify({
-        error: rawMsg,
-        error_ar: rawMsgAr,
-        type: isSystemInactive ? 'SYSTEM_INACTIVE' : 'GENERAL_ERROR'
-      });
-    }
-
-    socket.emit('chat_error', { message: finalJsonMessage });
+    
+    socket.emit('chat_error', { message: JSON.stringify({ error: error.message || 'System error', type: 'GENERAL_ERROR' }) });
   }
 }
 

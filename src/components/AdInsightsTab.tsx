@@ -14,7 +14,6 @@ import {
   MessageSquare,
   Share2,
   Zap,
-  ArrowUpRight,
   Target,
   Smartphone,
   DollarSign,

@@ -11,7 +11,6 @@ export function formatActionableSuggestion(suggestion: string): string {
   s = s.replace(/^\s*(?:\d+[\.\)\-:]|\*|-|•|–|—|>|\+)\s*/, '').trim();
 
   // Arabic transformations: Convert assistant question forms into first-person user requests
-  // Complex prefixes: هل ترغب في أن أرفق / أضيف / أشرح / أقدم ...
   s = s.replace(/^هل\s+(?:ترغب|تود|تريد|تفضل)\s+(?:في\s+)?أن\s+(?:أرفق|ارفق)\s+/i, 'أرغب بإرفاق ');
   s = s.replace(/^هل\s+(?:ترغب|تود|تريد|تفضل)\s+(?:في\s+)?أن\s+(?:أضيف|اضيف|أضع|اضع)\s+/i, 'أرغب بإضافة ');
   s = s.replace(/^هل\s+(?:ترغب|تود|تريد|تفضل)\s+(?:في\s+)?أن\s+(?:أشرح|اشرح|أوضح|اوضح)\s+/i, 'أرغب بشرح وتوضيح ');
@@ -118,10 +117,24 @@ export const generateContextualFollowUpsFallback = (
         'أرغب بتطبيق إعدادات إخراجية متقدمة وجودة فائقة'
       ];
     }
+    if (combined.includes('مدينة') || combined.includes('تقع') || combined.includes('أين') || combined.includes('تاريخ') || combined.includes('منطقة') || combined.includes('محافظة') || combined.includes('الخليل') || combined.includes('القدس') || combined.includes('بلدة') || combined.includes('مكان')) {
+      return [
+        'أرغب بمعرفة تاريخ البلدة القديمة وأبرز المعالم الأثرية فيها',
+        'ما هي الأهمية الاقتصادية والتجارية وأبرز الأنشطة في هذه المنطقة؟',
+        'حدثني عن القرى والبلدات المحيطة والخصائص الجغرافية لها'
+      ];
+    }
+    if (combined.includes('ما هو') || combined.includes('من هو') || combined.includes('ما هي') || combined.includes('اشرح') || combined.includes('وضح')) {
+      return [
+        'أرغب بالتعمق أكثر في الأسباب والجذور التاريخية لهذه المسألة',
+        'ما هي أبرز التأثيرات والتداعيات المتعلقة بهذا الموضوع؟',
+        'هل توجد أمثلة عملية أو حالات مشابهة يمكن مقارنتها?'
+      ];
+    }
     return [
-      'أرغب باستكشاف الخطوة العملية التالية وتفاصيلها التنفيذية',
-      'أرغب بالتعمق أكثر في تفاصيل هذه النقطة مع أمثلة وسيناريوهات واقعية',
-      'كيف يمكن تطبيق هذا المفهوم على حالات عملية ومشروعات أخرى؟'
+      'أرغب بمعرفة المزيد من التفاصيل والمعلومات حول هذا الموضوع',
+      'ما هي الأبعاد والنتائج الرئيسية المترتبة على ذلك؟',
+      'هل يمكنك تقديم أمثلة توضيحية أو مقارنات إضافية?'
     ];
   } else {
     if (toolId === 'code' || combined.includes('code') || combined.includes('function') || combined.includes('api') || combined.includes('database') || combined.includes('bug')) {
@@ -138,10 +151,17 @@ export const generateContextualFollowUpsFallback = (
         'Provide a detailed actionable execution roadmap for next phases'
       ];
     }
+    if (combined.includes('city') || combined.includes('located') || combined.includes('history') || combined.includes('where') || combined.includes('region')) {
+      return [
+        'I want to explore the history of the old town and key landmarks',
+        'What is the economic and commercial significance of this region?',
+        'Tell me about the surrounding towns and geographical features'
+      ];
+    }
     return [
-      'I want to explore the recommended actionable next steps in detail',
-      'Elaborate further on this aspect with practical real-world examples',
-      'How can this approach be tailored to specific constraints and edge cases?'
+      'I want to explore more details and background information on this topic',
+      'What are the key implications and outcomes related to this?',
+      'Can you provide illustrative examples or further comparisons?'
     ];
   }
 };

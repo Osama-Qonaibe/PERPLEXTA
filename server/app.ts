@@ -14,9 +14,9 @@ import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 import wellKnownRouter from './routes/well-known.js';
 
-import { pool, ledgerPool, externalPool, securityPool, getPoolMetrics } from './db/index.js';
+import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getPoolMetrics } from './db/index.js';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
-import { getCachedRouteSeo, getCachedAllActiveRouteSeo } from './db/queries.js';
+import { getCachedRouteSeo, getCachedAllActiveRouteSeo, getCachedRouteSeoMetadata } from './db/queries.js';
 
 const app = express();
 
@@ -403,9 +403,9 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
 
     if (!isPublic) {
       const pattern = `%${cleanName}%`;
+      const blogCheck = await getExternalPool().query(`SELECT EXISTS(SELECT 1 FROM blog_articles WHERE image_url LIKE $1) AS is_public`, [pattern]).catch(() => ({ rows: [{ is_public: false }] }));
       const combinedCheck = await pool.query(`
         SELECT (
-          EXISTS(SELECT 1 FROM blog_articles WHERE image_url LIKE $1) OR
           EXISTS(SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1) OR
           EXISTS(SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1) OR
           EXISTS(SELECT 1 FROM advertisements WHERE image_url LIKE $1) OR
@@ -415,7 +415,7 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
         ) AS is_public
       `, [pattern]);
 
-      if (combinedCheck.rows[0]?.is_public) {
+      if (blogCheck.rows[0]?.is_public || combinedCheck.rows[0]?.is_public) {
         isPublic = true;
       } else {
       }
@@ -844,6 +844,30 @@ app.use('/api/share-snapshot', shareRoutes);
 app.use('/api/gifts', giftsRoutes);
 app.use('/api/google-integrations', googleIntegrationsRoutes);
 
+app.post('/api/activity/log', async (req, res) => {
+  try {
+    if (!pool) return res.status(503).json({ error: 'Database offline' });
+    const { eventType, eventDetails, userId } = req.body;
+    if (!eventType) {
+      return res.status(400).json({ error: 'eventType is required' });
+    }
+
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || null;
+    const userAgent = req.headers['user-agent'] || null;
+
+    await pool.query(
+      `INSERT INTO user_activity_logs (user_id, event_type, event_details, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [userId || null, eventType, JSON.stringify(eventDetails || {}), ipAddress, userAgent]
+    );
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[ActivityLog] Error saving activity log:', err);
+    res.status(500).json({ error: 'Failed to log activity' });
+  }
+});
+
 app.get('/api/seo-routes', async (req, res) => {
   try {
     if (!pool) return res.json([]);
@@ -887,7 +911,7 @@ app.get('/sitemap.xml', async (req, res) => {
     let dynamicUrls: any[] = [];
     if (pool) {
       try {
-        const blogRes = await pool.query('SELECT slug, updated_at FROM blog_articles ORDER BY id DESC LIMIT 100');
+        const blogRes = await getExternalPool().query('SELECT slug, updated_at FROM blog_articles ORDER BY id DESC LIMIT 100');
         blogRes.rows.forEach((b: any) => {
           dynamicUrls.push({
             url: `/blog/${b.slug}`,
@@ -1038,6 +1062,38 @@ async function injectSEOTags(
     }
   };
 
+  /** Helper to find category-based Open Graph image across asset metadata and route seo settings */
+  const getCategoryOgImage = async (categoryName: string): Promise<string | null> => {
+    if (!categoryName || !pool) return null;
+    try {
+      const assetRes = await pool.query(
+        'SELECT file_url FROM asset_metadata WHERE asset_name ILIKE $1 OR keywords_ar ILIKE $1 OR keywords_en ILIKE $1 LIMIT 1',
+        [`%${categoryName}%`]
+      );
+      if (assetRes.rows.length > 0 && assetRes.rows[0].file_url) {
+        return assetRes.rows[0].file_url;
+      }
+      const routeRes = await pool.query(
+        'SELECT og_image_url FROM route_seo_settings WHERE (route ILIKE $1 OR title_ar ILIKE $1 OR title_en ILIKE $1) AND og_image_url IS NOT NULL LIMIT 1',
+        [`%${categoryName}%`]
+      );
+      if (routeRes.rows.length > 0 && routeRes.rows[0].og_image_url) {
+        return routeRes.rows[0].og_image_url;
+      }
+      // Also check articles or items in this category for a representative image
+      const artCatRes = await getExternalPool().query(
+        'SELECT image_url FROM blog_articles WHERE category_en ILIKE $1 OR category_ar ILIKE $1 AND image_url IS NOT NULL ORDER BY id DESC LIMIT 1',
+        [`%${categoryName}%`]
+      );
+      if (artCatRes.rows.length > 0 && artCatRes.rows[0].image_url) {
+        return artCatRes.rows[0].image_url;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  };
+
   imageUrl = validateImageUrl(imageUrl);
 
   const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
@@ -1046,6 +1102,14 @@ async function injectSEOTags(
 
   if (pool) {
     try {
+      const routeMetadata = await getCachedRouteSeoMetadata(normalizedPath);
+      if (routeMetadata) {
+        isRouteSeoActive = true;
+        if (preferredLang === 'ar' ? routeMetadata.title_ar : routeMetadata.title_en) currentTitle = (preferredLang === 'ar' ? routeMetadata.title_ar : routeMetadata.title_en);
+        if (preferredLang === 'ar' ? routeMetadata.description_ar : routeMetadata.description_en) currentDesc = (preferredLang === 'ar' ? routeMetadata.description_ar : routeMetadata.description_en);
+        if (routeMetadata.og_image_url) imageUrl = validateImageUrl(routeMetadata.og_image_url);
+      }
+
       const routeMeta = await getCachedRouteSeo(normalizedPath);
       if (routeMeta) {
         isRouteSeoActive = true;
@@ -1069,12 +1133,23 @@ async function injectSEOTags(
   }
 
   const queryParam = (req.query.search || req.query.q || req.query.query || '').toString().trim();
+  const categoryParam = (req.query.category || req.query.cat || '').toString().trim();
+
+  if (categoryParam) {
+    const catOg = await getCategoryOgImage(categoryParam);
+    if (catOg) {
+      imageUrl = validateImageUrl(catOg);
+    }
+    currentTitle = preferredLang === 'ar'
+      ? `تصنيف: ${categoryParam} - ${defaultSiteName}`
+      : `Category: ${categoryParam} - ${defaultSiteName}`;
+  }
 
   if (queryParam) {
     if (normalizedPath.startsWith('/blog')) {
       try {
-        const searchRes = await pool.query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+        const searchRes = await getExternalPool().query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 OR category_en ILIKE $1 OR category_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
           [`%${queryParam}%`]
         );
         if (searchRes.rows.length > 0) {
@@ -1087,8 +1162,11 @@ async function injectSEOTags(
           cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
-          if (article.image_url) {
-            imageUrl = validateImageUrl(article.image_url);
+          const artCat = preferredLang === 'ar' ? article.category_ar : article.category_en;
+          const catImg = artCat ? await getCategoryOgImage(artCat) : null;
+          const targetImg = catImg || article.image_url;
+          if (targetImg) {
+            imageUrl = validateImageUrl(targetImg);
           }
         } else {
           currentTitle = preferredLang === 'ar' 
@@ -1104,7 +1182,7 @@ async function injectSEOTags(
     } else if (normalizedPath.startsWith('/marketplace')) {
       try {
         const searchRes = await pool.query(
-          'SELECT title_en, title_ar, description_en, description_ar, image_url FROM marketplace_items WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR description_en ILIKE $1 OR description_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+          'SELECT title_en, title_ar, description_en, description_ar, image_url, category_en, category_ar FROM marketplace_items WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR description_en ILIKE $1 OR description_ar ILIKE $1 OR category_en ILIKE $1 OR category_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
           [`%${queryParam}%`]
         );
         if (searchRes.rows.length > 0) {
@@ -1117,8 +1195,11 @@ async function injectSEOTags(
           cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
-          if (item.image_url) {
-            imageUrl = validateImageUrl(item.image_url);
+          const itemCat = preferredLang === 'ar' ? item.category_ar : item.category_en;
+          const catImg = itemCat ? await getCategoryOgImage(itemCat) : null;
+          const targetImg = catImg || item.image_url;
+          if (targetImg) {
+            imageUrl = validateImageUrl(targetImg);
           }
         } else {
           currentTitle = preferredLang === 'ar' 
@@ -1133,8 +1214,8 @@ async function injectSEOTags(
       }
     } else {
       try {
-        const blogRes = await pool.query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
+        const blogRes = await getExternalPool().query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
           [`%${queryParam}%`]
         );
         if (blogRes.rows.length > 0) {
@@ -1147,8 +1228,11 @@ async function injectSEOTags(
           cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
-          if (article.image_url) {
-            imageUrl = validateImageUrl(article.image_url);
+          const artCat = preferredLang === 'ar' ? article.category_ar : article.category_en;
+          const catImg = artCat ? await getCategoryOgImage(artCat) : null;
+          const targetImg = catImg || article.image_url;
+          if (targetImg) {
+            imageUrl = validateImageUrl(targetImg);
           }
         } else {
           currentTitle = preferredLang === 'ar' 
@@ -1183,8 +1267,8 @@ async function injectSEOTags(
     const slug = normalizedPath.split('/blog/')[1];
     if (slug) {
       try {
-        const blogRes = await pool.query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url FROM blog_articles WHERE slug = $1',
+        const blogRes = await getExternalPool().query(
+          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar FROM blog_articles WHERE slug = $1',
           [slug]
         );
         if (blogRes.rows.length > 0) {
@@ -1207,7 +1291,9 @@ async function injectSEOTags(
             currentKeywords = customKeywords;
           }
 
-          const targetImg = article.og_image_url || article.image_url;
+          const articleCategory = preferredLang === 'ar' ? article.category_ar : article.category_en;
+          const categoryOg = articleCategory ? await getCategoryOgImage(articleCategory) : null;
+          const targetImg = article.og_image_url || categoryOg || article.image_url;
           if (targetImg) {
             imageUrl = validateImageUrl(targetImg);
           }
@@ -1222,7 +1308,7 @@ async function injectSEOTags(
     if (itemParam) {
       try {
         const marketRes = await pool.query(
-          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url FROM marketplace_items WHERE id = $1 OR slug = $2',
+          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar FROM marketplace_items WHERE id = $1 OR slug = $2',
           [isNaN(itemId) ? -1 : itemId, itemParam]
         );
         if (marketRes.rows.length > 0) {
@@ -1245,7 +1331,9 @@ async function injectSEOTags(
             currentKeywords = customKeywords;
           }
 
-          const targetImg = item.og_image_url || item.image_url || item.preview_url;
+          const itemCategory = preferredLang === 'ar' ? item.category_ar : item.category_en;
+          const categoryOg = itemCategory ? await getCategoryOgImage(itemCategory) : null;
+          const targetImg = item.og_image_url || categoryOg || item.image_url || item.preview_url;
           if (targetImg) {
             imageUrl = validateImageUrl(targetImg);
           }

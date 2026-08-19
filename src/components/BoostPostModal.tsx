@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ShieldCheck,
   TrendingUp,
   Globe
 } from 'lucide-react';

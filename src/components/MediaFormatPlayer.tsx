@@ -7,9 +7,7 @@ import {
   Maximize2,
   Minimize2,
   Crop,
-  Layers,
   Sparkles,
-  ExternalLink,
   Film,
   RotateCcw
 } from 'lucide-react';

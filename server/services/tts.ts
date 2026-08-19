@@ -1,11 +1,8 @@
 import { getProviderKey } from './ai.js';
 
-export async function perplextaTTS(text: string, voiceId: string = 'standard', modelId: string = 'eleven_multilingual_v2') {
-  let apiKey = await getProviderKey('elevenlabs');
-  if (!apiKey) {
-    apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
-  }
-  if (!apiKey) throw new Error('ElevenLabs API Key is missing.');
+export async function perplextaTTS(text: string, voiceId: string, modelId: string, providerId: string) {
+  const apiKey = await getProviderKey(providerId);
+  if (!apiKey) throw new Error(`TTS Orchestrator: API Key for provider '${providerId}' is missing from the vault.`);
 
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
   

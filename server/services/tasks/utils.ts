@@ -1,7 +1,7 @@
 import { decrementUserUsage } from '../quota.js';
 import { getEconomySettings } from '../wallet.js';
 
-export const AI_CALL_TIMEOUT_MS = 90000;
+export const AI_CALL_TIMEOUT_MS = 45000;
 export const TTS_TIMEOUT_MS = 30000;
 export const STT_TIMEOUT_MS = 45000;
 export const IMG_TIMEOUT_MS = 120000;

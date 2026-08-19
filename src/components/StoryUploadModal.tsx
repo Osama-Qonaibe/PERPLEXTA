@@ -6,15 +6,11 @@ import {
   Image as ImageIcon,
   Video as VideoIcon,
   Play,
-  Pause,
   Clock,
   Sparkles,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   Send,
-  User,
-  Store
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 

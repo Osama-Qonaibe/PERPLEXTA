@@ -6,8 +6,8 @@ import {
   Wallet, ArrowUpCircle, 
   ArrowDownCircle, History, CreditCard,
   CheckCircle2, Clock, AlertCircle,
-  Plus, Copy, ExternalLink, Check, ShieldCheck,
-  Smartphone, Building, Mail, Globe, Save, Loader2,
+  Plus, Copy, Check, ShieldCheck,
+  Smartphone, Building, Globe, Loader2,
   Lock, Send, Info, Paperclip, Trash2, Sparkles
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';

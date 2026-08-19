@@ -1,4 +1,5 @@
-import { pool, externalPool } from '../db/index.js';
+import { pool, externalPool, getExternalPool } from '../db/index.js';
+import { getCachedOrchestratorConfig } from '../db/queries.js';
 
 export function slugify(text: string): string {
   if (!text || typeof text !== 'string') return '';
@@ -152,32 +153,55 @@ Generate JSON with:
 5. keywords_en: 8-10 high-performing comma-separated keywords in English optimized with content similarity and trending search data
 6. keywords_ar: 8-10 high-performing comma-separated keywords in Arabic optimized with content similarity and trending search data`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            meta_title_en: { type: Type.STRING },
-            meta_title_ar: { type: Type.STRING },
-            meta_description_en: { type: Type.STRING },
-            meta_description_ar: { type: Type.STRING },
-            keywords_en: { type: Type.STRING },
-            keywords_ar: { type: Type.STRING },
-          },
-          required: [
-            'meta_title_en',
-            'meta_title_ar',
-            'meta_description_en',
-            'meta_description_ar',
-            'keywords_en',
-            'keywords_ar',
-          ],
-        },
-      },
-    });
+    const orchestrator = await getCachedOrchestratorConfig('perplexta_analysis');
+    const modelChain = [
+      orchestrator?.primary_model,
+      orchestrator?.fallback_1_model,
+      orchestrator?.fallback_2_model,
+      orchestrator?.fallback_3_model
+    ].filter(Boolean) as string[];
+
+    let response: any;
+    let lastError: any;
+
+    for (const model of modelChain) {
+        try {
+            response = await ai.models.generateContent({
+                model: model,
+                contents: prompt,
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            meta_title_en: { type: Type.STRING },
+                            meta_title_ar: { type: Type.STRING },
+                            meta_description_en: { type: Type.STRING },
+                            meta_description_ar: { type: Type.STRING },
+                            keywords_en: { type: Type.STRING },
+                            keywords_ar: { type: Type.STRING },
+                        },
+                        required: [
+                            'meta_title_en',
+                            'meta_title_ar',
+                            'meta_description_en',
+                            'meta_description_ar',
+                            'keywords_en',
+                            'keywords_ar',
+                        ],
+                    },
+                },
+            });
+            break;
+        } catch (err: any) {
+            console.warn(`[SEOSync] AI SEO generation failed for model ${model}:`, err.message || err);
+            lastError = err;
+        }
+    }
+
+    if (!response) {
+        throw lastError || new Error("Failed to generate SEO content with all available models");
+    }
 
     if (response && response.text) {
       const parsed = JSON.parse(response.text.trim());
@@ -200,7 +224,7 @@ async function ensureTableColumns(client: any, tableName: string, columns: Recor
 }
 
 export async function syncBlogArticlesMetadata() {
-  const db = externalPool || pool;
+  const db = getExternalPool();
   if (!db) {
     console.error('[SEOSync] Core/External Database pool is not initialized');
     return { totalChecked: 0, updatedCount: 0, updatedIds: [], message: 'Database not connected' };
@@ -313,7 +337,7 @@ export async function syncBlogArticlesMetadata() {
     }
 
     if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = image_url && image_url.trim() ? image_url.trim() : '/app-assets/og-image.jpg';
+      og_image_url = image_url && image_url.trim() ? image_url.trim() : '/app-assets/og-image.png';
       needsUpdate = true;
     }
 
@@ -474,7 +498,7 @@ export async function syncMarketplaceItemsMetadata() {
     if (!og_image_url || !og_image_url.trim()) {
       og_image_url = (image_url && image_url.trim())
         ? image_url.trim()
-        : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.jpg');
+        : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.png');
       needsUpdate = true;
     }
 
@@ -609,7 +633,7 @@ export async function syncBulletinAdsMetadata() {
     }
 
     if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = '/app-assets/og-image.jpg';
+      og_image_url = '/app-assets/og-image.png';
       needsUpdate = true;
     }
 
@@ -643,7 +667,7 @@ export async function syncBulletinAdsMetadata() {
 
 export async function auditContentSeoItems() {
   const db = pool;
-  const extDb = externalPool || pool;
+  const extDb = getExternalPool();
 
   if (!db) {
     throw new Error('Core database pool is not initialized');
@@ -830,7 +854,7 @@ export async function auditContentSeoItems() {
 }
 
 export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'bulletin', id: number) {
-  const db = type === 'blog' ? (externalPool || pool) : pool;
+  const db = type === 'blog' ? getExternalPool() : pool;
   if (!db) {
     throw new Error('Database pool is not initialized');
   }
@@ -878,7 +902,7 @@ export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'b
   const meta_description_ar = aiData?.meta_description_ar || extractDescription(content_ar || description_ar || title_ar || '');
   const keywords_en = aiData?.keywords_en || extractKeywords(title_en || '', category_en || '', content_en || description_en || '', 'en');
   const keywords_ar = aiData?.keywords_ar || extractKeywords(title_ar || '', category_ar || '', content_ar || description_ar || '', 'ar');
-  const og_image_url = (image_url && image_url.trim()) ? image_url.trim() : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.jpg');
+  const og_image_url = (image_url && image_url.trim()) ? image_url.trim() : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.png');
 
   if (type === 'bulletin') {
     await db.query(
@@ -930,7 +954,7 @@ export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'b
 
 
 export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bulletin', id: number) {
-  const db = type === 'blog' ? (externalPool || pool) : pool;
+  const db = type === 'blog' ? getExternalPool() : pool;
   if (!db) throw new Error('Database is not initialized');
 
   const tableName = type === 'blog' ? 'blog_articles' : type === 'bulletin' ? 'bulletin_ads' : 'marketplace_items';
@@ -980,7 +1004,7 @@ export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bull
   const suggestedKeywordsEn = aiData?.keywords_en || extractKeywords(row.title_en || '', row.category_en || '', row.content_en || row.description_en || '', 'en');
   const suggestedKeywordsAr = aiData?.keywords_ar || extractKeywords(row.title_ar || '', row.category_ar || '', row.content_ar || row.description_ar || '', 'ar');
   const suggestedSlug = row.slug && row.slug.trim() ? row.slug.trim() : `${type}-${row.id}-${slugify(row.title_en || row.title_ar || 'item')}`;
-  const suggestedOgImage = row.og_image_url && row.og_image_url.trim() ? row.og_image_url.trim() : (row.image_url && row.image_url.trim() ? row.image_url.trim() : '/app-assets/og-image.jpg');
+  const suggestedOgImage = row.og_image_url && row.og_image_url.trim() ? row.og_image_url.trim() : (row.image_url && row.image_url.trim() ? row.image_url.trim() : '/app-assets/og-image.png');
 
   return {
     id: row.id,
@@ -1027,7 +1051,7 @@ export async function applySmartSeoSuggestion(
     og_image_url?: string;
   }
 ) {
-  const db = type === 'blog' ? (externalPool || pool) : pool;
+  const db = type === 'blog' ? getExternalPool() : pool;
   if (!db) throw new Error('Database is not initialized');
 
   const tableName = type === 'blog' ? 'blog_articles' : type === 'bulletin' ? 'bulletin_ads' : 'marketplace_items';
@@ -1052,7 +1076,7 @@ export async function applySmartSeoSuggestion(
   const keywords_en = (metadata.keywords_en !== undefined ? metadata.keywords_en : existing.keywords_en) || extractKeywords(itemTitleEn, itemCatEn, '', 'en');
   const keywords_ar = (metadata.keywords_ar !== undefined ? metadata.keywords_ar : existing.keywords_ar) || extractKeywords(itemTitleAr, itemCatAr, '', 'ar');
   const slug = (metadata.slug !== undefined ? metadata.slug : existing.slug) || `${type}-${id}-${slugify(itemTitleEn)}`;
-  const og_image_url = (metadata.og_image_url !== undefined ? metadata.og_image_url : existing.og_image_url) || existing.image_url || '/app-assets/og-image.jpg';
+  const og_image_url = (metadata.og_image_url !== undefined ? metadata.og_image_url : existing.og_image_url) || existing.image_url || '/app-assets/og-image.png';
 
   if (type === 'bulletin') {
       await db.query(

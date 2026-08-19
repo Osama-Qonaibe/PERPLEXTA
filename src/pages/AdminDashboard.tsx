@@ -106,6 +106,7 @@ import {
 import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
 import { NotificationThresholdsModal } from "../components/NotificationThresholdsModal";
 import { validateToolRoutePricing } from "../utils/orchestratorValidator";
+import { SearchableSelect } from "../components/SearchableSelect";
 import { ReferralDashboardView } from "./ReferralDashboardView";
 import { AdsManagementView } from "./AdsManagementView";
 import { UserManagementView } from "./UserManagementView";
@@ -3934,11 +3935,9 @@ const OrchestratorView = ({
   const [tools, setTools] = useState<any[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
 
-  const providerOptions = useMemo(() => {
+  const providerOptionsList = useMemo(() => {
     return [
-      <option key="none" value="">
-        {language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
-      </option>,
+      { value: "", label: language === "ar" ? "اختر مزود الخدمة" : "Select Provider" },
       ...Object.keys(providerModels).map((provider) => {
         const displayNames: Record<string, string> = {
           serper: "Serper (Search)",
@@ -3957,11 +3956,7 @@ const OrchestratorView = ({
           ollama: "Ollama",
         };
         const label = displayNames[provider] || provider;
-        return (
-          <option key={provider} value={provider}>
-            {label}
-          </option>
-        );
+        return { value: provider, label };
       }),
     ];
   }, [language, providerModels]);
@@ -4172,10 +4167,8 @@ const OrchestratorView = ({
     ];
   };
 
-  const renderModelOptions = (providerId: string) => {
+  const getModelOptionsList = (providerId: string, currentVal: string) => {
     const rawModels = providerModels[providerId] || [];
-
-    // Ensure unique models based on their ID/Value
     const seenValues = new Set<string>();
     const models = rawModels.filter((model) => {
       const modelValue =
@@ -4185,22 +4178,18 @@ const OrchestratorView = ({
       return true;
     });
 
-    return [
-      <option key="none" value="">
-        {t("model")}
-      </option>,
-      ...models.map((model, idx) => {
-        const modelValue =
-          typeof model === "string" ? model : model.id || model.name;
-        const modelLabel =
-          typeof model === "string" ? model : model.name || model.id;
-        return (
-          <option key={`${modelValue}-${idx}`} value={modelValue}>
-            {modelLabel}
-          </option>
-        );
-      }),
+    const opts = [
+      { value: "", label: t("model") },
+      ...models.map((model) => {
+        const modelValue = typeof model === "string" ? model : model.id || model.name;
+        const modelLabel = typeof model === "string" ? model : model.name || model.id;
+        return { value: modelValue, label: modelLabel };
+      })
     ];
+    if (currentVal && !opts.find(o => o.value === currentVal)) {
+      opts.push({ value: currentVal, label: `⚠️ ${currentVal} (Not Synced)` });
+    }
+    return opts;
   };
 
   return (
@@ -4388,48 +4377,24 @@ const OrchestratorView = ({
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <select
+                        <SearchableSelect
                           value={tool.primaryProvider || ""}
-                          onChange={(e) => {
-                            handleChange(
-                              tool.id,
-                              "primaryProvider",
-                              e.target.value,
-                            );
+                          onChange={(val) => {
+                            handleChange(tool.id, "primaryProvider", val);
                             handleChange(tool.id, "primaryModel", "");
                           }}
-                          className={`w-full h-10 px-3 rounded-md border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
+                          options={providerOptionsList}
+                          placeholder={language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
                           dir="ltr"
-                        >
-                          {providerOptions}
-                        </select>
-                        <select
+                        />
+                        <SearchableSelect
                           value={tool.primaryModel || ""}
-                          onChange={(e) =>
-                            handleChange(
-                              tool.id,
-                              "primaryModel",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-full h-10 px-3 rounded-md border text-[11px] font-bold focus:outline-none bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
-                          dir="ltr"
+                          onChange={(val) => handleChange(tool.id, "primaryModel", val)}
+                          options={getModelOptionsList(tool.primaryProvider, tool.primaryModel)}
+                          placeholder={t("model")}
                           disabled={!tool.primaryProvider}
-                        >
-                          {renderModelOptions(tool.primaryProvider)}
-                          {tool.primaryModel &&
-                            !renderModelOptions(tool.primaryProvider).some(
-                              (opt: any) =>
-                                opt.props.value === tool.primaryModel,
-                            ) && (
-                              <option
-                                key={`unsynced-primary-${tool.id}`}
-                                value={tool.primaryModel}
-                              >
-                                ⚠️ {tool.primaryModel} (Not Synced)
-                              </option>
-                            )}
-                        </select>
+                          dir="ltr"
+                        />
                       </div>
                     </div>
 
@@ -4443,48 +4408,24 @@ const OrchestratorView = ({
 
                       <div className="space-y-2">
                         <div className="grid grid-cols-2 gap-2">
-                          <select
+                          <SearchableSelect
                             value={tool.fallback1Provider || ""}
-                            onChange={(e) => {
-                              handleChange(
-                                tool.id,
-                                "fallback1Provider",
-                                e.target.value,
-                              );
+                            onChange={(val) => {
+                              handleChange(tool.id, "fallback1Provider", val);
                               handleChange(tool.id, "fallback1Model", "");
                             }}
-                            className="w-full h-9 px-2 rounded-sm border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
+                            options={providerOptionsList}
+                            placeholder={language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
                             dir="ltr"
-                          >
-                            {providerOptions}
-                          </select>
-                          <select
+                          />
+                          <SearchableSelect
                             value={tool.fallback1Model || ""}
-                            onChange={(e) =>
-                              handleChange(
-                                tool.id,
-                                "fallback1Model",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)]"
-                            dir="ltr"
+                            onChange={(val) => handleChange(tool.id, "fallback1Model", val)}
+                            options={getModelOptionsList(tool.fallback1Provider, tool.fallback1Model)}
+                            placeholder={t("model")}
                             disabled={!tool.fallback1Provider}
-                          >
-                            {renderModelOptions(tool.fallback1Provider)}
-                            {tool.fallback1Model &&
-                              !renderModelOptions(tool.fallback1Provider).some(
-                                (opt: any) =>
-                                  opt.props.value === tool.fallback1Model,
-                              ) && (
-                                <option
-                                  key={`unsynced-fallback1-${tool.id}`}
-                                  value={tool.fallback1Model}
-                                >
-                                  ⚠️ {tool.fallback1Model} (Not Synced)
-                                </option>
-                              )}
-                          </select>
+                            dir="ltr"
+                          />
                         </div>
                       </div>
                     </div>
@@ -4493,100 +4434,52 @@ const OrchestratorView = ({
                   <div className="grid grid-cols-1 gap-2 pt-4 border-t border-[var(--border-main)]/30">
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex-1">
-                        <select
+                        <SearchableSelect
                           value={tool.fallback2Provider || ""}
-                          onChange={(e) => {
-                            handleChange(
-                              tool.id,
-                              "fallback2Provider",
-                              e.target.value,
-                            );
+                          onChange={(val) => {
+                            handleChange(tool.id, "fallback2Provider", val);
                             handleChange(tool.id, "fallback2Model", "");
                           }}
-                          className="w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme"
+                          options={providerOptionsList}
+                          placeholder={language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
                           dir="ltr"
-                        >
-                          {providerOptions}
-                        </select>
+                        />
                       </div>
                       <div className="flex-1">
-                        <select
+                        <SearchableSelect
                           value={tool.fallback2Model || ""}
-                          onChange={(e) =>
-                            handleChange(
-                              tool.id,
-                              "fallback2Model",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme ${tool.fallback2Model && !renderModelOptions(tool.fallback2Provider).some((opt: any) => opt.props.value === tool.fallback2Model) ? "border-red-500/50 text-red-400 font-bold" : ""}`}
-                          dir="ltr"
+                          onChange={(val) => handleChange(tool.id, "fallback2Model", val)}
+                          options={getModelOptionsList(tool.fallback2Provider, tool.fallback2Model)}
+                          placeholder={t("model")}
                           disabled={!tool.fallback2Provider}
-                        >
-                          {renderModelOptions(tool.fallback2Provider)}
-                          {tool.fallback2Model &&
-                            !renderModelOptions(tool.fallback2Provider).some(
-                              (opt: any) =>
-                                opt.props.value === tool.fallback2Model,
-                            ) && (
-                              <option
-                                key={`unsynced-f2-${tool.id}`}
-                                value={tool.fallback2Model}
-                              >
-                                ⚠️ {tool.fallback2Model} (Not Synced)
-                              </option>
-                            )}
-                        </select>
+                          dir="ltr"
+                        />
                       </div>
                     </div>
 
                     {/* Fallback 3 */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex-1">
-                        <select
+                        <SearchableSelect
                           value={tool.fallback3Provider || ""}
-                          onChange={(e) => {
-                            handleChange(
-                              tool.id,
-                              "fallback3Provider",
-                              e.target.value,
-                            );
+                          onChange={(val) => {
+                            handleChange(tool.id, "fallback3Provider", val);
                             handleChange(tool.id, "fallback3Model", "");
                           }}
-                          className="w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme"
+                          options={providerOptionsList}
+                          placeholder={language === "ar" ? "اختر مزود الخدمة" : "Select Provider"}
                           dir="ltr"
-                        >
-                          {providerOptions}
-                        </select>
+                        />
                       </div>
                       <div className="flex-1">
-                        <select
+                        <SearchableSelect
                           value={tool.fallback3Model || ""}
-                          onChange={(e) =>
-                            handleChange(
-                              tool.id,
-                              "fallback3Model",
-                              e.target.value,
-                            )
-                          }
-                          className={`w-full h-9 px-2 rounded-md border text-[10px] bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none transition-theme ${tool.fallback3Model && !renderModelOptions(tool.fallback3Provider).some((opt: any) => opt.props.value === tool.fallback3Model) ? "border-red-500/50 text-red-400 font-bold" : ""}`}
-                          dir="ltr"
+                          onChange={(val) => handleChange(tool.id, "fallback3Model", val)}
+                          options={getModelOptionsList(tool.fallback3Provider, tool.fallback3Model)}
+                          placeholder={t("model")}
                           disabled={!tool.fallback3Provider}
-                        >
-                          {renderModelOptions(tool.fallback3Provider)}
-                          {tool.fallback3Model &&
-                            !renderModelOptions(tool.fallback3Provider).some(
-                              (opt: any) =>
-                                opt.props.value === tool.fallback3Model,
-                            ) && (
-                              <option
-                                key={`unsynced-f3-${tool.id}`}
-                                value={tool.fallback3Model}
-                              >
-                                ⚠️ {tool.fallback3Model} (Not Synced)
-                              </option>
-                            )}
-                        </select>
+                          dir="ltr"
+                        />
                       </div>
                     </div>
                   </div>
@@ -4653,6 +4546,35 @@ const FinanceVaultView = ({
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [rejectionReasons, setRejectionReasons] = useState<{ [key: string]: string }>({});
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [isReconciling, setIsReconciling] = useState(false);
+
+  const handleReconcileAll = async () => {
+    if (!token) return;
+    setIsReconciling(true);
+    try {
+      const res = await fetch("/api/admin/finance/reconcile-all", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const { audited, discrepancies } = data.report || { audited: 0, discrepancies: 0 };
+        showToast(
+          language === "ar"
+            ? `تم تدقيق ومطابقة الخزنة (${audited} محفظة، ${discrepancies} فروقات)`
+            : `Ledger reconciliation complete (${audited} wallets, ${discrepancies} discrepancies)`,
+          discrepancies > 0 ? "warning" : "success"
+        );
+        fetchFinancialRequests();
+      } else {
+        showToast(language === "ar" ? "فشل تدقيق الخزنة" : "Reconciliation failed", "error");
+      }
+    } catch {
+      showToast(language === "ar" ? "خطأ في الشبكة" : "Network error", "error");
+    } finally {
+      setIsReconciling(false);
+    }
+  };
 
   const fetchFinancialRequests = async () => {
     if (!token) return;
@@ -5338,16 +5260,27 @@ const FinanceVaultView = ({
 
         {activeTab === "ledger" && (
           <div className="space-y-6 font-sans">
-            <div className="flex items-center gap-2 mb-6">
-              <Landmark className="text-accent " size={24} />
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {language === "ar" ? "دفتر الحسابات وجميع المعاملات المالية" : "System Registry & General Ledger"}
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {language === "ar" ? "قائمة تدقيق شاملة لكل تدفقات الخزنة والائتمانات اللحظية." : "Comprehensive system record auditing all active credits, debits and payouts."}
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-2">
+                <Landmark className="text-accent" size={24} />
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {language === "ar" ? "دفتر الحسابات وجميع المعاملات المالية" : "System Registry & General Ledger"}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {language === "ar" ? "قائمة تدقيق شاملة لكل تدفقات الخزنة والائتمانات اللحظية." : "Comprehensive system record auditing all active credits, debits and payouts."}
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={handleReconcileAll}
+                disabled={isReconciling}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-theme shadow-sm self-start sm:self-auto"
+              >
+                <RefreshCw size={14} className={isReconciling ? "animate-spin" : ""} />
+                <span>{isReconciling ? (language === "ar" ? "جاري التدقيق والمطابقة..." : "Reconciling...") : (language === "ar" ? "تدقيق ومطابقة الخزنة" : "Audit & Reconcile Vault")}</span>
+              </button>
             </div>
 
             {isLoadingRequests ? (
@@ -15915,30 +15848,30 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <AnimatePresence>
-        {toast && (
+        {(toast as any) && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              toast.type === "success"
+              (toast as any).type === "success"
                 ? "bg-accent/10 border-accent/20 text-accent"
-                : toast.type === "error"
+                : (toast as any).type === "error"
                   ? "bg-red-500/10 border-red-500/20 text-red-500"
                   : "bg-blue-500/10 border-blue-500/20 text-blue-500"
             }`}
             style={{
               boxShadow:
-                toast.type === "success"
+                (toast as any).type === "success"
                   ? "0 10px 30px rgba(156,163,175,0.15)"
                   : "0 10px 30px rgba(239,68,68,0.15)",
             }}
           >
             <span
-              className={`w-2 h-2 rounded-full ${toast.type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
+              className={`w-2 h-2 rounded-full ${(toast as any).type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
             />
             <span className="font-bold text-sm tracking-tight">
-              {toast.message}
+              {(toast as any).message}
             </span>
           </motion.div>
         )}

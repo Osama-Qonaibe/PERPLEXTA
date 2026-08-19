@@ -11,6 +11,7 @@ import { invalidateStripeClient } from '../services/payments.js';
 import { sendEmail } from '../services/email.js';
 import { createNotification, logSystemActivity } from '../services/notifications.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
+import { reconcileAllWallets } from '../services/wallet.js';
 import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic, getMissingAssetReport } from '../services/system.js';
 import { syncAllContentSeoMetadata, auditContentSeoItems, syncSingleContentSeoItem, getSmartSeoSuggestion, applySmartSeoSuggestion } from '../services/seoSync.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
@@ -513,6 +514,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
       INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type]);
+    invalidatePlansCache();
     await auditLog((req as any).user?.id, 'Create Plan', 'system', { name_en });
     res.json({ success: true });
   } catch (err) {
@@ -532,6 +534,7 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
         color = $11, features = $12, limits = $13, plan_type = $14, updated_at = CURRENT_TIMESTAMP
       WHERE id = $15
     `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type, id]);
+    invalidatePlansCache();
     await auditLog((req as any).user?.id, 'Update Plan', 'system', { id, name_en });
     res.json({ success: true });
   } catch (err) {
@@ -544,6 +547,7 @@ router.delete("/plans/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM plans WHERE id = $1', [id]);
+    invalidatePlansCache();
     await auditLog((req as any).user?.id, 'Delete Plan', 'system', { id });
     res.json({ success: true });
   } catch {
@@ -2280,6 +2284,16 @@ router.post("/reconcile-wallet/:id", authenticateAdmin, async (req, res) => {
     res.json({ success: true, new_balance: correctBalance });
   } catch (error) {
     res.status(500).json({ error: 'Reconciliation failed' });
+  }
+});
+
+router.post("/finance/reconcile-all", authenticateAdmin, async (req, res) => {
+  try {
+    const report = await reconcileAllWallets();
+    await auditLog((req as any).user?.id, 'Reconcile All Wallets', 'finance', report);
+    res.json({ success: true, report });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Reconciliation failed' });
   }
 });
 

@@ -1,21 +1,25 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useNotification, toast as globalToast } from '../context/NotificationContext';
 
 export interface ToastState {
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
 }
 
-export const useToast = (duration = 3000) => {
-  const [toast, setToast] = useState<ToastState | null>(null);
+export const useToast = (duration = 4500) => {
+  const { showNotification, dismissNotification } = useNotification();
 
   const showToast = useCallback((message: string, type: ToastState['type'] = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), duration);
-  }, [duration]);
+    return showNotification({ message, type, duration });
+  }, [showNotification, duration]);
 
-  const hideToast = useCallback(() => {
-    setToast(null);
-  }, []);
+  const hideToast = useCallback((id?: string) => {
+    if (id) {
+      dismissNotification(id);
+    } else {
+      globalToast.dismiss();
+    }
+  }, [dismissNotification]);
 
-  return { toast, showToast, hideToast };
+  return { toast: null, showToast, hideToast };
 };

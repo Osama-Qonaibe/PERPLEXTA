@@ -11,7 +11,7 @@ import { SIDEBAR_TRANSITION } from '../constants/motions';
 export const MainLayout: React.FC = () => {
   const { isSidebarOpen, setIsSidebarOpen, language, isMobile, resolvedTheme, themeTransitioning } = useAppContext();
 
-  const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 80);
+  const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 56);
 
   const onPanEnd = (_: any, info: any) => {
     if (!isMobile) return;
@@ -42,7 +42,7 @@ export const MainLayout: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={SIDEBAR_TRANSITION}
-            className="fixed top-[72px] bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
+            className="fixed top-[64px] bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -53,10 +53,10 @@ export const MainLayout: React.FC = () => {
         animate={{ paddingInlineStart: sidebarWidth }}
         transition={SIDEBAR_TRANSITION}
         className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden pb-safe"
-        style={{ paddingInlineStart: sidebarWidth, willChange: 'padding-inline-start' }}
+        style={{ willChange: 'padding-inline-start' }}
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
-        <main className="flex-1 overflow-hidden relative pt-[72px] bg-[var(--bg-base)] transition-theme flex">
+        <main className="flex-1 overflow-hidden relative pt-[64px] bg-[var(--bg-base)] transition-theme flex">
           <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0 touch-pan-y overscroll-y-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Outlet />
           </div>

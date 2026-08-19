@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
+import { ContentContainer } from '../components/ContentContainer';
 
 export const Privacy: React.FC = () => {
   const { language, dir } = useAppContext();
@@ -138,15 +139,15 @@ export const Privacy: React.FC = () => {
   ];
 
   return (
-    <motion.div 
+    <ContentContainer 
       initial="initial"
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="max-w-5xl mx-auto px-6 sm:px-8 pb-32 overflow-y-auto h-full custom-scrollbar"
+      className="pb-32 overflow-y-auto h-full custom-scrollbar"
     >
       {/* Sticky Header */}
-      <div className="sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-4 mb-10 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between">
+      <div className="sticky -top-0.5 z-20 -mx-4 md:-mx-8 px-4 md:px-8 py-4 mb-10 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -364,6 +365,6 @@ export const Privacy: React.FC = () => {
           </div>
         </footer>
       </div>
-    </motion.div>
+    </ContentContainer>
   );
 };

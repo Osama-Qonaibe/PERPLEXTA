@@ -13,16 +13,10 @@ import {
   Sparkles,
   RefreshCw,
   Award,
-  ChevronRight,
-  ArrowUpRight,
   Zap,
-  Globe,
   PieChart as PieIcon,
-  Filter,
   CheckCircle2,
-  Clock,
-  ThumbsUp,
-  Share2
+  ThumbsUp
 } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
 import {

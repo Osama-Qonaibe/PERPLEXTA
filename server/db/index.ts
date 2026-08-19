@@ -93,6 +93,19 @@ function validateDatabaseUrl(url: any, name: string) {
   }
 }
 
+/** Normalize database URL to ensure sslmode=verify-full and strip unsupported params */
+export function normalizeDatabaseUrl(url: string): string {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('sslmode', 'verify-full');
+    u.searchParams.delete('channel_binding');
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) {
   return {
     ssl: getSslConfig(),
@@ -233,20 +246,25 @@ export async function initializePerplextaPools(
     const ssl = getSslConfig(); // single call, used for all pools below
 
     try {
+      const normCoreUrl     = normalizeDatabaseUrl(coreUrl);
+      const normLedgerUrl   = normalizeDatabaseUrl(finalLedgerUrl);
+      const normExternalUrl = normalizeDatabaseUrl(finalExternalUrl);
+      const normSecurityUrl = normalizeDatabaseUrl(finalSecurityUrl);
+
       pool = patchPoolQuery(new Pool({
-        connectionString: coreUrl,
+        connectionString: normCoreUrl,
         ...getBasePoolConfig(finalCoreMax, 10000),
       }));
-      ledgerPool = finalLedgerUrl === coreUrl ? pool : patchPoolQuery(new Pool({
-        connectionString: finalLedgerUrl,
+      ledgerPool = normLedgerUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
+        connectionString: normLedgerUrl,
         ...getBasePoolConfig(finalLedgerMax, 5000),
       }));
-      externalPool = finalExternalUrl === coreUrl ? pool : patchPoolQuery(new Pool({
-        connectionString: finalExternalUrl,
+      externalPool = normExternalUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
+        connectionString: normExternalUrl,
         ...getBasePoolConfig(finalExternalMax, 5000),
       }));
-      securityPool = finalSecurityUrl === coreUrl ? pool : patchPoolQuery(new Pool({
-        connectionString: finalSecurityUrl,
+      securityPool = normSecurityUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
+        connectionString: normSecurityUrl,
         ...getBasePoolConfig(finalSecurityMax, 5000),
       }));
 
@@ -484,7 +502,7 @@ export async function synchronizePerplextaPoolsFromRegistry() {
           if (attempt === retries || isFatal) {
             console.warn(`[DB] Registry ${id} DB check failed${isFatal ? ' (fatal)' : ` after ${retries} attempts`}: ${e.message}. Falling back to Core.`);
             try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = $1", [id]);
+              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down', connection_string = NULL, host = NULL WHERE id = $1", [id]);
             } catch {}
             return coreUrl;
           }

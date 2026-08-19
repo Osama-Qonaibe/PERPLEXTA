@@ -25,7 +25,7 @@ export const RecommendationPreferencesModal: React.FC<RecommendationPreferencesM
   onClose,
   onSaved
 }) => {
-  const { language, dir, token } = useAppContext();
+  const { language, token } = useAppContext();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(5000);

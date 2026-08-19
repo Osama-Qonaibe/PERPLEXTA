@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { getCSPNonce, applyNonce } from '../utils/csp';
+import { applyNonce } from '../utils/csp';
 
 
 /**
@@ -25,8 +25,6 @@ export const GoogleAnalytics = () => {
 
   useEffect(() => {
     if (gaId) {
-      const nonce = getCSPNonce();
-
       let script1 = document.getElementById('ga-gtag-script') as HTMLScriptElement;
       if (!script1) {
         script1 = document.createElement('script');

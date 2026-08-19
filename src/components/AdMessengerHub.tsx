@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   Lock,
   Send,
-  Image as 
   X,
   Loader2,
   Check,
@@ -13,14 +11,8 @@ import {
   Search,
   ArrowRight,
   ArrowLeft,
-  Trash2,
-  Ban,
   User,
-  Paperclip,
-  Phone,
-  ExternalLink,
-  Sparkles,
-  Info
+  Paperclip
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -47,7 +39,7 @@ interface AdMessengerHubProps {
 }
 
 export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRefresh, isRtl }) => {
-  const { user, token, socket, language } = useAppContext();
+  const { user, token, socket } = useAppContext();
   const [selectedThread, setSelectedThread] = useState<MessengerThread | null>(inquiries[0] || null);
   const [searchTerm, setSearchTerm] = useState('');
   const [messages, setMessages] = useState<any[]>([]);

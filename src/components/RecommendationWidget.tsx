@@ -13,8 +13,7 @@ import {
   X, 
   Tag, 
   ChevronRight,
-  MapPin,
-  Building2
+  MapPin
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';

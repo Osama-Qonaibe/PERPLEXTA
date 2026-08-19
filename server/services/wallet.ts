@@ -556,3 +556,38 @@ export async function depositToWallet(userId: string | number, amount: number, m
     client.release();
   }
 }
+
+export async function reconcileAllWallets(): Promise<{ audited: number; discrepancies: number; details: any[] }> {
+  if (!ledgerPool) throw new Error('Ledger database not available');
+  const client = await ledgerPool.connect();
+  try {
+    const walletsRes = await client.query('SELECT id, user_id, balance, points FROM wallets');
+    let discrepancies = 0;
+    const details: any[] = [];
+
+    for (const w of walletsRes.rows) {
+      const txSum = await client.query(
+        'SELECT COALESCE(SUM(amount), 0) as calc_balance, COALESCE(SUM(points), 0) as calc_points FROM ledger_transactions WHERE wallet_id = $1 AND status = $2',
+        [w.id, 'success']
+      );
+      const row = txSum.rows[0];
+      const calcBalance = Number(row.calc_balance);
+      const calcPoints = Number(row.calc_points);
+      const curBalance = Number(w.balance);
+      const curPoints = Number(w.points);
+
+      if (Math.abs(calcBalance - curBalance) > 0.01 || calcPoints !== curPoints) {
+        discrepancies++;
+        details.push({
+          wallet_id: w.id,
+          user_id: w.user_id,
+          recorded: { balance: curBalance, points: curPoints },
+          ledger_sum: { balance: calcBalance, points: calcPoints }
+        });
+      }
+    }
+    return { audited: walletsRes.rows.length, discrepancies, details };
+  } finally {
+    client.release();
+  }
+}

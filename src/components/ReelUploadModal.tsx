@@ -15,13 +15,10 @@ import {
   Volume2,
   VolumeX,
   RotateCcw,
-  Film,
   Lock,
   Tag,
   AlignLeft,
-  Smartphone,
   Eye,
-  Check,
   Zap,
   Sliders
 } from 'lucide-react';
@@ -48,7 +45,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(preselectedFile);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
   const [videoDuration, setVideoDuration] = useState<number>(0);
-  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [videoDimensions, setVideoDimensions] = useState<{ width: number; height: number }>({ width: 1080, height: 1920 });
   const [is9to16Compliant, setIs9to16Compliant] = useState<boolean>(true);
 
   // Form fields
@@ -367,7 +364,6 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
                       </div>
                     )}
 
-                    {/* Top Phone Notch Mockup */}
                     <div className="absolute top-2 inset-x-0 z-30 flex justify-center pointer-events-none">
                       <div className="w-20 h-3 bg-zinc-900 rounded-full" />
                     </div>

@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { runSystemMaintenance, monitorDatabases } from '../db/migrations.js';
-import { pool } from '../db/index.js';
+import { pool, getExternalPool } from '../db/index.js';
 import { createNotification } from '../services/notifications.js';
 import { consolidateAllUserMemories } from '../services/memory.js';
 import fs from 'fs/promises';
@@ -308,7 +308,7 @@ export function initCronJobs() {
     console.log('[Cron] 🌐 Checking for newly inserted items to ping search engine sitemaps...');
     try {
       if (pool) {
-        const newBlogs = await pool.query("SELECT id FROM blog_articles WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
+        const newBlogs = await getExternalPool().query("SELECT id FROM blog_articles WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
         const newMarketplace = await pool.query("SELECT id FROM marketplace_items WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
 
         if ((newBlogs.rowCount && newBlogs.rowCount > 0) || (newMarketplace.rowCount && newMarketplace.rowCount > 0)) {
@@ -319,6 +319,18 @@ export function initCronJobs() {
       }
     } catch (err: any) {
       console.error('[Cron] Sitemap pinger failed:', err.message);
+    }
+  });
+
+  cron.schedule('0 4 * * 0', async () => {
+    try {
+      const { reconcileAllWallets } = await import('../services/wallet.js');
+      const report = await reconcileAllWallets();
+      if (report.discrepancies > 0) {
+        console.warn(`[Cron] Ledger reconciliation found ${report.discrepancies} discrepancies across ${report.audited} wallets.`);
+      }
+    } catch (err: any) {
+      console.error('[Cron] Weekly ledger reconciliation failed:', err.message);
     }
   });
 }
