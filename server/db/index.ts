@@ -56,8 +56,24 @@ let lastInitUrls = { core: '', ledger: '', external: '', security: '', coreMax: 
 
 
 export function getSslConfig(urlStr?: string) {
-  // Always force SSL to rejectUnauthorized: false to satisfy both local Neon proxies and remote cloud databases.
-  // The user's specific environment requires this to prevent 'connection is insecure (try using sslmode=require)'
+  const finalUrl = urlStr || process.env.DATABASE_URL || '';
+  if (!finalUrl) {
+    return { rejectUnauthorized: false };
+  }
+  try {
+    const u = new URL(finalUrl);
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+      if (process.env.DB_SSL_REQUIRED === 'true' || u.searchParams.get('sslmode') === 'require') {
+        return { rejectUnauthorized: false };
+      }
+      return undefined; // SSL is disabled for localhost
+    }
+  } catch {
+    // Fallback if URL parsing fails
+  }
+  if (process.env.DB_SSL_REQUIRED === 'false') {
+    return undefined;
+  }
   return { rejectUnauthorized: false };
 }
 
