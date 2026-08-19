@@ -32,7 +32,7 @@ const checkOptionalAuth = (req: express.Request): boolean => {
 
 router.get("/settings", async (req, res) => {
   try {
-    const settings = { ...await getSystemSettings() };
+    const rawSettings = await getSystemSettings(); const settings = { ...(rawSettings || {}) };
 
     const stripeObj = await getStripe().catch(() => null);
     const paypalObj = await getPayPalCredentials().catch(() => null);
@@ -51,7 +51,7 @@ router.get("/settings", async (req, res) => {
       paypal_active: isPaypalActive
     });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Error' });
+    console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });
 
@@ -165,7 +165,7 @@ router.get("/economy", async (req, res) => {
     }
     res.json(economy);
   } catch (error) {
-    res.status(500).json({ error: 'Internal Error' });
+    console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });
 
@@ -348,7 +348,7 @@ router.get("/admin/settings", authenticateAdmin, async (req, res) => {
     const settings = await getSystemSettings();
     res.json(settings);
   } catch (error) {
-    res.status(500).json({ error: 'Internal Error' });
+    console.error('Settings Error:', error); res.status(500).json({ error: 'Internal Error', msg: error.message });
   }
 });
 

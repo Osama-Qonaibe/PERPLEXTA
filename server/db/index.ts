@@ -55,10 +55,10 @@ let poolInitPromise: Promise<void> | null = null;
 let lastInitUrls = { core: '', ledger: '', external: '', security: '', coreMax: 0, ledgerMax: 0, externalMax: 0, securityMax: 0 };
 
 
-export function getSslConfig() {
-  return process.env.NODE_ENV === 'production' && process.env.DB_SSL_REQUIRED !== 'false'
-    ? { rejectUnauthorized: false }
-    : undefined;
+export function getSslConfig(urlStr?: string) {
+  // Always force SSL to rejectUnauthorized: false to satisfy both local Neon proxies and remote cloud databases.
+  // The user's specific environment requires this to prevent 'connection is insecure (try using sslmode=require)'
+  return { rejectUnauthorized: false };
 }
 
 /** Resolve pool-size defaults from environment variables — single source of truth. */
@@ -98,7 +98,22 @@ export function normalizeDatabaseUrl(url: string): string {
   if (!url) return url;
   try {
     const u = new URL(url);
-    u.searchParams.set('sslmode', 'verify-full');
+    
+    // Many cloud providers (Supabase, Neon) require SSL but fail on verify-full without proper certs.
+    // So we use sslmode=require for remote hosts unless explicitly disabled.
+    if (u.hostname !== 'localhost' && u.hostname !== '127.0.0.1') {
+      if (process.env.DB_SSL_REQUIRED !== 'false') {
+        u.searchParams.set('sslmode', 'require');
+      }
+    } else {
+       // For localhost, allow user to force require if their local setup demands it
+       if (process.env.DB_SSL_REQUIRED === 'true') {
+         u.searchParams.set('sslmode', 'require');
+       } else {
+         u.searchParams.delete('sslmode');
+       }
+    }
+    
     u.searchParams.delete('channel_binding');
     return u.toString();
   } catch {
@@ -106,9 +121,9 @@ export function normalizeDatabaseUrl(url: string): string {
   }
 }
 
-export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000) {
+export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000, urlStr?: string) {
   return {
-    ssl: getSslConfig(),
+    ssl: getSslConfig(urlStr),
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis,
     max,
@@ -147,7 +162,7 @@ export function createInternalPool(connectionString: string, max = 1, connection
   const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
   const p = new Pool({
     connectionString: safeConnStr,
-    ...getBasePoolConfig(max, connectionTimeoutMillis),
+    ...getBasePoolConfig(max, connectionTimeoutMillis, safeConnStr),
   });
   p.on('error', (e: any) => {
     console.error('[DB] Idle internal client error:', e?.message || e);
@@ -253,19 +268,19 @@ export async function initializePerplextaPools(
 
       pool = patchPoolQuery(new Pool({
         connectionString: normCoreUrl,
-        ...getBasePoolConfig(finalCoreMax, 10000),
+        ...getBasePoolConfig(finalCoreMax, 10000, normCoreUrl),
       }));
       ledgerPool = normLedgerUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: normLedgerUrl,
-        ...getBasePoolConfig(finalLedgerMax, 5000),
+        ...getBasePoolConfig(finalLedgerMax, 5000, normLedgerUrl),
       }));
       externalPool = normExternalUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: normExternalUrl,
-        ...getBasePoolConfig(finalExternalMax, 5000),
+        ...getBasePoolConfig(finalExternalMax, 5000, normExternalUrl),
       }));
       securityPool = normSecurityUrl === normCoreUrl ? pool : patchPoolQuery(new Pool({
         connectionString: normSecurityUrl,
-        ...getBasePoolConfig(finalSecurityMax, 5000),
+        ...getBasePoolConfig(finalSecurityMax, 5000, normSecurityUrl),
       }));
 
       pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
@@ -624,7 +639,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     pool = patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000),
+      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000, connectionString || url || normCoreUrl || safeConnStr || undefined),
     }));
     pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
     await pool.query('SELECT 1');
@@ -637,7 +652,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     ledgerPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000),
+      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
     }));
     if (ledgerPool !== pool) {
       ledgerPool.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
@@ -652,7 +667,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     externalPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000),
+      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
     }));
     if (externalPool !== pool) {
       externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
@@ -667,7 +682,7 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
     }
     securityPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
       connectionString: url,
-      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000),
+      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000, connectionString || url || normCoreUrl || safeConnStr || undefined),
     }));
     if (securityPool !== pool) {
       securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));

@@ -3796,6 +3796,16 @@ export async function verifySchemaIntegrity() {
       registered_agents: {
         columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at']
       },
+      user_activity_logs: {
+        columns: ['id', 'user_id', 'event_type', 'event_details', 'ip_address', 'user_agent', 'created_at'],
+        repairCols: {
+          event_type: { type: 'VARCHAR(100)', default: "'unknown'" },
+          event_details: { type: 'JSONB', default: "'{}'" },
+          ip_address: { type: 'VARCHAR(100)' },
+          user_agent: { type: 'TEXT' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
+      },
       marketplace_items: {
         columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
         repairCols: {
