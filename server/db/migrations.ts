@@ -3793,9 +3793,6 @@ export async function verifySchemaIntegrity() {
       asset_metadata: {
         columns: ['id', 'file_url', 'asset_name', 'mime_type', 'file_size', 'alt_text_ar', 'alt_text_en', 'og_title_ar', 'og_title_en', 'og_description_ar', 'og_description_en', 'keywords_ar', 'keywords_en', 'visual_summary', 'ai_analysis_raw', 'created_at', 'updated_at']
       },
-      registered_agents: {
-        columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at']
-      },
       user_activity_logs: {
         columns: ['id', 'user_id', 'event_type', 'event_details', 'ip_address', 'user_agent', 'created_at'],
         repairCols: {
@@ -3904,6 +3901,9 @@ export async function verifySchemaIntegrity() {
       },
       admin_audit_logs: {
         columns: ['id', 'admin_id', 'admin_email', 'action', 'target_resource', 'details', 'ip_address', 'user_agent', 'created_at']
+      },
+      registered_agents: {
+        columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at']
       }
     }
   };
