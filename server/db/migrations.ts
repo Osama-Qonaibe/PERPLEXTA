@@ -1363,7 +1363,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await extTarget.query(`
         CREATE TABLE IF NOT EXISTS blog_articles (
           id SERIAL PRIMARY KEY,
-          author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          author_id INTEGER NOT NULL,
           slug VARCHAR(255) UNIQUE NOT NULL,
           title_en VARCHAR(255) NOT NULL,
           title_ar VARCHAR(255) NOT NULL,
@@ -1382,7 +1382,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS blog_comments (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           content TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -1396,7 +1396,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         CREATE TABLE IF NOT EXISTS blog_ratings (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL,
           rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           UNIQUE (article_id, user_id)
@@ -2117,26 +2117,9 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
     });
 
     await runVersioned('v71_add_fks', 'Add foreign key constraints', async (tx) => {
-      const extTarget = externalClient || tx;
-      try {
-        await extTarget.query(`
-          DO $$
-          BEGIN
-              IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_articles') THEN
-                  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
-                      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_blog_articles_author_id') THEN
-                          ALTER TABLE blog_articles ADD CONSTRAINT fk_blog_articles_author_id FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE;
-                      END IF;
-                  END IF;
-              END IF;
-          END;
-          $$
-        `);
-      } catch (error) {
-        console.warn(`[Migrations] Skipping blog_articles foreign key constraint (cross-db or users missing):`, error instanceof Error ? error.message : 'Unknown error');
-      }
+      // Intentionally left blank to avoid cross-db foreign keys
     });
-
+    
     await runVersioned('v72_registered_agents_schema_fix', 'Ensuring registered_agents table has all required columns', async (tx) => {
       await tx.query(`
         CREATE TABLE IF NOT EXISTS registered_agents (
@@ -2324,13 +2307,32 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS marketplace_item_id INTEGER`);
       await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`);
 
-      // Add foreign key columns on users and marketplace_items
+      // === Core DB Columns ===
       await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_asset_id UUID`);
       await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS image_asset_id UUID`);
 
-      // Ensure foreign key constraints on Core DB
+      // === External DB Columns ===
+      const extTarget = externalClient || tx;
+      await extTarget.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image_asset_id UUID`);
+
+      // === Indexes (After columns are guaranteed) ===
+      
+      // Core Indexes
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_context ON media_assets(context)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_hash ON media_assets(sha256_hash)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_stored_path ON media_assets(stored_path)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_user_id ON media_assets(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_marketplace_item_id ON media_assets(marketplace_item_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_users_avatar_asset_id ON users(avatar_asset_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_image_asset_id ON marketplace_items(image_asset_id)`);
+
+      // External Indexes
+      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_image_asset_id ON blog_articles(image_asset_id)`);
+
+      // === Foreign Keys (Only within the same database) ===
+      
       await tx.query(`
-        DO $$
+        DO $
         BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_avatar_asset_id') THEN
             ALTER TABLE users
@@ -2339,11 +2341,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             REFERENCES media_assets(id)
             ON DELETE SET NULL;
           END IF;
-        END $$;
+        END $;
       `);
 
       await tx.query(`
-        DO $$
+        DO $
         BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_marketplace_items_image_asset_id') THEN
             ALTER TABLE marketplace_items
@@ -2352,11 +2354,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             REFERENCES media_assets(id)
             ON DELETE SET NULL;
           END IF;
-        END $$;
+        END $;
       `);
 
       await tx.query(`
-        DO $$
+        DO $
         BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_media_assets_user_id') THEN
             ALTER TABLE media_assets
@@ -2365,11 +2367,11 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             REFERENCES users(id)
             ON DELETE SET NULL;
           END IF;
-        END $$;
+        END $;
       `);
 
       await tx.query(`
-        DO $$
+        DO $
         BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_media_assets_marketplace_item_id') THEN
             ALTER TABLE media_assets
@@ -2378,22 +2380,8 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
             REFERENCES marketplace_items(id)
             ON DELETE SET NULL;
           END IF;
-        END $$;
+        END $;
       `);
-
-      // Add reference column on blog_articles (External DB pool - cross-pool references tracked at application level)
-      const extTarget = externalClient || tx;
-      await extTarget.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image_asset_id UUID`);
-
-      // Performance indexes
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_context ON media_assets(context)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_hash ON media_assets(sha256_hash)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_stored_path ON media_assets(stored_path)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_user_id ON media_assets(user_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_marketplace_item_id ON media_assets(marketplace_item_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_users_avatar_asset_id ON users(avatar_asset_id)`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_image_asset_id ON marketplace_items(image_asset_id)`);
-      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_image_asset_id ON blog_articles(image_asset_id)`);
     });
 
     console.log('[Migrations] All versioned migrations completed successfully.');
@@ -3792,9 +3780,6 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { table: 'user_files', constraint: 'user_files_chat_id_fkey', column: 'chat_id', ref: 'chats', onDelete: 'SET NULL' },
     { table: 'user_files', constraint: 'user_files_user_id_fkey', column: 'user_id', ref: 'users' },
     { table: 'users', constraint: 'users_referred_by_fkey', column: 'referred_by', ref: 'users', onDelete: 'SET NULL' },
-    { table: 'blog_articles', constraint: 'fk_blog_articles_author_id', column: 'author_id', ref: 'users' },
-    { table: 'blog_comments', constraint: 'fk_blog_comments_user_id', column: 'user_id', ref: 'users' },
-    { table: 'blog_comments', constraint: 'fk_blog_comments_article_id', column: 'article_id', ref: 'blog_articles' },
     { table: 'media_assets', constraint: 'fk_media_assets_user_id', column: 'user_id', ref: 'users', onDelete: 'SET NULL' },
     { table: 'media_assets', constraint: 'fk_media_assets_marketplace_item_id', column: 'marketplace_item_id', ref: 'marketplace_items', onDelete: 'SET NULL' },
     { table: 'users', constraint: 'fk_users_avatar_asset_id', column: 'avatar_asset_id', ref: 'media_assets', onDelete: 'SET NULL' },
