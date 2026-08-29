@@ -927,9 +927,6 @@ router.get("/google/callback", async (req, res) => {
           <script id="__auth_data__" type="application/base64">${pagePayload}</script>
           <script nonce="${res.locals.nonce}">
             (function() {
-              const closeBtn = document.getElementById('closeBtn');
-              if (closeBtn) closeBtn.onclick = function() { try { window.close(); } catch(e) {} };
-
               try {
                 const data = JSON.parse(atob(document.getElementById('__auth_data__').textContent));
                 const allowedOrigin = ${allowedOriginJson};
@@ -945,40 +942,48 @@ router.get("/google/callback", async (req, res) => {
                   localStorage.setItem('app_oauth_trigger', Date.now().toString());
                 } catch (e) {}
 
-                let isPopup = ${isPopupMode};
                 try {
-                  if (!isPopup) isPopup = !!(window.opener && window.opener !== window);
-                } catch (e) {}
-
-                if (isPopup) {
-                  try {
+                  if (window.opener && window.opener !== window) {
                     window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
-                     if (allowedOrigin !== '*') {
-                       window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
-                     }
-                  } catch (e) {}
-                }
+                    if (allowedOrigin !== '*') {
+                      window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
+                    }
+                  }
+                } catch (e) {}
 
                 try {
                   const authChannel = new BroadcastChannel('app_oauth_channel');
                   authChannel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
                 } catch (e) {}
 
-                setTimeout(function() {
-                  if (isPopup) {
-                    window.close();
-                  } else {
+                const doRedirectOrClose = function() {
+                  let closed = false;
+                  try {
+                    if (window.opener && window.opener !== window) {
+                      window.close();
+                      closed = true;
+                    }
+                  } catch (e) {}
+
+                  if (!closed) {
                     const separator = safeRef.indexOf('?') !== -1 ? '&' : '?';
-                    window.location.href = window.location.origin + safeRef + separator + 'oauth=1&' +
+                    window.location.replace(window.location.origin + safeRef + separator + 'oauth=1&' +
                       'token=' + encodeURIComponent(data.token) +
                       (data.refreshToken ? '&refreshToken=' + encodeURIComponent(data.refreshToken) : '') +
-                      '&user=' + encodeURIComponent(JSON.stringify(data));
+                      '&user=' + encodeURIComponent(JSON.stringify(data)));
                   }
-                }, 150);
+                };
+
+                const closeBtn = document.getElementById('closeBtn');
+                if (closeBtn) {
+                  closeBtn.onclick = doRedirectOrClose;
+                }
+
+                setTimeout(doRedirectOrClose, 300);
               } catch (err) {
                 console.error('Auth processing failed', err);
                 document.body.innerHTML += '<div style="color:red; margin-top:20px;">Error: ' + err.message + '</div>';
-                if (typeof isPopup !== "undefined" && !isPopup) { window.location.href = '/?oauth_error=1'; }
+                setTimeout(function() { window.location.replace('/'); }, 2000);
               }
             })();
           </script>
