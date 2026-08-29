@@ -398,22 +398,17 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
 
     const result = await saveDatabaseConfig(req.body);
     res.json(result);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
     const config = req.body.config || req.body;
-    const dbType = req.body.type || config.type || 'local';
-    let host = (config.host || '').trim();
-    let connStr = (config.connection_string || config.connectionString || '').trim();
+    let host = config.host;
+    let connStr = config.connection_string || config.connectionString;
     const dbId = req.body.id || config.id;
-
-    if (dbType === 'local' && !host && !connStr) {
-      host = 'localhost';
-    }
 
     if (dbId && !host && !connStr) {
       try {

@@ -29,7 +29,6 @@ export const LEDGER_SCHEMA_TABLES: { name: string; query: string }[] = [
   amount DECIMAL(10,2) NOT NULL,
   points INTEGER DEFAULT 0,
   transaction_type VARCHAR(50) NOT NULL,
-  type VARCHAR(50),
   status VARCHAR(20) DEFAULT 'completed',
   reference_id VARCHAR(255),
   metadata JSONB DEFAULT '{}',

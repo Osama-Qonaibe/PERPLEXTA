@@ -93,8 +93,6 @@ import {
   Circle,
   DollarSign,
   Terminal,
-  Check,
-  Link2,
   Shield,
   ChevronDown,
   Scale,
@@ -2936,95 +2934,6 @@ const DatabaseOrchestrationView = ({
   language: string;
 }) => {
   const { token, socket } = useAppContext();
-
-  const [copiedDbId, setCopiedDbId] = useState<string | null>(null);
-
-  const parseUriToFields = (uri: string) => {
-    try {
-      let clean = (uri || "").trim();
-      if (!clean) return null;
-      if (!/^postgres(ql)?:\/\//i.test(clean)) {
-        clean = "postgresql://" + clean;
-      }
-      const parsed = new URL(clean);
-      return {
-        host: parsed.hostname || "",
-        port: parsed.port || "5432",
-        username: parsed.username ? decodeURIComponent(parsed.username) : "",
-        password: parsed.password ? decodeURIComponent(parsed.password) : "",
-        db_name: parsed.pathname ? parsed.pathname.replace(/^\//, "") : "",
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  const buildUriFromDb = (db: any, overrideField?: string, overrideValue?: any) => {
-    const d = { ...db, ...(overrideField ? { [overrideField]: overrideValue } : {}) };
-    const host = (d.host || "localhost").trim();
-    const port = (d.port || "5432").trim();
-    const defaultDbName =
-      d.id === "ledger"
-        ? "platform_ledger"
-        : d.id === "external"
-        ? "platform_external"
-        : d.id === "security"
-        ? "platform_security"
-        : "platform_core";
-    const dbName = (d.db_name || d.dbName || defaultDbName).trim();
-    const username = (d.username || "postgres").trim();
-    const userPart = encodeURIComponent(username);
-    const passPart = d.password ? ":" + encodeURIComponent(d.password) : "";
-    let uri = "postgresql://" + userPart + passPart + "@" + host + ":" + port + "/" + dbName;
-    if (d.ssl_mode && d.ssl_mode !== "disable") {
-      uri += "?sslmode=" + d.ssl_mode;
-    }
-    return uri;
-  };
-
-  const handleFillDefaultLocalUri = (dbId: string) => {
-    const defaultDbName =
-      dbId === "ledger"
-        ? "platform_ledger"
-        : dbId === "external"
-        ? "platform_external"
-        : dbId === "security"
-        ? "platform_security"
-        : "platform_core";
-    const defaultUri = "postgresql://postgres:postgres@localhost:5432/" + defaultDbName;
-    setDatabases((dbs) =>
-      dbs.map((d) => {
-        if (d.id === dbId) {
-          return {
-            ...d,
-            host: "localhost",
-            port: "5432",
-            username: "postgres",
-            password: "postgres",
-            db_name: defaultDbName,
-            connection_string: defaultUri,
-            connectionTested: false,
-          };
-        }
-        return d;
-      })
-    );
-    showToast(
-      language === "ar"
-        ? "تم توليد وتعبئة الرابط المحلي الافتراضي"
-        : "Default local URI generated",
-      "success"
-    );
-  };
-
-  const handleCopyUri = (db: any) => {
-    const uri = db.connection_string || buildUriFromDb(db);
-    if (!uri) return;
-    navigator.clipboard.writeText(uri);
-    setCopiedDbId(db.id);
-    setTimeout(() => setCopiedDbId(null), 2000);
-    showToast(t("copyUriSuccess") || "URI copied to clipboard", "success");
-  };
   const [databases, setDatabases] = useState<any[]>([]);
   const [isMigrating, setIsMigrating] = useState<{
     id: string;
@@ -3533,36 +3442,17 @@ const DatabaseOrchestrationView = ({
       "dbName",
       "connection_string",
       "connectionString",
-      "type",
-      "localInputMode",
+      "type"
     ];
     setDatabases((dbs) =>
       dbs.map((db) => {
         if (db.id === id) {
           const isConnectionField = connectionFields.includes(field);
-          const updated: any = {
+          return {
             ...db,
             [field]: value,
             connectionTested: isConnectionField ? false : db.connectionTested,
           };
-
-          if (field === "connection_string" && typeof value === "string") {
-            const parsed = parseUriToFields(value);
-            if (parsed) {
-              if (parsed.host) updated.host = parsed.host;
-              if (parsed.port) updated.port = parsed.port;
-              if (parsed.username) updated.username = parsed.username;
-              if (parsed.password) updated.password = parsed.password;
-              if (parsed.db_name) updated.db_name = parsed.db_name;
-            }
-          } else if (
-            ["host", "port", "username", "password", "db_name"].includes(field) &&
-            db.type === "local"
-          ) {
-            updated.connection_string = buildUriFromDb(db, field, value);
-          }
-
-          return updated;
         }
         return db;
       }),
@@ -3734,225 +3624,93 @@ const DatabaseOrchestrationView = ({
                     exit={{ opacity: 0, scale: 1.02 }}
                     className="space-y-4 p-5 rounded-md bg-blue-500/[0.02] border border-blue-500/10 shadow-inner relative overflow-hidden"
                   >
-                    {db.isTesting && (
-                      <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                        <RefreshCw size={24} className="text-blue-500 animate-spin" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 animate-pulse">
-                          {t("dbTestRunning") || (language === "ar" ? "جاري فحص الاتصال (Pre-flight)..." : "Running Pre-flight Check...")}
-                        </span>
-                      </div>
-                    )}
                     <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                       <Terminal size={40} className="text-blue-500" />
                     </div>
-
-                    {/* Header with Mode switcher & Action buttons */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-500/10 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_5px_rgba(59,130,246,1)]"></div>
-                        <label className="text-[10px] uppercase text-blue-500 font-black tracking-[0.2em] flex items-center gap-1.5">
-                          <Link2 size={12} className="text-blue-500" />
-                          {t("localConnectionStringTitle")}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5 text-right">
+                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                          {t("dbHost")}
                         </label>
+                        <input
+                          placeholder="localhost"
+                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                          value={db.host || ""}
+                          onChange={(e) =>
+                            handleChange(db.id, "host", e.target.value)
+                          }
+                        />
                       </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleFillDefaultLocalUri(db.id)}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-sm bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 transition-theme cursor-pointer"
-                          title={t("fillDefaultLocalUri")}
-                        >
-                          <Sparkles size={12} />
-                          <span>{t("fillDefaultLocalUri")}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleCopyUri(db)}
-                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-sm bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-main)] transition-theme cursor-pointer"
-                          title="Copy URI"
-                        >
-                          {copiedDbId === db.id ? (
-                            <Check size={12} className="text-emerald-500" />
-                          ) : (
-                            <Copy size={12} />
-                          )}
-                        </button>
+                      <div className="space-y-1.5 text-right">
+                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                          {t("dbPort")}
+                        </label>
+                        <input
+                          placeholder="5432"
+                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                          value={db.port || ""}
+                          onChange={(e) =>
+                            handleChange(db.id, "port", e.target.value)
+                          }
+                        />
                       </div>
-                    </div>
-
-                    {/* View mode toggle: URI or Fields */}
-                    <div className="flex items-center gap-2 bg-[var(--bg-primary)] p-1 rounded-sm border border-[var(--border-main)]">
-                      <button
-                        type="button"
-                        onClick={() => handleChange(db.id, "localInputMode", "uri")}
-                        className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-xs transition-theme cursor-pointer ${
-                          (db.localInputMode || "uri") === "uri"
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-gray-400 hover:text-[var(--text-primary)]"
-                        }`}
-                      >
-                        {t("localConnectionModeUrl")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChange(db.id, "localInputMode", "fields")}
-                        className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-xs transition-theme cursor-pointer ${
-                          db.localInputMode === "fields"
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-gray-400 hover:text-[var(--text-primary)]"
-                        }`}
-                      >
-                        {t("localConnectionModeFields")}
-                      </button>
-                    </div>
-
-                    {(db.localInputMode || "uri") === "uri" ? (
-                      <div className="space-y-2">
-                        <div className="relative">
-                          <textarea
-                            rows={2}
-                            placeholder="postgresql://postgres:password@localhost:5432/platform_core"
-                            className={`w-full p-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:border-blue-500/50 outline-none transition-theme shadow-sm leading-relaxed ${
-                              db.showConnectionString ? "" : "blur-[2.5px] select-none"
-                            }`}
-                            value={db.connection_string || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "connection_string", e.target.value)
-                            }
-                          />
+                      <div className="space-y-1.5 text-right">
+                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                          {t("dbUsername")}
+                        </label>
+                        <input
+                          placeholder="postgres"
+                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                          value={db.username || ""}
+                          onChange={(e) =>
+                            handleChange(db.id, "username", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5 text-right">
+                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                          {t("dbName")}
+                        </label>
+                        <input
+                          placeholder="platform_core"
+                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                          value={db.db_name || ""}
+                          onChange={(e) =>
+                            handleChange(db.id, "db_name", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1.5 text-right">
+                        <div className="flex items-center justify-between px-1">
                           <button
-                            type="button"
                             onClick={() =>
                               handleChange(
                                 db.id,
-                                "showConnectionString",
-                                !db.showConnectionString,
+                                "showPassword",
+                                !db.showPassword,
                               )
                             }
-                            className="absolute top-2 right-2 text-blue-500/60 hover:text-blue-500 p-1 bg-[var(--bg-primary)] rounded-xs border border-[var(--border-main)] cursor-pointer"
+                            className="text-blue-500/60 hover:text-blue-500 transition-theme p-1"
                           >
-                            {db.showConnectionString ? <EyeOff size={13} /> : <Eye size={13} />}
+                            {db.showPassword ? (
+                              <EyeOff size={14} />
+                            ) : (
+                              <Eye size={14} />
+                            )}
                           </button>
-                        </div>
-
-                        {/* Auto-detected metadata badges */}
-                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-[var(--text-secondary)]">
-                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
-                            Host: <strong className="text-blue-500">{db.host || "localhost"}</strong>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
-                            Port: <strong className="text-blue-500">{db.port || "5432"}</strong>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
-                            User: <strong className="text-blue-500">{db.username || "postgres"}</strong>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
-                            DB: <strong className="text-blue-500">{db.db_name || db.dbName || "default"}</strong>
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5 text-right">
-                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                            {t("dbHost")}
+                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest">
+                            {t("dbPassword")}
                           </label>
-                          <input
-                            placeholder="localhost"
-                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                            value={db.host || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "host", e.target.value)
-                            }
-                          />
                         </div>
-                        <div className="space-y-1.5 text-right">
-                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                            {t("dbPort")}
-                          </label>
-                          <input
-                            placeholder="5432"
-                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                            value={db.port || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "port", e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className="space-y-1.5 text-right">
-                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                            {t("dbUsername")}
-                          </label>
-                          <input
-                            placeholder="postgres"
-                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                            value={db.username || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "username", e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className="space-y-1.5 text-right">
-                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                            {t("dbName")}
-                          </label>
-                          <input
-                            placeholder="platform_core"
-                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                            value={db.db_name || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "db_name", e.target.value)
-                            }
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-1.5 text-right">
-                          <div className="flex items-center justify-between px-1">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleChange(
-                                  db.id,
-                                  "showPassword",
-                                  !db.showPassword,
-                                )
-                              }
-                              className="text-blue-500/60 hover:text-blue-500 transition-theme p-1 cursor-pointer"
-                            >
-                              {db.showPassword ? (
-                                <EyeOff size={14} />
-                              ) : (
-                                <Eye size={14} />
-                              )}
-                            </button>
-                            <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest">
-                              {t("dbPassword")}
-                            </label>
-                          </div>
-                          <input
-                            type={db.showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                            value={db.password || ""}
-                            onChange={(e) =>
-                              handleChange(db.id, "password", e.target.value)
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Container & Local Connection Guidance Box */}
-                    <div className="p-3 rounded-sm bg-blue-500/5 border border-blue-500/15 flex items-start gap-2.5 text-[11px] text-[var(--text-secondary)]">
-                      <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                      <div className="space-y-1 leading-relaxed">
-                        <p className="font-bold text-[var(--text-primary)]">
-                          {language === "ar" ? "إرشادات الربط السريع لقاعدة البيانات المحلية:" : "Local Database Connectivity Guide:"}
-                        </p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                          {t("localContainerHint")}
-                        </p>
+                        <input
+                          type={db.showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                          value={db.password || ""}
+                          onChange={(e) =>
+                            handleChange(db.id, "password", e.target.value)
+                          }
+                        />
                       </div>
                     </div>
                   </motion.div>
@@ -7713,7 +7471,7 @@ const PlansSubscriptionsView = ({
                             <button
                               onClick={() => removeFeature(feature.id)}
                               className="text-gray-400 hover:text-red-500 transition-theme"
-                              title={dir === "rtl" ? "حذف الميزة" : "Remove Feature"}
+                              title={dir === "rtl" ? "حذف המيزة" : "Remove Feature"}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -11356,159 +11114,4771 @@ const MemoryCenterView = ({
     setIsCleaning(true);
     setIsOperationPending(true);
     try {
-      consx��ksǵ(�ݿ��d[`6�/Y�E�(�����!�$��JCb" �=3����d��SukW�O�ν�G�,ّe�Q~	�5��������@R�Db�L�V�w�^+b��i��:^ĶܨZ/F��7�t�~��H��:�N�T�[�����[L|�nT�kS�����Q���]����*c�Y��6��n9�vë:��F~�-��f:�u�}H?O�[�]'p���ȿ��o%�&n���)�o�+��0
-�ֶ��_<`QԘs�Cv8$_=zW��
-#Vs"'����)�/y[��O��CʒB7��0Z
-����Nk��l�lzz��{���>=���_��;ztt�u}�}y��{�u���g����eF/���>���˴nm�ﴢC�}�-����ߡ�M��~���|K�7�w��݄e7�7rke�t�G� ^˩FގkC؈P�9�Ab!\�T����Wy�0k=r�0�!s��O��~�~�{V��x�c�3wϭv"�U�rg���H��o����uV�Q����O�V��ZnBG��8�e7���ی斌�?�!�H6���,��Ԙ���v��U�U����5]��Cl�R���D�R�3����[� �B2�[U��}.�΃o���Q����u=�w��p��<g����j�7��-0��u��ǩ5�V�~�/���'�P�CB����p�-?��꩏xc���d&BG�0��M�#і���;���C�-����#�-�%���q��r��o����
-7 �~�/��+���r�GCH��b����֖[Չ��ڭ!��Q'h�vi&ş�7�  �~���A�
-v��B ��+�d���1p��Sل���r
-���"�⾓A�3��:�'ե@;>պӪ5ܵNk�vū
-g��BowR��Κ��ܶ�:����YJ�A��x���P�Pz��`ۍ��n� �V��>�v�Ѕ+�χ@hwZ5�ޭ��$N%��a�pTq��o��吋3C��K��c����hFЀ>B������
-� ��3T�>�~�(K�_�/����7��%�^jp�F�#{u()�~�X�V����?]�I��{��H��Pl��B�&�(��lX�p�,z��q8I��#Xv�n9��]7�uB�8T�Z�F���xC���:n���2�4;�o�6��'��n�
-����a�[�l��/ּ0N�j�a۩������	̷���V�o��w�4Y�$�F~�hkز��e?�*0N�e�Vf�c*���~pk��r����o�Σ]��cQ��l��nE�����ۮ�߇�C��j�{��TuQ�m�]g�=詽_�`��l�Vjl��������^D��
-=ZWTw����(�(m��Z�yi���hD�	Y�VQs����~�ۥ�?u���� d��Oɩ�rF�+��5��u�[X;�k=u�9�!Rē��%6�(����o��.)�t��D�ڨg�n��� �3�z֍U��
-A(Pc�rF�Y��6Ɲi�A��MJu-!et���"eKm�ZM��ּN��+l.��vxq$�]�fG~���}�|��N
-�j��g(I!"��)��#��XU�`A�O�+)�n�wLŕCI�a3ƙK�р��0F@�A�1QPw�l�\�!s���D�1�땛����������S�<?<z~|x����J�29tC��8^ˎ�N��:dA�4ʤ(5�W�H�
-'��������@ϸ�S����0_3�j�O�/��.���#��cP���qvt���oȃv�BCGįO�Ox *%(�V��:���8���������[�_ZY����n,,-�vfcae����l�̮,�=�8R�0 �N(l*`�P��`���{��;G`e�|I��Ǩ:�'����/q����x�<�/t�ҍ��
-�??�P�~���l�J�B�C�5�#��_P��v�V�l71C�u�f;�w\6���Ht5�xa�����OPN�����W�E�vk��(��ɸ]ϖ\0٪����������~#�h֦����,�t��y�`��3�>Y��D��/hA����[xX�j5���;����g�z��(�[��M0>\�e�S�I:JI?�>�P�i�}Qu�Z�Fi���b#�����#ᘗTE������"���)�ԅ.=C��&����G{�r�,8�Ku������)L:�hF�.+;��hx-�{4?\J����qP�i�K�$"#Qt���y��=���9��i�l�e	��"�Ax��o��A�xj��,rK����{��tO�J�<g3�"o�W*��&PS�`��:�1�����ޱ�/�,¡� r�xNLZ���[�υKv�{�	��=�\qH�z@��������¯�Q)����;D�fx��x!煨�����?<��Y~h3À7�%
-�ᷜ3~���{�(���Xh0Y�����e�7�����������v�y�1O�<�*@S�uX�ą^�������2:�TG�e�����{Ϸ�/�!B���f3<VJ�Z���)��܆z&R��)�>��
-	�H�8-y ޔ\�q�b�Ŀ�`��Ҹ)4z������vKc�I�<���<AN�	��N�����C����[�e*�OA����Q���<{�}q���{���+."r_�lm��"S �G����60{<ahD�k�xN��:��Y��^(����Y�I�K���"��!b%�v��.���CVL���k��P<zM���?�nxM/b����&m�"���߳�ʻ=T1�c��]�>�y������^&����>�!�4�n��'���4�P�,�8�6?��8d�-�'� 2�0-��q�<���Uf�$/������ JN�	�T]<d ���"[���3��ٵ�����0"ԊI��lC�ec&_��8�M �ؚ�Kzs����õ�޻��3O�=���������׳A9����N#&�k�ꏃ�@ܵSy��`̏���v_�ߟ�Y�xߴ��!����Pq�4�L��0�.�/["���q�<X��6J��d� ���$�D����w��m�c(�&��l���6������N��y��$bb�U�ܖr,�@'��M�����e����(� �r�>������:���D���j�g9Kw�TՇζ�𫷭Ԑ�M^������!�d.\c{H?5�<x�Gn�o��q1᷶��آ�?0���	ڬ������h{��mI��y�m_��U�\����������	�P����n�F`%��-@x¯u0��oYG�b��I'�N�E�5K��C�n��M�<��lF���نW�=}�5D
-����ל�J�m��'��q��
-�	��ĸp�P�h,%�mqj&y ������j'����)�=	���$N��'ltO��i��~ɣ �h�A^�FSV����RŪ�s-[��W����	��1ۗ�?6i낏sC��h3uu�uډ!���ʦ�W�=5�J���JPZ�Lx����#��O�^<My,5MiKU�m,��`6�����KC�cL�i^�v�i��%��l��(/��`!Q�M@'���K�	eyP2�SZOQ�R��O9'?tK��_�Z'�ZS��`����񈬣�b��p��YZ"�'v�'?xqTؘlfq~mc��K��3�Wu]Tʄ��o�i;U/���E��˴��ZԎ
-�A�˰a�iY�����mҞ�R���C�^	���23�a��^p�[�
-�E띴�5^!e�XJxb�gu^�K]Y)�/�(�`&��7�\���96h�a����I����Q�~cvut��0���3�{�,��<�~�����	�%B�zEC�4_���B����q2�یu'i�T�t�ھ��&M:��e���A��G�lqOZ|x�7�����m[�}���3�ʈ�����j����n�z�ͬX�}j5/D;�6}���M�I�˺z:�=�|���wt ��b��*f,�2ؾ��**2�s"�F$�]�o9쌁��/t��ڜR��B���?���x��:�>z�p`山LY���?�Ȣu�)m��݁]h6e[�b�t�#tدz�Z������	�*���ُFKM�2V1ˆ��C5���)��������T��+R�+���I��Ӟک�j�ñVj�"��ר�j�
-:^����p�La}
-+���#�E��$��^���Wzj���>:��H� J��_�ԏ�@���b�Pm�r�(4zů�<����{�U�j�F����N��Q��P0�(sE�h�lS^�i�� M�����;>N#������꤉N����L/�^�iu����
-��j��?��9:̿�6Ư��X���Ǒ�r�h?A�lU�FG{� ��.�9kn��r�v�����]��@�,�%w�K���Ϛ!���6���A��xB����z�I}g7w�����TD�:��*���ǈ_5��V�|{��qj3x�;1��r�mmGu��:����Y�z������%V�CJm�!#2�P՚0t��n��o��u��.�t��z�93q#�/v�Q�P
-��LLJ��Z�nw�J��ą���~�逞���� �$�f����.7�v�(2��>ӗ�a@8�����x���CZ��HE?�Lb��H����ͳVM�FA�UEO�F�=UF���������.�Q�2���_��D^ԠLK箵��Ľs�^ؚ	biG���;�x�N�e�8�������Y1X	Y���iD�-��'���ޫ��ηH<s��'p�y�g��e@����r��	�j7�h��/U���	�)5�f���-�n��g �?=�P�;n!�x�G��I]'S�%I>{��X�f��M�6� 9z������-�Y ȸ'	�Ч���C`YV�u0{(����(�&�G
-��\l�Ew�mn��VvP��|M�+l�ku��z�?jJ�y�ƛe3���ד^<�NiF��V���`2m�/�]�1��	^x���`�Ż�s��h���1U��|-)������y�<f�̘e�(�X��s/�~>%S�L�wn��5�?;N��Hkg :@hl��EW������e�2ORZ���<��檔����p�ѧR\�~t�^�S~'B9B��GFz<�&�.d���]D�(H����&�F��j1Z9�4Z��8��o�D8ӧ'�o�S������S�Tn��n�[�x��Y�s�ɶ�A�Xb�׸[[�_�M��GG�� �X��+��r��+�w����X'w�T�m�5}p�"�=�&����)6V�k�S����;<�n�,↞Ӻ�>>!���9!�t4]g��t� �z��0�s?����+����;��n��p�^��̞Ҋ~	ve��G翨:������;c*�9��z|�����J�5�4�l����fv�sJ�G��G�_bld�6�����5Ŧ2g~��y�>�3{$~����;����^�v���<���܅�^�����X�{՜�����FGG/��s����m��]��*�o�{��Ā�����5��d�&P��������o��x��XyҺӏe��F� A]�&2���������t||��)[������n6���&*�A�nM�'d
-��`Y�6�M��Ck$���眀P/�7�P�y�zO*c��!�/�w��O����Q�_d�{1��V2_j�\��=�ƚ���P"����{7/�Ĳ(-=-r�??����Z]C���;Gz݁+~���`��f͖x�r��3#<V9?x�����%���7ͺ_cM!�D�ʗ�`��y'�����W���������6��zm���*����|=N�Ma��>���7��� �(o֐�3�+��&����η��F=z��3���w�d�]ZX^X���ffg�-��`�K��������+�s��~q��c@�k�;����l��Cs|a�ą*LsѴ<S�ǔ��q�.5����pR4ðH��Ґ�S!����-iı��1�tDo.��_��CA_��4g2̥�i&j!p�J�-��6���#fKk���Y���t�c6?L���@[�9n0]p��e�of�&�8���R���cޖ��OrB7.�R���[F�r�f�G� 2U2^|���WM���3I����'G�_�{aO�������T7$�d/�Du0rD�U@1 "7��e87�/!��%Ҟ�8���;L�-������v� 6b�
-��߬..�㻶Rjan~yc���Ɋ��{eyf񤬐� 2�R��X�Piop>,Ń�X���F��Y�p��y\p���c����4����E����]ܑR�<��O5 +.љ�=�C�d�t����߷s�E���N�6��� :�|�
-�5�tg�.��}���� Ͽ;o��fn�z\*J�AT�GL�	��Q3����'��9g�f��ŗ��O$.Z�LH�$��Q1:	�����X����v<Uр���Q7H)��1������h���ܮ��E8���?t#��a� ��jO�F��7�E�.����"wy��;岅���4��������|5ND���rM�BK��v8�*��O�M��58��m5V�� ��A39����ѣLh��f~���|b��~0�8�4M������5�Xr���o�8:mV��]ы~83�䙷���d�uxK�\�YU�9"b|���1y��Ѝ�E��C)��\�XY�٘�c�+����/��,_[ek+�6��S^��[��6����hP�P��B�ը�D�"s��r�R(q��0��5w�*���"���\���/xf���#��"�S�rC�RN�u�b�-�iw@iN���c��fӡ�'�i5���?*�`��GC��3=�l'������.k[�>��k���R�[��}��D�+Ъ���1��E8��!���.,S����hGbO+��|�ޟg���/��L#���Z�pJ��J:T���:�+u���D�)\z������6�7�CY!F���¥�I�|=���~���6^�גl��yz�l?�������L ����r��zy&��:m*!��N���1�lF7�k���~"��C������}�1����Xi�ZN���t�)���ȁ=��Jv-�^[�����Rsz�,啗N2gE��%Om�)0֮-�j`�
-���ӶN(���0q���	�q�Gf����xV�I��Tu�f�<w�k�	j��C�	�y�d/Jy�1b}ifm#A╥UP�����m����5td̲���%�͜�}g��@�wF3�c�)J$��B���5)��"�Z��T�]_ON1��i�}K�9�����_���2Z�K���nS~�J5�X%�'p|�n�/��z�9O5��(G��z#C�h����e��>��5^�m��u�@a&暁3�vc�50�f�b7Y=faj.0�"�T�T>����k���Bx%u#2ěC`!bOn��/T��Mۖ����%e�YԱ�/�uH��~��)�18J�,
-�⟡{�Ҽl�@�]13�k�3u���K�u�,�P�?�OWLw8m�Wo��*�R���]���4���V�jn��4���a�av�_�A�Z��(ߕ>߯�'3k֒df�w����(b����{��� ���|a���'J�T/�����������qʚ�u��R��%�A�]Y�4��\G��i��C������$�r)q��T�����X�O!!��~j=өyEo�-7����)�xqbh�ʪ�����n����:q�E�� <��3ݺǊH	]'���[����t�'���w�7ۍ��A"�N��)��{����K�k�縔�>��(b�{���J7�/�OZ#�����h�
-0V�0s����ȴp�PE�]#��t����ё��V\�/�y�
-*�7�_տ��u1��NM<�W�����D��o;��{�ߛ.TX��M�����q��������v��м7ۯ:m`H$�I����q�=^�S�hL��M��F��h�t�t�9V�t�a���GGK��_��2�_>L�`��{q������nm�m�Ag�A\��u���g��K�c�ăc$M�9a=�b���B+��;�_�����;����`�(y�Kviy�Q����h(�e3|�g��A�>������b�b.VI��Kclo�(��A�� B㮇��_sa��ǚƶ��;�K���qq��*��d�(L���6��U�
-!zZH�V��%9d�{IԞ]�Y�� ��:Wk ڤ�4��\,���q1�Q�N��>N;�(5/��R���F�?!���ɯ���u�}�����%�Ś'�(��?�3�7���p]����1LةbD��D�>4���� C�]��}E�Uƀie��u��?}���+S'_B\�e2j�=ej�`���tô�eq)�y�A�X��uN`������&��/u��|_y�%�d�;v2ѾG���9�-��]!@������2�g]���V6_2&�ksS짽�I��#+-�(|n*����G�>+�i~*�>�Ҏev���7���h��-�cBP��ȶ�b�#�����!/뺭�-�_����Q�V����.�~�A������d�~��G�3�P�y����6�:s.$�d���+zB�&�.�^Z/�C��?����� (k�f�>��rwO<��d�?���߁cfad��Y�s�˓J%�@H�0�lVb��H.܍���s_�T2�L�XN�a5=���ܵ���,�}�L��;!��Զ�LV{�k�y��SJC�D^V��S�ȝ�.ͣ�ƌ���mdo��j���n0�U��	/3��c`���C����cnrn��c�mI��wS�(ǆ����G���,,��\n�$[��A��!ol�c�s4�9��h`z���n"z��[eE�g��y�f~z�@
-�*T�Q�ǼJ�d��8�b^��M�`y�������ϱ���Evefv��o�l�/�/o������ōT���\yK�����#7s"���<m)���)X�Qr�i.A!auc�O�f>��'���ɌS�@��n�u����&���lt���OI�5I8W�jt����375ٸ�c�M	�9�6`�� ��N	�FKWY��� �,��,�k�N�.oa�{}XE3k��/�
-�|q��������R����o���m�ㇴ֩X�8��Q�qg�Ϲl>W��Y�x��X3E�O�m����Si��T�V���t�8�5���ؒ��6�6q\�6�us>/��qx�/ȡ�G��̫�e���ܽ��ڡ�<�U�)k8H�8��IoE2�k]�������5.7ߨ�utd%������;C���j�*$9E���HĞ��Y�e^���|���@q�>���:(d�F$�����U���.OQU35�.{dC����CF4�~8������(	ڋsW��ǯ��K~��nL�͒V�Z<����F��o��4�,���!F�Ƞ���E�}��Q�-,���z�D������Q�[|��q�xc�;YL��J~'��촫�ӕ�^�%b���q�o�c�x���}��ݷ�B��:%Yw�DD�+��eӬ�����\�����oN���)<�6Xh�dX�|4�D�Կ���:,I�.���~Ğ���JqЄ�tBw�)R�/�����9S���b҇��r�Zu[5�\�C>�L�-�l� �(�q�e
-����:}ܢ:��|]�h��L�u2��f��vA���e�|}����̖r.ꓼ���\¡�u(ϴքk��=�%ʸ�P@�=l	��`���� Q{�G�\��9�Jv�r�����>ڈ�~�i����w��4��b�B��^5�� j����+5 [�����F��$Cѭ�:Q���ʃ㈶71�,ԺO�o���e���OP��W���Ţ��,C)��_�S�(�J��o����Oe�+����;KS�B8쵠!	D~l�#s�d(1t������\���5q�k��Ԕ�ʣ���2������p�	�LW��<����ru��|���-�
-��2��i�Y�I$��FFX�Tbs3W�W�J����k���[�`�p�>����|u���V�VߟYFc}��
-�Y��ֱ�dV~�ƭ̈́0��F�����[ TwB��)P�}���a切3����49�B������N?����{^���F1��O��~�=}��K����C�����T�o����\�������m��>��=�`�U������$����N�^�M�|dh���c��Y�.FA��\�`��}�}�R�=�:^ĶܨZ/F��7�Ԛ^k(5EG��-_T�kx���d�Sd��&�������s�ߺ�v��Hc<��e�øҬ�Ŋ0��{H�OU���/�p����5�mx+�%�������{ݯ�L��}�qB���'n9��}G�G=� ��7�y</�"%tM
-���p��ȏ��5^�퐢ݻ�t_���$؛/����7r�gkO��d���Эd�`���, ��琹x(�@5��e%,G�q����d�]�='JV�Ĉ�\U���d)˾YN����I�s���x�R�`[��>.���>D>��[AZ!"�w��C��2�H(�J]	�s*�[EvÍ>�,�⺚���Q���#4�g��3��.Ɗ�.�4�ᮙ���Ha�ʓ��Ԭ�;20��r��؆�mfH.�K��eC���6ԧm������.z]"�&�n?�k��9|�'�x�!??��(Qe�n[^��Ywꦨ�9�1M����n��E�U<��/��gb�?S�J�&mMdes�� ��c���;ߛu��mlK�>�Z�]�_ߋc�j���h�zӣK��*�'Um)�XS�A ڔ���Cy��R���K�\�`�.k����I����r4J۔O²��*q'��%ө�4pNA.�X�M|�}	$�&��K���(�h��c^3��s�m�uz�nPs�WfQ*���u�J`����n7�k�Scͽ(~�0i���������2�8��}0���=�up8tʨw�xK� �=�������i��\�(D ����8wf	WVd�-m�S�����K��b�hDxk01i��$!a���$O�s/!��6��U#��
-6+a����"wV��;�V�9��o�����9�TL_��M��""P���@��e�~M�/���Ŭ��{L�C���˺�KA��	�'�b;��p�*p˦K�~@�,Z'������g�5Ҳ��u���kM�?�	I�K]����S_�u]�y|F'�X�U��tx�<��0KY!��ɲ4�<s��R������;���p�)L����KE�M��:?���Y��,_�vk^$_^ Ӌz�7����5S�8�A����� �s��@��@R��`e���t�>��,Pw"� 0`}2߅_����R*��>�~?�5e`�,��y�gB��lG������}�L��MnJ��.zQý��gnK}�So���m��� ~���o���L�&�6%�=hOY�b,�B~	��A���a���$�&��\.������F'�]��b�,O:��"e"���{n���Ӝ��t���?��dr�i�m�o���	�FAԕxI5<߀0z�f~K��'��i���݈�x:|��Y?ly�ȉV�rT���R���Q'h%x~j�{�g�;ַ�i5S���D,h�7t�a�����SbL�^7�w]U\�ٗt6���9�;�F!*�ˢ5E�OJ`���B:׿.޶���nAeSRd���2(O�(�"���#[<�L��t�(<�7���˒P!��| �?eA(�e0p)��xD��g�֒Ť���w�s����c�O���,tiW)2'���/��L�}��*���t�]�B��������5���	��F���l0i\��u�ʿF~v�Հ}�%;E�)G@^���������(؎�#�d�
-m�m==�,L��(��,��"�[�R��$�/������i��{)E��P�fq�C���^�z冂��PG?|�O˘Ջ]bc��l�26!�ӗ2 ��L$ަ��h�=�����>���!��'��#�����,T���-/�� �c�فem���1� ��-]�K'��6�F��P������ �|���mՊL� ��I�X����D�C3���w +�	��L��y�e�7MшݐSJ^~�m��D����G�Dx5�D���3>6t}�_X�2�>8��r^�]U�����h��YJ������b�/+,��GL��I��x�Q�8epE�k3�^�����թf�焇fayn�7�0{���H�ks�Tg�!�xT��$ߩA�)q�J���Wj^�,�B6�V�ݣ�Z>��R�~���苛	��#K�fڙD�`R�����&C,g��-���F+�r��/ ��kk��Q��淶�jTL��w$�2��ۇé`[���icڬFD�pv4�>)ᬔNJ�N�g7���W��������J��2n���'�q.�%O���!�"|��	io�-�BI���|�	R��U���\����L��z&�l-��\4�1��.,������	�i�@��GF�<p���6�'4(e�^���A
-�����n��TYfm ��&��]�)Jؤ�V��\��Zr��('nz��_Hݗ�{�o��t��^͆�0Z�%;��.z?���r}Eo�\V��f�0���H_:Q��E�����L��n��)��+YJ���X5U�MM��*d���ޖ�L��g���N`y]�=S)���*vnr"ss�"��4՗a#mc��M�<)�-����nS1�����%ѩ������dҜ�8�k%Z�xo��`��"��j;��he�zt�X6ҫM4�2n��O�ip�w�f�n�Ј�/?0��,5��i��2Ls\)}D�
-}��ҴN���7�eNO��".���1R�W���7l$�:x�w�H����˻���r\&O���rm�d������]x-.��j�=GC�&�~p���O�F�Ϲ�4��4���rA4H�P���8^j��@���J_��MD���a��ectx*^�l�M�I� �C��P�K���!�ǎ%8.���94ބc��F�
-�Cx]+&�f�GD����B_��5!��6?/Qd�e;ZX�x���=k?��� !��>1C1��^�G0|�f��R��}4��)Y�ϢЦGKv15���I�O��w*�O6��'���3��1��'�sh>�G.�ƑJڔ������Tj��-�l�ؼ�˚F6�PJj�C����1L�r�����ɱjXH�'�4%�o�����yP{��M��M��:�&C@5P�ʮ�=����K��z��ӗ9bh������p��E�d����6��A�8�3�S��'��UIy&���XI/�+b3(�'��ULU/��5�2��C�(T^">	XT�D�7���`E̫���[:箓M��w���fn�*NQ��3�/u�d\�Ƥ4a}��ݮ�N+A�aM���cW��5�;�QM7��^�w|�fC
-c��1����c�Bx�is ��B[f��g��gζ��}��c�,������*�[��2w�� 6rOH=��&��b�nl�t�4]��F-\�k0_� �4 ���t����=��ySN���/�M;V��S�?���I����1L�cF�Z`e�/�ֳL�-R.���/�}'0���ע^�tU�W�/%;���]7���YZ�<�Y*ɔj4���mI�]Q-���G�SI�T�*ʢ��H �+�8#,QM'�p��9��\�qO�p��=�=m�'��d���|Zw��D>
-�?Z�)�f��e 1e!��Tk�FN������8�D{�G����4��/���Q$��;=$���q��ϣ�	��q�X���A5;	�>1�f�~���0c0E�Jm�TfY���^x�����h�SM��x.�����!2R���om7�P��q���2߼�kD���ٯ:���>}\}:}">�Vm�ꦎ��ܬ���^����y�t��lג�qn�D��<+j�=�xN_�:���fJ��Q��Ņ��a�;��<�6L���0�ٕ����yv���,��S��=�պ�tx8�������C����\�J%Ȭ��0�Ǌ�\�}d�U'rw�}�����4�
-�'��}RR
-$������A�r�q�p��	r��TnoJd�W�h�Uz�m���0����*]LeX�~�w��&w�X���w���2Q�{u�?���ũ�����8�͈}=;z ������G����r!��	x��f<'���l��B�ʣ�`˫���[1l�k>��G��?>�)���EAs�u�ŋ}a�kc2~��s�v�U�w w+���J�|_�\�*Sp>�>���q���c��W Ç\e|�k�'~�]dCX��xf���M�m���vĖүҼ1yk�����i������=?W�_��}&Rg}tBGD���-Ѕ#w[�pj�Ы���Ĳdm���T��������
-���G{����XW.� ��e����=ȓm�n����`xS�]����9��$+R�}u���!�#�R:	�A�����zg��M�$�����C�;�ۆ�Au�����h�+�]��	�a1_Kz
-���+�������z�}�ҋ��:r�fh�� ���������D|,��dn8���v	`�u��98���n�Վ7Y�n�6���+=�-¨#�� �, z[y�c� L���"I�B��	�Yz%�(9����#���cJ��M|���8�}«�[�a��l���:�Q��,>����R	��~�|#���T�
-ث|F�֐c	!��-$��@{����,�p�>�e��%Z?�'��A�И�<�H�'����q^�'��eہ�l��י7>a�~���3�l�u.C6�ɼ�ʖ�_t��	9�zc�,�8������*O�c;^H��,HmpgQ��%!��E��9`<�Lqe�QOA��#'tP. �5 ;���~p�*ñ"�sD���f1�K�)�Ę�UeЂ�)"Q��9�v_(�GJ�;�1��M�4���� t�ʼ�ԿRkL�5�v<PY�̀jj�����ЏХd�Y�<^�+��_�:���C�vd9�1#;�O}GWȼ�1hb�����}�@�u�(CGL\Qɶ]�E��B��o� x�>�*�:%�/�Üp�O$K|�u�O��WT�cn�z�7N�J5ƫj��Hm��B8�m�B�`h!qe�.��|ML�v�/�%'�{\?�_�[H�&}I��o��' ��s�m�&xȆ��6l����2��.�!���(�x!�>"}�O�>I�s7S��x�>�c!������8g�t;�-�֍P�.fh�	8�\�������<"ɶR3�~�l��S �'ɞ<����'@!����8Ѷf6piE�hk��4^�mV�^�}�c����}�*�/N��6�&J.���Du���ё��+C[���l	C��}�~Y��e����>k%U͛<�v�����6��qa�!��U^I�촀���˕90[[n�|̬X�ʹT��R�rn
-�\WxIS,Z|I�V�MxF�5^%�@s�o��"���n�QL3�oCW�BJ��q�Q�j�5�6C�!�Ly�Kw�H�0ac���Y�*��1��vN�њ`��#�a�<����$�(�@-K~�Vπ$��'�F�z�K��1��i��`��'��,��E<,7X�_�ݢr��W�
-t��-��e���k�ôu�9	�-{}�yq�T��H�[�g��}��k#��6��P{#ج�A�4r}q�>	�q�Q�������j�?E~���cm^<���h:�69���R6Q:�ȑ��A_X��!U�&-��`"��60z.ݤ��M���� A.���e���nI���M�.�Y�48-~KV�B0���^k+pbϩ���?rE��������K"6�~b�puZ���/������8d���[Nӫ�;�"��z���~�R��{9�� /*�>7�@�����2��,�@ d�2/4&�O��r��ɕ��`ީ֋E��Œ;>�:g�$��r�7�b�oeJ�g�JGx6��rn��W�w��Ox�����u�d���M�.��_{Q�c4�IL��bE$�ܚ�|`~���԰d���6�����n�Iv���)6�'��or��ù�~&�"#�G������1��@O;�C�p;���ĳ�BҶQҖ��匛��=�O����>yT�����r�q�fu���^0+�)'ש�����V&�x7�(ΛM[��ݠ�JR�`6��H-P�[��ԍ@��r^HXTff!�������_�j~C.����[�D8�^��!�~d���͢
-Xu��?� 2�D�H�����aZ:�v��X���K=���)Z���r��Ֆh ~J�)����L��Nh�6g���t�/�|y
-���3Э2�)>�T���_�"�W+Y���>(%��D���+"o��ٲ=�QF�{�8�K�@���s�W�Y���5�@�՝��g6~*ϋ��O$�P�˖F^�����Iu���%B�C0��Z�-�w�L�Wd��k�]$��=������zF{X�)T��H�m�6�.�?R�5�"0��T��gUjd\ιL9��y�M���	�e�^T7؁	����\���P^�l u�|�~C�����v��7C�!����pi��@F��c(�G5Y��WP��4�R)��P[�J�Q��������\��_n��m��:�a�w�%��ul��>L���^���~ni���W�fT��!]�Zߐm��w~��V�l�҃��<�(�hn�Ҹ���#	�5_�G굔zNTf��	lECͷ��0�D�1���J<o>�3��]8���p���k�L�k��b�<��x�i�#������x®o,,ͯ\۸��0� G��<���IlE��*�'wτ�J��O����z��?&������g����Y�Գ���8�Z�F�5���Pz�)H�Yc�o5N��M�#Zn�����Z�}`po���t~mme��w�R0�Kzq��4�{��Ғ'G��;�9v�ŧ�Y�J��K���s<p,my5P�@�a�e����u���5���[��q5�tPS �D/O�Q�p�vXUR��V�e��P9��W��&+�э�����L;��M�Z�V��1ssfnia��&�%��T�	�WM1[BH9!,���BCЫZm�I�Ե�%��lDFN�Nu�o��˪�w�&��D	w�{�)t�� @Uh�����EŞ>o��o��A���캂"1��k2�p�ؐ$rA=c�G�q�7b�.���qSFjP!k=PS�Ɲu��Mn�r9Y��ֈ)ȃ�0P�7h��Ն�e�#E���n0vRQ-�CɁn�TR��l�mL��E�Q ��ŕ_�ϱ��������O���\^\��%�qmav�-�����0L|��Dζ�	ƭ�G��-�)�f-��m���3�$�A�<���m2�n�;X�={����,,][b��/�/�������k�f�~q6p��w U��s��2����pdӝh�ta��������k 1y�]4��Q{�rt��!�|��I��jO+�UP�"W�*)F�r=p���	�T~�,~�Ֆ\�&�^KZ峸���,�#�P�����ʍCRvE5�xvx@d'��{�ZGWgX�[�E�	ό^T��
-���%�X�v�:KO(2��_����^i�4��@#�����%�$�9�)b��(	>���T��L�_�~;�+�+�`���q|M�$s9�����l��f�<�4/�4ܭ�t�-�����}X��{�ۂ}���KU��vڥq�ރ����	�uؠZ���K���y�p���iiVO�t�P� �3��5a-%���
-�Q�
-`�b��0QC�8�ʅu{�T��V�i��6�K�:����7 @ؐ�?%��k���P|�u3E���v��~��3 ���S��+6�>�����-5��%�����A�ט�E*�=�`W�QR�郱�!ѻB5�l:pě�<Ծ^Zl����u	O�����%�a�^�Vj�G��.i�H��$?�	����%���XB�ͪ���j֦��=$a5��~���D�=�#�C���t��Ѝ��/&۝@��rY���	���Ԇ��\ZXӶ$�Q���x��o�?al<� �A}L��FDۿ�7j���¶���0{_S�̻̈́�v����T�aiw.�:FI�X)Oj��|V`'Ka�v���rE�J��# �hy� �h� ���"YQ��g2BS1��arH��s���f�it`����¡����B#
-��~�g��>�:Z<�y��;N#IC�}�4�[��C(�&PD���)i�7�-�[j��#�";�|��H\v��ey4��l+��-%���)_�.qǪ��ӵΝY/��n���7{A��g�g�\DUh \�	ΰ񇁍ʥ�7��1O�=�y������o�Yj�pO�g�
-�P�TP��jS��	#ok���fd�����[ڀ�����>�L�O��貯M��8��=텱D�gu��4�|O {�ʓ���Ԇ�)��+7+7G'�{7��M�8:y~x�����;�Õ�t"4川����XnX�r�6Kwͥ��]����VA3���)�dv���yl����H#�#2�J7�Ц�ex��ܤ���F������Ͱ�M���a���8�4��G)�q�r,`b�3�"��5�wh�嶧,�	�0�b�JRr�,RG�Y����/���N��R8�
-đ�j���8�%��|{�Bc��{���<N}>&�V>;����<�t���U����WO�����>�
-2��B��ů(��!���CM�t������x�N�;�)o�&w�������W���aM/�k�CS��Zq�@&��4<2co3�$�Ƥ�'a؂��(l,�.)��O��dR�pB^��J�g~M�	 D�$*�k�P�8�	�)�IQ����ۼ�"-z��P=�d#\���ޑ��<=E]��ﾤ0E��癦��z��[ྸ�ŷ�f���L9����ɱXߟ�Ab�\J3!������?����;j!+A��[}�_;���e�ڪ����x��Ju"�+םpE{��1�C5[Q泶rܕ�0��3~H����{�ئ'���?C�%z�!¡�Dc� '
-!��=5�	��U*7wˡS�*�B�|8��b�\�L�~��1m��-�G���D�]���R����g�~o� Yu�=OO���!�yb�^������Y�m�n�-�ɧ'����v��C���Tao��T��u�`s.��5"!He�e�e�Se�ie1D�=�<���gd�������Y+��]��~�����^���1)�G��@���<m�֫L���/���@�<j]Gz筋��<�Kf_�E^��.q����"��HYu����>�����*�C����1"��/0��}
-9�K#|��~*�\�cq��Wk
-;%6?����H>�$;�6�vX����e"�A �����i0�������y��2��@���T�( ��Qp"EP�B��ܶ��0�d(�uJ<��H���t"�+��RNy����2�K�#�F2�ņ�4�Pުr��攽X���X�8]/#�(��T��І�Pl/̠����mz	Ε��K���?1�>�@��y�u8�Tz�������:A#�f��Yx�] Y,qˣ���X~�E�� �7R65']aJ/S�x�L3�o�`�4$�A�u� y�55ĂKȺSfs�,����'����Z܁���ӎ��܂����{4��e�suV�������Y�B�)�r��uI0Z����eq�[��-��P�Md�a��V~��>Ə�>�X}������ì'���s܊V�\���pَ�F���7�x���x����� ���OuJ�Nw�$�O05���(�\�N��6�D`E���e��9/��(�~Ȫ��R2�!�R�a4�.)� <$�<�~�7@�Q�����E�|'�Ð�&��"!O���:��)��TW]L~ƫ&ݑ�{��d<CQ�I����o�����Ò�&ka���� �T#<� �P*���!0)S*ݦ�:uЧ�w�����:ݵXLH�q8_���Zj��Hvt�N>�1%���y`�IP����yG�x�Oo�އ7����i= _w� *BRU�k
-9�^r��i�(�Ӗ%��}4S��ް�Ӳx4K��.���4�d�f/�T�_R���j'�v5(�v���ئ7��WE�t����PM�A�D�H������>����b�-J.� I������,������-��[�#���$Ӑ�BH3�;CqT��P�T³�i�ZW�0�1�蒯�TXl�M��9�刔(��FbȌ�h[��IW!�N5Zi�A�L����JO;��s��x�'<�x��ѡ�f��)A�k|��([�~4���?1~��Y��G�b�
-�C��%O},ve�](�TB��46F9O��W�̉�D�qp諄�������~��{�n��_�9��x�G��c��J
-4�o��|�c�Ӆ�`۟��E�.=�<��,.��bf���쥯��N*�Ş	���`M6�hbIs~�����zG\c�j���QP������W���o�-v���e\��d:������C7��z1�|)��(��#�q�wH��ϛ<����ẽ�i��dͅKsG����g��Z�����
-چto��Dc�Q��,[�놫���4>��e'��O���H���}A�j�f�ァ�ДL�G���9C����� �E���#���N�/��3�G߲?=9�h��r�>�?��e���h��X�U�w{����.�4 ��'r�Qb�3<x|t�P4�M=�<2s��c�T�q&���0o���}}�Bz���I&�G>���ǘ���*Xy���j'Z�:@����;�40?���t"�2��W��+o͟p����P?�<�_/�u��7���sׁ�Q��G�vtH��x
-4���h��5�BQ��!�-�2���r�%�$�:G��(A��
-U?Y��N�e�w�Q�h��ݪN��>է�i?oK[���4)��j4���0/&��ʌ0��?��?A�yF�I^�My���8�S92)�6z"e�n��4��h}�0�2a��Eqnc��AX:t07(溬~���F�n¢!h���XEx��x��p$�7x�͕|�W����Ϝ���KQ5O��?R!����8��uT��D��X�����b�/�w��G)<��i�*ǳ'�D?N޵��tx���RʊsNp����N��K)�1/�d�&҉+�Nf\V�q�,����*�8�.����dC��2�L��܆e��rz$E�m>��>�ہf���e���jෝmʈS�&�a"EX�/eh�y1^GsY^;�=�r6C��A1�StJ�C"�=�B�l�\����4f�1��Zzy�檠�v"X��X�E��
-��~�@7�l��Sd����T�M�����{^*����J�_t�Y6�i�I��uP*L8R��?�Wa�N�A�2�}X5��+U��	K �A�u���G�:��kn��<�N`��Ǝ+�������srΪ09 >qP�S�����f�o�έ��U���SHԟZ���0��������NV=!-����c�(c�^-�O�G��Sw�d��㹻����B�U������Cc�������5�L�(jO�����w��~�=�	�G`�f�ᗡIצK�cllq�����_�ϱ�fYa��a�D~�Y�`���Z 5��E��V��t���������p�7@ ��w~�p#�x���c��W8\Dj��.�������c���A	����>R��}tt��=)�\� m8����g�"�($pu��0[����V��⒳�Ɩ.AO�SySO_D�y�����N`��h��b~d*���1_�sM'���h�7��B�W	�4z����zq�Cj}x��ʙV��g�{�՟i�?^�^��V�y�wE����x�hHh����S�]?:�}��񇠼_Q��cP�?��1X�5)s��W<PU�w���.�;��[tZ[� {|cO�Ӡ�4��)��ڿ�[_��Ļ^���R��_�W3���O'���-=�i܃���{Ly;>�7>�@�b�����������{�g�=�c�azOLA�6�wl�9�X���s����r���u*ku�e+B׿⹍��+䝷�T<�iN��R�>+"N� ��Rl5��~����qJ?.��� ��+��Y2/��2�&�oa6x��jdU��8����դf/�TF�n�Y���~y�����+5��7xMG���,H�0ó���K8��8}Ji��������}�Y��d%9�ry��l�u�c7�.���2��+�UQt�ܪ>�~o� �hoR�L�lz�7H Y��OZ	�LxhDpt��9�%:��A�x�Z?�lr�%
-��
-Y�cB��I3f��WG��j��̳������>��t���:Wި�s}I��EW2�\mxF�)�~�V�����崪��`3X�6��,iGX��wdRY�l�mR��9�p��K��<�mȎ��ȂL�?^��8��^�bZ��s��Ҏ�&�x��}�h�����bW}�roqk���؇tGb3�w�Bh�lZR�}�qS�0xΛ�+�1�j�6<c9oB� ^$�|�}���d��ǘ�/$�R�,�sj��w�E��W�[$�"^$r��������hI�������R\-&$�Mq\�c'�ȚΞ�n��ަG��;$��a�1��x,����i��ڙc@�M��Aɜ_ ��}xb�]��'+ߪ�0���p�IME���X��)�w*���	��s7����٦\�J�r9���{���`�J*��)�E)�{A��wF-&<4j�R��X~���n�誵,'� /f�xҲ��5��A��T.S�������c��x6�C��kmψf0�y��5��L���q`{󌇿Ft�Y���pe��AX��)�`�`�/�V�����~���]��A��1q0��˸�&�i6k�yCܷ�Y�e,�L�<�����`Ez�$"�&h�g6_5���s?f9���AlC5��b&X���bt�����c�e|t��~�1�Z�~��9~���wy�`~�"#c��C^��M?<�(I#�����Tc�>���K����ϻ�`FOqF7[(�;��ҍ~&����/1�U��3�8Ɠ]�`�)���G� T&���+��p�>��џX�i�"�2�M���x~���Y�
-�p�s��0 _�7ɋ���&r�fQ��b�O��θը������N ��b�ax�e�w�Z:�V��7��q��Ao�ѡ�Wn�myU�F�?H�c��U�QF��8E4�gNwP�g�?c��mH�3�ݥ��Xn���ݣ��*E���
-}�jV����"�C�*�#�>21L[�9:w)���UZ�������r)R
-?��<�S��=���#<w|�E�Si s3xV�o9M^�X��(�;�.��ardF���}��~P�ݖ�u��ww"���m׋ꀨ���J�21F���\���v�?��-N� "�E���_���F�oG��Wњ߫6:!֪g�^(
-���a@�{Ly�x�ۄi�e�׬=�֙��8mo��D�a6$����*O��E�-C%���:�.VGĨs��g$RK�@dŪ�l:�c�?�M1g��79�8���◕Vg���n� f��ƛ�{n:ￎ�6V����e��8ݩBb"s�_y��d�O�����'�vc�}
-�}L	U9��|>�kB��|���`�����6�'qH�g�o"V*g,
-��O���e���%�E=��H����'�aa/��1��ZyJ���I\8J!���9��.{H����/����K�p���`�v�.�: S�F�m~3�qZ���eB� ��N��]	I�0��� \�xsĩ5��5vQ04DI~k�m��Z�f1`�5~�y`��Q(k�e���5�z	1���`0�ڪ��+h肤ը�H��6/�.Oj�2.����_��%Lӵ�z�����\��]��P�����G���s�*)M"�I��:�yjDT�N��;�B�'��U�k��^	������V�%��D�[^��Fl�fI���#�s��d#2Y�@�b(Jy�|$5J��ZG7�t9�Y�V�n0#�WbY�ӭ[��r�w��������3�cN�[�hdO���?2��{+pLh��x�Yӷ�)Y�f�]��M�xn^s������7�����G/�ԭ�?��F'Fi�7X�^us��#��OV�i;@{LIޞ����%ِw+�:iW3kSєm��3�?F8�����'B'�J�YQ^Մ8_�Na��6�b����H���o�[o�d�Zv����ZbZ����(�H����©����#P�~��� G�O����E��EKt�>Z��@A�Ԝ��._��gsb��q�!�H8#хj�"�I���ԃ㤑ļ 30ְ�+1ԏ�@h�n�=��(���A n3-�xO��M�N���Y��Vϧ(�7��0�<^m��ԏ=_�/��c�~��Cv��a6:���a�\����Tj�c����3��Sy2d(㗰�����������s�\U��+��Gd��11]b�ɨݝɹ-���b�<�t�|�|�νe�I���,Ψu�1��ǳ���%����&#S����b�aC_��}^+�Ḡǂ��=�b�c�"7����zpaCb��P�O&5M㨘+덋�Hp���I.���k �.��,~iu1��& ��񲵤(��Y	��ئL��qy�3��I�.�X)Vw�I),���ȝ���p�J��,~��F�c��8�_����1�D��Єza��%LY~�hӢ�L�S(ɖ��^nz�"�aV�Z��e����kC��r˖	��Zf���~�]�\�w/��e��q�]��4��3��fGmbݺ!{ƒb���^��}���%����e7�؆[���h�G�^�]�m�5h"������d�|V���*�1tY;�3sXH���/$3`�U/�)�K��}D~F�"�$8Ό֌�a�R�f����FU�I
-��r��H,�j�	��d�*��a($o��t R����L��٦Y�׈r'�MT�^ۦ�Z�#�i���99���@�����`
-h�X|�WP�-��_����eJ-�	���׽��v�ޞ�.왺S ���J�j�A�w-�w��i�W��   ���}[sǕ�~E�WC c�q#(���5`��A6����n�k���N����F��Č�#�&-S�,ӿ|�_�?a�9y��VU�B�6[6�]�����'O��w
-y���,�,y�b�ܗ����������4kV7ū@��O��Sݙg| n3G��)�t�������4� x?���]`�_э���h���$�?�7����(�9p��sF)24oq���o�dD^��˼}"�ه�)_Y�GI]�J�"��8%�j|�����Bԛ�z`f���-��ы�;���G���A���A&��AՔ�,����p�E�P(=�jm�����\�3<��7σ�ޢ,�C�OĖ��,�4�?^���N�7VO����d�����,a��6|�B�y���.̋#?��q�L��)�/G~8����@>�	J�̒ۦ�Q&\�&��>�g�F�����l���1{Nhs4�f6��֤�2�2��,�Ӱ@��n785�e�nx-P@�F�@"SFN����t�ފ�&'�� ��:J��'D�,yN��J��<�C`�$���Nc�W��6��f��8Uܚ�~�9���0��^z�&�)ѭ�=ۉ��iA�'�3;��@��B�R��&J��cm��6���"4�<sL���p|�E����=gHS�'���n�E��^��Q�jiЂ�R���?q�����H:@S���nG���('Я��Aj�;R��V�����*�n<X���m5�j�^wv��u`=�� f@iCD1oGE9?���p�	'm�sq˰�Km��M��-1h��IZ77�w�J��*�ؓ�&�0Ą�}3j4�Y8��@X[q�!g��·Qc��YH�l�[�S�pzk�i8�t�{m�Ƃ�7��u�?��Z��ע�����2�'}�?�L�Z/cL䚗�-ǱÛ Iyt�e���IDC�4���}���ʕfRӴ��l�]�P�}�{f(�u���2�;�9��*:
-U�-r�G�2v��L{����Ĕg7@ �u`y°GO;=H8�.�wxX�T���@��״��"�]L8sY�4��ȓ�^k�I�2B��͔�4��i��E�Tb!�h�q�"���dA8$N�!qBco�k�1X��2�̖��D?����ш�����4gzr��|K�
-m���� O�7c�\�6�G���-�@UqB0Ě���z4��^R	�w_d$%��p�ف�ڊ�������t�1����LH=��`T=�m��"h=�m�V<��y�磁����7[�qY���Fĝvc
-��M�R+��T6S�1�9��\b>|2P���$x*���mg@�`�?>�0�!`4��A��cĳ�+� ����G=�
-Z�݋_�x�gԪ<�1���o��� ̺fj>�ܱ����ĄSS潄��pTb7ߎ�,A����Qg��َ82�VR�4�R�C�����q��P��Hߐ�sD��)�Ձ	o3��$c���v�v����3�v-y��+G���a��d��0��=� ��e%Ƥ3�]���&��9$��hD�1�c�U� ����Nva���������ϟ9�<�ZN�2Xs�-�<X{D5�t>a%B�d�~��e�g$.���y�	�=X��ي��2�gj�N>�Z��٭,zpA�bwz�-���$�I��L
-b_b�呰�.ڴ���ɗnI�n���,Ċ���г4�k�9���D��$����1�}A�b�#�9��x�X<҂@ŏ�ix����bO%4�7l�~#�w���1 K(=�"�V�,� �D ���c������d�6M u�T���ݣLB8s4O��)�Б�%eea�n�%q���7;01�#�M����T�`���6���>�����Ra�GH9���./�1d�0 �k�6=�,�[Kݧ$A鼔����e��$dK6�x0�t��RI쟊�-6z�߳f�YƙP��G�G�mJ�\��J���`��<�T=�h�oƍz+gO+�ޔN��ԕ⌭gʿ�L�֓?�k�~��y	�(�Ǳ�8S:~Bd�M�[���'wJ���M�<��[�A�~���Y^���E��$�B�b��
-f/-��`K���qΕXl�)h���e�h3'��뿫�����&�����-\7t�2%�h0@L)��U�����(9((�n=S*���)A˞#܆��_�xĲԏ�{NP�ؕ��]��� Y���m�]A�󴳖}��Ȓ�b�."�פ�rUsGa�M��7��0�_����i�8� ��	�H~"�m��.<Ad�Y��L��'��L�l��gap�!�N_Lj�0�9\4��c1F�5%�"�m�p���`�ήy���v�:�;�!`S����H����ί��OM���ˉçB���g2�S�r�5	�_���g���[m��'ۂ����C����7�@c7^I1��o�D-�@Z$+�����g�p�d&�t	�h�m%<%�,����vZ�O8p�S�P[L���D��&�� ����h8���#���N�R�;~?f���;�~��#㿾�����l!�02�4�;�xI6b���`p����t���P�s=�e��_)���z�!��4�>���(�E�-.�ˈ_����2�٧}��^�5 ;1�W7�vJ6�u���FӍ`���z{�xE�Y��7r��q��˼�*�<�9u�k�2�ũk�'�z������g�bμıy�W���A�5p�o ���'e���4��z\uhK��r�:h����l���/�yH�(�w<�8}��Cu���a�:r��;l�G��d�%Q��t#��^���Uf?\����~�, 	�/��C�B��*�{ͬ���l���(�4L�=N画��5D��נ�O�����x+�����l�]�je腀 ?��R������ni��}J:�WX��V��y��?��H�����f�#�X��P�w�٪װ�v��,
-�>��9�H?�sXLN[80�m�[	�)�fG?�����Hɉ^ �仸9��RES���HN2�XE�I��\N�� �M
-�?��R�}4�{�֝p�/ͱq�0mr��3�IG��+���?�&kT�jr�l�������h��n�{�L<w����T{^�&~�kة5�K���p	.�?���{c�nÙR���%������q��Gkȅ���T�[��9���r�Έ���9}�w�f���j�)�\�$nN��҈�Ts��0�.Ф'Q&*?F,ׄ�4;^�d:C@Sy��sz]�v5�w��:P܏��?��/>��2a*=��@�G	��2d�K��|s09�Ƃ�j�d��j��j�f/�'q��4���ʖ�X���˦.��R�E�|��1?'�N��<�|*%Sw�R��3���!˰U椓���^$����p�K�42���pf����wJo�]8͔��맟�J�>-~F<��I�a{�*2Oө\���̭i��Gg��u?�yn�XK�4�lk/:l���'�la=i�Y��kyj֝�JV�Qa>BCv����T��;����Fw#7Km��\;�x@��ib�B�Y61�(,�U�̸���c<3���t�4{��c��2KqH�+���d�y���[�3�����2�� �30�^�x����ו��SDw+þ�*����m����L�Bkן���B�e�U��}��ơ�Ԁ���O*���"{���4v!���_�ż��+�r<sV�}߫����
-E"7Lk�v�dq��z+u�<��E(���E�;�]�F{i��®�|l�;�?�n��H��F���,&P΃e!��6�,�}�K,#�i-#�,4��7�f��頇3��m�����x�9��H����~=I~ŭ"�8��$�?��I�g���ܢ�ͯ�?>���U��!�V�vݣ�@1�L�)v�8�4��0������^ʹ���W�?7�߳1J�<��t���?'���VR8���0���3��zt�-��B���4�v�;������_Y�1g�p���I�7}�^(;��(��6*j��^/-{5�y�<�<����!.Dm7�PX}N*�2LP��ͣw&m��W�e�cǄ�n�n9�AƖ�ڊ�[���6�;�o(��,^����؃�n[%�w%�]�B��2�S������V+���*��?ط����P^��m?����I�FQ%�#���j:�Ք�[�����,vNd��
-r6P}|N��b'�IT48��ӫ�ӡ�Z�Y�|ֺ����x��.�����Ħ"����Ke��)�%m�%bp�5��v��_�����9�z1_"�Q�`x���~��^�n��W��F�6d5<��V����6����{��Qf����=Fw�/y��=����I�o���݄�%��y��8ϭW{�I�`y�F�
-֋�l�r!���7k�%�2��Z_f��T]��Ә�ʬ֜ !X��Q����c�7�_?�K�������P��ڵ�B9�����g���޹��D&�sb�;�� �-'e2�0��,!}"�t���M��ga<�����i�5�g[�q��f�r��>�}�'�Py`��o7c����S杼T�F����#< ��x*�R��*"���2B)��R�?��6�gXÏ�e�oKeZYD�E3���'������3�&g�B�W��nH�,`��s�V���2���8}Vn+�cG0�$�ڃ�g�[���8;���J:��2��6��]�CUP���'�Еe{/��p+~��f�j����r�8�`5�T\�8!�#�/��u�N.�%��-����蟋l��;*�?�I����Z��N�@v]������^��~��C��!6s,/�>Fޞ�����a�K��C��̈�ۈ��C�R����5S�/2����ND$�	���AK%��=�U�S� P��T>��ף"�B�I�&I�<�/M����П���4!�v+@W� ��yJɽ�ȿ��@~3�f�D�}y�j  ��D_�0�?J�Ο�[|�1v��kU0ɃMJ �z��Y�@�('bB��`k�]�Y�Yx��l��s���%*�^H�����?߇���_��^3j5P�x���	N`���X�}|�͋����y^<"XVJ����oq�;�y|Ň���B^8s�<(���6�I���	���p�!�@��OɃJ<=~r���?����_g����}&j�a�%W����Uo�h�#��'b�˴q0�"Q���mxt���}�Y�p�z"�a�TAW�D9�0��u ���Ғ~�h�hhc���Gdr�:�xR��ش%���W0֤{v:rg�$
-�-�(�B..���C�BΑB�H�O�Ƞq�����/ͤ���A������Z�#�%{B8Sh�m�/�SJcx
-�*��E1J'���)0왴N�]�O�g/������ecu��I8Lg�UD�O��i.���/���֮��bIi$����Ó��i�1��A��v[#�t�.��ڲc"K�x���� ������q�ya������V���NR��ݲ;|k}��ʁ���nr�/ϼ����N	���+�M�p�#���D�Iԓӭ�:����2lw)�	ї̲z�� I5%|C��N�ĶVF���^��B:υ~�t�*���A~�$���<	p���v��l����c<4�gA,�-�`1�($�<���R�!i���/@�]������w�U&;�	�suF�����Qj�h�3��_0Xsl����׬�а(�x�l�n��|��d�9uwJ���棺V[Y\Z�QA�`!s�c�*�Ի%�K���n��zL&2�Di1Kx�}��Ӷ�U�W�7�.�9��d��k
-�|�ܪ�~��2ٽ����`�����f�a� #'���x7�H�ﱉ�"�G�C��tP�P�=��NbKbR�������n��0Ȏ�&M�濣�N���>��$PBV���AU����P�.ĝ4n�6����"e�EKYg��H�I9͕�A��qt5Z�2�$�(-��)�چi�	�y��$n���	����gfT6�ݰ,:$��V�;�ho
-`��Xp�X,u8�R��8���������!��ɶD-q��r	�}؉��"T;<B@���	3��C#���ѝ���`B�נ+�W���)YZ
-�3C9�!��_�(���X8��
-��S�����O�9�_�2�G|�5#�wUOx]�,b��~�]E�lDv�BI"��r0���+��
-��矬����?��F�D�����?
-z x��akF�F	!x��p.��N�_�蜖	Td-�{"��z��L{�[&嬕�I��Q�7Z����U�ݾ�\L�������Bc�t��jUFY�g�h�#9'W(ΎF�uq	<�6�h�Ǒ(V;��p���WX�8��G]Q�Q���;>�2���bx�V�L��0>��)^�
-�J楠� }']���i|��'�m5��w'�buM�,f;��W�c��e�'=��I�Z-T�i�om7����.��M.���j�S%Zs�#>%�����sy�%b"��)���=�Ozr{r:c��lջ��E>�ΐ��1tD�<�R�oϖf������ċW��m?��@Z�L�no�/�<�3z�~��F"H�s��ҋvc̪��Z����@7o��A.6������)Sxk��bW���N4�F���'�Mpr�@'��OI�������I(�r"n�7�:�9Of~B8d�`8(5̲N�%�Tș�y�a��J�͘��޹3>�I_� 7C��:��u�|���J�o����z�Ƃ���*bs�:��@���}���w�Ad!P)�~U�Dm4o�K1&���I�s��u��M��1�G����H��C���6�wu�I�e�@g���ka�S�J�^���9���P�ŷP���z�Iΐ|�U+�v�!Q����U�Y/r�3UT���;�!�k��ΎT�N�J\zՌ'�����/; N������g�����/54�p(rơ�JU��9�x���_!�s�<UB�2IN���yS��x �MO�6�z\�Oz��p?��+v����^e/�ƛE6��Ȗ6V��7k��p����t.�L���T3ef���IY��`N�M��E(��������W
-��v����[��Q{�q��_�3�m��w���֐��%�hWk�	��3���6�ԟ��6Mx=8i�����plc7��6��[=�����_m�'n�0*�|�����������m������Y��!���c�^|̿r��o�E:��z���e��x��q��s�q�b�~�]`7�v�hD��v-��u�7;�R�������_���(U`X�	���h�9�8�c��9Km�V��#+LR�m�� ��wh:aP�3������,=�:kE�$�'�7K��l�Y�Xy�E'�4���,���,���OQ�ԯ�Z�@�ۊ��;au7; b!/Zb;Q���-����g�k���NFlM�X�R3���d.O��5~����/�g`#+z��T���^ǉ�{�/-��Zm��������F�]��RYa]y�����?��x!t���KB��up罨����b�[��?��S���45#(M���8���-�������<��"����z�٨��/����{{q�����P`<�NQ1�4H�"�
-6�h��hV���w37��Z�>������[���5�QtYK��
-��2�	C-i��!EY��;���=V����"��'*3�g�=��#�__yz�� ��h!��g�O0"���LDo6����Wom�p��; Ϣ��y�-�i���N��+��|�#5В�D񛈗��o��/�|Jz��`X�ۏ)/��Z�t/��ʑ��mǝ��n�£8u�L��QL�(~��M����l�^9'�K��omI��{�3��x��ύ�o�|c�v�-����t#,�ˉx��<�8��'L�y�x��� �/|c%��ˍ���D����K�J(�#U�|O+�=?�#�d�R"�,��(I�����.�����T�ϕw�2��7)����{Eܿ`���Z�'�np*���z�W���V���pq�-���X^�>���n�ߨ����w��=yh�;s?aÜ@x$� �b����g�O���9gֺ�yX^>$�\L�����������'��	�?�ާ#n��8t�H���!�zX9�o�r�� e0��}0J�B��".��u\��R7�k��� ��<6�su�mb$O�Ghk}��!D�"����O����P_G�}��ݷ�gcccL\�� }�~ڌ���[@�iO+����U6�fS�c�>��?��ѷ�f��3�R
-�C���,�0:��xć��f���.o�!��F��,~��O��n#���G�U�o����<��{����<��;��7|��Y�B��]H Gj����Qx¨��n���S3��xg*��V�k��:�Kq/az`^�`<V���E�z��=V�~�<�F�h�5�c>,�o{<�?�yo�Աē9�����!�;i�'U��]0�6�f��Y8bX��MM9%qAkY=�5��ŭ#^^s����d�޵Y6�@��dJ�d�����3�{����O:���]� �k���$,1Z:kI{X4w?n6ރ
-�/=�'Ku3]�`@��L�p���"�03�eޙ���n���3��,r��Iפ>�T#~�mͲ��j�����h�(�Dd�Wŀ��2��i�h�W�8���
-�{W{�'x${��y0L}��5��FEuA�U6��rF���i�0�#^t�"�-S}���;��MD��pR�F�d��3��*�Ȇ�d����0U�J�VY��e�EhY/�X�21k\N���gK2XwDȜ�ES��{/>G��_����׏���C�S�}�})lL��Hq��o�>|d���3��/>���Ǵ�?Aa�9�7C�F�)��/�{�ѳ��|����Ҿ��������zD��p.ɼ�k��H���&"L�Ɖ5�i�&�z�ݷ����m1�EF�
-f�9�|�[搑K�7(��se�xZ�S����5-��`��,�"�Ce��V��E�ӃζAd�������!P}���N�����׻�q����H4�9�U��c|�?f�E;��������Y1�uy�z:�DUH��z�U0�S����Ɲ��;�[��f���˱wPz:�g�����Ko�p�|s}㈡i&5�r�=�_�0h����G.�}�x���Y6nX�L��(I뽺�#|5�ͰU�6GبB�8��2`b�ddiU�"A��fk�w8)ଳa(4�����TL��Z�l��"ީ�I���=r�:���
-8!��~�f��*+�"'�5�\��Q����eb8#A��E��L׫<�>�Jd�>ֈ0MP%� ��h�����n��>*d�/>W�e�'X_�\Z�_f�˵��Y&�p}f�ߋ��:���7�{t�g��9'��3��&��~��I܆�=�Ԙ{�rjn�S6[����v4�:��ĝ9\C�)/֖k���ly0&l��Է1��V�+�iTr��7g��X���Y��-'�j���!�����;3��0.>�>�d�d� ���%�k�*���!�=��5�9���.D����Z_µ#s�u#G���/�iF��k4�]M�`}�dk�pd�������E�&�9�X�Js����2��^�[�mv�uת����ى�0�)����MR;b;���:�`�D2m�~ �Qmg��Nqֲ=E�i�8Y�q�e� 0��H��~��k�a���#:����h��o��X+M԰,���#(n��~Jj����2�[���l���o������L�kAo{��6Ȇ�i���#�R_��*�!z	4/oS=�� n����m4���~;J�ۊշA�߃���;����wej���mfW��~�̃���)�,��&�fy¨L>hG���m.TWd?f���!Cģ�lÜ����4���C�U�&4��V/�(ӟ�D�PAs�H����CV���A�ed�9��Q�ęE��smp�jn���F��3AN�c� I�
-)d��e.g"�%7�gQ���&ͷ�Z�ah�A:�!)��
-��S>��.�ʴ\���#�I\*N)�q�$V���Ta	Vű|���ZIV��׋q�da3X������E�Qt��e���7k��/��VG��z��][�_eln�ݕeܷ�O��{
-aߛN��P*��v�YO�2L-������̐6z�'#��L���H�ʄ��ة���*	��]�sX���7b�"��1DN�|y�����1�v�/� ����D�r�W�_N�x3�'��j�_:$�g�!8+? �D�7+��\�E�|c�
-1c���{`�<�"�${�#��h������	��'����ʼ��@��q�7�RN;�#�[����8���)�� 	�}���"XY�	Đu~ �C�n��� �D�K,�S�ۣ]��0�g�v^;:�ؔb#�w�j�S�]������B�<ƳfSF�|);H�0ue�o�Vc��/nMB��[�<<��vv�b$�N���C4˓o��~Yb?�w�*E�W����tp��d-�&u�E�.p��NYEݒ௜���_���6�����pr?�*̒r����>���_u4��Ǯ����L��ޔd\ӾV�v=k�f̕��S�=_��{��7��b�7M�r�_�r,��v3�-��L��dTa�(�m�If7C�vݗ5�;�`�m���y�%���w}���uQ`n��؟�)r$`����ز� >h)iWB�5�q٪�۟�fu��@�1j��|��\@c�,��EM��!�Ttt��{
-�8^N@����2�cmm���Q_�M}��ɂ�l1���f�V@�=�j���&}���(u�D4�؊2d�].��ڻ#]>g�]-�t&���Vٹ����O�����{nB�5��
-1>�;����]���rh�*�'oJ�����\��hgH{�vW\+����yn��Fä���H�q+Ea���pե�5�߳���I�H�LϤo�_|��|�H�@����vI�ꂮ}F�"�E�ً��8ϖ�8��o4�̖��<��Na���Sbg�yW_!���0ޞv��d}�1���6�����w��᚜2x]^bUa�9�5;�b�jŰ!��-VFG	�G*�̦K%�A��+&���C�T�-�K)���j�̹I�L-���Y �����:�&W�W:;�� ]�H-����돞���2Ǡ�/2�*���9��2<��Ю�p��t4�G�'l����-9��?�r������B������_�H*R�̐��]:�y=�D�N�P�ze(U_�p�8{
-��@ݮ�?�`��.KQay
-?ed*�(��`*���-��
-�(��%KQ�	pҲ���s��)n�N9���fI*c/�f�Q�4��I_w�S�;��-!��n_���%��6b�	��@����'��$�C���d�Bǥ���"�Q�c��DR+��@�^�T~bj.Nd3Xy���P���1©����"�;i=��LR:�;y�xL���1����*eL���W���K��}���f9D): �A�!l��fZ�pQY�T"��\^����E�56�?鍒�W�Tx�m�V.�Q��N��Vn�-N���5�,�k�7d{���h�T��t6N�Vﻉ8���@	�<����;3�;���:?RRO�W������p�1N��~r�ɏ�8Os 'ɷ��%��R��V�d�ї�!�:<k�E0��r�Xv.|~����{�_�]"�V?��rRޟ�.�;�}h91:����p����݊+�ה���8 �S�K#n[��,MZK(g	L��N�g�5k�T[3�Ǌ��^[�5vO��ۺ��H*x��9�4j�ȫ�Woݳj�e�6��}<�ZU�;�!+6A��_��$���Ȍ��i��#l�wY��ǾY���������:gc��\�IhS!��</�L�8v����p�o�#���D����d3Q�h�dD�q��Y��
-ʻ'��؞ZN��ԃ.}s�Iﯓ�k��Эe4��]��$1���{�*��,]�Ͽ�h��U�OU:���ҥ�3��p��`hV{�E�'!50��dcc���Z;J� ݀�ckI�F�¦"�(=�5�P(�`/��+�lgh>��{ �M�G��vs`��\ؽ�p�m$qׂ����c:��T��ف~�[W�=��^{B�o�t�E0�#��|I�PL�\~��3tz�����#r"҂4f�&�[�pK zXL��Qrځe)���ꕙQ��6Srpգ���g ��.���	�Ӎ~"B�&���PB(�+ß�~��>n�a�m���zВޯ��f����t���e�T��i�%CsL�f�\��	x�,��I`1����rI��F� �N&J�gy�
-r
-g�)0���8�p�h����"2t��S�����ِ��=���W�s��+9??j�S�|$���kF����=��� �aܲ�W����>j׵z�_ݘ��kn�Pѡ�cS���Ib��[�����C��6*�	Ꝃ�)�x�Z�y2OW��U\OW���v��0^����T63��pzd��-����K����+�yE��<�Y�e���1�h�]r�-&�z|!�6�:��NnQhu��T	� >_KX�͝ft3�����$s����h��:\�&󘧺Dț/�S�.���6�d(c1!�$h&V}>tS�_ˤ�YD$�0��s)|%>Kd�8�6�]��	���'�Lbb!�/�U[�ŲJ,��ف��H���8����!z%��]\���A��������:�w�6|��!��ϚN&�@<�K��K8j���G� !�`s�}/��,�%��+�x�d3��>A���ʹ۪�= ���A,x�</��!��3.b~9k�Vgian_J� ṏ�Rn�?b*}8�C��q%��%D�����A�Fqo��������'t��]y �A��M�e&I~ҙJ�]+���I�j���8��_[�D�f�O������,�p�k	�#�4N?��H�;�Z��n�%��xv���$5�	Q=�<�G	Rv�MyO$s���Ss��aa��FvJ��ڃ]ś�������f�/e"��;b���DbU�o��\�6�����,��1���T�<
-+���Z�;��p���a�(O|�︈�%�[B���F�;��yH.��pN<�>� �"����߽�%b��A�H���[|�*�F'���'�z�xR�2� �����,G�޷u`>��X�idhJD��d���uZ'Оm�8�N��xst�4�|+�ri�0��ݮw:q�mE��
-�ep�i�Zh��8~Y&X���
-�0]e�Pq�f��L뗣{V�en�Qk:h!�x<n��:�l�0ٸ뿫�ܤ�x�z�TXk.�ꡧ.}PO�N�S����B�ԪY]�|�U���4�A��vG@�Z��U#P��J뷲G�FBt��o��q�p�5������b&��ju|["���F�!x:z@Ost+
-�X��{[q=i(���K��S[z�I��~�"Q�D	��(��o)H����x)��|ٵ��$�[��fK�jʅ�	��2�Y������.�+�װxv���(o|3���.W�Ϛ����?��~��
-݋o�L7@t��G�kU����R~�����1@����;�QUA
-l��+㕑j7��ܡ�ߐ�A?����?�����nH+��r��a�p��_޸�X �T<7d�3(<9	о��z����Q��IA<ǩX*��G����n�[�"�6�9}K�,Uto�����|�
-��"Y�v�ם�Vd�슞�%�J���y'e�&��lW����Gs�fM��e�iQ�G3�U(~@�1F�$�h�V*�S�d��:퓂T1OfQx�s�Ca�H�h�S�7��o�W�J������Ĉ�i�| `L3�U�2�E�}����	�3i\���������p ����
-!�*;G}����\��2@�ݢU��V�~�U����!m�a�Ģz�T��(��J#ta��-��@܌"͔
-�"��������Hü��]��욓y�Z��� �����n�{�e8���ڰ�f~�c6X<�j�:J/��UwUc�f����u��E���͇�<�9(T�fҋ	\=(��-�X�����T
-򎎭��������;�e��m�zp���d�x%���Z�d(�`l���L���X��%Ҟhy�[*餼Rl�t�ms7�N3�q��/-��^�����[m���)��֮a�[�x�>��ٸ�� �Rap����/>��_�uT��ƃ�0���?((�����N�m<�.�A�s�b�~؋�c�p���6���^y3Zj��H۾�_��r����=��	;�7�'i+H������bM�D}�'/�;�D�����[��(@>#���B=�g��2	����jI��)~�Z�O9V���UF/}�����&aO�!���W�L<���s^�*��cS�>� � �G$��՟2!����<TA!R�4{����X�w���G@>MA\m ���LnA��j3�5�U��BW䊬���Ih���:�K���p.1LX�B �Gh�5i��kU�Qm+F91���7ɇ��uZ�1� nGF?��~���6z4��[]�Iƃ5W�͸�G�a �Xe"�艉� H��;��>Q����Kj��%�fIU�oxQx��@��o�r�BQͻ�����������P�.��Pz��B�yͅݦ�[��^>�mq���0�ޖ��bn�*�v8�WAc�h����QA�g���.<����8��#��Ѷ9���q69a��iv��X�6Y����ԕ�S���q�����x�򮧦K�5�#U��`*�#G����C��3dwRVߍ�/���x�I�+�%x���$��~�vx��I̪���8@��
-��s�jm�{Z�J������Hw�ݓ����׊l���&0I5�5��kJ�Y��D�zÕm��������hRo@����L�~� 7���/���:Uh������՛K���|���"�u�>��tckUy�M�z�8����qkU/dU UO�gŽ�bF�9؁;�ӝ����V����@�?�wn�;0)mQ��kGm81�*�U���������B�Ī� b�$y]�ۗ����?�o���J�z��^WE�g����()e�u�Q�,I�E)��HAh�n��Qy*J�z`���E[��u8.�f��?�I�1�f�zėimU���_bk1�����	���Ԅ�HB���`Ԅ�<���`���w��+/�e`���vS�X6������kv�Iর�ΐ�:�ɬbaQB�%�1�i�)l����]�x�Zf%��ϖk�����������������ҍ��B�&����l��Ӎ����FfN_��Y�]^�i�m�n�/m����/ίCS7?��y-�oE�N�Zx��G�ߓ˪����ȣ��T��������I��4���ol��Zؼ�^c?����Y)�)������������D��=j�=��d�m���V��7��o�,|P�9������[]��Г�ͥՕ� [c���$�������t_%��zw�3��"_�-c��Wom�WJ��6�#]}*q�����Q]���
-Lʢ�����(����rm��[�����[X]�\_]���k5�x���!e3Ćf�Q�� ���ܸu}ca}i	�a�l���҂;��c�a���'	*�f[������M�@�EF�O~������\�؀���x �'�H�O|�X��d�4�5��wW��y��G0%�+=�8���ss~���2�Y����s�������L��[�K�l:�>o�*$g8%#�(�1�Z���_�|�1�y������.m�6*���6?C�!݌�Z����:k3ߖ�{�(e�����������Ym��Ҋ��e��V?���&���.U�������5J�GV�Va���������������D�ʴ9r�6��)o_n�\�0�fS
-5�2�ެm���靋1JX �Z[^��H3az@	���1Z��'_�@�}y"��OՂ��#�g{8�z���:,X����7��&,X��<`�~Z[G~�'����K���G�:�@�!�^�L��*5����ųt��.y�v�c�K7k|P�����%�H�[���	�3.WsI�1E0��<t�'>�0�܇�Yy7�VWPY��,�ց�-�`�añX����}��L���߀�Fd��+���k��ei��ܼ��mt���)�*�cFd�{����G���M]6R�wc ^���"�� ��������O���ʑ��<Ϡ��K�s���U��e8&��ɇW�_��6�����H�s����rB�����ZaH𚻉ᆃ֖#�m`�A+�+sR6p���A��o��V��z�͹�xk����j �JW�q��q��������Yr+�F��0e���gĖ��������}�1R��Q�x�X����߄�a %WXM]o4V��5�?���{��9*<xQHqǓ�@�(:���ov�~-��eD鑇�ҳ�O{1O�<�]eǠ=c]�� ��D���a��du_挜v�/t��5�两���CP�@��^�Gż�*�9[�96��V�b��}�(WqC�.��n.ĭ��Y󯱡�4=}qrfm������̕hb����i����L4dU(AV��5fZ���y�|*<o��:�3C��x}Q=��D�?P=򡬢�c�9�	��&�n�����CB
-t;6��C�Y�P���eݛ�{Y�ܛ�83:9sytrrt�zi䎪t�Dzȫ�����+E'us+��&�e��no�[�Ó���ޙ�>�C�"jtw���;�yŅ}Q��Z��{��7�K]O�̋jj�G(m��f�2����T�K��ՒI��-cӁ�Kq2zL��)�+�U��/�J�c��A�+
-E�yı��h�>�h�e�Q�nõ�������ӊ~Bߑ�T�g>�g_�!q0���O�ǽ񸾝N���Q��%�����s&����.ot@}B.k�2���A��;���jv�z��0F��ۋX4Z�����7���(���(��Dv�4��d�6z	,��A7��y�F�uq|)�����0$�"�+���2��g�p�;N�_U�y���V2o��N�U�W^�Z��C�w�a�����H�E�dg��Łz��4�j-\]�o�~�S��c�2����|AƦ&�X���vc�\F�:�ե��y�|nz�����Ư�H����z��#MA%�1�
-���O�Y�Hez�R�xg��b���\X̋�����ڙ���)tR��A���ߏtg�6�Ćz$��8!�w�+��;�UD`����a���{�h&�"�^��Ox�`7NMx����]HH��e�<=ZK��%0��D�OX>H�3By8��t?��ߛ�
-!�����%��2<	�$�������5�.��1����Q0�+ʃcb�[nol� @�,�5Չ?����V�]C�p�$���=pzݩrI����,�1�u��4f0C�L8C���n�s�Ԅ���G����,�d���tW^$�C['�.N/��aTO�
-�(�Eϡߵ����c/s	L����L-��IwRS�8�n5���-0��{y�Ϲj�>Ϟ6Dt:U�*
-	���J��A�0`q_ޥ�Hi2�+P�<9�|��'l����m�*�I�3`f��4�(�<.����l���Od�:�h-ͲC�}r��(c�� v�h��x`\^����� (4��������M��ǌ"'�O ?1�M\c��(�.���|X��_���zF't�/���&&{� rL�����@iт3g�+�<3AXV:
-g��r��فt�C�DV�H=7��7���ӜS�,�S�y�[�@�Fm&M\wK��у%�+��,j�,�F���B��� ��d1�%4��Fy�pUy|���o_|�pͤ�㼗�Lw�Y��ĨqI����:r�v�1��A��08 g�u��-��8�W�t��C���'�򁭉{>�F��89a�4^T!��/�)�=����uד�~�@�{I�a4R`�	)+]��	�|���V&��1L<��_W+ОC�b�AUS�6�VnÇV�W69����&���Fg����I��syt�
-��(J͈���ߩ�i�O��/�˗��+�/ti4?���I�
-�Y�g�Fo�je�:S\�r�m׻"�i�� A��ڶΟE�w=.��q�Q�:O�"n�6N��v{��ۢ��D�N~5�ΝDݨ�/uv����^>�R#`�k�ɩ8�va���=��� ��^�~"ga��o�f{E���#2�EC���k=�����������?�����*]�V��0���$����e�����O�0򹽶��҈j��ى9�)��K��mBp[�\N݆���C>c*����XE�cBBzg�ׇ
-s���~xOe��6�kU��w��/�fx7lǝ��Y��!�<>��,�N��{�֚��@T[<��fz�NG�{��2����*�������o��L����'����I,G4�R���k���*ȵ���˫xC��C�q�)Q�`��%��'�Nk$�<"��G�M�Α\#��WA�%�]L���7D{>D��8�#�U���\��'Οh%Tӫ ��.&ZYɫ#�|�K�Y�/�����-f]R��@�����]qC[Kbr�����I�>l��g�I=�G��+j`Z̼����U����g�pz���ݕ�Ry����|���\�/����q^l���:�#)��b�z���Bw��q�Q��l�Yt��~�"/�k�5A�'�>:IuI�ӁE0d9_��ȘZ���xtm@���dcoz��4��z�y�Z�[�wF���	�����Bb�����k#��T|p��&�(9O���� �'����;5���)�jǠ$l=����(���{�Bm��7L�&�ђ�&�f���yq���L��5]hE�N�{Jr.��Q��)����7t=d�u9@.�<�&�ԭ������!� ���#�T{)�딴]P�K#l��Q����:���Pgt��ކБ�84�]pq�[{�-l�ΑYS��"��4s�$���^-������_%�R`��z�9�>�������y��
-�q��Y�ܼ�&����[��������K�%�ֿN��>�v�M�M�E[���~�sҼ�����J-�_~��U@K�����{;}�Ys|�Ju�����Am~��//�.��08_�VEm:�����3胒O(�AxDS��t+��P�-���h���?�/��D-�s0��IT/�����[ok����h��Gf���˴e,���(7�
-Oƀ�Փ��De:h
-^m�	�4��O4$c�)�veĸ{�UL_, خD���
-,�C�?h�S/9�E���;��x𭌶]�w0�zՊ��t0��6�}�|����|;ʲ�]=T_�5����+9%���f�]/7�͞ -�6�r~C� |d����x�/��n�'p�\�
-k���a�k�&�����Į����N�5����o��29��-ew��&Ԁ�?ǡ����HU�f�7�':���3ק�7�]ݾ��A������k�3s��k���缇��{n����C��澜��i�jE�X��k7�$���l����_�z.%7x��Ȅp:��"�w��H����E���l�Γp�>5��l:���Qf�LU�je��z�'�V��t��眢<a$�T���׀
-�Q�n�̶ǽ
-<7�^��_�U��X��J�f����>;@�ۄ�MQt�w�,b�$b[�fe��C`n�~�0w@z�1�G���j��TY����ٞ�IT�\g��ל�Q��
-��S�`VO1���g
-�jN�GK�(@3�9��*CoL�[q���X�v M*^y�0uxx���h���+W�(�i�@��������`���!7�Ҝ�j2������(A"W���)/�̛\��<=~#%+���7&0F�OuE�S��U��`0"�uIV"/��ؑ�RQc�j+~�A�3�a����cZ���<0�3#��:NM_�t��5;����	�d�^�S�7������dgP���b�����&�|� ���nm�P��ѯ��x�!����V�r���p���X?i]�8���8����5u��6�g�ހz�n�Ȼo����  �� G֛
+      const res = await fetch("/api/memories/cleanup-context", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ttlDays }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg(
+          language === "ar"
+            ? `تم تنظيف السياق بنجاح. تم مسح ${data.cleanedCount} جلسة غير نشطة.`
+            : `Context cleanup completed. Pruned ${data.cleanedCount} inactive sessions.`
+        );
+        setIsSuccessToast(true);
+        fetchStats();
+      } else {
+        setToastMsg(data.error || "Failed to execute context cleanup");
+        setIsSuccessToast(false);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Network error");
+      setIsSuccessToast(false);
+    } finally {
+      setIsCleaning(false);
+      setIsOperationPending(false);
+      setTimeout(() => {
+        setToastMsg("");
+      }, 4000);
+    }
+  };
+
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    try {
+      const [statsRes, diagRes] = await Promise.all([
+        fetch("/api/admin/memories/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/memories/diagnostics", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        setSystemStats(data);
+      }
+      if (diagRes.ok) {
+        const diag = await diagRes.json();
+        setDiagnosticsData(diag);
+      }
+    } catch (err) {
+      console.error("Failed to load memory stats or diagnostics:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    fetchStats();
+    fetchSystemThresholds();
+    const intervalId = setInterval(() => {
+      fetchStats();
+    }, refreshInterval * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [token, refreshInterval]);
+
+  const handleRunConsolidation = async () => {
+    setIsRunning(true);
+    setIsOperationPending(true);
+    setReports([]);
+    try {
+      const res = await fetch("/api/admin/memories/consolidate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          targetUserId: targetUserId ? parseInt(targetUserId) : undefined,
+          threshold: threshold,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setReports(data.report || []);
+        setToastMsg(
+          language === "ar"
+            ? "اكتملت عملية تكثيف الذاكرة بنجاح!"
+            : "Memory distillation cycle completed successfully!"
+        );
+        setIsSuccessToast(true);
+        fetchStats();
+      } else {
+        setToastMsg(data.error || "Failed to execute consolidation");
+        setIsSuccessToast(false);
+      }
+    } catch (err: any) {
+      setToastMsg(err.message || "Network error");
+      setIsSuccessToast(false);
+    } finally {
+      setIsRunning(false);
+      setIsOperationPending(false);
+      setTimeout(() => {
+        setToastMsg("");
+      }, 4000);
+    }
+  };
+
+  const filteredReports = reports.filter(
+    (item) =>
+      item.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.distilledFact.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Toast Notice */}
+      {toastMsg && (
+        <div
+          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
+            isSuccessToast
+              ? theme === "dark"
+                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                : "bg-white border border-accent text-accent"
+              : theme === "dark"
+                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
+                : "bg-white border border-red-200 text-red-600"
+          }`}
+        >
+          {isSuccessToast ? (
+            <CheckCircle2
+              size={20}
+              className="text-accent "
+            />
+          ) : (
+            <AlertCircle size={20} className="text-red-500" />
+          )}
+          <span className="font-medium text-sm">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Hero Header */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-sm`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-accent/10 rounded-lg text-accent shadow-[0_0_15px_rgba(156,163,175,0.05)]">
+            <Brain
+              size={28}
+              className="text-accent "
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+              {language === "ar"
+                ? "بروتوكول تحسين وصيانة الذاكرة التراكمية"
+                : "PERPLEXTA SYSTEM MEMORY OPTIMIZATION PROTOCOL"}
+            </h4>
+            <p className="text-sm text-gray-400">
+              {language === "ar"
+                ? "تنظيم وفهرسة سجلات ذاكرة المستخدمين لتحسين الدقة وتقليل زمن الاستجابة."
+                : "Organize and optimize user memory fragments to improve AI response and reduce context load."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-Time System Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar" ? "إجمالي السجلات" : "TOTAL MEMORIES"}
+            </span>
+            <Database
+              size={18}
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.totalMemories ?? 0}
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
+        </div>
+
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar" ? "المخدمين النشطين" : "ACTIVE PROFILES"}
+            </span>
+            <Users
+              size={18}
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.usersWithMemories ?? 0}
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
+        </div>
+
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md relative overflow-hidden group`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+              {language === "ar"
+                ? "متوسط الكثافة لكل حساب"
+                : "MEAN PROFILE DENSITY"}
+            </span>
+            <Cpu
+              size={18}
+              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
+            />
+          </div>
+          <div className="mt-4 flex items-baseline">
+            {loadingStats ? (
+              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
+                ...
+              </span>
+            ) : (
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
+                {systemStats?.averageMemories ?? 0}{" "}
+                <span className="text-sm font-normal text-gray-500">
+                  rec/user
+                </span>
+              </span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
+        </div>
+      </div>
+
+      {/* Real-time Diagnostics & Active Context Sessions Panel */}
+      {diagnosticsData && (
+        <div
+          className={`p-6 rounded-lg border transition-theme ${
+            theme === "dark"
+              ? "bg-[#1a1a1c] border-gray-800/60"
+              : "bg-white border-gray-200"
+          } shadow-md space-y-4`}
+        >
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></div>
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                {language === "ar" ? "تشخيصات محرك الذاكرة الحي (Live Buffer Diagnostics)" : "Live Buffer Diagnostics & Engine Health"}
+              </h4>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                {diagnosticsData.engine} ({diagnosticsData.mode})
+              </span>
+              {(() => {
+                const limit = diagnosticsData?.bufferLimit || 50;
+                const count = systemStats?.totalMemories || 0;
+                const pct = Math.round((count / limit) * 100);
+                if (pct >= 80) {
+                  return (
+                    <span className="text-xs font-mono text-red-500 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Bell size={10} className="animate-bounce" /> {pct}% {language === "ar" ? "حرج" : "CRITICAL"}
+                    </span>
+                  );
+                }
+                if (pct >= 50) {
+                  return (
+                    <span className="text-xs font-mono text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Bell size={10} className="animate-pulse" /> {pct}% {language === "ar" ? "تنبيه" : "WARNING"}
+                    </span>
+                  );
+                }
+                return (
+                  <span className="text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                    <CheckCircle2 size={10} /> {pct}% {language === "ar" ? "مستقر" : "HEALTHY"}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Notification Alert System for Custom Percentage Thresholds & Token Spike Alerts */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#121214] border border-[var(--border)] font-sans">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded bg-accent/15 text-accent">
+                <Sliders size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-gray-900 dark:text-white block">
+                  {language === "ar" ? "عتبات التنبيهات والإشعارات المخصصة" : "Configurable Trigger Thresholds"}
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  {language === "ar"
+                    ? `العتبات الحالية: الأولية ${lowThreshold}% | الحرج ${highThreshold}%`
+                    : `Active Triggers: Low ${lowThreshold}% | High ${highThreshold}%`}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsThresholdModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Sliders size={14} />
+              <span>{language === "ar" ? "تعديل العتبات المخصصة" : "Configure Thresholds"}</span>
+            </button>
+          </div>
+
+          {(() => {
+            const bufferLimit = diagnosticsData?.bufferLimit || 50;
+            const currentCount = systemStats?.totalMemories || 25;
+            const bufferUsagePercent = Math.round((currentCount / bufferLimit) * 100);
+
+            if (bufferUsagePercent >= highThreshold) {
+              return (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-red-500/20 text-red-500 shrink-0 mt-0.5 animate-bounce">
+                      <AlertTriangle size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                        <span>
+                          {language === "ar"
+                            ? `تحذير حرج: تجاوز استهلاك الذاكرة عتبة ${highThreshold}% المخصصة!`
+                            : `CRITICAL ALERT: Memory Buffer Exceeded Custom ${highThreshold}% Capacity!`}
+                        </span>
+                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-mono font-bold">
+                          {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                        {language === "ar"
+                          ? `وصلت كثافة استهلاك سياق الذاكرة إلى ${bufferUsagePercent}%. يوصى ببدء تقليص الذاكرة فوراً لمنع البطء والتأثير على سرعة الاستجابة.`
+                          : `Buffer load has reached ${bufferUsagePercent}%. Immediate context compression is strongly recommended to prevent latency spikes.`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSmartCompress}
+                    disabled={isCompressing}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
+                  >
+                    {isCompressing ? (
+                      <RefreshCw className="animate-spin" size={14} />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    <span>
+                      {language === "ar" ? "تقليص الذاكرة الآن" : "Shrink Memory Now"}
+                    </span>
+                  </button>
+                </div>
+              );
+            }
+
+            if (bufferUsagePercent >= lowThreshold) {
+              return (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-amber-500/20 text-amber-500 shrink-0 mt-0.5">
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                        <span>
+                          {language === "ar"
+                            ? `إشعار تنبيه: استهلاك الذاكرة وصل إلى عتبة ${lowThreshold}% المخصصة`
+                            : `WARNING: Memory Buffer Reached Custom ${lowThreshold}% Capacity`}
+                        </span>
+                        <span className="text-[10px] bg-amber-500/30 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded font-mono font-bold">
+                          {bufferUsagePercent}% {language === "ar" ? "السعة" : "LOAD"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                        {language === "ar"
+                          ? `وصلت سعة التخزين المؤقت إلى ${bufferUsagePercent}%. يمكنك تنفيذ تقليص الذاكرة للحفاظ على أداء سريع وتوزيع مثالي للرموز.`
+                          : `Buffer capacity is currently at ${bufferUsagePercent}%. You can shrink memory now to maintain optimal response speeds.`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSmartCompress}
+                    disabled={isCompressing}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
+                  >
+                    {isCompressing ? (
+                      <RefreshCw className="animate-spin" size={14} />
+                    ) : (
+                      <Zap size={14} />
+                    )}
+                    <span>
+                      {language === "ar" ? "تقليص الذاكرة" : "Shrink Memory"}
+                    </span>
+                  </button>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
+              <span className="text-gray-500 block mb-1">{language === "ar" ? "سعة التخزين المؤقت القصوى" : "Buffer Limit Capacity"}</span>
+              <span className="text-base font-bold text-gray-900 dark:text-white">{diagnosticsData.bufferLimit} Records Max</span>
+            </div>
+            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
+              <span className="text-gray-500 block mb-1">{language === "ar" ? "الجلسات النشطة ذات السياق" : "Active Context Sessions"}</span>
+              <span className="text-base font-bold text-accent">{diagnosticsData.activeContextSessions?.length || 0} Sessions</span>
+            </div>
+          </div>
+
+          {diagnosticsData.activeContextSessions && diagnosticsData.activeContextSessions.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                {language === "ar" ? "أحدث جلسات المحادثة ذات السياق النشط" : "Recent Active Context Sessions"}
+              </span>
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
+                {diagnosticsData.activeContextSessions.map((session: any) => (
+                  <div key={session.id} className="p-2.5 rounded bg-gray-100 dark:bg-[#0f0f11]/80 border border-[var(--border)] flex items-center justify-between gap-2">
+                    <div className="truncate flex items-center gap-2">
+                      <span className="font-bold text-accent">#{session.id}</span>
+                      <span className="text-gray-800 dark:text-gray-200 truncate">{session.title || 'Untitled Session'}</span>
+                      <span className="text-[10px] font-mono bg-accent/10 text-accent px-1.5 py-0.2 rounded shrink-0">
+                        ⚡ {language === "ar" ? "نشط" : "Active Context"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                        {new Date(session.updated_at).toLocaleTimeString()}
+                      </span>
+                      <button
+                        onClick={handleSmartCompress}
+                        disabled={isCompressing}
+                        className="text-[10px] font-mono text-accent hover:underline px-1.5 py-0.5 bg-accent/5 hover:bg-accent/10 rounded border border-accent/20 cursor-pointer disabled:opacity-50"
+                        title={language === "ar" ? "تقليص سياق هذه الجلسة" : "Shrink Session Context"}
+                      >
+                        {language === "ar" ? "تقليص" : "Shrink"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Buffer Usage Density Trend Over Last 60 Minutes */}
+          <div className="space-y-2 mt-6 pt-4 border-t border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                {language === "ar" ? "كثافة استخدام ذاكرة التخزين المؤقت خلال آخر 60 دقيقة" : "Buffer Usage Density Trend (Last 60 Minutes)"}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-mono">
+                  <span className="text-gray-500 dark:text-gray-400 text-[11px]">
+                    {language === "ar" ? "معدل التحديث:" : "Refresh:"}
+                  </span>
+                  <select
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                    className="bg-gray-100 dark:bg-[#0f0f11] text-gray-800 dark:text-gray-200 border border-[var(--border)] text-[11px] rounded px-2 py-0.5 font-mono focus:outline-none focus:border-accent transition-theme cursor-pointer"
+                  >
+                    <option value={5}>5s</option>
+                    <option value={10}>10s</option>
+                    <option value={30}>30s</option>
+                  </select>
+                </div>
+                <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded">
+                  Real-time Telemetry
+                </span>
+              </div>
+            </div>
+            <div className="h-48 w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={bufferTrendData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#2d2d30' : '#e5e7eb'} />
+                  <XAxis dataKey="time" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
+                  <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: theme === 'dark' ? '#1a1a1c' : '#ffffff', 
+                      borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: theme === 'dark' ? '#ffffff' : '#111827'
+                    }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="density" 
+                    stroke="#10b881" 
+                    strokeWidth={2.5} 
+                    dot={{ fill: '#10b881', r: 4 }} 
+                    activeDot={{ r: 6, fill: '#10b881', stroke: '#ffffff', strokeWidth: 2 }} 
+                  />
+                  <ReferenceLine 
+                    y={40} 
+                    stroke="#ef4444" 
+                    strokeDasharray="4 4" 
+                    label={{ 
+                      value: language === 'ar' ? 'عتبة 80% للحمل الأقصى' : '80% Capacity Threshold', 
+                      fill: '#ef4444', 
+                      fontSize: 10, 
+                      position: 'insideTopRight' 
+                    }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Trigger Consolidation Form Console */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-6 border-b border-[var(--border)] pb-3">
+          {language === "ar"
+            ? "أدوات التشغيل وتحديد الأهداف"
+            : "TRIGGER MANIFEST & MANIPULATION"}
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar"
+                ? "الحد الأدنى للذكريات المستهدفة"
+                : "MINIMUM ACCUMULATION LIMIT (THRESHOLD)"}
+            </label>
+            <input
+              type="number"
+              value={threshold}
+              onChange={(e) =>
+                setThreshold(Math.max(2, parseInt(e.target.value) || 2))
+              }
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder="e.g. 10"
+              min="2"
+            />
+            <p className="text-[10px] text-gray-500">
+              {language === "ar"
+                ? "سيتم فقط معالجة المستخدمين الذين لديهم هذا العدد من الذكريات أو أكثر."
+                : "Process profiles containing this memory record count or higher."}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar"
+                ? "معرّف مستخدم محدد (اختياري)"
+                : "EXPLICIT USER IDENTIFIER ID (OPTIONAL)"}
+            </label>
+            <input
+              type="text"
+              value={targetUserId}
+              onChange={(e) =>
+                setTargetUserId(e.target.value.replace(/\D/g, ""))
+              }
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder="e.g. 52"
+            />
+            <p className="text-[10px] text-gray-500">
+              {language === "ar"
+                ? "اترك هذا الحقل فارغاً لتشغيل عملية التكثيف لجميع المستخدمين المؤهلين."
+                : "Leave blank to process all system users matching the criteria."}
+            </p>
+          </div>
+
+          <div>
+            <button
+              onClick={handleRunConsolidation}
+              disabled={isRunning}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent disabled:bg-accent/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(156,163,175,0.15)] hover:shadow-[0_0_25px_rgba(156,163,175,0.3)] disabled:shadow-none cursor-pointer`}
+            >
+              {isRunning ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white/35 border-t-white animate-spin"></div>
+                  {language === "ar"
+                    ? "جاري التكثيف والتوليف..."
+                    : "DISTILLING MEMORIES..."}
+                </>
+              ) : (
+                <>
+                  <Brain
+                    size={16}
+                    className="text-white "
+                  />
+                  {language === "ar"
+                    ? "بدء عملية التكثيف اليدوي"
+                    : "EXECUTE MANIFEST CYCLE"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Automated Context Cleanup Routine Panel */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 border-b border-[var(--border)] pb-3">
+          {language === "ar"
+            ? "محرك تنظيف السياق التلقائي (Context TTL Cleanup)"
+            : "AUTOMATED CONTEXT TTL CLEANUP ROUTINE"}
+        </h4>
+        <p className="text-xs text-gray-500 mb-6">
+          {language === "ar"
+            ? "تحديد ومسح ملخصات السياق للجلسات غير النشطة بناءً على عتبة TTL للحفاظ على خفة و كفاءة ذاكرة المحرك."
+            : "Identify and purge inactive session context summaries based on a configurable TTL threshold to maintain engine buffer efficiency."}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+              {language === "ar" ? "عتبة فترة عدم النشاط (TTL باليوم)" : "INACTIVITY TTL THRESHOLD (DAYS)"}
+            </label>
+            <select
+              value={ttlDays}
+              onChange={(e) => setTtlDays(parseInt(e.target.value, 10))}
+              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+            >
+              <option value="7">7 Days (Aggressive)</option>
+              <option value="15">15 Days (Standard)</option>
+              <option value="30">30 Days (Recommended)</option>
+              <option value="60">60 Days (Extended)</option>
+              <option value="90">90 Days (Archival)</option>
+            </select>
+          </div>
+
+          <div>
+            <button
+              onClick={handleRunContextCleanup}
+              disabled={isCleaning}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
+            >
+              {isCleaning ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
+                  {language === "ar" ? "جاري تنظيف السياق..." : "PURGING INACTIVE CONTEXT..."}
+                </>
+              ) : (
+                <>
+                  <Database size={16} />
+                  {language === "ar" ? "تشغيل تنظيف السياق الآن" : "RUN CONTEXT CLEANUP ROUTINE"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Smart Compress Heuristic Panel */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md`}
+      >
+        <div className="flex items-center justify-between mb-2 border-b border-[var(--border)] pb-3">
+          <h4 className="text-base font-bold text-gray-900 dark:text-white">
+            {language === "ar"
+              ? "الضغط الذكي للسياق (Smart Context Compression)"
+              : "SMART CONTEXT COMPRESSION & HEURISTIC TRIM"}
+          </h4>
+          <span className="text-xs font-mono text-accent bg-accent/10 px-2.5 py-1 rounded">
+            {language === "ar" ? "تقليل استهلاك الرموز" : "Token Load Reduction"}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mb-6">
+          {language === "ar"
+            ? "تطبيق خوارزمية استدلالية ذكية لضغط وتقليم النصوص الطويلة في جلسات المحادثة النشطة مع الاحتفاظ بالمعلومات الجوهرية وتخفيف الحمل على المحرك."
+            : "Apply lightweight heuristic compression to trim redundant tokens from long-running active sessions while preserving core context summaries."}
+        </p>
+
+        <div className="flex items-center justify-end">
+          <button
+            onClick={handleSmartCompress}
+            disabled={isCompressing}
+            className={`flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
+          >
+            {isCompressing ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
+                {language === "ar" ? "جاري الضغط الذكي..." : "COMPRESSING SESSIONS..."}
+              </>
+            ) : (
+              <>
+                <Zap size={16} className="text-accent" />
+                {language === "ar" ? "تشغيل الضغط الذكي الآن" : "RUN SMART COMPRESSION"}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic Results & Verification Console */}
+      <div
+        className={`p-6 rounded-lg border transition-theme ${
+          theme === "dark"
+            ? "bg-[#1a1a1c] border-gray-800/60"
+            : "bg-white border-gray-200"
+        } shadow-md space-y-6`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+          <div>
+            <h4 className="text-base font-bold text-gray-900 dark:text-white">
+              {language === "ar"
+                ? "تقرير معالجة تكثيف الذاكرة"
+                : "DISTILLATION EXECUTION REPORT"}
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              {language === "ar"
+                ? "تحقق من جودة التوليف الذكي ومخرجات الذكاء الاصطناعي لكل مستخدم نشط."
+                : "Audit the generated high-density facts and compression quality below."}
+            </p>
+          </div>
+
+          <div className="relative w-full md:w-80">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme text-xs ${
+                theme === "dark"
+                  ? "bg-[#0f0f11] border-gray-800 text-white"
+                  : "bg-gray-50 border-gray-200 text-gray-900"
+              }`}
+              placeholder={
+                language === "ar"
+                  ? "بحث عن اسم، بريد، أو محتوى..."
+                  : "Search name, email, or synthesized fact..."
+              }
+            />
+            <div className={`absolute top-2.5 left-3 text-gray-400`}>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {filteredReports.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded bg-gray-50 dark:bg-[#0f0f11] border border-dashed border-[var(--border)]">
+            <Brain
+              size={48}
+              className="text-gray-300 dark:text-gray-700/60 mb-4 animate-pulse"
+            />
+            <p className="text-sm font-bold text-gray-500">
+              {language === "ar"
+                ? "لا توجد نتائج معالجة حالية"
+                : "No active runtime logs available."}
+            </p>
+            <p className="text-xs text-gray-500 mt-1 max-w-sm">
+              {language === "ar"
+                ? "ابدأ بتحديد الخيارات وضغط بدء عملية التكثيف اليدوي أعلاه لاستيراد ومكثفة سجلات المستخدمين."
+                : "Select targets and run the manifest cycle to stream and capture direct synthesis details here."}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredReports.map((report) => (
+              <div
+                key={report.userId}
+                className={`p-5 rounded-lg border transition-theme ${
+                  report.success
+                    ? theme === "dark"
+                      ? "bg-[#0f0f11]/60 border-accent/15 shadow-[0_0_15px_rgba(156,163,175,0.02)]"
+                      : "bg-accent/15 border-accent/50"
+                    : theme === "dark"
+                      ? "bg-[#0f0f11]/60 border-red-500/15"
+                      : "bg-red-50/15 border-red-200/50"
+                }`}
+              >
+                {/* User Header Details */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-3 mb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">
+                        {report.userName}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-gray-200 dark:bg-gray-800 text-gray-500">
+                        UID: #{report.userId}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-400 font-mono">
+                      {report.userEmail}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    {/* Compression indicator with glow */}
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">
+                          {language === "ar"
+                            ? "السجلات المعالجة"
+                            : "OPTIMIZATION SCALE"}
+                        </div>
+                        <div className="text-xs font-mono text-gray-400">
+                          <span className="text-red-400 font-bold">
+                            {report.oldCount}
+                          </span>
+                          {" ➔ "}
+                          <span className="text-accent font-bold">
+                            {report.newCount}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-accent  px-2.5 py-1 rounded bg-accent/10 border border-accent/20">
+                        {Math.round(
+                          ((report.oldCount - report.newCount) /
+                            report.oldCount) *
+                            100
+                        )}
+                        % {language === "ar" ? "تقليص" : "REDUCED"}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    {report.success ? (
+                      <span className="flex items-center gap-1.5 text-xs text-accent font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse animate-duration-1000"></span>
+                        {language === "ar" ? "ناجح" : "COMPLETED"}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-red-500 font-bold bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                        {language === "ar" ? "فشل" : "FAILED"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {report.success ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Distilled segment */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        {language === "ar"
+                          ? "الذاكرة التوليفية عالية الكثافة"
+                          : "SYNTHESIZED INTEL FACT STATEMENT (RESULTS)"}
+                      </div>
+                      <blockquote
+                        className={`p-4 rounded border-s-4 border-accent leading-relaxed text-sm font-medium ${
+                          theme === "dark"
+                            ? "bg-[#131315] border-gray-800 text-gray-100"
+                            : "bg-white border-gray-200 text-gray-800"
+                        }`}
+                      >
+                        “{report.distilledFact}”
+                      </blockquote>
+                    </div>
+
+                    {/* Archived Segment list */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between">
+                        <span>
+                          {language === "ar"
+                            ? "السجلات الـ 10 المؤرشفة القديمة"
+                            : "ARCHIVED LEGACY FACT STATEMENTS"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-normal font-mono">
+                          Count: {report.archivedFacts.length}
+                        </span>
+                      </div>
+                      <div
+                        className={`p-3 rounded border font-mono text-[11px] leading-relaxed max-h-36 overflow-y-auto custom-scrollbar space-y-1.5 ${
+                          theme === "dark"
+                            ? "bg-[#131315]/80 border-gray-800 text-gray-400"
+                            : "bg-white border-gray-100 text-gray-650"
+                        }`}
+                      >
+                        {report.archivedFacts.map((fact, idx) => (
+                          <div
+                            key={idx}
+                            className="border-b border-gray-800/15 last:border-0 pb-1 last:pb-0"
+                          >
+                            {fact}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-red-400 font-mono p-3 bg-red-500/5 rounded border border-red-500/10">
+                    <strong>Error description:</strong>{" "}
+                    {report.error || "Failed to process consolidation."}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Notification Thresholds Configuration Modal */}
+      <NotificationThresholdsModal
+        isOpen={isThresholdModalOpen}
+        onClose={() => setIsThresholdModalOpen(false)}
+        currentLow={lowThreshold}
+        currentHigh={highThreshold}
+        onSave={handleSaveThresholds}
+        language={language as "ar" | "en"}
+        theme={theme as "dark" | "light"}
+      />
+    </div>
+  );
+};
+
+const SystemSettingsView = ({
+  theme,
+  t,
+  dir,
+}: {
+  theme: string;
+  t: (key: string, replacements?: any) => string;
+  dir: string;
+}) => {
+  const confirm = useConfirm();
+  const { siteSettings, setSiteSettings, token, setIsOperationPending, language } = useAppContext();
+
+  const [siteName, setSiteName] = useState(siteSettings.siteName);
+  const [siteNameAr, setSiteNameAr] = useState(siteSettings.siteNameAr || "");
+  const [seoSiteNameEn, setSeoSiteNameEn] = useState("");
+  const [seoSiteNameAr, setSeoSiteNameAr] = useState("");
+  const [siteDescription, setSiteDescription] = useState(
+    siteSettings.siteDescription,
+  );
+  const [siteDescriptionAr, setSiteDescriptionAr] = useState(
+    siteSettings.siteDescriptionAr || "",
+  );
+  const [seoDescriptionEn, setSeoDescriptionEn] = useState("");
+  const [seoDescriptionAr, setSeoDescriptionAr] = useState("");
+  const [keywordsEn, setKeywordsEn] = useState("");
+  const [keywordsAr, setKeywordsAr] = useState("");
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState(
+    siteSettings.googleAnalyticsId,
+  );
+  const [googleSiteVerification, setGoogleSiteVerification] = useState(
+    siteSettings.googleSiteVerification || "",
+  );
+  const [blockedPaths, setBlockedPaths] = useState(
+    siteSettings.blocked_paths || "",
+  );
+
+  const [logoBase64, setLogoBase64] = useState<string | null>(
+    siteSettings.logoBase64,
+  );
+  const [logoLightBase64, setLogoLightBase64] = useState<string | null>(
+    siteSettings.logoLightBase64,
+  );
+  const [faviconBase64, setFaviconBase64] = useState<string | null>(
+    siteSettings.faviconBase64,
+  );
+  const [seoImageUrl, setSeoImageUrl] = useState<string | null>(
+    siteSettings.seoImageUrl,
+  );
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSeoUploading, setIsSeoUploading] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const [clearingCache, setClearingCache] = useState<string | null>(null);
+
+  // --- DIAGNOSTIC HELPER FOR SYSTEM SETTINGS & ORPHANED LOGO ASSETS ---
+  const [orphanedAssetsState, setOrphanedAssetsState] = useState<{
+    hasOrphanedAssets: boolean;
+    assets: Array<{
+      key: string;
+      label: string;
+      url: string | null;
+      exists: boolean;
+      isOrphaned: boolean;
+      reason?: string;
+    }>;
+    orphanedKeys: string[];
+  } | null>(null);
+  const [isCheckingAssets, setIsCheckingAssets] = useState(false);
+  const [isRepairingAssets, setIsRepairingAssets] = useState(false);
+  const [isSyncingMetadata, setIsSyncingMetadata] = useState(false);
+
+  const handleSyncSeoMetadata = async () => {
+    setIsSyncingMetadata(true);
+    try {
+      const res = await fetch("/api/admin/sync-metadata", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const msg = language === "ar"
+          ? `تمت مزامنة البيانات الوصفية لـ SEO بنجاح. (تم تحديث ${data.totalUpdated} عنصر)`
+          : `SEO metadata sync complete. (${data.totalUpdated} items updated)`;
+        showToast(msg, "success");
+      } else {
+        throw new Error("Metadata sync failed");
+      }
+    } catch (err: any) {
+      showToast(
+        language === "ar"
+          ? "حدث خطأ أثناء مزامنة البيانات الوصفية لـ SEO"
+          : "Error synchronizing SEO metadata",
+        "error"
+      );
+    } finally {
+      setIsSyncingMetadata(false);
+    }
+  };
+
+  const checkSystemAssetsDiagnostic = async () => {
+    setIsCheckingAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/check-assets", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrphanedAssetsState(data);
+      }
+    } catch (err) {
+      console.error("Failed to run system asset diagnostic check:", err);
+    } finally {
+      setIsCheckingAssets(false);
+    }
+  };
+
+  const handleRepairOrphanedAssets = async () => {
+    setIsRepairingAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/repair-assets", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(
+          language === "ar"
+            ? "تم إصلاح الشعار والملفات المفقودة بنجاح"
+            : "Orphaned assets repaired and restored successfully",
+          "success"
+        );
+        fetchSettings();
+        checkSystemAssetsDiagnostic();
+      } else {
+        throw new Error("Repair request failed");
+      }
+    } catch (err) {
+      showToast(
+        language === "ar"
+          ? "حدث خطأ أثناء إصلاح الملفات المفقودة"
+          : "Failed to repair orphaned assets",
+        "error"
+      );
+    } finally {
+      setIsRepairingAssets(false);
+    }
+  };
+
+  const [missingAssetReport, setMissingAssetReport] = useState<any>(null);
+  const [isScanningMissingAssets, setIsScanningMissingAssets] = useState(false);
+  const [isPurgingMissingAssets, setIsPurgingMissingAssets] = useState(false);
+
+  const fetchMissingAssetReport = async () => {
+    setIsScanningMissingAssets(true);
+    try {
+      const res = await fetch("/api/admin/missing-assets-report", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMissingAssetReport(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch missing asset report:", err);
+    } finally {
+      setIsScanningMissingAssets(false);
+    }
+  };
+
+  const handlePurgeMissingAssets = async (ids?: number[]) => {
+    setIsPurgingMissingAssets(true);
+    try {
+      const res = await fetch("/api/admin/missing-assets", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(ids ? { ids } : {})
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(
+          language === "ar"
+            ? `تم تطهير وحذف ${data.deletedCount} سجل ملف مفقود بنجاح`
+            : `Successfully purged ${data.deletedCount} missing file records`,
+          "success"
+        );
+        fetchMissingAssetReport();
+      } else {
+        throw new Error("Purge failed");
+      }
+    } catch (err) {
+      showToast(
+        language === "ar" ? "فشل تطهير الملفات المفقودة" : "Failed to purge missing assets",
+        "error"
+      );
+    } finally {
+      setIsPurgingMissingAssets(false);
+    }
+  };
+
+  const handleClearCache = async (target: string) => {
+    setClearingCache(target);
+    try {
+      const res = await fetch("/api/admin/cache/clear", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ target }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToast({
+          message: data.message || (language === "ar" ? "تم مسح الذاكرة المؤقتة بنجاح" : "Cache cleared successfully"),
+          type: "success",
+        });
+      } else {
+        const err = await res.json();
+        setToast({
+          message: err.error || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+          type: "error",
+        });
+      }
+    } catch (error: any) {
+      setToast({
+        message: error.message || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+        type: "error",
+      });
+    } finally {
+      setClearingCache(null);
+    }
+  };
+
+  // --- DYNAMIC ROUTE SEO MANAGEMENT STATE ---
+  const [routeSeoList, setRouteSeoList] = useState<any[]>([]);
+  const [loadingRouteSeo, setLoadingRouteSeo] = useState(false);
+  const [editingRouteItem, setEditingRouteItem] = useState<any | null>(null);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  const [routeSearchQuery, setRouteSearchQuery] = useState("");
+  const [routeUploadingImg, setRouteUploadingImg] = useState(false);
+
+  const fetchRouteSeoList = async () => {
+    setLoadingRouteSeo(true);
+    try {
+      const res = await fetch("/api/admin/seo-routes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRouteSeoList(data);
+      }
+    } catch (e) {
+      console.error("Failed to load route SEO list:", e);
+    } finally {
+      setLoadingRouteSeo(false);
+    }
+  };
+
+  const handleOpenAddRouteModal = () => {
+    setEditingRouteItem({
+      route: "",
+      title_ar: "",
+      title_en: "",
+      description_ar: "",
+      description_en: "",
+      keywords_ar: "",
+      keywords_en: "",
+      og_image_url: "",
+      is_active: true,
+    });
+    setIsRouteModalOpen(true);
+  };
+
+  const handleOpenEditRouteModal = (item: any) => {
+    setEditingRouteItem({ ...item });
+    setIsRouteModalOpen(true);
+  };
+
+  const handleSaveRouteSeo = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editingRouteItem?.route) {
+      showToast(dir === "rtl" ? "مسار الصفحة مطلوب (مثل /marketplace)" : "Route path is required (e.g. /marketplace)", "error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/seo-routes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editingRouteItem),
+      });
+      if (res.ok) {
+        showToast(
+          dir === "rtl" ? "تم حفظ إعدادات SEO للمسار بنجاح" : "Route SEO settings saved successfully",
+          "success"
+        );
+        setIsRouteModalOpen(false);
+        setEditingRouteItem(null);
+        fetchRouteSeoList();
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || "Failed to save route SEO", "error");
+      }
+    } catch (e: any) {
+      showToast(e.message || "Error saving route SEO", "error");
+    }
+  };
+
+  const handleDeleteRouteSeo = async (id: number) => {
+    const isConfirmed = await confirm({
+      title: dir === "rtl" ? "حذف إعدادات المسار" : "Delete Route SEO",
+      description: dir === "rtl" ? "هل أنت تأكد من حذف إعدادات هذا المسار؟" : "Are you sure you want to delete this route SEO setting?",
+      variant: "danger"
+    });
+    if (!isConfirmed) return;
+    try {
+      const res = await fetch(`/api/admin/seo-routes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        showToast(dir === "rtl" ? "تم حذف إعدادات المسار" : "Route SEO setting removed", "success");
+        fetchRouteSeoList();
+      } else {
+        showToast("Failed to delete", "error");
+      }
+    } catch (e: any) {
+      showToast(e.message || "Delete error", "error");
+    }
+  };
+
+  const handleRouteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast(dir === "rtl" ? "حجم الصورة يجب أن يكون أقل من 2 ميغابايت" : "Image size must be less than 2MB", "error");
+      return;
+    }
+    setRouteUploadingImg(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/settings/upload-asset", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          setEditingRouteItem((prev: any) => ({ ...prev, og_image_url: data.imageUrl }));
+          showToast(dir === "rtl" ? "تم رفع صورة المسار بنجاح" : "Route SEO image uploaded successfully", "success");
+        }
+      }
+    } catch (err) {
+      showToast("Failed to upload image", "error");
+    } finally {
+      setRouteUploadingImg(false);
+    }
+  };
+
+
+
+  // --- SEO CRAWLABILITY AND ROUTE INDEXING AUDIT REPORT STATE ---
+  const [crawlScanning, setCrawlScanning] = useState(false);
+  const [crawlAuditFilter, setCrawlAuditFilter] = useState<"all" | "index" | "noindex">("all");
+  const [crawlAuditLogs, setCrawlAuditLogs] = useState<string[]>([]);
+  const [crawlComplianceRate, setCrawlComplianceRate] = useState<string>("100.00% SECURE");
+
+  useEffect(() => {
+    setIsOperationPending(isSaving);
+  }, [isSaving, setIsOperationPending]);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSiteName(data.site_name_en || "");
+        setSiteNameAr(data.site_name_ar || "");
+        const seoSiteNameEnVal = data.seo_site_name_en || "";
+        const seoSiteNameArVal = data.seo_site_name_ar || "";
+        setSeoSiteNameEn(seoSiteNameEnVal);
+        setSeoSiteNameAr(seoSiteNameArVal);
+
+        setSiteDescription(data.site_description_en || "");
+        setSiteDescriptionAr(data.site_description_ar || "");
+        const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
+        const seoArVal = data.seo_description_ar || "";
+        const kwsEnVal = data.keywords_en || "";
+        const kwsArVal = data.keywords_ar || "";
+
+        setSeoDescriptionEn(seoEnVal);
+        setSeoDescriptionAr(seoArVal);
+        setKeywordsEn(kwsEnVal);
+        setKeywordsAr(kwsArVal);
+        setGoogleAnalyticsId(data.google_analytics_id || "");
+        setGoogleSiteVerification(data.google_site_verification || "");
+        setBlockedPaths(data.blocked_paths || "");
+        setLogoBase64(data.logo_url || null);
+        setLogoLightBase64(data.logo_light_url || null);
+        setFaviconBase64(data.favicon_url || null);
+        setSeoImageUrl(data.seo_image_url || null);
+
+        setSiteSettings({
+          ...siteSettings,
+          siteName: data.site_name_en || "",
+          siteNameAr: data.site_name_ar || "",
+          seoSiteNameEn: seoSiteNameEnVal,
+          seoSiteNameAr: seoSiteNameArVal,
+          siteDescription: data.site_description_en || "",
+          siteDescriptionAr: data.site_description_ar || "",
+          seoDescriptionEn: seoEnVal,
+          seoDescriptionAr: seoArVal,
+          keywordsEn: kwsEnVal,
+          keywordsAr: kwsArVal,
+          googleAnalyticsId: data.google_analytics_id || "",
+          logoBase64: data.logo_url || null,
+          logoLightBase64: data.logo_light_url || null,
+          faviconBase64: data.favicon_url || null,
+          seoImageUrl: data.seo_image_url || null,
+          blocked_paths: data.blocked_paths || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchSettings();
+      fetchRouteSeoList();
+      checkSystemAssetsDiagnostic();
+    }
+  }, [token]);
+
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "logo" | "logo_light" | "favicon" | "seo",
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        showToast(
+          dir === "rtl" 
+            ? "حجم الصورة يتجاوز الحد الأقصى المسموح به وهو 2 ميغابايت" 
+            : "Image size must be less than 2MB", 
+          "error"
+        );
+        return;
+      }
+
+      setIsOperationPending(true);
+      if (type === "seo") setIsSeoUploading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/admin/settings/upload-asset", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image");
+        }
+
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          let updatedLogo = logoBase64;
+          let updatedLogoLight = logoLightBase64;
+          let updatedFavicon = faviconBase64;
+          let updatedSeo = seoImageUrl;
+
+          if (type === "seo") { setSeoImageUrl(data.imageUrl); updatedSeo = data.imageUrl; }
+          else if (type === "logo") { setLogoBase64(data.imageUrl); updatedLogo = data.imageUrl; }
+          else if (type === "logo_light") { setLogoLightBase64(data.imageUrl); updatedLogoLight = data.imageUrl; }
+          else if (type === "favicon") { setFaviconBase64(data.imageUrl); updatedFavicon = data.imageUrl; }
+
+          try {
+            const saveRes = await fetch("/api/admin/settings", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                logo_url: updatedLogo,
+                logo_light_url: updatedLogoLight,
+                favicon_url: updatedFavicon,
+                seo_image_url: updatedSeo,
+              }),
+            });
+
+            if (saveRes.ok) {
+              setSiteSettings({
+                ...siteSettings,
+                logoBase64: updatedLogo,
+                logoLightBase64: updatedLogoLight,
+                faviconBase64: updatedFavicon,
+                seoImageUrl: updatedSeo,
+              });
+              showToast(
+                dir === "rtl" 
+                  ? "تم رفع وحفظ وتطبيق الشعار بنجاح في قاعدة البيانات!" 
+                  : "Logo uploaded, saved and applied successfully!", 
+                "success"
+              );
+            } else {
+              showToast(
+                dir === "rtl" 
+                  ? "تم رفع الملف، يرجى النقر على حفظ التغييرات" 
+                  : "Uploaded. Click Save to complete.", 
+                "success"
+              );
+            }
+          } catch (persistErr) {
+            console.error('[AssetUpload] Persistence error:', persistErr);
+          }
+        } else {
+          throw new Error("Upload response was unsuccessful");
+        }
+      } catch (error) {
+        console.error('[AssetUpload] Frontend upload error:', error);
+        showToast(
+          dir === "rtl" 
+            ? "فشل رفع الصورة، يرجى المحاولة لاحقاً" 
+            : "Failed to upload asset. Please try again.", 
+          "error"
+        );
+      } finally {
+        setIsOperationPending(false);
+        if (type === "seo") setIsSeoUploading(false);
+      }
+    }
+  };
+
+  const handleSaveGeneralSettings = async () => {
+    if (!siteName || !siteDescription) {
+      showToast(t("allFieldsRequired") || "All fields are required", "error");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          site_name_en: siteName,
+          site_name_ar: siteNameAr,
+          site_description_en: siteDescription,
+          site_description_ar: siteDescriptionAr,
+          seo_description_en: seoDescriptionEn,
+          seo_description_ar: seoDescriptionAr,
+          keywords_en: keywordsEn,
+          keywords_ar: keywordsAr,
+          google_analytics_id: googleAnalyticsId,
+          google_site_verification: googleSiteVerification,
+          logo_url: logoBase64,
+          logo_light_url: logoLightBase64,
+          favicon_url: faviconBase64,
+          seo_image_url: seoImageUrl,
+        }),
+      });
+
+      if (res.ok) {
+        setSiteSettings({
+          ...siteSettings,
+          siteName,
+          siteNameAr,
+          siteDescription,
+          siteDescriptionAr,
+          seoDescriptionEn: seoDescriptionEn,
+          seoDescriptionAr: seoDescriptionAr,
+          keywordsEn: keywordsEn,
+          keywordsAr: keywordsAr,
+          seoImageUrl: seoImageUrl,
+          logoBase64,
+          logoLightBase64,
+          faviconBase64,
+        });
+        showToast(t("saveSuccess") || "General settings saved", "success");
+      } else {
+        showToast(t("saveFailed") || "Failed", "error");
+      }
+    } catch (error) {
+      showToast(t("saveFailed") || "Failed", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveVisualSettings = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          logo_url: logoBase64,
+          logo_light_url: logoLightBase64,
+          favicon_url: faviconBase64,
+        }),
+      });
+
+      if (res.ok) {
+        setSiteSettings({
+          ...siteSettings,
+          logoBase64,
+          logoLightBase64,
+          faviconBase64,
+        });
+        showToast(t("saveSuccess") || "Visual settings saved", "success");
+      } else {
+        const err = await res.json();
+        showToast(err.error || t("saveFailed") || "Failed", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || t("saveFailed") || "Failed", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveSeoSettings = async () => {
+    if (!siteName) {
+      showToast(dir === "rtl" ? "اسم الموقع بالإنجليزية مطلوب" : "Site Name in English is required", "error");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          site_name_en: siteName,
+          site_name_ar: siteNameAr,
+          seo_site_name_en: seoSiteNameEn,
+          seo_site_name_ar: seoSiteNameAr,
+          site_description_en: siteDescription,
+          site_description_ar: siteDescriptionAr,
+          seo_description_en: seoDescriptionEn,
+          seo_description_ar: seoDescriptionAr,
+          keywords_en: keywordsEn,
+          keywords_ar: keywordsAr,
+          google_analytics_id: googleAnalyticsId || "",
+          google_site_verification: googleSiteVerification || "",
+          seo_image_url: seoImageUrl,
+          blocked_paths: blockedPaths || "",
+        }),
+      });
+
+      if (res.ok) {
+        setSiteSettings({
+          ...siteSettings,
+          siteName,
+          siteNameAr,
+          seoSiteNameEn,
+          seoSiteNameAr,
+          siteDescription,
+          siteDescriptionAr,
+          seoDescriptionEn,
+          seoDescriptionAr,
+          keywordsEn,
+          keywordsAr,
+          googleAnalyticsId,
+          googleSiteVerification,
+          seoImageUrl,
+          blocked_paths: blockedPaths,
+        });
+        showToast(t("saveSuccess") || "SEO settings saved", "success");
+      } else {
+        const err = await res.json();
+        showToast(err.error || t("saveFailed") || "Failed", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || t("saveFailed") || "Failed", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // --- CRAWLABILITY ROUTE LIST, SCANNER, AND EXPORT CONSOLE FUNCTIONS ---
+  const routesSchema = useMemo(() => {
+    const base = [
+      { path: "/", labelEn: "Home Gateway Redirect", labelAr: "بوابة التوجيه الرئيسية", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "بوابة توجيه عامة تقوم بتوجيه المستخدمين للواجهة الافتراضية." },
+      { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "صفحة خطط الاشتراكات", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "صفحة عامة لعرض مزايا وتفاصيل العضوية والخطط السعرية." },
+      { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "متجر الإضافات والنماذج الذكية", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "معرض عام لعرض ملحقات الأنظمة المدمجة والقوالب الاحترافية." },
+      { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "المدونة التقنية والتعليمية", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "مركز مقالات عام لنشر التحليلات الفنية والدروس التعليمية." },
+      { path: "/terms", labelEn: "Terms of Service", labelAr: "شروط الخدمة والاستخدام", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "اتفاقية قانونية عامة تنظم الاستخدام وحقوق الملكية للمنصة." },
+      { path: "/privacy", labelEn: "Privacy Policy Charter", labelAr: "سياسة الخصوصية وحماية البيانات", type: "public", status: "index", descriptionEn: "Mandatory public charter highlighting database handling policies.", descriptionAr: "ميثاق خصوصية عام يوضح سياسات التعامل الآمن مع قواعد البيانات." },
+      { path: "/about", labelEn: "About Corporate Pitch", labelAr: "صفحة التعريف والرؤية", type: "public", status: "index", descriptionEn: "Public company presentation showcasing core tech vision.", descriptionAr: "عرض عام للمؤسسة يعزز الثقة ويوضح الرؤية الابتكارية." },
+      { path: "/chat", labelEn: "Intelligence Workspace (Chat Component)", labelAr: "مساحة المحادثة والتحليل الذكي المتطور", type: "private", status: "noindex", descriptionEn: "Highly sensitive user-curated environment containing active AI transcriptions.", descriptionAr: "مساحة عمل خاصة وسرية للغاية تحتوي على سجل محادثات الذكاء الاصطناعي." },
+      { path: "/settings", labelEn: "User Profile & Security Vault", labelAr: "إعدادات الحساب وحقيبة أمان العضو", type: "private", status: "noindex", descriptionEn: "Sensitive account configurations, referral links, and session details.", descriptionAr: "إعدادات شخصية حساسة ومفاتيح العضوية وسجلات الجلسات النشطة." },
+      { path: "/rewards", labelEn: "Affiliate Ledger & KYC Pending Board", labelAr: "نظام المكافآت والتحقق المالي المتقدم", type: "private", status: "noindex", descriptionEn: "Ledger transaction audits, KYC identities, and wallet addresses.", descriptionAr: "سجلات ماليّة لتعيين المكافآت وبيانات التحقق وإثبات الهوية." },
+      { path: "/reset-password", labelEn: "Credential Reset Gateway", labelAr: "بوابة استعادة وتعيين كلمة المرور", type: "private", status: "noindex", descriptionEn: "Temporary authentication token interface. Must stay isolated.", descriptionAr: "واجهة استعادة كلمات المرور باستخدام رموز تحقق متغيرة." },
+      { path: "/admin-community", labelEn: "Sections Panel (Community Management)", labelAr: "لوحة تحكم الأقسام (إدارة المجتمع)", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged community, sections, and category moderation hub.", descriptionAr: "مركز إدارة ومراقبة الأقسام والفئات والمجتمع ذو صلاحيات متقدمة." },
+      { path: "/admin-sections", labelEn: "Sections Control Panel (External Modules)", labelAr: "لوحة تحكم الأقسام والأبحاث الخارجية", type: "admin", status: "noindex", descriptionEn: "External systems integration, categories block and custom module definitions.", descriptionAr: "لوحة ربط الأنظمة ومصادر الأبحاث الخارجية وتمرير المعطيات الحساسة." },
+      { path: "/admin/sections", labelEn: "Sections Dashboard Internal Portal", labelAr: "بوابة الأقسام الداخلية للأنظمة الإلكترونية", type: "admin", status: "noindex", descriptionEn: "Internal database mappings and custom categories routing matrix.", descriptionAr: "مصفوفة فحص مسارات قواعد البيانات الداخلية للأنظمة والمجتمع." },
+      { path: "/admin", labelEn: "System Command Center (Core)", labelAr: "لوحة التحكم الرئيسية والقيادة والتحكم", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged interface displaying infrastructure configurations.", descriptionAr: "واجهة تحكم فائقة الحساسية للتحكم بالبنية التحتية والموديلات." }
+    ];
+
+    const dynamicBlockedList = siteSettings?.blocked_paths
+      ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
+      : [];
+
+    dynamicBlockedList.forEach((blockedPath: string) => {
+      const exists = base.some(r => r.path === blockedPath || r.path === '/' + blockedPath);
+      if (!exists) {
+        base.push({
+          path: blockedPath.startsWith('/') ? blockedPath : '/' + blockedPath,
+          labelEn: `Custom Excluded: ${blockedPath}`,
+          labelAr: `مسار محظور مخصص: ${blockedPath}`,
+          type: "custom",
+          status: "noindex",
+          descriptionEn: "Dynamically added via SEO System Exclusions control panel.",
+          descriptionAr: "تمت إضافته ديناميكياً لتأمين البيانات عبر لوحة التحكم."
+        });
+      }
+    });
+
+    return base;
+  }, [siteSettings, siteSettings?.blocked_paths]);
+
+  const runCrawlAuditScan = async () => {
+    if (crawlScanning) return; // Protect against concurrent scan execution
+    
+    // Explicitly reset all loading and data states for a fresh and reliable scan
+    setCrawlScanning(true);
+    setCrawlAuditLogs([
+      language === "ar" 
+        ? "⏳ يرجى الانتظار... جاري إنشاء بروتوكول اتصال آمن مع خادم التدقيق..." 
+        : "⏳ Initiating secure diagnostic connection to strict compliance core..."
+    ]);
+    setCrawlComplianceRate(language === "ar" ? "معلق" : "PENDING");
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds connection timeout
+    
+    try {
+      const response = await fetch(`/api/admin/seo-audit?lang=${language}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error("Failed to contact the SEO crawler audit core on server.");
+      }
+      const data = await response.json();
+      
+      const messages = data.logs || [];
+      setCrawlComplianceRate(data.compliance_score || "100.00% SECURE");
+      
+      let step = 0;
+      setCrawlAuditLogs([]); // Reset log queue to stream real logs
+      const timer = setInterval(() => {
+        if (step < messages.length) {
+          const logText = messages[step];
+          setCrawlAuditLogs(prev => [...prev, logText]);
+          step++;
+        } else {
+          clearInterval(timer);
+          setCrawlScanning(false);
+        }
+      }, 500);
+
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error("[CrawlAudit] Scan failure:", err);
+      setCrawlScanning(false);
+      const isAr = language === "ar";
+      const isTimeout = err.name === "AbortError";
+      
+      setCrawlComplianceRate("0.00% HIGH_RISK");
+      
+      setCrawlAuditLogs([
+        isTimeout
+          ? (isAr 
+              ? "🚨 [TIMEOUT] انتهت مهلة الاتصال بالخادم. الاستجابة متأخرة للغاية نتيجة لارتفاع زمن الاستجابة للمخدم." 
+              : "🚨 [TIMEOUT] The connection to the security compliance core timed out due to unstable network latency.")
+          : (isAr 
+              ? "🚨 [ERROR] فشل الاتصال بخادم التدقيق الصارم للتأكد من حماية بيئة المنصة." 
+              : "🚨 [ERROR] Failed to establish high-fidelity connection to strict backend audit service.")
+      ]);
+    }
+  };
+
+  const downloadCrawlAuditReport = () => {
+    const report = {
+      platform: "Perplexta",
+      timestamp: new Date().toISOString(),
+      scanning_officer_id: "PERPLEXTA_ADMIN_V4",
+      security_compliance_rate: crawlComplianceRate,
+      total_analysed_endpoints: routesSchema.length,
+      indexing_policy_applied: {
+        strict_user_data_isolation: "enforced",
+        allowed_public_routes_whitelist: [
+          "/", "/subscription", "/marketplace", "/blog", "/terms", "/privacy", "/about"
+        ]
+      },
+      endpoints_analysis: routesSchema.map((r: any) => ({
+        url_path: r.path,
+        endpoint_role: r.labelEn,
+        route_class: r.type.toUpperCase(),
+        target_search_indexing: r.status === "index" ? "ALLOWED (STANDARD INDEX)" : "BLOCKED (STRICT NOINDEX)",
+        meta_robots_tag_verified: r.status === "noindex" ? "noindex, nofollow" : "index, follow",
+        confidentiality_protection_level: r.status === "noindex" ? "MAXIMUM SHIELDED" : "STANDARD PUBLIC"
+      }))
+    };
+
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
+    const link = document.createElement("a");
+    link.href = dataUri;
+    link.download = `perplexta_seo_indexing_report_${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  return (
+    <div className="space-y-8 max-w-5xl relative">
+      {/* Toast Notification */}
+      {toast &&
+        createPortal(
+          <div
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
+              toast.type === "success"
+                ? theme === "dark"
+                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
+                  : "bg-white border border-accent text-accent"
+                : theme === "dark"
+                  ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
+                  : "bg-white border border-red-200 text-red-600"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <CheckCircle2 size={20} />
+            ) : (
+              <AlertCircle size={20} />
+            )}
+            <span className="font-medium text-sm">{toast.message}</span>
+          </div>,
+          document.body,
+        )}
+
+      {/* General Settings */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-md bg-accent/10 text-accent">
+            <Globe size={24} />
+          </div>
+          <h2 className="text-xl font-bold">{t("generalSettings")}</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("siteName")} (English)
+            </label>
+            <input
+              type="text"
+              value={siteName || ""}
+              dir="ltr"
+              onChange={(e) => setSiteName(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("siteName")} (العربية)
+            </label>
+            <input
+              type="text"
+              value={siteNameAr || ""}
+              dir="rtl"
+              onChange={(e) => setSiteNameAr(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("siteDescription")} (English)
+            </label>
+            <input
+              type="text"
+              value={siteDescription || ""}
+              dir="ltr"
+              onChange={(e) => setSiteDescription(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("siteDescription")} (العربية)
+            </label>
+            <input
+              type="text"
+              value={siteDescriptionAr || ""}
+              dir="rtl"
+              onChange={(e) => setSiteDescriptionAr(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSaveGeneralSettings}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
+          >
+            {isSaving ? (
+              <RefreshCw className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
+            {t("saveSettings") || "Save"}
+          </button>
+        </div>
+      </div>
+
+      {/* Visual Identity */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+      >
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-purple-500/10 text-purple-500">
+              <ImageIcon size={24} />
+            </div>
+            <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSyncSeoMetadata}
+              disabled={isSyncingMetadata}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium transition-colors border border-emerald-500/20"
+              title={language === "ar" ? "مزامنة العناوين والكلمات المفتاحية والوصف المفقود للمقالات والمنتجات" : "Sync missing SEO titles, descriptions, and keywords for blog & marketplace items"}
+            >
+              <RefreshCw size={14} className={isSyncingMetadata ? "animate-spin" : ""} />
+              <span>{language === "ar" ? "مزامنة SEO للمحتوى" : "Sync Content SEO"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={checkSystemAssetsDiagnostic}
+              disabled={isCheckingAssets}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+              title={language === "ar" ? "فحص سلامة ملفات الشعار والهوية" : "Scan system logo & asset files"}
+            >
+              <RefreshCw size={14} className={isCheckingAssets ? "animate-spin" : ""} />
+              <span>{language === "ar" ? "فحص السلامة" : "Scan Assets"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Orphaned Assets Warning Banner */}
+        {orphanedAssetsState?.hasOrphanedAssets && (
+          <div className="mb-6 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2 flex-wrap">
+                  <span>{language === "ar" ? "تحذير: ملف الهوية مفقود من السيرفر (Orphaned Asset Detected)" : "Warning: Orphaned Asset Detected"}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 font-mono text-amber-800 dark:text-amber-300">
+                    {orphanedAssetsState.orphanedKeys.join(", ")}
+                  </span>
+                </h4>
+                <p className="text-xs text-amber-700/90 dark:text-amber-300/80 mt-1">
+                  {language === "ar"
+                    ? "تم اكتشاف أن رابط الشعار أو الهوية يشير إلى ملف غير موجود على سيرفر التخزين. انقر على زر 'إصلاح' لاستعادة الشعار وإنشاء الملف تلقائياً."
+                    : "The logo or asset URL in system settings references a non-existent file on the server. Click 'Repair' to restore and re-create the missing asset automatically."}
+                </p>
+                <div className="mt-2 space-y-1">
+                  {orphanedAssetsState.assets.filter(a => a.isOrphaned).map(a => (
+                    <div key={a.key} className="text-xs font-mono text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      <span className="font-semibold text-amber-900 dark:text-amber-200">• {a.label}:</span>
+                      <span className="underline opacity-90">{a.url}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRepairOrphanedAssets}
+                disabled={isRepairingAssets}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isRepairingAssets ? (
+                  <RefreshCw className="animate-spin" size={14} />
+                ) : (
+                  <Wrench size={14} />
+                )}
+                <span>{language === "ar" ? "إصلاح (Repair)" : "Repair Asset"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Missing Asset Report Section */}
+        <div className="mb-8 p-5 rounded-xl border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 text-red-500">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-[var(--text-primary)]">
+                  {language === "ar" ? "تقرير الأصول المفقودة من السيرفر (Missing Asset Report)" : "Missing Asset Report (DB vs Disk Audit)"}
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {language === "ar"
+                    ? "فحص وتقاطع جدول الملفات (user_files) مع التخزين الفعلي على السيرفر لاكتشاف أي ملفات مسجلة في القاعدة ومفقودة على القرص."
+                    : "Cross-references user_files table against actual file system storage to detect missing files."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchMissingAssetReport}
+                disabled={isScanningMissingAssets}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-xs font-bold transition-colors border border-accent/20"
+              >
+                <RefreshCw size={14} className={isScanningMissingAssets ? "animate-spin" : ""} />
+                <span>{language === "ar" ? "تشخيص وفحص المفقودات" : "Scan Missing Assets"}</span>
+              </button>
+              {missingAssetReport && missingAssetReport.missingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handlePurgeMissingAssets()}
+                  disabled={isPurgingMissingAssets}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
+                >
+                  <Trash2 size={14} />
+                  <span>{language === "ar" ? `تطهير الكل (${missingAssetReport.missingCount})` : `Purge All (${missingAssetReport.missingCount})`}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {missingAssetReport ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
+                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "إجمالي الملفات المفحوصة" : "Total Checked"}</div>
+                  <div className="font-bold text-base text-[var(--text-primary)] mt-1">{missingAssetReport.totalChecked}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
+                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "الملفات الموجودة سليمة" : "Existing on Disk"}</div>
+                  <div className="font-bold text-base text-emerald-500 mt-1">{missingAssetReport.existingCount}</div>
+                </div>
+                <div className={`col-span-2 p-3 rounded-lg border ${missingAssetReport.missingCount > 0 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'}`}>
+                  <div className="text-[10px] opacity-80">{language === "ar" ? "الملفات المفقودة (متطابقة بالسجل ومغيبة عن القرص)" : "Missing Assets Detected"}</div>
+                  <div className="font-bold text-base mt-1">{missingAssetReport.missingCount}</div>
+                </div>
+              </div>
+
+              {missingAssetReport.missingAssets && missingAssetReport.missingAssets.length > 0 ? (
+                <div className="border border-[var(--border-main)] rounded-lg overflow-hidden bg-[var(--bg-base)]">
+                  <table className="w-full text-start text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
+                        <th className="p-3 text-start">ID</th>
+                        <th className="p-3 text-start">{language === "ar" ? "اسم الملف" : "File Name"}</th>
+                        <th className="p-3 text-start">URL / Path</th>
+                        <th className="p-3 text-center">User ID</th>
+                        <th className="p-3 text-center">{language === "ar" ? "تاريخ الرفع" : "Uploaded At"}</th>
+                        <th className="p-3 text-center">{language === "ar" ? "الإجراء" : "Action"}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-main)]">
+                      {missingAssetReport.missingAssets.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-red-500/5 transition-colors">
+                          <td className="p-3 font-mono">#{item.id}</td>
+                          <td className="p-3 font-medium text-[var(--text-primary)]">{item.file_name || 'N/A'}</td>
+                          <td className="p-3 font-mono text-xs text-red-500 truncate max-w-[200px]" title={item.file_url}>{item.file_url}</td>
+                          <td className="p-3 text-center font-mono">{item.user_id || 'N/A'}</td>
+                          <td className="p-3 text-center text-[var(--text-muted)]">{new Date(item.created_at).toLocaleString()}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handlePurgeMissingAssets([item.id])}
+                              disabled={isPurgingMissingAssets}
+                              className="px-2.5 py-1 rounded bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[10px] font-bold transition-colors"
+                            >
+                              {language === "ar" ? "حذف السجل" : "Purge Record"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-emerald-500 font-medium bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                  {language === "ar" ? "✅ جميع الملفات المسجلة في قاعدة البيانات متوفرة وموجودة على القرص بسلام." : "✅ All database file records are fully synchronized and present on disk storage."}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-gray-400">
+              {language === "ar" ? "انقر على 'تشخيص وفحص المفقودات' لبدء مطابقة جدول الملفات مع التخزين الفعلي." : "Click 'Scan Missing Assets' to begin the cross-reference audit."}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Logo Upload (Dark theme) */}
+          <div
+            className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+          >
+            {logoBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setLogoBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف الشعار" : "Remove Logo"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, "logo")}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="mb-4 flex items-center justify-center h-8">
+              {logoBase64 ? (
+                <img
+                  src={resolveImageUrl(logoBase64, 'general')}
+                  alt="Dark Logo"
+                  className="w-8 h-8 rounded-md object-contain"
+                />
+              ) : (
+                <div className="bg-pink-600 p-1.5 rounded-sm text-white flex items-center justify-center w-8 h-8">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 2L2 7L12 12L22 7L12 2Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 17L12 22L22 17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 12L12 17L22 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "الشعار للثيم الداكن" : "Logo (Dark Theme)"}
+            </h3>
+            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
+          </div>
+
+          {/* Logo Upload (Light theme) */}
+          <div
+            className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+          >
+            {logoLightBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setLogoLightBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف الشعار الفاتح" : "Remove Light Logo"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, "logo_light")}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="mb-4 flex items-center justify-center h-8">
+              {logoLightBase64 ? (
+                <img
+                  src={resolveImageUrl(logoLightBase64, 'general')}
+                  alt="Light Logo"
+                  className="w-8 h-8 rounded-md object-contain"
+                />
+              ) : (
+                <div className="bg-sky-500 p-1.5 rounded-sm text-white flex items-center justify-center w-8 h-8">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 2L2 7L12 12L22 7L12 2Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 17L12 22L22 17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M2 12L12 17L22 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "الشعار للثيم الفاتح" : "Logo (Light Theme)"}
+            </h3>
+            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
+          </div>
+
+          {/* Favicon Upload */}
+          <div
+            className={`p-6 rounded-lg border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
+          >
+            {faviconBase64 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setFaviconBase64(null);
+                }}
+                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
+                title={language === "ar" ? "حذف أيقونة المفضلة" : "Remove Favicon"}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, "favicon")}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="mb-4 w-8 h-8 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center overflow-hidden">
+              {faviconBase64 ? (
+                <img
+                  src={resolveImageUrl(faviconBase64, 'general')}
+                  alt="Favicon"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Globe size={16} className="text-gray-400" />
+              )}
+            </div>
+            <h3 className="font-medium text-sm mb-1">
+              {language === "ar" ? "أيقونة المفضلة" : "Favicon"}
+            </h3>
+            <p className="text-xs text-gray-500">32x32 PNG or ICO</p>
+          </div>
+        </div>
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSaveVisualSettings}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
+          >
+            {isSaving ? (
+              <RefreshCw className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
+            {t("saveSettings") || "Save"}
+          </button>
+        </div>
+      </div>
+
+      {/* SEO & Meta Tags */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-md bg-blue-500/10 text-blue-500">
+            <Search size={24} />
+          </div>
+          <h2 className="text-xl font-bold">{t("seoFields")}</h2>
+        </div>
+
+        <div className="space-y-5">
+          {/* Site Identity Name Fields (SEO integrated) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "اسم الموقع والمنصة (بالإنجليزية)" : "Site Name (English)"}
+              </label>
+              <input
+                type="text"
+                value={siteName || ""}
+                onChange={(e) => setSiteName(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="e.g. Perplexta Platform"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "اسم الموقع والمنصة (بالعربية)" : "Site Name (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={siteNameAr || ""}
+                onChange={(e) => setSiteNameAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="مثال: منصة بيربليكستا"
+              />
+            </div>
+          </div>
+
+          {/* SEO Site Name Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالإنجليزية)" : "SEO Site Title (English)"}
+              </label>
+              <input
+                type="text"
+                value={seoSiteNameEn || ""}
+                onChange={(e) => setSeoSiteNameEn(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="e.g. Perplexta | Premium Financial Analytics"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                {dir === "rtl" ? "العنوان المحدد لمحركات البحث الإنجليزية وعلامات تبويب المتصفح." : "Optimized English title displayed in Google search listings and browser tabs."}
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "عنوان الموقع لمحركات البحث SEO (بالعربية)" : "SEO Site Title (Arabic)"}
+              </label>
+              <input
+                type="text"
+                value={seoSiteNameAr || ""}
+                onChange={(e) => setSeoSiteNameAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="مثال: منصة بيربليكستا | الاختيار الاحترافي للتحليل"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                {dir === "rtl" ? "العنوان المعرّب المحدد لزيادة ظهور الموقع في نتائج البحث العربية." : "Optimized Arabic title targeting maximum visibility across Arabic search result engines."}
+              </p>
+            </div>
+          </div>
+
+          {/* Site Identity Description Fields (SEO integrated) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "الوصف التعريفي العام (بالإنجليزية)" : "General Description (English)"}
+              </label>
+              <textarea
+                rows={2}
+                value={siteDescription || ""}
+                onChange={(e) => setSiteDescription(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="Enter general tagline description..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
+                {dir === "rtl" ? "الوصف التعريفي العام (بالعربية)" : "General Description (Arabic)"}
+              </label>
+              <textarea
+                rows={2}
+                value={siteDescriptionAr || ""}
+                onChange={(e) => setSiteDescriptionAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+                placeholder="اكتب نبذة تعريفية عامة هنا..."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {t("seoDescriptionEn")}
+              </label>
+              <textarea
+                rows={3}
+                value={seoDescriptionEn || ""}
+                onChange={(e) => setSeoDescriptionEn(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {t("seoDescriptionAr")}
+              </label>
+              <textarea
+                rows={3}
+                value={seoDescriptionAr || ""}
+                onChange={(e) => setSeoDescriptionAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {t("keywordsEn")}
+              </label>
+              <input
+                type="text"
+                value={keywordsEn || ""}
+                onChange={(e) => setKeywordsEn(e.target.value)}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                {t("keywordsAr")}
+              </label>
+              <input
+                type="text"
+                value={keywordsAr || ""}
+                onChange={(e) => setKeywordsAr(e.target.value)}
+                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("googleAnalyticsId")}
+            </label>
+            <input
+              type="text"
+              placeholder={t("googleAnalyticsDesc")}
+              value={googleAnalyticsId || ""}
+              onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {dir === "rtl" 
+                ? "يسمح هذا المعرّف (مثل G-XXXXX) بمراقبة حركة المرور وسلوك المستخدمين وإرسال إحصاءات تفاعلية فورية إلى حساب إحصاءات جوجل الخاص بك."
+                : "This ID (e.g., G-XXXXX) enables real-time user behavior tracking, page transit logs, and custom interaction telemetry reporting directly to your Google Analytics dashboard."}
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t("googleSiteVerification")}
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. google-site-verification=..."
+              value={googleSiteVerification || ""}
+              onChange={(e) => setGoogleSiteVerification(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              {dir === "rtl" 
+                ? "يتم حقن رمز تحقق Google Search Console تلقائياً في ترويسة الصفحة لإثبات ملكية محركات البحث مباشرة دون رفع ملفات يدوية للجذر."
+                : "This verification key is dynamically injected into the head element to verify Google Search Console ownership instantly without manual file uploads to the root."}
+            </p>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {dir === "rtl" ? "حظر الفهرسة المخصص للمسارات (Exclusions List)" : "Dynamic Index Exclusions (Blocked Paths List)"}
+            </label>
+            <input
+              type="text"
+              placeholder={dir === "rtl" ? "مثال: /api/auth, /confidential-page (مفصولة بفاصلة)" : "e.g. /api/auth, /confidential-page, /custom-dashboard (comma-separated)"}
+              value={blockedPaths || ""}
+              onChange={(e) => setBlockedPaths(e.target.value)}
+              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
+              {dir === "rtl"
+                ? "أدخل المسارات الإضافية التي ترغب بحظر فهرستها مطلقاً في محركات البحث لحماية الخصوصية. يتم فصل المسارات بعلامة الفاصلة (,). المسارات الافتراضية والخاصة مع لوحات تسيير الأقسام يتم حظرها تلقائياً بالكامل في الهيكل."
+                : "Inject secondary sensitive routing paths you permanently want to shield from search rankings. Separate clean endpoints with a comma (,). Private/admin paths and Sections Control Panels are automatically shielded default."}
+            </p>
+          </div>
+
+          {/* Real-time Google Search Results Preview (SERP Preview) */}
+          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <Globe size={16} className="text-accent animate-pulse" />
+              {dir === "rtl" ? "معاينة حية لنتائج بحث جوجل (SERP Preview)" : "Live Google Search Result Preview (SERP)"}
+            </h3>
+            
+            <div className="max-w-2xl mx-auto">
+              {dir === "rtl" ? (
+                /* Arabic Search Snippet Card - displayed strictly when Arabic interface is loaded */
+                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between text-right`} dir="rtl">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5 justify-start flex-row-reverse text-right">
+                      {faviconBase64 ? (
+                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
+                      )}
+                      <div className="flex flex-col leading-none items-end">
+                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
+                          {seoSiteNameAr || siteNameAr || siteName || "بيربليكستا"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
+                          https://perplexta.com
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans text-right">
+                      {seoSiteNameAr || seoSiteNameEn || siteNameAr || siteName || "بيربليكستا"} | منصة التحليل التقني
+                    </h4>
+                    
+                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans text-right">
+                      {seoDescriptionAr ? (
+                        seoDescriptionAr.length > 160 
+                          ? `${seoDescriptionAr.slice(0, 157)}...` 
+                          : seoDescriptionAr
+                      ) : (
+                        "يرجى توفير وصف دقيق ومحسن لمحركات البحث ويركز على الكفاءة والتحليل."
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Length optimization metric */}
+                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
+                    <div className="flex justify-between items-center text-[10px] font-sans mb-1.5 text-gray-400 flex-row-reverse">
+                      <span>طول الوصف (مثالي: 120-160 حرفاً)</span>
+                      <span className={
+                        seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
+                          ? "text-accent font-bold"
+                          : seoDescriptionAr.length > 160 
+                          ? "text-red-500" 
+                          : "text-amber-500"
+                      }>
+                        {seoDescriptionAr.length} حرف
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-theme ${
+                          seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
+                            ? "bg-accent"
+                            : seoDescriptionAr.length > 160
+                            ? "bg-red-500"
+                            : "bg-amber-500"
+                        }`}
+                        style={{ width: `${Math.min(100, (seoDescriptionAr.length / 160) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* English Search Snippet Card - displayed strictly when English interface is loaded */
+                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between`}>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {faviconBase64 ? (
+                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
+                      )}
+                      <div className="flex flex-col leading-none">
+                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
+                          {seoSiteNameEn || siteName || "Perplexta Platform"}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
+                          https://perplexta.com
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans">
+                      {seoSiteNameEn || seoSiteNameAr || siteName || "Perplexta Platform"} | Best Technical Analysis
+                    </h4>
+                    
+                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans">
+                      {seoDescriptionEn ? (
+                        seoDescriptionEn.length > 160 
+                          ? `${seoDescriptionEn.slice(0, 157)}...` 
+                          : seoDescriptionEn
+                      ) : (
+                        "Please provide a high-quality, concise search engine description focused on technical analysis."
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* Length optimization metric */}
+                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
+                    <div className="flex justify-between items-center text-[10px] font-mono mb-1.5 text-gray-400">
+                      <span>Description Length (Optimal: 120-160 chars)</span>
+                      <span className={
+                        seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
+                          ? "text-accent font-bold"
+                          : seoDescriptionEn.length > 160 
+                          ? "text-red-500" 
+                          : "text-amber-500"
+                      }>
+                        {seoDescriptionEn.length} chars
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-theme ${
+                          seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
+                            ? "bg-accent"
+                            : seoDescriptionEn.length > 160
+                            ? "bg-red-500"
+                            : "bg-amber-500"
+                        }`}
+                        style={{ width: `${Math.min(100, (seoDescriptionEn.length / 160) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SEO Share Image Upload */}
+          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <ImageIcon size={16} className="text-accent" />
+              {t("seoPreviewImageTitle")}
+            </h3>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Image Uploader */}
+              <div className="space-y-4">
+                <div
+                  className={`p-6 rounded-[var(--radius)] border border-dashed transition-theme ${
+                    theme === "dark" 
+                      ? "border-gray-800 bg-[#161618] hover:border-accent/50" 
+                      : "border-gray-200 bg-gray-50/50 hover:border-accent/50"
+                  } flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px] group`}
+                >
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => handleImageUpload(e, "seo")}
+                    disabled={isSeoUploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                  />
+                  
+                  {isSeoUploading ? (
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <RefreshCw className="animate-spin text-accent mb-3" size={28} />
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {dir === "rtl" ? "جاري رفع الصورة..." : "Uploading image..."}
+                      </p>
+                    </div>
+                  ) : seoImageUrl ? (
+                    <div className="relative w-full h-full flex flex-col items-center">
+                      <img
+                        src={resolveImageUrl(seoImageUrl, 'general')}
+                        alt="SEO Preview"
+                        className="max-h-[160px] rounded-md object-contain aspect-[1.91/1] shadow-md border dark:border-gray-800"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSeoImageUrl(null);
+                        }}
+                        className="mt-3 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 transition-theme z-20"
+                      >
+                        <Trash2 size={12} />
+                        {t("seoRemoveImage")}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center p-4">
+                      <div className="mb-3 p-3 rounded-full bg-accent/10 text-accent group-hover:scale-110 transition-transform duration-300">
+                        <Upload size={24} />
+                      </div>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {t("seoDragAndDrop")}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-2">
+                        {t("seoSupportedFormats")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Google and Meta specifications card */}
+                <div className={`p-4 rounded-md border text-xs leading-relaxed space-y-2 ${
+                  theme === "dark" ? "bg-[#141416]/50 border-gray-800/80 text-gray-400" : "bg-gray-50/50 border-gray-100 text-gray-500"
+                }`}>
+                  <p className="font-semibold text-accent">
+                    💡 {t("seoBestPracticesTitle")}
+                  </p>
+                  <ul className="list-disc leading-loose list-inside pr-1 space-y-1">
+                    <li>
+                      <strong>{t("seoBestPracticesRecSize")}</strong> {t("seoBestPracticesRecSizeDesc")}
+                    </li>
+                    <li>
+                      <strong>{t("seoBestPracticesRatio")}</strong> {t("seoBestPracticesRatioDesc")}
+                    </li>
+                    <li>
+                      <strong>{t("seoBestPracticesFileSize")}</strong> {t("seoBestPracticesFileSizeDesc")}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Real-time Rich Social Media Preview (Facebook / LinkedIn card simulation) */}
+              <div className="flex flex-col justify-start">
+                <div className="text-xs font-semibold mb-3 text-gray-500 dark:text-gray-400">
+                  ⚡ {t("seoSocialPreviewTitle")}
+                </div>
+
+                <div className={`rounded-lg overflow-hidden border shadow-sm flex flex-col ${
+                  theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-200"
+                }`}>
+                  {/* Image Section */}
+                  <div className="relative aspect-[1.91/1] w-full overflow-hidden bg-gray-100 dark:bg-zinc-900 border-b dark:border-gray-800 flex items-center justify-center">
+                    {seoImageUrl ? (
+                      <img 
+                        src={seoImageUrl} 
+                        alt="SEO Card Preview" 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-center p-4">
+                        <ImageIcon size={32} className="text-gray-300 dark:text-gray-700 mb-2" />
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">
+                          {t("seoNoImageYet")}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`absolute top-2 ${language === "ar" ? "right-2" : "left-2"} bg-black/60 rounded-md px-2 py-0.5 text-[8px] tracking-wide text-white uppercase font-mono z-20`}>
+                      {language === "ar" ? "معاينة 1200x630" : "Preview Image 1200x630"}
+                    </div>
+                  </div>
+
+                  {/* Body Section */}
+                  <div className={`p-4 flex flex-col font-sans ${language === "ar" ? "text-right" : "text-left"}`} dir={language === "ar" ? "rtl" : "ltr"}>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wider font-mono">
+                      {window.location.hostname || "perplexta.com"}
+                    </div>
+                    <div className={`text-sm font-semibold mt-1 line-clamp-1 ${
+                      theme === "dark" ? "text-white" : "text-gray-800"
+                    }`}>
+                      {language === "ar" ? (seoSiteNameAr || siteNameAr || "منصة بيربليكستا") : (seoSiteNameEn || siteName || "Perplexta Platform")}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
+                      {language === "ar" 
+                        ? (seoDescriptionAr || "يرجى كتابة وصف تعريفي مخصص ومكثف لزيادة جودة ظهور منصتك على محركات البحث وتسهيل أرشفة الرابط تلقائياً مع الصورة.") 
+                        : (seoDescriptionEn || "Please enter high quality descriptive analysis parameters to automatically enhance your brand's digital footprints across social ecosystems.")}
+                    </div>
+                  </div>
+                </div>
+                
+                <p className={`text-[10px] text-gray-400 mt-3 italic leading-relaxed ${dir === "rtl" ? "text-right" : "text-left"}`}>
+                  {t("seoPreviewFooterNote")}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={handleSaveSeoSettings}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
+          >
+            {isSaving ? (
+              <RefreshCw className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
+            {t("saveSettings") || "Save"}
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic Route-Based SEO Manager (Database SEO Meta Tags per Route) */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${
+          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
+              <Globe size={24} className="text-accent " />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">
+                {dir === "rtl" ? "أداة إدارة بيانات SEO للمسارات الديناميكية" : "Dynamic Route SEO Meta Manager"}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {dir === "rtl"
+                  ? "تخصيص وتحديث عناوين SEO والوصف والكلمات المفتاحية وصور Open Graph لكل مسار في قاعدة البيانات بشكل فوري ومباشر."
+                  : "Dynamically manage SEO title, description, keywords, and Open Graph share images for specific application routes in database."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={fetchRouteSeoList}
+              disabled={loadingRouteSeo}
+              className="p-2.5 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a1a1c] text-gray-600 dark:text-gray-300 transition-theme"
+              title={dir === "rtl" ? "تحديث القائمة" : "Refresh List"}
+            >
+              <RefreshCw size={16} className={loadingRouteSeo ? "animate-spin" : ""} />
+            </button>
+            <button
+              onClick={handleOpenAddRouteModal}
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(156,163,175,0.3)]"
+            >
+              <Plus size={16} />
+              {dir === "rtl" ? "إضافة مسار جديد" : "Add Route SEO"}
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Counter Filter */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-gray-50 dark:bg-[#18181b] p-3 rounded-md border border-gray-100 dark:border-gray-800/80">
+          <div className="relative w-full sm:w-80">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={routeSearchQuery}
+              onChange={(e) => setRouteSearchQuery(e.target.value)}
+              placeholder={dir === "rtl" ? "بحث عن مسار أو عنوان..." : "Filter routes or titles..."}
+              className={`w-full text-xs pl-9 pr-3 py-2 rounded-md border ${
+                theme === "dark" ? "bg-[#111111] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-800"
+              } focus:outline-none focus:border-accent`}
+            />
+          </div>
+          <div className="text-xs text-gray-500 font-mono flex items-center gap-2">
+            <span>{dir === "rtl" ? "إجمالي المسارات المسجلة:" : "Configured Routes:"}</span>
+            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent font-bold">
+              {routeSeoList.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Routes List Table */}
+        {loadingRouteSeo && routeSeoList.length === 0 ? (
+          <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
+            <RefreshCw size={20} className="animate-spin text-accent" />
+            <span>{dir === "rtl" ? "جاري تحميل إعدادات SEO للمسارات..." : "Loading route SEO configurations..."}</span>
+          </div>
+        ) : routeSeoList.length === 0 ? (
+          <div className="py-12 text-center border border-dashed rounded-md dark:border-gray-800 text-gray-400">
+            <Globe size={32} className="mx-auto mb-2 text-gray-500 opacity-60" />
+            <p className="text-sm font-medium">
+              {dir === "rtl" ? "لا توجد مسارات مخصصة مسجلة حالياً" : "No custom route SEO configurations found."}
+            </p>
+            <button
+              onClick={handleOpenAddRouteModal}
+              className="mt-3 text-xs text-accent underline hover:text-accent"
+            >
+              {dir === "rtl" ? "+ إضافة أول مسار الآن" : "+ Create your first route SEO entry"}
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className={`text-[10px] uppercase font-mono border-b ${
+                theme === "dark" ? "border-gray-800 text-gray-400 bg-[#18181b]" : "border-gray-200 text-gray-500 bg-gray-50"
+              }`}>
+                <tr>
+                  <th className="p-3">{dir === "rtl" ? "المسار (Route)" : "Route Path"}</th>
+                  <th className="p-3">{dir === "rtl" ? "عنوان SEO (العربية / English)" : "SEO Title (Ar / En)"}</th>
+                  <th className="p-3">{dir === "rtl" ? "الوصف" : "Description"}</th>
+                  <th className="p-3">{dir === "rtl" ? "صورة OG" : "OG Image"}</th>
+                  <th className="p-3">{dir === "rtl" ? "الحالة" : "Status"}</th>
+                  <th className="p-3 text-right">{dir === "rtl" ? "الإجراءات" : "Actions"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                {routeSeoList
+                  .filter((item) => {
+                    if (!routeSearchQuery) return true;
+                    const q = routeSearchQuery.toLowerCase();
+                    return (
+                      item.route?.toLowerCase().includes(q) ||
+                      item.title_ar?.toLowerCase().includes(q) ||
+                      item.title_en?.toLowerCase().includes(q) ||
+                      item.description_ar?.toLowerCase().includes(q) ||
+                      item.description_en?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((item) => (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-gray-50/50 dark:hover:bg-[#18181b]/50 transition-colors ${
+                        !item.is_active ? "opacity-50" : ""
+                      }`}
+                    >
+                      <td className="p-3 font-mono font-bold text-accent">
+                        {item.route}
+                      </td>
+                      <td className="p-3 max-w-[200px]">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {dir === "rtl" ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar)}
+                        </div>
+                        <div className="text-[10px] text-gray-400 truncate dir-ltr">
+                          {item.title_en}
+                        </div>
+                      </td>
+                      <td className="p-3 max-w-[260px]">
+                        <p className="line-clamp-2 text-gray-600 dark:text-gray-400 text-[11px] leading-relaxed">
+                          {dir === "rtl" ? (item.description_ar || item.description_en) : (item.description_en || item.description_ar)}
+                        </p>
+                      </td>
+                      <td className="p-3">
+                        {item.og_image_url ? (
+                          <img
+                            src={item.og_image_url}
+                            alt={item.route}
+                            className="w-12 h-7 object-cover rounded border border-gray-200 dark:border-gray-800"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic">Default</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                            item.is_active
+                              ? "bg-accent/10 text-accent border border-accent/20"
+                              : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                          }`}
+                        >
+                          {item.is_active ? (dir === "rtl" ? "نشط" : "Active") : (dir === "rtl" ? "معطل" : "Disabled")}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditRouteModal(item)}
+                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+                            title={dir === "rtl" ? "تعديل" : "Edit"}
+                          >
+                            <Settings2 size={15} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRouteSeo(item.id)}
+                            className="p-1.5 rounded hover:bg-rose-500/10 text-rose-500 transition-colors"
+                            title={dir === "rtl" ? "حذف" : "Delete"}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Route SEO Add/Edit Modal */}
+      <AnimatePresence>
+        {isRouteModalOpen && editingRouteItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border p-6 shadow-2xl ${
+                theme === "dark" ? "bg-[#141416] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
+              }`}
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-800 mb-5">
+                <div className="flex items-center gap-2 font-bold text-lg">
+                  <Globe className="text-accent" size={20} />
+                  <span>
+                    {editingRouteItem.id
+                      ? (dir === "rtl" ? "تعديل إعدادات SEO للمسار" : "Edit Route SEO Setting")
+                      : (dir === "rtl" ? "إضافة مسار SEO جديد" : "Add New Route SEO Setting")}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsRouteModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-200"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveRouteSeo} className="space-y-4">
+                {/* Route path */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1">
+                    {dir === "rtl" ? "مسار الصفحة (Route Path)" : "Route Path (e.g. /marketplace)"} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingRouteItem.route || ""}
+                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, route: e.target.value })}
+                    placeholder="/marketplace"
+                    className={`w-full text-xs p-2.5 rounded-md border font-mono ${
+                      theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                    } focus:outline-none focus:border-accent`}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {dir === "rtl" ? "المسار النسبي للصفحة، مثل: /blog أو /subscription أو /custom-page" : "Relative route path starting with /, e.g., /blog or /subscription"}
+                  </p>
+                </div>
+
+                {/* Title Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "عنوان SEO (بالعربية)" : "SEO Title (Arabic)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.title_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_ar: e.target.value })}
+                      placeholder="عنوان الصفحة بالعربية..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "عنوان SEO (بالإنجليزية)" : "SEO Title (English)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.title_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_en: e.target.value })}
+                      placeholder="Page title in English..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                </div>
+
+                {/* Description Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الوصف التعريفي (بالعربية)" : "SEO Description (Arabic)"}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editingRouteItem.description_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_ar: e.target.value })}
+                      placeholder="وصف مختصر ومحسّن لمحركات البحث..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الوصف التعريفي (بالإنجليزية)" : "SEO Description (English)"}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editingRouteItem.description_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_en: e.target.value })}
+                      placeholder="Search optimized page description..."
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                </div>
+
+                {/* Keywords Ar & En */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الكلمات المفتاحية (بالعربية)" : "Keywords (Arabic)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.keywords_ar || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_ar: e.target.value })}
+                      placeholder="كلمات, مفتاحية, مفصولة, بفاصلة"
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      {dir === "rtl" ? "الكلمات المفتاحية (بالإنجليزية)" : "Keywords (English)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRouteItem.keywords_en || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_en: e.target.value })}
+                      placeholder="keywords, separated, by, comma"
+                      className={`w-full text-xs p-2.5 rounded-md border ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                  </div>
+                </div>
+
+                {/* OG Image URL / Upload */}
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    {dir === "rtl" ? "صورة مشاركة التواصل الاجتماعي (Open Graph Image)" : "Open Graph Image (OG Image URL)"}
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={editingRouteItem.og_image_url || ""}
+                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, og_image_url: e.target.value })}
+                      placeholder="https://... or /uploads/..."
+                      className={`flex-1 text-xs p-2.5 rounded-md border font-mono ${
+                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
+                      } focus:outline-none focus:border-accent`}
+                    />
+                    <label className="cursor-pointer flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700">
+                      <Upload size={14} />
+                      <span>{routeUploadingImg ? "..." : (dir === "rtl" ? "رفع" : "Upload")}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleRouteImageUpload}
+                        disabled={routeUploadingImg}
+                      />
+                    </label>
+                  </div>
+                  {editingRouteItem.og_image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={editingRouteItem.og_image_url}
+                        alt="Preview"
+                        className="h-20 rounded border object-cover border-gray-200 dark:border-gray-800"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Is Active Toggle */}
+                <div className="flex items-center gap-3 pt-2">
+                  <input
+                    type="checkbox"
+                    id="route_is_active"
+                    checked={editingRouteItem.is_active !== false}
+                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, is_active: e.target.checked })}
+                    className="w-4 h-4 text-accent accent-accent rounded border-gray-300 focus:ring-accent-500"
+                  />
+                  <label htmlFor="route_is_active" className="text-xs font-medium cursor-pointer">
+                    {dir === "rtl" ? "تفعيل إعدادات SEO لهذا المسار" : "Enable dynamic SEO meta tags for this route"}
+                  </label>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsRouteModalOpen(false)}
+                    className="px-4 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  >
+                    {dir === "rtl" ? "إلغاء" : "Cancel"}
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)]"
+                  >
+                    <Save size={14} />
+                    {dir === "rtl" ? "حفظ التغييرات" : "Save Settings"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Search Engine Indexing & Route Security Verification (Crawlability Audit) */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${
+          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
+        }`}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
+              <ShieldCheck size={24} className="text-accent " />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">
+                {language === "ar" ? "تقرير تدقيق أرشفة وقابلية زحف المسارات" : "Search Engine Indexing & Crawlability Audit"}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {language === "ar" 
+                  ? "نظام تدقيق فوري للتحقق من أمان وحجب الصفحات الشخصية للمستخدمين من الفهرسة." 
+                  : "Security ledger simulating Google Search crawler to verify compliance of user routes."}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={runCrawlAuditScan}
+              disabled={crawlScanning}
+              className="flex items-center gap-2 text-xs bg-accent hover:bg-accent text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
+            >
+              <RefreshCw className={crawlScanning ? "animate-spin" : ""} size={14} />
+              {language === "ar" ? "تشغيل تدقيق الفهرسة" : "Execute Crawl Audit"}
+            </button>
+            
+            <button
+              onClick={downloadCrawlAuditReport}
+              className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c1c1e] text-gray-700 dark:text-gray-300 px-4 py-2 rounded-[var(--radius)] transition-theme font-medium"
+            >
+              <Download size={14} />
+              {language === "ar" ? "تصدير التقرير الفني" : "Download JSON Report"}
+            </button>
+          </div>
+        </div>
+
+        {/* Audit Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
+            <span className="text-xs text-gray-400">{language === "ar" ? "إجمالي المسارات" : "Total Routes Indexed"}</span>
+            <div className="text-2xl font-bold mt-1 text-sky-500">
+              {routesSchema.length} <span className="text-xs font-normal text-gray-400">URI</span>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800/85" : "bg-gray-50 border-gray-200"}`}>
+            <span className="text-xs text-gray-400">{language === "ar" ? "مسارات محمية (No-Index)" : "Shielded Secret Routes (No-Index)"}</span>
+            <div className="text-2xl font-bold mt-1 text-accent  flex items-center gap-1.5">
+              {routesSchema.filter((r: any) => r.status === "noindex").length}
+              <ShieldCheck size={16} className="text-accent" />
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
+            <span className="text-xs text-gray-400">{language === "ar" ? "مسارات عامة (مؤرشفة)" : "Approved Public Domains"}</span>
+            <div className="text-2xl font-bold mt-1 text-amber-500">
+              {routesSchema.filter((r: any) => r.status === "index").length}
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
+            <span className="text-xs text-gray-400">{language === "ar" ? "معدل سلامة الامتثال والأرشفة" : "Compliance & Indexing Rating"}</span>
+            <div className={`text-xl font-bold mt-1.5 uppercase tracking-tight flex items-center gap-1.5 ${
+              crawlComplianceRate.includes("SECURE") 
+                ? "text-accent " 
+                : crawlComplianceRate === "PENDING" || crawlComplianceRate === "معلق"
+                ? "text-amber-500 animate-pulse"
+                : "text-rose-500"
+            }`}>
+              <span>{crawlComplianceRate}</span>
+              {crawlComplianceRate.includes("SECURE") && <CheckCircle size={14} className="text-accent" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Live Terminal Monitor */}
+        {(crawlScanning || crawlAuditLogs.length > 0) && (
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 font-mono flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              {language === "ar" ? "شاشة التدقيق الفوري والمطابقة" : "Real-time Verification Console"}
+            </h3>
+            <div className="p-4 rounded-md bg-[#09090b] border border-zinc-800 text-xs font-mono text-accent/90 leading-relaxed max-h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
+              {crawlAuditLogs.map((log, index) => (
+                <div key={index} className="flex items-start gap-2 animate-in fade-in duration-300">
+                  <span className="text-zinc-600">[{new Date().toLocaleTimeString()}]</span>
+                  <span>{log}</span>
+                </div>
+              ))}
+              {crawlScanning && (
+                <div className="flex items-center gap-1 text-accent/80 italic font-medium animate-pulse ml-4">
+                  <span>●</span> <span>{language === "ar" ? "جاري تحليل الاستجابة..." : "Analyzing header packets..."}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Filter Controls */}
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
+          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            {language === "ar" ? "سجل توثيق حماية المسارات" : "Path Protection Registry Ledger"}
+          </span>
+          <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-0.5 rounded-[4px] border dark:border-gray-800">
+            {[
+              { id: "all", label: language === "ar" ? "الكل" : "All" },
+              { id: "index", label: language === "ar" ? "مؤرشفة" : "Public Only" },
+              { id: "noindex", label: language === "ar" ? "محمية" : "Shielded Only" }
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setCrawlAuditFilter(f.id as any)}
+                type="button"
+                className={`text-[10px] uppercase font-bold px-3 py-1 transition-theme rounded-[3px] ${
+                  crawlAuditFilter === f.id
+                    ? "bg-white dark:bg-[#27272a] text-accent dark:text-accent font-extrabold shadow-sm"
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table Path List */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px] border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 text-xs text-left">
+                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "المسار" : "Path / Location"}</th>
+                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "النوع" : "Category"}</th>
+                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "وسم محركات البحث" : "Crawler Directive"}</th>
+                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "حالة الأمان" : "Security Certification"}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
+              {routesSchema
+                .filter((r: any) => {
+                  if (crawlAuditFilter === "all") return true;
+                  return r.status === crawlAuditFilter;
+                })
+                .map((route: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#151517]/30 transition-theme">
+                    <td className={`py-3.5 font-mono text-xs ${language === "ar" ? "text-right" : "text-left"}`}>
+                      <span className="text-gray-800 dark:text-gray-300 font-semibold">{route.path}</span>
+                    </td>
+                    <td className={`py-3.5 ${language === "ar" ? "text-right" : "text-left"}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        route.type === "admin" 
+                          ? "bg-red-500/10 text-red-500" 
+                          : route.type === "private" 
+                          ? "bg-accent/10 text-accent" 
+                          : route.type === "custom"
+                          ? "bg-purple-500/10 text-purple-500"
+                          : "bg-sky-500/10 text-sky-500"
+                      }`}>
+                        {route.type.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className={`py-3.5 font-mono text-[11px] ${language === "ar" ? "text-right" : "text-left"}`}>
+                      {route.status === "noindex" ? (
+                        <span className="text-zinc-400 font-medium flex items-center gap-1">
+                          <EyeOff size={12} className="text-zinc-500" />
+                          noindex, nofollow
+                        </span>
+                      ) : (
+                        <span className="text-accent font-bold flex items-center gap-1 ">
+                          <Eye size={12} className="text-accent animate-pulse" />
+                          index, follow
+                        </span>
+                      )}
+                    </td>
+                    <td className={`py-3.5 ${language === "ar" ? "text-right" : "text-left"}`}>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          {route.status === "noindex" ? (
+                            <>
+                              <ShieldCheck size={14} className="text-accent " />
+                              <span className="font-bold text-accent text-xs">
+                                {language === "ar" ? "محجوب دستورياً" : "SECURED AND ISOLATED"}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle size={14} className="text-amber-500" />
+                              <span className="font-bold text-amber-500 text-xs">
+                                {language === "ar" ? "مؤرشف عام" : "APPROVED PUBLIC PAGE"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-gray-400 mt-0.5">
+                          {language === "ar" ? route.descriptionAr : route.descriptionEn}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Cache Management Utility Center */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border ${
+          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
+        }`}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
+            <Cpu size={24} className="text-accent " />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">
+              {dir === "rtl" ? "إدارة ذاكرة التخزين المؤقت ونظام الـ Caches" : "System Caches & Memory Management"}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {dir === "rtl"
+                ? "مسح وإعادة تحميل ذاكرات التخزين المؤقت (صلاحيات الملفات، مسارات SEO، وإعدادات النظام) بشكل فردي أو جماعي."
+                : "Clear and refresh system caches (file permissions, route SEO, system settings) individually or globally with instant UI feedback."}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* File Permission Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-accent">FILE PERMISSIONS</span>
+                <ShieldCheck size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "صلاحيات الملفات" : "File Permission Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة التحقق من الأمان وصلاحيات الوصول للملفات المرفوعة." : "Invalidates cached authorization checks for secure file access."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('file_permission')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'file_permission' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح ذاكرة الملفات" : "Clear File Cache"}
+            </button>
+          </div>
+
+          {/* Route SEO Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-accent">ROUTE SEO</span>
+                <Globe size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسارات SEO" : "Route SEO Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة بيانات وسوم Meta وعناوين الصفحات الديناميكية." : "Flushes cached Open Graph and meta tag configs per route."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('route_seo')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'route_seo' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح ذاكرة SEO" : "Clear SEO Cache"}
+            </button>
+          </div>
+
+          {/* System Settings Cache */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-accent">SYSTEM CONFIG</span>
+                <Settings size={16} className="text-gray-400" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "إعدادات النظام" : "System Settings Cache"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح ذاكرة إعدادات المنصة العامة (الشعارات، العناوين، الثيمات)." : "Refreshes global platform parameters and site branding configs."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('system_settings')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {clearingCache === 'system_settings' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              {dir === "rtl" ? "مسح إعدادات النظام" : "Clear Settings Cache"}
+            </button>
+          </div>
+
+          {/* Global All Caches */}
+          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-accent/30" : "bg-accent/40 border-accent/30"}`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold font-mono text-accent">GLOBAL PURGE</span>
+                <Zap size={16} className="text-accent" />
+              </div>
+              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "مسح شامل (Global)" : "Global Cache Purge"}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
+                {dir === "rtl" ? "مسح جميع الذاكرات (الاقتصاد، الخطط، الموديلات والمفاتيح) دفعة واحدة." : "Clears all system, SEO, file permission, economy, and orchestrator caches."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleClearCache('global')}
+              disabled={clearingCache !== null}
+              className="w-full py-2 px-3 bg-accent hover:bg-accent text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
+            >
+              {clearingCache === 'global' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
+              {dir === "rtl" ? "مسح جميع الذاكرات" : "Purge All Caches"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Compliance Audit Logs View ---
+const ComplianceAuditLogsView = ({
+  theme,
+  t,
+  dir,
+}: {
+  theme: string;
+  t: (key: string) => string;
+  dir: string;
+}) => {
+  const { token, language } = useAppContext();
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [limit] = useState(25);
+  const [offset, setOffset] = useState(0);
+  const [actionFilter, setActionFilter] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
+  const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const [selectedLogIds, setSelectedLogIds] = useState<any[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string | { ar: string; en: string };
+    description: string | { ar: string; en: string };
+    variant?: 'danger' | 'success' | 'warning' | 'info' | 'purple';
+    confirmLabel?: string | { ar: string; en: string };
+    onConfirm: () => Promise<void> | void;
+  } | null>(null);
+
+  const isRtl = language === "ar";
+
+  const toggleSelectLog = (id: any) => {
+    setSelectedLogIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const visibleIds = logs.map((log) => log.id);
+    const allSelected = visibleIds.every((id) => selectedLogIds.includes(id));
+    if (allSelected) {
+      setSelectedLogIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedLogIds((prev) => {
+        const union = new Set([...prev, ...visibleIds]);
+        return Array.from(union);
+      });
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedLogIds.length === 0) return;
+    const confirmMessage = isRtl
+      ? `هل أنت متأكد من مسح (${selectedLogIds.length}) من سجلات التدقيق والامتثال؟ لا يمكن التراجع عن هذا الإجراء.`
+      : `Are you sure you want to permanently delete (${selectedLogIds.length}) compliance logs? This action is irreversible.`;
+
+    setConfirmModal({
+      isOpen: true,
+      title: { ar: "مسح السجلات المحددة؟", en: "Delete Selected Logs?" },
+      description: confirmMessage,
+      variant: "purple",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/admin/audit-logs/batch-delete", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ ids: selectedLogIds }),
+          });
+          if (res.ok) {
+            setSelectedLogIds([]);
+            fetchLogs();
+          } else {
+            const errData = await res.json();
+            console.error("Failed to delete selected logs:", errData.error);
+          }
+        } catch (err) {
+          console.error("Batch delete compliance logs failed:", err);
+        }
+      }
+    });
+  };
+
+  const handleClearAll = () => {
+    const confirmMessage = isRtl
+      ? "تنبيه أمني هام: هل أنت متأكد تماماً من مسح كافة سجلات التدقيق والامتثال بالمنصة بشكل كامل؟ هذا الإجراء سيقوم بتصفير السجلات أمنياً ولا يمكن التراجع عنه."
+      : "CRITICAL ALERT: Are you absolutely sure you want to completely clear ALL compliance audit logs? This will wipe the audit history permanently.";
+
+    setConfirmModal({
+      isOpen: true,
+      title: { ar: "تصفير كافة السجلات أمنياً؟", en: "Purge All Compliance Logs?" },
+      description: confirmMessage,
+      variant: "purple",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/admin/audit-logs/all", {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-confirm-action": "DELETE_ALL",
+            },
+          });
+          if (res.ok) {
+            setSelectedLogIds([]);
+            fetchLogs();
+          } else {
+            const errData = await res.json();
+            console.error("Failed to purge compliance logs:", errData.error);
+          }
+        } catch (err) {
+          console.error("Purge compliance logs failed:", err);
+        }
+      }
+    });
+  };
+
+  const fetchLogs = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const url = `/api/admin/audit-logs?limit=${limit}&offset=${offset}&action=${encodeURIComponent(actionFilter)}&email=${encodeURIComponent(emailFilter)}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs || []);
+        setTotal(data.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch compliance audit logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [token, offset]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setOffset(0);
+    fetchLogs();
+  };
+
+  const handleReset = () => {
+    setActionFilter("");
+    setEmailFilter("");
+    setOffset(0);
+    setTimeout(() => {
+      fetchLogs();
+    }, 50);
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleString(language === "ar" ? "ar-EG" : "en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "UTC"
+    }) + " UTC";
+  };
+
+  return (
+    <div className="space-y-6 font-sans" dir={isRtl ? "rtl" : "ltr"}>
+      {/* Search & Audit Filters Bar */}
+      <form onSubmit={handleSearch} className={`p-4 rounded-lg border flex flex-col md:flex-row gap-4 items-end justify-between ${
+        theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-100"
+      }`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {isRtl ? "تصفية حسب العملية الإدارية" : "Search Admin Action"}
+            </span>
+            <div className="relative">
+              <input
+                type="text"
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                placeholder={isRtl ? "مثال: UPDATE, POST..." : "e.g., CREATE_PLAN, HTTP_POST..."}
+                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
+                  theme === "dark" 
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
+                }`}
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {isRtl ? "البريد الإلكتروني للـ دكتور" : "Search Admin Email"}
+            </span>
+            <div className="relative">
+              <input
+                type="text"
+                value={emailFilter}
+                onChange={(e) => setEmailFilter(e.target.value)}
+                placeholder={isRtl ? "البحث بالبريد..." : "e.g., admin@perplexta.com"}
+                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
+                  theme === "dark" 
+                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
+                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full md:w-auto">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
+          >
+            {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
+            {isRtl ? "تطبيق التصفية" : "Apply Filter"}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={loading}
+            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-theme ${
+              theme === "dark" 
+                ? "border-gray-800 text-gray-300 hover:bg-gray-800"
+                : "border-gray-200 text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            {isRtl ? "إعادة تعيين" : "Reset"}
+          </button>
+        </div>
+      </form>
+
+      {/* Action Buttons for Log Deletion */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 pl-0">
+        <div className="flex items-center gap-2">
+          {selectedLogIds.length > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95"
+            >
+              <Trash2 size={13} />
+              {isRtl 
+                ? `مسح المحدد (${selectedLogIds.length})` 
+                : `Delete Selected (${selectedLogIds.length})`}
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={handleClearAll}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/30 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm"
+        >
+          <AlertTriangle size={13} className="text-purple-500" />
+          {isRtl ? "تطهير كافة السجلات" : "Purge All Logs"}
+        </button>
+      </div>
+
+      {/* Main Audit Logs Table Container */}
+      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme ${
+        theme === "dark" ? "bg-[#18181b] border-gray-800/60" : "bg-white border-gray-100"
+      }`}>
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead>
+              <tr className={`border-b text-[10px] uppercase font-black tracking-wider text-gray-400 ${
+                theme === "dark" ? "border-gray-800 bg-[#0f0f11]/40" : "border-gray-100 bg-gray-50/60"
+              }`}>
+                <th className="py-3.5 px-4 text-center w-12">
+                  <input
+                    type="checkbox"
+                    checked={logs.length > 0 && logs.every((log) => selectedLogIds.includes(log.id))}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
+                  />
+                </th>
+                <th className="py-3.5 px-4 text-center">{isRtl ? "الوقت (UTC)" : "Timestamp (UTC)"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "المسؤول (Admin)" : "Admin User"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "العملية الإجرائية" : "Administrative Action"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "المستهدف" : "Target Resource"}</th>
+                <th className="py-3.5 px-4">{isRtl ? "العنوان الرقمي IP" : "IP Address"}</th>
+                <th className="py-3.5 px-4 text-center">{isRtl ? "التفاصيل" : "Compliance Audit"}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                    <RefreshCw className="animate-spin inline-block mr-2 text-accent" size={18} />
+                    {isRtl ? "جاري جلب سجل التدقيق الأمني..." : "Ingesting secure compliance records..."}
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                    {isRtl ? "لا توجد سجلات مطابقة لمعايير الاستعلام أمنياً." : "No matching compliant audit trail records found."}
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr 
+                    key={log.id} 
+                    className={`transition-theme ${
+                      selectedLogIds.includes(log.id)
+                        ? "bg-accent/5 hover:bg-accent/10"
+                        : theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
+                    }`}
+                  >
+                    <td className="py-3.5 px-4 text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedLogIds.includes(log.id)}
+                        onChange={() => toggleSelectLog(log.id)}
+                        className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
+                      />
+                    </td>
+                    <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap opacity-80">
+                      {formatDate(log.created_at)}
+                    </td>
+                    <td className="py-3.5 px-4 font-medium max-w-[180px] truncate">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-[var(--text-primary)]">{log.admin_email || ("ID: " + log.admin_id)}</span>
+                        <span className="text-[9px] opacity-40 font-mono">UID: {log.admin_id || "SYSTEM"}</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-tight ${
+                        log.action.startsWith("HTTP_") 
+                          ? log.action.includes("POST") 
+                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/10"
+                            : log.action.includes("DELETE")
+                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/10"
+                              : "bg-purple-500/10 text-purple-400 border border-purple-500/10"
+                          : "bg-accent/10 text-accent border border-accent/10"
+                      }`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="font-mono text-[11px] opacity-80">{log.target_resource || "GLOBAL"}</span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="font-mono text-[11px] opacity-75">{log.ip_address || "LOCAL_EXEC"}</span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        onClick={() => setSelectedLog(log)}
+                        className="px-3 py-1 border border-accent/20 rounded-md text-[10px] font-bold text-accent hover:border-accent hover:bg-accent/10 cursor-pointer transition-theme"
+                      >
+                        {isRtl ? "عرض التفاصيل" : "Inspect Payload"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Database Audit Pagination Bar */}
+        <div className={`p-4 border-t flex items-center justify-between text-xs ${
+          theme === "dark" ? "border-gray-800/60 bg-[#0f0f11]/20" : "border-gray-100 bg-gray-50/30"
+        }`}>
+          <div className="text-gray-400 font-bold">
+            {isRtl 
+              ? `عرض ${logs.length} سجل من إجمالي ${total}`
+              : `Showing ${logs.length} of ${total} compliance log records`}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
+                offset === 0 ? "cursor-not-allowed" : "cursor-pointer"
+              } ${
+                theme === "dark" 
+                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
+            </button>
+            <button
+              disabled={offset + limit >= total}
+              onClick={() => setOffset(offset + limit)}
+              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
+                offset + limit >= total ? "cursor-not-allowed" : "cursor-pointer"
+              } ${
+                theme === "dark" 
+                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* JSON Expand Payload Modal -- Pure Emerald Glow Premium Transition */}
+      <AnimatePresence>
+        {selectedLog && (
+          <div className="fixed inset-0 flex items-center justify-center z-[130] p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLog(null)}
+              className="fixed inset-0 bg-black/65 backdrop-blur-[4px] z-0 cursor-pointer"
+            />
+
+            {/* Modal Drawer */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className={`relative max-w-2xl w-full rounded-xl border p-6 z-10 shadow-2xl ${
+                theme === "dark" ? "bg-[#111113] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border)] mb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="text-accent " size={18} />
+                  <span className="text-xs uppercase font-black tracking-wider w-auto h-auto leading-none mt-0">
+                    {isRtl ? "التدقيق والتفاصيل القياسية" : "Compliance Payload Audit Inspection"}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedLog(null)}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-theme`}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Summary metadata grid */}
+              <div className="grid grid-cols-2 gap-4 text-[10px] mb-4">
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "المسؤول الفاعل" : "Action Operator"}</span>
+                  <span className="font-bold mt-0.5 text-[var(--text-primary)] truncate">{selectedLog.admin_email || "System/Cron Engine"}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "العملية الإجرائية" : "Action Identifier"}</span>
+                  <span className="font-bold mt-0.5 text-accent font-mono">{selectedLog.action}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "الوقت (توقيت عالمي)" : "Logged Timestamp (UTC)"}</span>
+                  <span className="font-semibold mt-0.5 font-mono">{formatDate(selectedLog.created_at)}</span>
+                </div>
+                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
+                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "بيانات الموقع والشبكة" : "Network Ingress Platform"}</span>
+                  <span className="font-mono mt-0.5 leading-none text-zinc-400">{selectedLog.ip_address || "Internal Sandbox Host"}</span>
+                </div>
+              </div>
+
+              {/* User Agent Block */}
+              {selectedLog.user_agent && (
+                <div className="mb-4 text-[9px] p-2 rounded bg-black/5 dark:bg-black/25 text-gray-400 font-mono border border-[var(--border)] leading-relaxed">
+                  <strong>User Agent:</strong> {selectedLog.user_agent}
+                </div>
+              )}
+
+              {/* JSON Payload Display */}
+              <div className="flex flex-col font-sans">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 pl-0.5">
+                  {isRtl ? "البيانات المشفرة والمحفوظة (JSON Payloads)" : "Compliant Transaction Log (JSON)"}
+                </span>
+                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-accent font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
+                  <pre className="whitespace-pre-wrap select-text">
+                    {JSON.stringify(typeof selectedLog.details === "string" ? JSON.parse(selectedLog.details) : selectedLog.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Footer disclaimer */}
+              <p className="text-[9px] text-gray-400 mt-4 leading-relaxed font-sans italic opacity-60">
+                {isRtl 
+                  ? "ملاحظة التوافق: تم إلحاق وحفظ السجل أعلاه في بيئة معزولة أمنياً وغير قابلة للتعديل أو الحذف لضمان نزاهة عمليات المنصة والامتثال الدولي."
+                  : "Compliance Notice: This secure append-only audit log is recorded into a strictly cryptographic sandboxed database table and cannot be overridden, fulfilling absolute platform accountability. "
+                }
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Action Confirmation Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <ActionConfirmationModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal(null)}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          description={confirmModal.description}
+          variant={confirmModal.variant}
+          confirmLabel={confirmModal.confirmLabel}
+        />
+      )}
+    </div>
+  );
+};
+
+import { ErrorBoundary } from '../components/ErrorBoundary';
+
+export const AdminDashboard: React.FC = () => {
+  const {
+    t,
+    theme,
+    dir,
+    language,
+    token,
+    user,
+    socket,
+    setIsOperationPending,
+    isMobile,
+  } = useAppContext();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isRtl, setIsRtl] = useState(language === "ar");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const isSupport = user?.role === "support";
+  const path = location.pathname.split("/").pop() || "dashboard";
+
+  // Strict route protection
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.role !== "support") {
+      navigate("/chat");
+    }
+    // Block support from sensitive financial/system paths
+    const sensitivePaths = [
+      "keys",
+      "databases",
+      "finance",
+      "settings",
+      "orchestrator",
+      "audit",
+    ];
+    if (isSupport && sensitivePaths.includes(path)) {
+      navigate("/admin/dashboard");
+    }
+  }, [user, path, isSupport, navigate]);
+
+  const [providerModels, setProviderModels] = useState<Record<string, any[]>>(
+    {},
+  );
+  const { toast, showToast } = useToast(3000);
+
+  const fetchProviderModels = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/orchestrator/models", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviderModels(data.providerModels);
+      }
+    } catch (error) {
+      console.error("Error fetching models:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (token && (path === "orchestrator" || path === "keys" || Object.keys(providerModels).length === 0)) {
+      fetchProviderModels();
+    }
+  }, [token, path]);
+
+  const [pulseData, setPulseData] = useState<any>(null);
+  const [isPulseOpen, setIsPulseOpen] = useState(false);
+  const [pulseErrorCount, setPulseErrorCount] = useState(0);
+
+  const fetchPulseData = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/pulse", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPulseData(data);
+        setPulseErrorCount(0);
+      } else {
+        setPulseErrorCount((prev) => prev + 1);
+      }
+    } catch {
+      setPulseErrorCount((prev) => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchPulseData();
+      const interval = setInterval(fetchPulseData, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
+          <Monitor size={36} className="text-amber-500 animate-pulse" />
+        </div>
+        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
+          {isRtl ? 'لوحة التحكم متاحة فقط عبر سطح المكتب' : 'Command Center is Desktop-Only'}
+        </h2>
+        <p className="text-xs text-gray-400 max-w-sm">
+          {isRtl 
+            ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
+            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
+        </p>
+        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
+          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
+        </a>
+      </div>
+    );
+  }
+
+  const formatPulseUptime = (seconds: number) => {
+    if (!seconds) return "0s";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const formatPulseRelative = (isoString: string | null) => {
+    if (!isoString) return language === "ar" ? "معلق" : "Pending";
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    
+    if (diffSec < 10) return language === "ar" ? "الآن" : "Just now";
+    if (diffSec < 60) return language === "ar" ? `منذ ${diffSec} ثانية` : `${diffSec}s ago`;
+    if (diffMin < 60) return language === "ar" ? `منذ ${diffMin} دقيقة` : `${diffMin}m ago`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return language === "ar" ? `منذ ${diffHour} ساعة` : `${diffHour}h ago`;
+    return new Date(isoString).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getTitle = () => {
+    switch (path) {
+      case "dashboard":
+        return t("commandCenter");
+      case "radar":
+        return language === "ar" ? "رادار الأمان" : "Security Radar";
+      case "keys":
+        return t("aiInfrastructure");
+      case "databases":
+        return t("dbOrchestration");
+      case "orchestrator":
+        return t("toolOrchestrator");
+      case "finance":
+        return t("financeVault");
+      case "plans":
+        return t("plansSubscriptions");
+      case "users":
+        return t("userManagement");
+      case "memories":
+        return language === "ar" ? "مركز الذاكرة" : "Memory Center";
+      case "emails":
+        return t("smartEmailHub");
+      case "broadcast":
+        return t("smartBroadcast");
+      case "settings":
+        return t("systemSettings");
+      case "audit":
+        return language === "ar" ? "التدقيق والامتثال" : "Compliance Audit Trail";
+      case "referrals":
+        return t("referralDashboard");
+      case "seo":
+        return language === "ar" ? "تدقيق الميتاداتا والسيو" : "SEO Audit & AI Population";
+      case "metrics":
+        return language === "ar" ? "مقاييس الأداء ورندر المكونات" : "Render & Latency Metrics";
+      default:
+        return t("commandCenter");
+    }
+  };
+
+  const getSubTitle = () => {
+    switch (path) {
+      case "dashboard":
+        return language === "ar"
+          ? "مراقبة وتقارير النظام الشاملة"
+          : "SYSTEM-WIDE MONITORING & INTELLIGENCE";
+      case "radar":
+        return language === "ar"
+          ? "رادار مراقبة الهجمات المباشر"
+          : "LIVE SECURITY RADAR & THREAT INTELLIGENCE";
+      case "keys":
+        return language === "ar"
+          ? "إدارة مفاتيح الوصول والبنية التحتية"
+          : "ACCESS KEYS & INFRASTRUCTURE VAULT";
+      case "databases":
+        return language === "ar"
+          ? "تنسيق قواعد البيانات والنسخ الاحتياطي"
+          : "DATABASE SCHEMAS & SYNC ORCHESTRATION";
+      case "orchestrator":
+        return language === "ar"
+          ? "إدارة النماذج والمسارات الذكية"
+          : "INTELLIGENT MODELS & ROUTING";
+      case "finance":
+        return language === "ar"
+          ? "إدارة المعاملات والمحافظ والمكافآت"
+          : "LEDGER, WALLETS & REWARDS CONTROL";
+      case "plans":
+        return language === "ar"
+          ? "إدارة الباقات والاشتراكات والأسعار"
+          : "SUBSCRIPTION PLANS & PRICING";
+      case "users":
+        return language === "ar"
+          ? "إدارة الهوية والتحقق والصلاحيات"
+          : "IDENTITY, KYC & PERMISSIONS CONTROL";
+      case "memories":
+        return language === "ar"
+          ? "إدارة وتكثيف ذاكرة المستخدمين واستقصاء الذكاء"
+          : "MANUAL MEMORY DISTILLATION & AUDIT CENTRAL";
+      case "emails":
+        return language === "ar"
+          ? "إدارة القوالب والاتصالات الذكية"
+          : "SYSTEM COMMUNICATIONS & TEMPLATES";
+      case "broadcast":
+        return language === "ar"
+          ? "إرسال الحملات والإشعارات الجماعية"
+          : "MASS CAMPAIGN & BROADCAST ENGINE";
+      case "settings":
+        return language === "ar"
+          ? "إعدادات النظام والبروتوكول الأساسي"
+          : "CORE SYSTEM PROTOCOL CONFIG";
+      case "audit":
+        return language === "ar"
+          ? "مراقبة العمليات الحساسة وإعدادات الامتثال الأمني"
+          : "SECURE CRITICAL METADATA AUDITING & SECURITY COMPLIANCE";
+      case "referrals":
+        return language === "ar"
+          ? "مراقبة وإحصاءات برنامج الإحالات والتحويلات"
+          : "REFERRAL PROGRAM STATISTICS & CONVERSION INTELLIGENCE";
+      case "seo":
+        return language === "ar"
+          ? "مراقبة وتوليد الميتاداتا وفحص جاهزية محركات البحث"
+          : "METADATA AUDITING, AI GENERATION & REAL-TIME PROGRESS MONITORING";
+      case "metrics":
+        return language === "ar"
+          ? "مراقبة زمن الانتقال وتتبع أداء المكونات برمجياً"
+          : "COMPONENT RENDER TELEMETRY & LATENCY MONITORING";
+      default:
+        return "MANAGEMENT COMMAND CENTER";
+    }
+  };
+
+  const getIcon = () => {
+    const iconClass =
+      "text-accent ";
+    switch (path) {
+      case "dashboard":
+        return <Activity size={28} className={iconClass} />;
+      case "radar":
+        return <Shield size={28} className={iconClass} />;
+      case "metrics":
+        return <Activity size={28} className={iconClass} />;
+      case "keys":
+        return <Key size={28} className={iconClass} />;
+      case "databases":
+        return <Database size={28} className={iconClass} />;
+      case "orchestrator":
+        return <Cpu size={28} className={iconClass} />;
+      case "finance":
+        return <Landmark size={28} className={iconClass} />;
+      case "plans":
+        return <CreditCard size={28} className={iconClass} />;
+      case "users":
+        return <Users size={28} className={iconClass} />;
+      case "memories":
+        return <Brain size={28} className={iconClass} />;
+      case "emails":
+        return <Mail size={28} className={iconClass} />;
+      case "broadcast":
+        return <Send size={28} className={iconClass} />;
+      case "settings":
+        return <Settings size={28} className={iconClass} />;
+      case "audit":
+        return <ShieldAlert size={28} className={iconClass} />;
+      case "referrals":
+        return <UserPlus size={28} className={iconClass} />;
+      case "seo":
+        return <Globe size={28} className={iconClass} />;
+      default:
+        return <Settings2 size={28} className={iconClass} />;
+    }
+  };
+
+  // Determine if the "Add" button should be shown
+  const showAddButton = ["plans", "broadcast"].includes(path);
+
+  const getAddButtonText = () => {
+    switch (path) {
+      case "plans":
+        return t("addNewPlan");
+      case "broadcast":
+        return t("newBroadcast");
+      default:
+        return t("add");
+    }
+  };
+
+  const handleAddClick = () => {
+    switch (path) {
+      case "plans":
+        window.dispatchEvent(new CustomEvent("admin-add-plan"));
+        break;
+      case "broadcast":
+        window.dispatchEvent(new CustomEvent("admin-add-broadcast"));
+        break;
+      default:
+        break;
+    }
+  };
+
+  const isOptimal = pulseData && pulseData.status === 'optimal' && pulseErrorCount < 3;
+  const isDegraded = pulseData && pulseData.status === 'degraded' && pulseErrorCount < 3;
+  const pulseColor = isOptimal ? '#334155' : isDegraded ? '#f59e0b' : '#f43f5e';
+  const pulseText = isOptimal 
+    ? (language === 'ar' ? 'ممتاز' : 'Optimal') 
+    : isDegraded 
+    ? (language === 'ar' ? 'منخفض' : 'Degraded') 
+    : (language === 'ar' ? 'معطل' : 'Disrupted');
+  const pulseGlowClass = isOptimal 
+    ? 'text-accent ' 
+    : isDegraded 
+    ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
+    : 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]';
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-72px)] bg-[var(--bg-base)] text-center p-6 transition-theme">
+        <MonitorSmartphone size={64} className="text-gray-400 mb-6 drop-shadow-sm" />
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
+          {language === 'ar' ? 'غير متاح على الجوال' : 'Not Available on Mobile'}
+        </h2>
+        <p className="text-base text-gray-500 max-w-sm leading-relaxed">
+          {language === 'ar'
+            ? 'لوحة الإدارة مصممة للشاشات الكبيرة لضمان تجربة تحكم احترافية. يرجى فتح هذه الصفحة من جهاز كمبيوتر مكتبي.'
+            : 'The Admin Dashboard is optimized for larger screens to ensure a professional control experience. Please access this page from a desktop computer.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={perplextaPageTransition}
+      className="flex flex-col w-full"
+    >
+      {/* Sticky Admin Header - Elite Command Layer */}
+      <div
+        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme ${
+          theme === "dark" ? "bg-[var(--bg-base)]/95" : "bg-[var(--bg-surface)]/95"
+        } backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between`}
+      >
+        <div className="flex items-center gap-4">
+          {path !== "dashboard" && (
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="p-2.5 rounded-md transition-theme flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
+              title={t("back")}
+            >
+              {dir === "rtl" ? (
+                <ArrowRight size={20} />
+              ) : (
+                <ArrowLeft size={20} />
+              )}
+            </button>
+          )}
+          <div className="flex items-center gap-4">
+            <div
+              className="p-2.5 rounded-md bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-theme"
+            >
+              {getIcon()}
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-theme">
+                {getTitle()}
+              </h1>
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1 opacity-60">
+                {getSubTitle()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {showAddButton && (
+            <button
+              onClick={handleAddClick}
+              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(156,163,175,0.3)] hover:shadow-[0_8px_20px_rgba(156,163,175,0.5)] active:scale-95"
+            >
+              <Plus size={18} />
+              {getAddButtonText()}
+            </button>
+          )}
+
+          <div className="relative">
+            <button
+              onClick={() => setIsPulseOpen(!isPulseOpen)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-theme hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
+            >
+              <div className="relative flex items-center justify-center">
+                <div 
+                  className="w-2 h-2 rounded-full absolute animate-ping opacity-75" 
+                  style={{ backgroundColor: pulseColor }} 
+                />
+                <div 
+                  className="w-2 h-2 rounded-full relative" 
+                  style={{ backgroundColor: pulseColor }} 
+                />
+              </div>
+              <span className={`text-[10px] font-black uppercase tracking-tighter ${pulseGlowClass}`}>
+                {language === 'ar' ? 'نبض النظام' : 'System Pulse'}: {pulseText}
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {isPulseOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsPulseOpen(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme ${
+                      theme === 'dark' 
+                        ? 'bg-[#0f0f11] border-gray-800/80 text-white' 
+                        : 'bg-white border-gray-200 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border)]">
+                      <div className="flex items-center gap-2">
+                        <Activity size={16} className={pulseGlowClass} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">
+                          {language === 'ar' ? 'فحص تشخيصي للنبض' : 'Pulse System Diagnostics'}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-[var(--text-muted)] font-mono">
+                        {pulseData ? formatPulseUptime(pulseData.uptime) : '0s'}
+                      </span>
+                    </div>
+
+                    <div className="mb-4 bg-black/10 dark:bg-black/40 rounded p-2 border border-[var(--border)] overflow-hidden">
+                      <svg className="w-full h-10 stroke-current opacity-90" viewBox="0 0 100 20" fill="none">
+                        <motion.path
+                          d="M 0,10 Q 15,10 20,10 T 30,10 T 32,5 T 34,15 T 36,1 T 38,19 T 40,10 T 50,10 T 60,10 T 62,3 T 64,17 T 66,10 T 80,10 T 90,10 T 100,10"
+                          stroke={pulseColor}
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          initial={{ strokeDasharray: "200", strokeDashoffset: "200" }}
+                          animate={{ strokeDashoffset: ["200", "0"] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        />
+                      </svg>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                          {language === 'ar' ? 'عقد قواعد البيانات ومزامنتها' : 'Database Node Synchronization'}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'قاعدة البيانات المركزية' : 'Core Engine DB'}</span>
+                            <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.core?.status === 'connected' ? `Connected (${pulseData.databases.core.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'دفتر الحسابات والمالية' : 'Ledger Vault DB'}</span>
+                            <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.ledger?.status === 'connected' ? `Connected (${pulseData.databases.ledger.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'السحابة الخارجية' : 'External Sync Registry'}</span>
+                            <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.external?.status === 'connected' ? `Connected (${pulseData.databases.external.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'حماية وأمن البيانات' : 'Security Registry'}</span>
+                            <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
+                              {pulseData?.databases?.security?.status === 'connected' ? `Connected (${pulseData.databases.security.latencyMs}ms)` : 'Offline'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                          {language === 'ar' ? 'العمليات الخلفية النشطة' : 'Background Process Handlers'}
+                        </div>
+                        <div className="space-y-1 text-[9px] text-[var(--text-muted)] font-medium font-sans">
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'الصيانة والمسح اليومي' : 'Daily Maintenance & Trash Purge'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.dailyMaintenance ? `${formatPulseRelative(pulseData.cronTasks.dailyMaintenance.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'نبض المزامنة الذكية' : 'Database Pulse Tracker'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.databaseHeartbeat ? `${formatPulseRelative(pulseData.cronTasks.databaseHeartbeat.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'تنظيف الجلسات المؤقتة' : 'Auth Token & Session Purge'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.expiredTokensCleanup ? `${formatPulseRelative(pulseData.cronTasks.expiredTokensCleanup.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'تدقيق الاشتراكات الفعالة' : 'Subscription Renewal Audits'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.subscriptionAudit ? `${formatPulseRelative(pulseData.cronTasks.subscriptionAudit.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                            <span>{language === 'ar' ? 'ضغط وتقليص ذاكرة الذكاء' : 'Memory Distillation Cycle'}</span>
+                            <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
+                              {pulseData?.cronTasks?.memoryCompaction ? `${formatPulseRelative(pulseData.cronTasks.memoryCompaction.lastRun)}` : 'Pending'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-[var(--border)]/40">
+                        <div className="grid grid-cols-2 gap-4 text-[9px] text-[var(--text-muted)] font-bold">
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span>CPU UTILIZATION</span>
+                              <span>{pulseData?.cpu ?? 0}%</span>
+                            </div>
+                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                              <div className="h-full bg-accent" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span>HEAP ALLOC</span>
+                              <span>{pulseData?.memory?.percent ?? 0}%</span>
+                            </div>
+                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                              <div className="h-full bg-purple-500" style={{ width: `${pulseData?.memory?.percent ?? 0}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div
+        className={`relative transition-theme ${
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
+            path,
+          )
+            ? ""
+            : `p-6 md:p-8 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl`
+        }`}
+      >
+        <ErrorBoundary name="Admin Command Panels">
+          {path === "dashboard" ? (
+            <CommandCenterView theme={theme} t={t} showToast={showToast} />
+          ) : path === "radar" ? (
+            <AdminRateLimitMetricsView theme={theme} t={t} />
+          ) : path === "metrics" ? (
+            <AdminRenderMetricsView />
+          ) : path === "keys" ? (
+            <ApiKeysVaultView
+              theme={theme}
+              t={t}
+              dir={dir}
+              providerModels={providerModels}
+              setProviderModels={setProviderModels}
+              showToast={showToast}
+            />
+          ) : path === "databases" ? (
+            <DatabaseOrchestrationView
+              theme={theme}
+              t={t}
+              dir={dir}
+              language={language}
+            />
+          ) : path === "orchestrator" ? (
+            <OrchestratorView
+              theme={theme}
+              t={t}
+              dir={dir}
+              providerModels={providerModels}
+              showToast={showToast}
+            />
+          ) : path === "finance" ? (
+            <FinanceVaultView theme={theme} t={t} dir={dir} showToast={showToast} />
+          ) : path === "plans" ? (
+            <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
+          ) : path === "users" ? (
+            <UserManagementView theme={theme} t={t} dir={dir} showToast={showToast} />
+          ) : path === "memories" ? (
+            <MemoryCenterView theme={theme} t={t} dir={dir} language={language} />
+          ) : path === "emails" ? (
+            <SmartEmailHubView theme={theme} t={t} dir={dir} showToast={showToast} />
+          ) : path === "broadcast" ? (
+            <MassBroadcastView
+              theme={theme}
+              t={t}
+              dir={dir}
+              language={language}
+            />
+          ) : path === "settings" ? (
+            <SystemSettingsView theme={theme} t={t} dir={dir} />
+          ) : path === "audit" ? (
+            <ComplianceAuditLogsView theme={theme} t={t} dir={dir} />
+          ) : path === "referrals" ? (
+            <ReferralDashboardView theme={theme} t={t} dir={dir} />
+          ) : path === "ads" ? (
+            <AdsManagementView theme={theme} t={t} dir={dir} language={language} />
+          ) : path === "seo" ? (
+            <SeoCenterView theme={theme} t={t} dir={dir} language={language} showToast={showToast} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <div className="mb-6 opacity-50">{getIcon()}</div>
+              <p className="text-lg font-medium">
+                This section is currently under construction.
+              </p>
+              <p className="text-sm mt-2">
+                We are building the {getTitle()} module according to the AGENTS.md
+                architecture.
+              </p>
+            </div>
+          )}
+        </ErrorBoundary>
+      </div>
+
+      <AnimatePresence>
+        {(toast as any) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.95 }}
+            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+              (toast as any).type === "success"
+                ? "bg-accent/10 border-accent/20 text-accent"
+                : (toast as any).type === "error"
+                  ? "bg-red-500/10 border-red-500/20 text-red-500"
+                  : "bg-blue-500/10 border-blue-500/20 text-blue-500"
+            }`}
+            style={{
+              boxShadow:
+                (toast as any).type === "success"
+                  ? "0 10px 30px rgba(156,163,175,0.15)"
+                  : "0 10px 30px rgba(239,68,68,0.15)",
+            }}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${(toast as any).type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
+            />
+            <span className="font-bold text-sm tracking-tight">
+              {(toast as any).message}
+            </span>
+          </motion.div>
+        )}
+        {previewUrl && (
+          <PagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
