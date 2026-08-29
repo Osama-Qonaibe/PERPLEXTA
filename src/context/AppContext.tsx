@@ -1935,13 +1935,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const urlToken = searchParams.get('token');
-    const urlRefreshToken = searchParams.get('refreshToken');
-    const urlUserRaw = searchParams.get('user');
-    const isOAuthCallback = searchParams.get('oauth') === '1';
+    const getParam = (name: string) => {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get(name)) return searchParams.get(name);
 
-    if (urlToken && isOAuthCallback) {
+      const hash = window.location.hash;
+      if (hash.includes('?')) {
+        const hashQueryParams = new URLSearchParams(hash.split('?')[1]);
+        return hashQueryParams.get(name);
+      }
+      return null;
+    };
+
+    const urlToken = getParam('token');
+    const urlRefreshToken = getParam('refreshToken');
+    const urlUserRaw = getParam('user');
+
+    const isSensitivePage = window.location.pathname.includes('reset-password');
+
+    const isOAuthCallback = window.opener !== null || 
+      document.referrer.includes(window.location.origin) ||
+      window.location.search.includes('oauth=1');
+
+    if (urlToken && !isSensitivePage && urlToken !== token && isOAuthCallback) {
       localStorage.setItem('app_token', urlToken);
       setToken(urlToken);
       if (urlRefreshToken) {
@@ -1949,28 +1965,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRefreshTokenState(urlRefreshToken);
       }
 
+      let userData = null;
       if (urlUserRaw) {
         try {
-          const userData = JSON.parse(decodeURIComponent(urlUserRaw));
+          userData = JSON.parse(decodeURIComponent(urlUserRaw));
           setUser(userData);
         } catch (e) {
-          console.error('Failed to parse user data from OAuth callback:', e);
+
         }
       }
 
-      setIsAuthModalOpen(false);
-      triggerAuthSuccessToast('login');
-      logUserActivity('GOOGLE_LOGIN_SUCCESS', {});
+      if (window.opener && window.opener !== window) {
+        window.opener.postMessage({ 
+          type: 'OAUTH_AUTH_SUCCESS', 
+          user: { token: urlToken, ...userData } 
+        }, window.location.origin);
 
-      const cleanUrl = window.location.pathname + (window.location.hash || '');
-      window.history.replaceState({}, '', cleanUrl);
+        const authChannel = new BroadcastChannel('app_oauth_channel');
+        authChannel.postMessage({ 
+          type: 'OAUTH_AUTH_SUCCESS', 
+          user: { token: urlToken, ...userData } 
+        });
 
-      if (!profileFetched.current) {
-        profileFetched.current = true;
-        fetchUserProfile();
+        setTimeout(() => window.close(), 500);
+      } else {
+        handleAuthSuccess({ token: urlToken, ...userData });
+        const newUrl = window.location.pathname + (window.location.hash.includes('?') ? window.location.hash.split('?')[0] : window.location.hash);
+        window.history.replaceState({}, '', newUrl);
       }
     }
-  }, []);
+
+    const ref = getParam('ref');
+    if (ref) localStorage.setItem('app_ref', ref);
+
+    const messageListener = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        handleAuthSuccess(event.data.user);
+      }
+    };
+
+    const authChannel = new BroadcastChannel('app_oauth_channel');
+    authChannel.onmessage = (event) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        handleAuthSuccess(event.data.user);
+      }
+    };
+
+    const storageListener = (event: StorageEvent) => {
+      if (event.key === 'app_oauth_trigger' && event.newValue) {
+        const storedToken = localStorage.getItem('app_token');
+        const userDataJson = localStorage.getItem('app_oauth_user');
+        if (storedToken && userDataJson) {
+          try {
+            const userData = JSON.parse(userDataJson);
+            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
+            handleAuthSuccess(processedUser);
+            localStorage.removeItem('app_oauth_user');
+            localStorage.removeItem('app_oauth_trigger');
+          } catch (e) {  }
+        }
+      }
+    };
+
+    window.addEventListener('message', messageListener);
+    window.addEventListener('storage', storageListener);
+
+    return () => {
+      authChannel.close();
+      window.removeEventListener('message', messageListener);
+      window.removeEventListener('storage', storageListener);
+    };
+  }, [dir]);
 
   const refreshPromiseRef = useRef<Promise<string | null> | null>(null);
 
@@ -2251,8 +2316,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentTheme = theme || 'dark';
 
       localStorage.setItem('app_ref', ref);
+      localStorage.removeItem('app_oauth_syncing');
 
-      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&remember=${rememberMe}`);
+      const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=popup&remember=${rememberMe}&authSessionId=${authSessionId}`);
 
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
@@ -2268,7 +2336,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('No auth URL returned');
       }
 
-      window.location.href = data.url;
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
+
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        const redirectRes = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=redirect&remember=${rememberMe}&authSessionId=${authSessionId}`);
+        if (redirectRes.ok) {
+          const redirectData = await redirectRes.json();
+          if (redirectData?.url) {
+            window.location.href = redirectData.url;
+            return;
+          }
+        }
+      }
+
+      let checkCount = 0;
+      const pollInterval = setInterval(async () => {
+        checkCount++;
+        if (checkCount > 300) { 
+          clearInterval(pollInterval);
+          return;
+        }
+
+        try {
+          const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
+          if (pollRes.ok) {
+            const pollData = await pollRes.json();
+            if (pollData.status === 'success' && pollData.data) {
+              clearInterval(pollInterval);
+              handleAuthSuccess(pollData.data);
+              if (popup && !popup.closed) {
+                try {
+                  popup.close();
+                } catch (e) {}
+              }
+              return;
+            }
+          }
+        } catch (pollErr) {}
+
+        const storedToken = localStorage.getItem('app_token');
+        const userDataJson = localStorage.getItem('app_oauth_user');
+
+        if (storedToken && userDataJson) {
+          clearInterval(pollInterval);
+          try {
+            const userData = JSON.parse(userDataJson);
+            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
+            handleAuthSuccess(processedUser);
+            localStorage.removeItem('app_oauth_user');
+            localStorage.removeItem('app_oauth_trigger');
+            if (popup && !popup.closed) {
+              try {
+                popup.close();
+              } catch (e) {}
+            }
+          } catch (e) {}
+        }
+      }, 1000);
+
     } catch (error) {
       console.error('[Google Login Error]:', error);
       toast.error(dir === 'rtl' ? 'تعذر بدء تسجيل الدخول باستخدام جوجل' : 'Failed to start Google sign-in');

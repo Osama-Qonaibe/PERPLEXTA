@@ -15,6 +15,8 @@ import { getBaseUrl, getRedirectUri } from '../utils/request.js';
 
 const router = express.Router();
 
+export const pendingOAuthSessions = new Map<string, { data: any; expiresAt: number }>();
+
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('[FATAL] JWT_SECRET is not set in authentication routes.');
@@ -399,7 +401,6 @@ router.get("/google/url", async (req, res) => {
     
     const nonce = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 600000);
-    const redirectUri = getRedirectUri(req);
 
     await pool.query(
       `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
@@ -409,19 +410,13 @@ router.get("/google/url", async (req, res) => {
         mode: mode as string || 'popup', 
         remember: remember === 'true',
         theme: theme as string || 'dark',
-        authSessionId: authSessionId as string || null,
-        redirectUri: redirectUri
+        authSessionId: authSessionId as string || null
       }), expiresAt]
     );
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId || clientId.trim() === '' || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      console.warn('[GoogleAuth] Warning: GOOGLE_CLIENT_ID is not configured in environment variables.');
-    }
-
     const params = new URLSearchParams({
-      client_id: clientId || '',
-      redirect_uri: redirectUri,
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      redirect_uri: getRedirectUri(req),
       response_type: 'code',
       scope: 'email profile',
       state: nonce
@@ -430,6 +425,33 @@ router.get("/google/url", async (req, res) => {
   } catch (error: any) {
     console.error('[Google-URL Error]:', error?.message || error);
     res.status(500).json({ error: 'Internal Server Error during Google OAuth URL creation' });
+  }
+});
+
+router.get("/poll", async (req, res) => {
+  try {
+    const { authSessionId } = req.query;
+    if (!authSessionId || typeof authSessionId !== 'string') {
+      return res.status(400).json({ error: 'Missing authSessionId' });
+    }
+    
+    const now = Date.now();
+    for (const [key, val] of pendingOAuthSessions.entries()) {
+      if (val.expiresAt < now) {
+        pendingOAuthSessions.delete(key);
+      }
+    }
+    
+    const session = pendingOAuthSessions.get(authSessionId);
+    if (!session) {
+      return res.json({ status: 'pending' });
+    }
+    
+    pendingOAuthSessions.delete(authSessionId);
+    res.json({ status: 'success', data: session.data });
+  } catch (error: any) {
+    console.error('[OAuth Poll Error]:', error?.message || error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -498,8 +520,6 @@ router.get("/google/callback", async (req, res) => {
     const storedState = JSON.parse(stateRow.redirect_url);
     await pool.query('DELETE FROM oauth_states WHERE state = $1', [state]);
 
-    const redirectUri = storedState.redirectUri || getRedirectUri(req);
-
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -507,7 +527,7 @@ router.get("/google/callback", async (req, res) => {
         code: code as string,
         client_id: process.env.GOOGLE_CLIENT_ID || '',
         client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-        redirect_uri: redirectUri,
+        redirect_uri: getRedirectUri(req),
         grant_type: 'authorization_code'
       } as any).toString(),
       signal: AbortSignal.timeout(30000)
@@ -515,8 +535,8 @@ router.get("/google/callback", async (req, res) => {
 
     const tokens = await tokenResponse.json() as any;
     if (tokens.error) {
-      console.error('[GoogleAuth] Token Error Details:', JSON.stringify(tokens));
-      return res.status(400).send(`Auth failed: ${tokens.error} (${tokens.error_description || 'unknown'})`);
+      console.error('[GoogleAuth] Token Error:', tokens.error);
+      return res.status(400).send('Auth failed');
     }
 
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -727,8 +747,243 @@ router.get("/google/callback", async (req, res) => {
     ) {
       targetRef = '/';
     }
-    const redirectUrl = `${getBaseUrl(req)}${targetRef}?oauth=1&token=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&user=${encodeURIComponent(JSON.stringify(userPayload))}&lang=${encodeURIComponent(lang)}`;
-    return res.redirect(302, redirectUrl);
+    const allowedOrigin = getBaseUrl(req);
+    
+    const pagePayloadRaw = JSON.stringify({
+      token: accessToken,
+      refreshToken,
+      ...userPayload,
+      lang,
+      ref: targetRef,
+      remember: rememberMe
+    });
+    const pagePayload = Buffer.from(pagePayloadRaw).toString('base64');
+
+    if (storedState.authSessionId) {
+      pendingOAuthSessions.set(storedState.authSessionId, {
+        data: {
+          token: accessToken,
+          refreshToken,
+          ...userPayload,
+          lang,
+          ref: targetRef,
+          remember: rememberMe
+        },
+        expiresAt: Date.now() + 120000
+      });
+    }
+
+    const isPopupMode = storedState.mode === 'popup';
+    const titleText = lang === 'ar' ? 'جاري التحقق...' : 'Authenticating...';
+    const successText = lang === 'ar' ? 'تم تسجيل الدخول بنجاح' : 'Login Successful';
+    const secureText = lang === 'ar' ? 'اتصال آمن' : 'SECURE SESSION';
+    const closeBtnText = lang === 'ar' ? 'إغلاق ومتابعة' : 'Close and Continue';
+    const direction = lang === 'ar' ? 'rtl' : 'ltr';
+    const allowedOriginJson = JSON.stringify(allowedOrigin);
+    const targetRefJson = JSON.stringify(targetRef);
+
+    res.send(`<!DOCTYPE html>
+      <html>
+        <head>
+          <title>${titleText}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+          <style nonce="${res.locals.nonce}">
+            :root {
+              --radius-xl: 32px;
+              --radius-lg: 20px;
+              --radius-md: 12px;
+              --radius-sm: 6px;
+              --accent-500: #334155;
+              --bg-dark: #09090b;
+              --bg-panel: rgba(17, 17, 19, 0.9);
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes accentPulse {
+              0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+              70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+              100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            }
+            body {
+              background: var(--bg-dark);
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              margin: 0;
+              font-family: 'Tajawal', sans-serif;
+              overflow: hidden;
+              direction: ${direction};
+            }
+            .auth-card {
+              text-align: center;
+              padding: clamp(2rem, 8vw, 3.5rem);
+              background: var(--bg-panel);
+              border: 1px solid rgba(16, 185, 129, 0.25);
+              border-radius: var(--radius-xl);
+              backdrop-filter: blur(20px);
+              box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+              max-width: 90%;
+              width: 440px;
+              animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+              position: relative;
+            }
+            .spinner-container {
+              position: relative;
+              width: 90px;
+              height: 90px;
+              margin: 0 auto clamp(1.5rem, 5vw, 2rem);
+            }
+            .spinner-bg {
+              position: absolute;
+              inset: 0;
+              border: 5px solid rgba(16, 185, 129, 0.08);
+              border-radius: 50%;
+            }
+            .spinner-active {
+              position: absolute;
+              inset: 0;
+              border: 5px solid transparent;
+              border-top-color: var(--accent-500);
+              border-radius: 50%;
+              animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+              filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+            }
+            .spinner-icon {
+              position: absolute;
+              inset: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              animation: accentPulse 2s infinite;
+              border-radius: 50%;
+            }
+            .title {
+              color: white;
+              margin: 0 0 1rem 0;
+              font-size: clamp(1.5rem, 6vw, 1.875rem);
+              font-weight: 700;
+              letter-spacing: -0.025em;
+              text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+            .description {
+              color: #a1a1aa;
+              margin: 0 0 clamp(1.5rem, 6vw, 2.5rem) 0;
+              font-size: clamp(1rem, 3.5vw, 1.125rem);
+              line-height: 1.6;
+              font-weight: 400;
+            }
+            .btn {
+              background: #334155;
+              color: white;
+              border: none;
+              padding: 1rem 2.5rem;
+              border-radius: var(--radius-sm);
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              font-family: inherit;
+              font-size: 1.125rem;
+              box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+              width: 100%;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .btn:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6);
+              filter: brightness(1.1);
+              background: #334155;
+            }
+            .btn:active {
+              transform: translateY(-1px);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="auth-card">
+            <div class="spinner-container">
+              <div class="spinner-bg"></div>
+              <div class="spinner-active"></div>
+              <div class="spinner-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+            </div>
+            <h2 class="title">${successText}</h2>
+            <div class="status-badge" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; color: #334155; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0.8;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>${secureText}</span>
+            </div>
+            <button id="closeBtn" class="btn" style="margin-top: 2rem;">${closeBtnText}</button>
+          </div>
+
+          <script id="__auth_data__" type="application/base64">${pagePayload}</script>
+          <script nonce="${res.locals.nonce}">
+            (function() {
+              const closeBtn = document.getElementById('closeBtn');
+              if (closeBtn) closeBtn.onclick = function() { try { window.close(); } catch(e) {} };
+
+              try {
+                const data = JSON.parse(atob(document.getElementById('__auth_data__').textContent));
+                const allowedOrigin = ${allowedOriginJson};
+                const targetRefRaw = ${targetRefJson};
+                const safeRef = (typeof targetRefRaw === 'string' && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
+
+                try {
+                  localStorage.setItem('app_token', data.token);
+                  if (data.refreshToken) localStorage.setItem('app_refresh_token', data.refreshToken);
+                  localStorage.setItem('app_oauth_user', JSON.stringify(data));
+                  localStorage.setItem('language', data.lang);
+                  if (data.remember) localStorage.setItem('app_remember', 'true');
+                  localStorage.setItem('app_oauth_trigger', Date.now().toString());
+                } catch (e) {}
+
+                let isPopup = ${isPopupMode};
+                try {
+                  if (!isPopup) isPopup = !!(window.opener && window.opener !== window);
+                } catch (e) {}
+
+                if (isPopup) {
+                  try {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, allowedOrigin);
+                     if (allowedOrigin !== '*') {
+                       window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data }, '*');
+                     }
+                  } catch (e) {}
+                }
+
+                try {
+                  const authChannel = new BroadcastChannel('app_oauth_channel');
+                  authChannel.postMessage({ type: 'OAUTH_AUTH_SUCCESS', user: data });
+                } catch (e) {}
+
+                setTimeout(function() {
+                  if (isPopup) {
+                    window.close();
+                  } else {
+                    const separator = safeRef.indexOf('?') !== -1 ? '&' : '?';
+                    window.location.href = window.location.origin + safeRef + separator + 'oauth=1&' +
+                      'token=' + encodeURIComponent(data.token) +
+                      (data.refreshToken ? '&refreshToken=' + encodeURIComponent(data.refreshToken) : '') +
+                      '&user=' + encodeURIComponent(JSON.stringify(data));
+                  }
+                }, 150);
+              } catch (err) {
+                console.error('Auth processing failed', err);
+                document.body.innerHTML += '<div style="color:red; margin-top:20px;">Error: ' + err.message + '</div>';
+                if (typeof isPopup !== "undefined" && !isPopup) { window.location.href = '/?oauth_error=1'; }
+              }
+            })();
+          </script>
+        </body>
+      </html>`);
   } catch (error) {
     console.error('[GoogleAuth] Callback Error:', error);
     res.status(500).send('Authentication processing failed');

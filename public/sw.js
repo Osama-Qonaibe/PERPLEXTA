@@ -1,4 +1,4 @@
-// Version 1.0.3 - Bypass API and OAuth routes from Service Worker interception
+// Version 1.0.2 - Resilient Media & Range Stream Support
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -8,12 +8,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  
-  // Do not intercept API requests or OAuth callbacks
+  // Let the browser handle video/audio streaming and Range requests natively
   if (
-    url.pathname.startsWith('/api/') ||
-    url.pathname.includes('/auth/') ||
     event.request.headers.has('range') ||
     event.request.destination === 'video' ||
     event.request.destination === 'audio' ||
