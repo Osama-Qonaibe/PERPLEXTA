@@ -981,7 +981,7 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
   });
 
   await ensureColumnsBulk(targetPool, 'subscriptions', {
-    plan_type: { type: 'VARCHAR(50)', default: 'user' },
+    plan_type: { type: 'VARCHAR(50)', default: "'user'" },
     price: { type: 'DECIMAL(10,2)', default: 0 },
     limits: { type: 'JSONB', default: "'{}'" }
   });
@@ -990,9 +990,9 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     extracted_text: { type: 'TEXT' },
     is_active: { type: 'BOOLEAN', default: true },
     token_count: { type: 'INTEGER', default: 0 },
-    category: { type: 'VARCHAR(50)', default: 'document' },
-    tags: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
-    uploaded_by_role: { type: 'VARCHAR(50)', default: 'user' }
+    category: { type: 'VARCHAR(50)', default: "'document'" },
+    tags: { type: 'TEXT[]', default: "'{}'" },
+    uploaded_by_role: { type: 'VARCHAR(50)', default: "'user'" }
   });
 
   await ensureColumnsBulk(targetPool, 'system_settings', {
@@ -1001,8 +1001,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     description_en: { type: 'TEXT' },
     description_ar: { type: 'TEXT' },
     logo_url: { type: 'TEXT' },
-    theme: { type: 'VARCHAR(20)', default: 'dark' },
-    default_language: { type: 'VARCHAR(10)', default: 'en' },
+    theme: { type: 'VARCHAR(20)', default: "'dark'" },
+    default_language: { type: 'VARCHAR(10)', default: "'en'" },
     maintenance_mode: { type: 'BOOLEAN', default: false },
     allow_registrations: { type: 'BOOLEAN', default: true },
     security_config: { type: 'JSONB', default: "'{}'" },
@@ -1037,7 +1037,7 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     cta_payload: { type: 'TEXT' },
     cta_style: { type: 'VARCHAR(50)' },
     badge_color: { type: 'VARCHAR(50)' },
-    tags: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
+    tags: { type: 'TEXT[]', default: "'{}'" },
     metadata: { type: 'JSONB', default: "'{}'" }
   });
 
@@ -1098,11 +1098,11 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     mime_type: { type: 'VARCHAR(100)' },
     byte_size: { type: 'BIGINT', default: 0 },
     dimensions: { type: 'JSONB', default: "'{}'" },
-    storage_provider: { type: 'VARCHAR(50)', default: 'local' },
+    storage_provider: { type: 'VARCHAR(50)', default: "'local'" },
     storage_path: { type: 'TEXT' },
     public_url: { type: 'TEXT' },
     checksum_sha256: { type: 'VARCHAR(64)' },
-    tags: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
+    tags: { type: 'TEXT[]', default: "'{}'" },
     metadata: { type: 'JSONB', default: "'{}'" }
   });
 
@@ -1135,9 +1135,9 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     user_id: { type: 'INTEGER' },
     item_id: { type: 'INTEGER' },
     price_paid: { type: 'DECIMAL(10,2)', default: 0 },
-    currency: { type: 'VARCHAR(10)', default: 'CREDITS' },
+    currency: { type: 'VARCHAR(10)', default: "'CREDITS'" },
     transaction_id: { type: 'INTEGER' },
-    status: { type: 'VARCHAR(50)', default: 'completed' }
+    status: { type: 'VARCHAR(50)', default: "'completed'" }
   });
 
   await ensureColumnsBulk(targetPool, 'marketplace_reviews', {
@@ -1165,14 +1165,14 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
   });
 
   await ensureColumnsBulk(targetPool, 'advertisements', {
-    format: { type: 'VARCHAR(20)', default: 'landscape' },
-    target_pages: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
+    format: { type: 'VARCHAR(20)', default: "'landscape'" },
+    target_pages: { type: 'TEXT[]', default: "'{}'" },
     image_asset_id: { type: 'UUID' }
   });
 
   await ensureColumnsBulk(targetPool, 'system_broadcasts', {
-    target_roles: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
-    priority: { type: 'VARCHAR(20)', default: 'medium' },
+    target_roles: { type: 'TEXT[]', default: "'{}'" },
+    priority: { type: 'VARCHAR(20)', default: "'medium'" },
     action_url: { type: 'TEXT' },
     action_label: { type: 'VARCHAR(100)' }
   });
@@ -1194,7 +1194,7 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
   });
 
   await ensureColumnsBulk(targetPool, 'video_resources', {
-    storage_provider: { type: 'VARCHAR(50)', default: 'local' },
+    storage_provider: { type: 'VARCHAR(50)', default: "'local'" },
     video_codec: { type: 'VARCHAR(50)' },
     audio_codec: { type: 'VARCHAR(50)' },
     bitrate_kbps: { type: 'INTEGER', default: 0 },
@@ -1202,7 +1202,7 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     aspect_ratio: { type: 'VARCHAR(20)' },
     has_subtitles: { type: 'BOOLEAN', default: false },
     is_processed: { type: 'BOOLEAN', default: false },
-    transcode_status: { type: 'VARCHAR(50)', default: 'pending' },
+    transcode_status: { type: 'VARCHAR(50)', default: "'pending'" },
     error_log: { type: 'TEXT' }
   });
 

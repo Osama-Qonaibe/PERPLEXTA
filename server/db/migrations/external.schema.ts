@@ -60,7 +60,7 @@ export async function applyExternalColumnEnforcements(targetExternalPool: QueryC
     image_asset_id: { type: 'UUID' },
     view_count: { type: 'INTEGER', default: 0 },
     reading_time_minutes: { type: 'INTEGER', default: 5 },
-    tags: { type: 'TEXT[]', default: "ARRAY[]::TEXT[]" },
+    tags: { type: 'TEXT[]', default: "'{}'" },
     is_published: { type: 'BOOLEAN', default: false },
     published_at: { type: 'TIMESTAMP' }
   });
