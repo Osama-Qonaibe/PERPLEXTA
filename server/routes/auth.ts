@@ -412,8 +412,13 @@ router.get("/google/url", async (req, res) => {
       }), expiresAt]
     );
 
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.trim() === '' || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
+      console.warn('[GoogleAuth] Warning: GOOGLE_CLIENT_ID is not configured in environment variables.');
+    }
+
     const params = new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      client_id: clientId || '',
       redirect_uri: getRedirectUri(req),
       response_type: 'code',
       scope: 'email profile',
