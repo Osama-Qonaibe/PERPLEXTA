@@ -8,13 +8,14 @@ export function isValidIdentifier(name: string): boolean {
 }
 
 export function isValidDataType(type: string): boolean {
-  const baseType = type.split('(')[0].toUpperCase();
+  const baseType = type.split('(')[0].trim().toUpperCase();
   const validTypes = [
-    'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'NUMERIC',
-    'VARCHAR', 'CHAR', 'TEXT', 'JSONB', 'JSON', 'BOOLEAN',
-    'TIMESTAMP', 'DATE', 'TIME', 'UUID', 'SERIAL', 'BIGSERIAL',
-    'INT[]', 'TEXT[]', 'VARCHAR[]', 'JSONB[]',
-    'NUMERIC', 'REAL', 'DOUBLE PRECISION', 'MONEY'
+    'INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'NUMERIC',
+    'VARCHAR', 'CHAR', 'TEXT', 'JSONB', 'JSON', 'BOOLEAN', 'BOOL',
+    'TIMESTAMP', 'TIMESTAMPTZ', 'DATE', 'TIME', 'TIMETZ', 'UUID',
+    'SERIAL', 'BIGSERIAL', 'SMALLSERIAL',
+    'INT[]', 'INTEGER[]', 'BIGINT[]', 'TEXT[]', 'VARCHAR[]', 'JSONB[]',
+    'REAL', 'FLOAT', 'DOUBLE PRECISION', 'MONEY', 'BYTEA', 'INET'
   ];
   return validTypes.some(vt => baseType === vt || baseType.startsWith(vt + '('));
 }
@@ -119,6 +120,38 @@ export async function constraintExists(poolObj: QueryClient, tableName: string, 
   }
 }
 
+export function formatDefaultValue(val: string | number | boolean | null | undefined): string | null {
+  if (val === undefined || val === null) return null;
+  if (typeof val === 'number' || typeof val === 'boolean') {
+    return String(val);
+  }
+  const str = String(val).trim();
+  if (str.length === 0) return "''";
+  
+  if (str.startsWith("'") && str.endsWith("'") && str.length >= 2) {
+    return str;
+  }
+  
+  const upper = str.toUpperCase();
+  if (
+    upper === 'CURRENT_TIMESTAMP' ||
+    upper === 'NOW()' ||
+    upper === 'CURRENT_DATE' ||
+    upper === 'CURRENT_TIME' ||
+    upper === 'NULL' ||
+    upper === 'TRUE' ||
+    upper === 'FALSE' ||
+    upper.startsWith('ARRAY[') ||
+    upper.startsWith('ARRAY []') ||
+    upper.startsWith('NOW() AT TIME ZONE') ||
+    /^-?\d+(\.\d+)?$/.test(str)
+  ) {
+    return str;
+  }
+  
+  return `'${str.replace(/'/g, "''")}'`;
+}
+
 export async function ensureColumnsBulk(
   poolObj: QueryClient,
   tableName: string,
@@ -159,11 +192,10 @@ export async function ensureColumnsBulk(
       }
       let part = `ADD COLUMN "${col}" ${config.type}`;
       if (config.default !== undefined && config.default !== null) {
-        const defaultStr = String(config.default).trim();
-        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
-          throw new Error(`Invalid default value expression: ${defaultStr}`);
+        const formattedDefault = formatDefaultValue(config.default);
+        if (formattedDefault !== null) {
+          part += ` DEFAULT ${formattedDefault}`;
         }
-        part += ` DEFAULT ${defaultStr}`;
       }
       alterParts.push(part);
     }

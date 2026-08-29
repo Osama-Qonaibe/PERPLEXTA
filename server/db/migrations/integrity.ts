@@ -162,10 +162,10 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'provider', 'encrypted_key', 'daily_budget', 'used_today', 'last_reset_date', 'models', 'model_list', 'is_active', 'created_at', 'updated_at', 'url_key', 'protocol_config']
       },
       tool_orchestrator: {
-        columns: ['id', 'tool_id', 'primary_provider', 'primary_model', 'fallback_1_provider', 'fallback_1_model', 'fallback_2_provider', 'fallback_2_model', 'fallback_3_provider', 'fallback_3_model', 'task_description', 'task_description_ar', 'is_active', 'cost_per_usage', 'updated_at', 'protocol_config', 'max_history_depth', 'cost_per_1k_input_tokens', 'cost_per_1k_output_tokens']
+        columns: ['id', 'tool_id', 'primary_provider', 'primary_model', 'fallback_1_provider', 'fallback_1_model', 'fallback_2_provider', 'fallback_2_model', 'fallback_3_provider', 'fallback_3_model', 'task_description', 'task_description_ar', 'is_active', 'cost_per_usage', 'updated_at', 'protocol_config', 'max_history_depth', 'cost_per_1k_input_tokens', 'cost_per_1k_output_tokens', 'timeout_seconds', 'custom_headers', 'pricing_rule']
       },
       subscriptions: {
-        columns: ['id', 'user_id', 'plan_id', 'stripe_customer_id', 'stripe_subscription_id', 'status', 'billing_period', 'current_period_end', 'last_period_start', 'updated_at', 'created_at']
+        columns: ['id', 'user_id', 'plan_id', 'stripe_customer_id', 'stripe_subscription_id', 'status', 'billing_period', 'plan_type', 'price', 'limits', 'current_period_end', 'last_period_start', 'updated_at', 'created_at']
       },
       plans: {
         columns: ['id', 'name_en', 'name_ar', 'monthly_price', 'annual_price', 'discount_percent', 'limits', 'tag_en', 'tag_ar', 'color', 'is_active', 'created_at', 'updated_at']
@@ -192,22 +192,22 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'title', 'prompt', 'icon', 'color', 'position', 'created_at', 'updated_at']
       },
       user_files: {
-        columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'metadata', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'extracted_text', 'is_active', 'token_count', 'category', 'tags', 'uploaded_by_role', 'metadata', 'file_version', 'created_at', 'updated_at']
       },
       system_settings: {
-        columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high']
+        columns: ['id', 'site_name_en', 'site_name_ar', 'description_en', 'description_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'theme', 'default_language', 'maintenance_mode', 'allow_registrations', 'security_config', 'support_email', 'social_links', 'custom_css', 'custom_js', 'seo_keywords', 'seo_description', 'analytics_code', 'terms_content', 'privacy_content', 'smtp_config', 'enable_crypto_payments', 'enable_stripe_payments', 'min_deposit_amount', 'max_deposit_amount', 'referral_reward_amount', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'font_loading_config', 'font_config_ar', 'font_config_en', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'sidebar_ads_enabled', 'memory_limit_per_user', 'quota_warning_threshold_low', 'quota_warning_threshold_high', 'require_2fa_for_economy', 'updated_at']
       },
       system_logs: {
         columns: ['id', 'user_id', 'level', 'action', 'details', 'ip_address', 'created_at']
       },
       system_broadcasts: {
-        columns: ['id', 'title_ar', 'title_en', 'content_ar', 'content_en', 'type', 'target_audience', 'is_active', 'expires_at', 'created_at', 'admin_id']
+        columns: ['id', 'admin_id', 'broadcast_type', 'type', 'target_group', 'target_role', 'target_roles', 'priority', 'action_url', 'action_label', 'title_en', 'title_ar', 'content_en', 'content_ar', 'status', 'sent_count', 'created_at']
       },
       oauth_states: {
         columns: ['id', 'state', 'redirect_uri', 'created_at', 'expires_at']
       },
       bulletin_ads: {
-        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'view_count', 'click_count', 'is_featured', 'is_pinned', 'priority', 'badge_text', 'cta_label', 'cta_action', 'cta_payload', 'cta_style', 'badge_color', 'tags', 'metadata', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'audience', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'created_at', 'updated_at'],
         repairCols: {
           meta_title_en: { type: 'VARCHAR(255)' },
           image_asset_id: { type: 'UUID' },
@@ -226,34 +226,34 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'ad_id', 'reason', 'details', 'status', 'created_at', 'updated_at']
       },
       bulletin_pages: {
-        columns: ['id', 'user_id', 'name', 'slug', 'category', 'city', 'address', 'description', 'avatar_url', 'cover_url', 'whatsapp_number', 'phone_number', 'website_url', 'is_verified', 'followers_count', 'ads_count', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'name', 'slug', 'category', 'city', 'address', 'description', 'avatar_url', 'cover_url', 'whatsapp_number', 'phone_number', 'website_url', 'is_verified', 'is_featured', 'rating', 'review_count', 'view_count', 'followers_count', 'ads_count', 'social_links', 'custom_sections', 'created_at', 'updated_at']
       },
       bulletin_page_followers: {
         columns: ['id', 'user_id', 'page_id', 'created_at']
       },
       bulletin_page_inquiries: {
-        columns: ['id', 'page_id', 'sender_id', 'sender_name', 'sender_email', 'sender_phone', 'subject', 'message', 'status', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'page_id', 'ad_id', 'sender_id', 'sender_name', 'sender_phone', 'message', 'status', 'created_at']
       },
       bulletin_ad_likes: {
         columns: ['id', 'user_id', 'ad_id', 'created_at']
       },
       bulletin_ad_comments: {
-        columns: ['id', 'user_id', 'ad_id', 'content', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'ad_id', 'author_name', 'author_avatar', 'content', 'parent_id', 'like_count', 'is_pinned', 'created_at']
       },
       bulletin_ad_messages: {
         columns: ['id', 'ad_id', 'sender_id', 'recipient_id', 'content', 'is_read', 'created_at']
       },
       route_seo_settings: {
-        columns: ['id', 'route', 'title_ar', 'title_en', 'description_ar', 'description_en', 'keywords_ar', 'keywords_en', 'og_image_url', 'alt_text_ar', 'alt_text_en', 'is_active', 'created_at', 'updated_at']
+        columns: ['id', 'route', 'route_path', 'title_ar', 'title_en', 'description_ar', 'description_en', 'keywords_ar', 'keywords_en', 'og_image', 'og_image_url', 'canonical_url', 'structured_data', 'alt_text_ar', 'alt_text_en', 'is_active', 'created_at', 'updated_at']
       },
       route_seo_metadata: {
         columns: ['route_path', 'title_ar', 'title_en', 'description_ar', 'description_en', 'og_image_url', 'updated_at']
       },
       asset_metadata: {
-        columns: ['id', 'file_url', 'asset_name', 'mime_type', 'file_size', 'alt_text_ar', 'alt_text_en', 'og_title_ar', 'og_title_en', 'og_description_ar', 'og_description_en', 'keywords_ar', 'keywords_en', 'visual_summary', 'ai_analysis_raw', 'created_at', 'updated_at']
+        columns: ['id', 'asset_id', 'file_url', 'asset_name', 'file_type', 'mime_type', 'byte_size', 'file_size', 'dimensions', 'storage_provider', 'storage_path', 'public_url', 'checksum_sha256', 'tags', 'metadata', 'alt_text_ar', 'alt_text_en', 'og_title_ar', 'og_title_en', 'og_description_ar', 'og_description_en', 'keywords_ar', 'keywords_en', 'visual_summary', 'ai_analysis_raw', 'created_at', 'updated_at']
       },
       user_activity_logs: {
-        columns: ['id', 'user_id', 'event_type', 'event_details', 'ip_address', 'user_agent', 'created_at'],
+        columns: ['id', 'user_id', 'event_type', 'activity_type', 'description', 'event_details', 'metadata', 'ip_address', 'user_agent', 'created_at'],
         repairCols: {
           event_type: { type: 'VARCHAR(100)', default: "'unknown'" },
           event_details: { type: 'JSONB', default: "'{}'" },
@@ -263,7 +263,7 @@ export async function verifySchemaIntegrity() {
         }
       },
       marketplace_items: {
-        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
+        columns: ['id', 'user_id', 'seller_id', 'title', 'title_en', 'title_ar', 'description', 'description_en', 'description_ar', 'category', 'category_en', 'category_ar', 'price', 'price_credits', 'price_usd', 'image_url', 'image_asset_id', 'asset_id', 'rating', 'sales_count', 'is_published', 'metadata', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at'],
         repairCols: {
           slug: { type: 'VARCHAR(255)' },
           meta_title_en: { type: 'VARCHAR(255)' },
@@ -276,13 +276,13 @@ export async function verifySchemaIntegrity() {
         }
       },
       marketplace_purchases: {
-        columns: ['id', 'user_id', 'item_id', 'price_paid', 'license_type', 'referrer_id', 'commission_paid', 'download_token', 'created_at']
+        columns: ['id', 'user_id', 'item_id', 'price_paid', 'currency', 'transaction_id', 'status', 'license_type', 'referrer_id', 'commission_paid', 'download_token', 'created_at']
       },
       marketplace_reviews: {
-        columns: ['id', 'user_id', 'item_id', 'rating', 'comment', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'item_id', 'rating', 'comment', 'review_text', 'created_at', 'updated_at']
       },
       video_resources: {
-        columns: ['id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration', 'aspect_ratio', 'resolution', 'metadata', 'created_at']
+        columns: ['id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration', 'aspect_ratio', 'resolution', 'metadata', 'storage_provider', 'video_codec', 'audio_codec', 'bitrate_kbps', 'fps', 'has_subtitles', 'is_processed', 'transcode_status', 'error_log', 'created_at']
       },
       referral_invitations: {
         columns: ['id', 'referrer_id', 'email', 'status', 'subject', 'body', 'referred_email', 'invite_code', 'created_at', 'updated_at']

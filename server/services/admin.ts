@@ -92,11 +92,32 @@ export const SECURITY_TABLES = [
 export async function getDatabaseRegistry() {
   try {
     await pool.query("DELETE FROM db_connections_registry WHERE id NOT IN ('core', 'ledger', 'external', 'security')");
+    await pool.query("UPDATE db_connections_registry SET host = NULL WHERE host = 'base'");
   } catch (err) {
     console.warn(err);
   }
   const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
   return result.rows;
+}
+
+export function formatDbErrorMessage(err: any): string {
+  const msg = err?.message || String(err || 'Unknown error');
+  if (/ECONNREFUSED/i.test(msg)) {
+    return `فشل الاتصال: خادم PostgreSQL غير متاح على العنوان والمنفذ المحددين (Connection refused). إذا كان الخادم على جهازك المحلي خارج بيئة الحاوية، استخدم عنوان IP الخارجي أو نفق محلي (Tunnel) أو رابط سحابي. (${msg})`;
+  }
+  if (/ENOTFOUND/i.test(msg)) {
+    return `لم يتم العثور على اسم المضيف (Host not found). يرجى التأكد من كتابة اسم الخادم أو عنوان IP بشكل صحيح. (${msg})`;
+  }
+  if (/password authentication failed/i.test(msg)) {
+    return `فشل التحقق من الهوية: كلمة المرور أو اسم المستخدم غير صحيح (Authentication failed).`;
+  }
+  if (/database .* does not exist/i.test(msg)) {
+    return `قاعدة البيانات المحددة غير موجودة على الخادم. يرجى إنشاؤها أولاً أو التأكد من اسمها. (${msg})`;
+  }
+  if (/ETIMEDOUT|timeout/i.test(msg)) {
+    return `انتهت مهلة الاتصال بالخادم (Connection timed out). تحقق من إعدادات الجدار الناري (Firewall) وإمكانية الوصول إلى المنفذ.`;
+  }
+  return msg;
 }
 
 export async function saveDatabaseConfig(config: any) {
@@ -108,26 +129,66 @@ export async function saveDatabaseConfig(config: any) {
     throw new Error('Unauthorized database target ID');
   }
 
-  const db_name = body.db_name || body.dbName;
-  const connection_string = body.connection_string || body.connectionString;
-  const ssl_mode = body.ssl_mode || body.sslMode;
-  const pool_size = body.pool_size || body.poolSize;
+  const dbType = type || body.type || 'local';
+  let db_name = (body.db_name || body.dbName || '').trim();
+  let connection_string = (body.connection_string || body.connectionString || '').trim();
+  const ssl_mode = body.ssl_mode || body.sslMode || 'disable';
+  const pool_size = Number(body.pool_size || body.poolSize) || 10;
   const active_state = is_active !== undefined ? is_active : activate;
+  let host = (body.host || '').trim();
+  let port = body.port ? String(body.port).trim() : '';
+  let username = (body.username || '').trim();
+  let password = body.password;
 
-  const encryptedPassword = body.password ? encrypt(body.password) : null;
+  // If connection_string is provided, parse decomposed fields if missing
+  if (connection_string) {
+    if (!/^postgres(ql)?:\/\//i.test(connection_string)) {
+      connection_string = `postgresql://${connection_string}`;
+    }
+    try {
+      const u = new URL(connection_string);
+      if (!host && u.hostname) host = u.hostname;
+      if (!port && u.port) port = u.port;
+      if (!username && u.username) username = decodeURIComponent(u.username);
+      if (password === undefined && u.password) password = decodeURIComponent(u.password);
+      if (!db_name && u.pathname) db_name = u.pathname.replace(/^\//, '');
+    } catch (err) {
+      console.warn('[saveDatabaseConfig] Could not parse connection_string URL:', err);
+    }
+  } else if (dbType === 'local' || host) {
+    // If saving in local mode without explicit connection string, construct it
+    const finalHost = host || 'localhost';
+    const finalPort = port || '5432';
+    const defaultDbName = targetId === 'ledger' ? 'platform_ledger' : (targetId === 'external' ? 'platform_external' : (targetId === 'security' ? 'platform_security' : 'platform_core'));
+    const finalDb = db_name || defaultDbName;
+    const finalUser = username || 'postgres';
+    const userPart = encodeURIComponent(finalUser);
+    const passPart = password ? `:${encodeURIComponent(password)}` : '';
+    connection_string = `postgresql://${userPart}${passPart}@${finalHost}:${finalPort}/${finalDb}`;
+    if (ssl_mode && ssl_mode !== 'disable') {
+      connection_string += `?sslmode=${ssl_mode}`;
+    }
+  }
+
+  const encryptedPassword = password !== undefined && password !== null && password !== '' ? encrypt(password) : null;
   const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
   await pool.query(`
     INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     ON CONFLICT (id) DO UPDATE SET
-      type = EXCLUDED.type, host = EXCLUDED.host, port = EXCLUDED.port, db_name = EXCLUDED.db_name,
+      type = EXCLUDED.type, 
+      host = EXCLUDED.host, 
+      port = EXCLUDED.port, 
+      db_name = EXCLUDED.db_name,
       username = EXCLUDED.username,
       password = COALESCE(EXCLUDED.password, db_connections_registry.password),
       connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
-      ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size,
-      is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-  `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
+      ssl_mode = EXCLUDED.ssl_mode, 
+      pool_size = EXCLUDED.pool_size,
+      is_active = EXCLUDED.is_active, 
+      updated_at = CURRENT_TIMESTAMP
+  `, [targetId, dbType, host || null, port ? Number(port) : null, db_name || null, username || null, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
 
   if (active_state) {
     if (targetId === 'core' || targetId === 'ledger' || targetId === 'external' || targetId === 'security') {
@@ -141,11 +202,12 @@ export async function saveDatabaseConfig(config: any) {
 export async function testDatabaseConnection(config: any) {
   const body = config.config || config;
   const dbId = config.id || body.id;
-  const connection_string = body.connection_string || body.connectionString;
-  const host = body.host;
-  const port = body.port;
-  const db_name = body.db_name || body.dbName;
-  const username = body.username;
+  const dbType = config.type || body.type || 'local';
+  const explicitConnStr = (body.connection_string || body.connectionString || '').trim();
+  const host = (body.host || '').trim();
+  const port = body.port ? String(body.port).trim() : '';
+  const db_name = (body.db_name || body.dbName || '').trim();
+  const username = (body.username || '').trim();
   const password = body.password;
 
   let decryptedPassword = '';
@@ -153,7 +215,7 @@ export async function testDatabaseConnection(config: any) {
 
   if (dbId) {
     try {
-      const existing = await pool.query('SELECT password, connection_string FROM db_connections_registry WHERE id = $1', [dbId]);
+      const existing = await pool.query('SELECT password, connection_string, host, port, db_name, username FROM db_connections_registry WHERE id = $1', [dbId]);
       if (existing.rows.length > 0) {
         const row = existing.rows[0];
         if (row.password) {
@@ -168,22 +230,43 @@ export async function testDatabaseConnection(config: any) {
     }
   }
 
-  let connStr = connection_string || decryptedConnString;
-  if (!connStr && host) {
-    const finalPass = password || decryptedPassword;
-    const encodedUser = encodeURIComponent(username || '');
-    const encodedPass = encodeURIComponent(finalPass || '');
-    connStr = `postgres://${encodedUser}:${encodedPass}@${host}:${port}/${db_name}`;
+  let connStr = '';
+  if (explicitConnStr) {
+    connStr = explicitConnStr;
+  } else if (dbType === 'local' || host) {
+    const finalHost = host || 'localhost';
+    const finalPort = port || '5432';
+    const defaultDbName = dbId === 'ledger' ? 'platform_ledger' : (dbId === 'external' ? 'platform_external' : (dbId === 'security' ? 'platform_security' : 'platform_core'));
+    const finalDbName = db_name || defaultDbName;
+    const finalUser = username || 'postgres';
+    const finalPass = password !== undefined && password !== null && password !== '' ? password : decryptedPassword;
+    
+    const encodedUser = encodeURIComponent(finalUser);
+    const encodedPass = finalPass ? `:${encodeURIComponent(finalPass)}` : '';
+    connStr = `postgresql://${encodedUser}${encodedPass}@${finalHost}:${finalPort}/${finalDbName}`;
+    if (body.ssl_mode && body.ssl_mode !== 'disable') {
+      connStr += `?sslmode=${body.ssl_mode}`;
+    }
+  } else if (decryptedConnString) {
+    connStr = decryptedConnString;
+  }
+
+  if (connStr && !/^postgres(ql)?:\/\//i.test(connStr)) {
+    connStr = `postgresql://${connStr}`;
   }
 
   if (!connStr) throw new Error('Missing connection settings');
 
-  const testPool = createInternalPool(connStr);
+  const testPool = createInternalPool(connStr, 1, 6000);
   try {
     await testPool.query('SELECT 1');
-    return { success: true, message: 'Connection successful' };
+    let parsedHost = 'localhost';
+    try {
+      parsedHost = new URL(connStr).hostname;
+    } catch {}
+    return { success: true, message: 'Connection successful', parsedHost };
   } catch (e: any) {
-    return { success: false, error: e.message };
+    return { success: false, error: formatDbErrorMessage(e), rawError: e.message };
   } finally {
     try { 
       await testPool.end(); 

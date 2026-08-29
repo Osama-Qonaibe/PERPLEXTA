@@ -93,6 +93,8 @@ import {
   Circle,
   DollarSign,
   Terminal,
+  Check,
+  Link2,
   Shield,
   ChevronDown,
   Scale,
@@ -2934,6 +2936,95 @@ const DatabaseOrchestrationView = ({
   language: string;
 }) => {
   const { token, socket } = useAppContext();
+
+  const [copiedDbId, setCopiedDbId] = useState<string | null>(null);
+
+  const parseUriToFields = (uri: string) => {
+    try {
+      let clean = (uri || "").trim();
+      if (!clean) return null;
+      if (!/^postgres(ql)?:\/\//i.test(clean)) {
+        clean = "postgresql://" + clean;
+      }
+      const parsed = new URL(clean);
+      return {
+        host: parsed.hostname || "",
+        port: parsed.port || "5432",
+        username: parsed.username ? decodeURIComponent(parsed.username) : "",
+        password: parsed.password ? decodeURIComponent(parsed.password) : "",
+        db_name: parsed.pathname ? parsed.pathname.replace(/^\//, "") : "",
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const buildUriFromDb = (db: any, overrideField?: string, overrideValue?: any) => {
+    const d = { ...db, ...(overrideField ? { [overrideField]: overrideValue } : {}) };
+    const host = (d.host || "localhost").trim();
+    const port = (d.port || "5432").trim();
+    const defaultDbName =
+      d.id === "ledger"
+        ? "platform_ledger"
+        : d.id === "external"
+        ? "platform_external"
+        : d.id === "security"
+        ? "platform_security"
+        : "platform_core";
+    const dbName = (d.db_name || d.dbName || defaultDbName).trim();
+    const username = (d.username || "postgres").trim();
+    const userPart = encodeURIComponent(username);
+    const passPart = d.password ? ":" + encodeURIComponent(d.password) : "";
+    let uri = "postgresql://" + userPart + passPart + "@" + host + ":" + port + "/" + dbName;
+    if (d.ssl_mode && d.ssl_mode !== "disable") {
+      uri += "?sslmode=" + d.ssl_mode;
+    }
+    return uri;
+  };
+
+  const handleFillDefaultLocalUri = (dbId: string) => {
+    const defaultDbName =
+      dbId === "ledger"
+        ? "platform_ledger"
+        : dbId === "external"
+        ? "platform_external"
+        : dbId === "security"
+        ? "platform_security"
+        : "platform_core";
+    const defaultUri = "postgresql://postgres:postgres@localhost:5432/" + defaultDbName;
+    setDatabases((dbs) =>
+      dbs.map((d) => {
+        if (d.id === dbId) {
+          return {
+            ...d,
+            host: "localhost",
+            port: "5432",
+            username: "postgres",
+            password: "postgres",
+            db_name: defaultDbName,
+            connection_string: defaultUri,
+            connectionTested: false,
+          };
+        }
+        return d;
+      })
+    );
+    showToast(
+      language === "ar"
+        ? "ØªÙ… ØªÙˆÙ„ÙŠØ¯ ÙˆØªØ¹Ø¨Ø¦Ø© Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ø­Ù„ÙŠ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ"
+        : "Default local URI generated",
+      "success"
+    );
+  };
+
+  const handleCopyUri = (db: any) => {
+    const uri = db.connection_string || buildUriFromDb(db);
+    if (!uri) return;
+    navigator.clipboard.writeText(uri);
+    setCopiedDbId(db.id);
+    setTimeout(() => setCopiedDbId(null), 2000);
+    showToast(t("copyUriSuccess") || "URI copied to clipboard", "success");
+  };
   const [databases, setDatabases] = useState<any[]>([]);
   const [isMigrating, setIsMigrating] = useState<{
     id: string;
@@ -3442,17 +3533,36 @@ const DatabaseOrchestrationView = ({
       "dbName",
       "connection_string",
       "connectionString",
-      "type"
+      "type",
+      "localInputMode",
     ];
     setDatabases((dbs) =>
       dbs.map((db) => {
         if (db.id === id) {
           const isConnectionField = connectionFields.includes(field);
-          return {
+          const updated: any = {
             ...db,
             [field]: value,
             connectionTested: isConnectionField ? false : db.connectionTested,
           };
+
+          if (field === "connection_string" && typeof value === "string") {
+            const parsed = parseUriToFields(value);
+            if (parsed) {
+              if (parsed.host) updated.host = parsed.host;
+              if (parsed.port) updated.port = parsed.port;
+              if (parsed.username) updated.username = parsed.username;
+              if (parsed.password) updated.password = parsed.password;
+              if (parsed.db_name) updated.db_name = parsed.db_name;
+            }
+          } else if (
+            ["host", "port", "username", "password", "db_name"].includes(field) &&
+            db.type === "local"
+          ) {
+            updated.connection_string = buildUriFromDb(db, field, value);
+          }
+
+          return updated;
         }
         return db;
       }),
@@ -3624,93 +3734,225 @@ const DatabaseOrchestrationView = ({
                     exit={{ opacity: 0, scale: 1.02 }}
                     className="space-y-4 p-5 rounded-md bg-blue-500/[0.02] border border-blue-500/10 shadow-inner relative overflow-hidden"
                   >
+                    {db.isTesting && (
+                      <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                        <RefreshCw size={24} className="text-blue-500 animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 animate-pulse">
+                          {t("dbTestRunning") || (language === "ar" ? "Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ø§Ù„Ø§ØªØµØ§Ù„ (Pre-flight)..." : "Running Pre-flight Check...")}
+                        </span>
+                      </div>
+                    )}
                     <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                       <Terminal size={40} className="text-blue-500" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5 text-right">
-                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                          {t("dbHost")}
+
+                    {/* Header with Mode switcher & Action buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-500/10 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_5px_rgba(59,130,246,1)]"></div>
+                        <label className="text-[10px] uppercase text-blue-500 font-black tracking-[0.2em] flex items-center gap-1.5">
+                          <Link2 size={12} className="text-blue-500" />
+                          {t("localConnectionStringTitle")}
                         </label>
-                        <input
-                          placeholder="localhost"
-                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                          value={db.host || ""}
-                          onChange={(e) =>
-                            handleChange(db.id, "host", e.target.value)
-                          }
-                        />
                       </div>
-                      <div className="space-y-1.5 text-right">
-                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                          {t("dbPort")}
-                        </label>
-                        <input
-                          placeholder="5432"
-                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                          value={db.port || ""}
-                          onChange={(e) =>
-                            handleChange(db.id, "port", e.target.value)
-                          }
-                        />
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleFillDefaultLocalUri(db.id)}
+                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-sm bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 transition-theme cursor-pointer"
+                          title={t("fillDefaultLocalUri")}
+                        >
+                          <Sparkles size={12} />
+                          <span>{t("fillDefaultLocalUri")}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyUri(db)}
+                          className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-sm bg-[var(--bg-primary)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-main)] transition-theme cursor-pointer"
+                          title="Copy URI"
+                        >
+                          {copiedDbId === db.id ? (
+                            <Check size={12} className="text-emerald-500" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </button>
                       </div>
-                      <div className="space-y-1.5 text-right">
-                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                          {t("dbUsername")}
-                        </label>
-                        <input
-                          placeholder="postgres"
-                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                          value={db.username || ""}
-                          onChange={(e) =>
-                            handleChange(db.id, "username", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="space-y-1.5 text-right">
-                        <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
-                          {t("dbName")}
-                        </label>
-                        <input
-                          placeholder="platform_core"
-                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                          value={db.db_name || ""}
-                          onChange={(e) =>
-                            handleChange(db.id, "db_name", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="col-span-2 space-y-1.5 text-right">
-                        <div className="flex items-center justify-between px-1">
+                    </div>
+
+                    {/* View mode toggle: URI or Fields */}
+                    <div className="flex items-center gap-2 bg-[var(--bg-primary)] p-1 rounded-sm border border-[var(--border-main)]">
+                      <button
+                        type="button"
+                        onClick={() => handleChange(db.id, "localInputMode", "uri")}
+                        className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-xs transition-theme cursor-pointer ${
+                          (db.localInputMode || "uri") === "uri"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-gray-400 hover:text-[var(--text-primary)]"
+                        }`}
+                      >
+                        {t("localConnectionModeUrl")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleChange(db.id, "localInputMode", "fields")}
+                        className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-xs transition-theme cursor-pointer ${
+                          db.localInputMode === "fields"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-gray-400 hover:text-[var(--text-primary)]"
+                        }`}
+                      >
+                        {t("localConnectionModeFields")}
+                      </button>
+                    </div>
+
+                    {(db.localInputMode || "uri") === "uri" ? (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <textarea
+                            rows={2}
+                            placeholder="postgresql://postgres:password@localhost:5432/platform_core"
+                            className={`w-full p-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono resize-none focus:border-blue-500/50 outline-none transition-theme shadow-sm leading-relaxed ${
+                              db.showConnectionString ? "" : "blur-[2.5px] select-none"
+                            }`}
+                            value={db.connection_string || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "connection_string", e.target.value)
+                            }
+                          />
                           <button
+                            type="button"
                             onClick={() =>
                               handleChange(
                                 db.id,
-                                "showPassword",
-                                !db.showPassword,
+                                "showConnectionString",
+                                !db.showConnectionString,
                               )
                             }
-                            className="text-blue-500/60 hover:text-blue-500 transition-theme p-1"
+                            className="absolute top-2 right-2 text-blue-500/60 hover:text-blue-500 p-1 bg-[var(--bg-primary)] rounded-xs border border-[var(--border-main)] cursor-pointer"
                           >
-                            {db.showPassword ? (
-                              <EyeOff size={14} />
-                            ) : (
-                              <Eye size={14} />
-                            )}
+                            {db.showConnectionString ? <EyeOff size={13} /> : <Eye size={13} />}
                           </button>
-                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest">
-                            {t("dbPassword")}
-                          </label>
                         </div>
-                        <input
-                          type={db.showPassword ? "text" : "password"}
-                          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                          className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
-                          value={db.password || ""}
-                          onChange={(e) =>
-                            handleChange(db.id, "password", e.target.value)
-                          }
-                        />
+
+                        {/* Auto-detected metadata badges */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-[var(--text-secondary)]">
+                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
+                            Host: <strong className="text-blue-500">{db.host || "localhost"}</strong>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
+                            Port: <strong className="text-blue-500">{db.port || "5432"}</strong>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
+                            User: <strong className="text-blue-500">{db.username || "postgres"}</strong>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-xs bg-[var(--bg-primary)] border border-[var(--border-main)]">
+                            DB: <strong className="text-blue-500">{db.db_name || db.dbName || "default"}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                            {t("dbHost")}
+                          </label>
+                          <input
+                            placeholder="localhost"
+                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                            value={db.host || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "host", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                            {t("dbPort")}
+                          </label>
+                          <input
+                            placeholder="5432"
+                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                            value={db.port || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "port", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                            {t("dbUsername")}
+                          </label>
+                          <input
+                            placeholder="postgres"
+                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                            value={db.username || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "username", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5 text-right">
+                          <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest px-1">
+                            {t("dbName")}
+                          </label>
+                          <input
+                            placeholder="platform_core"
+                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                            value={db.db_name || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "db_name", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1.5 text-right">
+                          <div className="flex items-center justify-between px-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleChange(
+                                  db.id,
+                                  "showPassword",
+                                  !db.showPassword,
+                                )
+                              }
+                              className="text-blue-500/60 hover:text-blue-500 transition-theme p-1 cursor-pointer"
+                            >
+                              {db.showPassword ? (
+                                <EyeOff size={14} />
+                              ) : (
+                                <Eye size={14} />
+                              )}
+                            </button>
+                            <label className="text-[9px] uppercase text-blue-500/60 font-black tracking-widest">
+                              {t("dbPassword")}
+                            </label>
+                          </div>
+                          <input
+                            type={db.showPassword ? "text" : "password"}
+                            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                            className="w-full h-9 px-3 rounded-sm border bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)] text-xs font-mono focus:border-blue-500/50 outline-none transition-theme shadow-sm"
+                            value={db.password || ""}
+                            onChange={(e) =>
+                              handleChange(db.id, "password", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Container & Local Connection Guidance Box */}
+                    <div className="p-3 rounded-sm bg-blue-500/5 border border-blue-500/15 flex items-start gap-2.5 text-[11px] text-[var(--text-secondary)]">
+                      <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                      <div className="space-y-1 leading-relaxed">
+                        <p className="font-bold text-[var(--text-primary)]">
+                          {language === "ar" ? "Ø¥Ø±Ø´Ø§Ø¯Ø§Øª Ø§Ù„Ø±Ø¨Ø· Ø§Ù„Ø³Ø±ÙŠØ¹ Ù„Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø­Ù„ÙŠØ©:" : "Local Database Connectivity Guide:"}
+                        </p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {t("localContainerHint")}
+                        </p>
                       </div>
                     </div>
                   </motion.div>
@@ -11114,4771 +11356,181 @@ const MemoryCenterView = ({
     setIsCleaning(true);
     setIsOperationPending(true);
     try {
-      const res = await fetch("/api/memories/cleanup-context", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ ttlDays }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setToastMsg(
-          language === "ar"
-            ? `ØªÙ… ØªÙ†Ø¸ÙŠÙ Ø§Ù„Ø³ÙŠØ§Ù‚ Ø¨Ù†Ø¬Ø§Ø­. ØªÙ… Ù…Ø³Ø­ ${data.cleanedCount} Ø¬Ù„Ø³Ø© ØºÙŠØ± Ù†Ø´Ø·Ø©.`
-            : `Context cleanup completed. Pruned ${data.cleanedCount} inactive sessions.`
-        );
-        setIsSuccessToast(true);
-        fetchStats();
-      } else {
-        setToastMsg(data.error || "Failed to execute context cleanup");
-        setIsSuccessToast(false);
-      }
-    } catch (err: any) {
-      setToastMsg(err.message || "Network error");
-      setIsSuccessToast(false);
-    } finally {
-      setIsCleaning(false);
-      setIsOperationPending(false);
-      setTimeout(() => {
-        setToastMsg("");
-      }, 4000);
-    }
-  };
-
-  const fetchStats = async () => {
-    setLoadingStats(true);
-    try {
-      const [statsRes, diagRes] = await Promise.all([
-        fetch("/api/admin/memories/stats", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/memories/diagnostics", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        setSystemStats(data);
-      }
-      if (diagRes.ok) {
-        const diag = await diagRes.json();
-        setDiagnosticsData(diag);
-      }
-    } catch (err) {
-      console.error("Failed to load memory stats or diagnostics:", err);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!token) return;
-    fetchStats();
-    fetchSystemThresholds();
-    const intervalId = setInterval(() => {
-      fetchStats();
-    }, refreshInterval * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [token, refreshInterval]);
-
-  const handleRunConsolidation = async () => {
-    setIsRunning(true);
-    setIsOperationPending(true);
-    setReports([]);
-    try {
-      const res = await fetch("/api/admin/memories/consolidate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          targetUserId: targetUserId ? parseInt(targetUserId) : undefined,
-          threshold: threshold,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setReports(data.report || []);
-        setToastMsg(
-          language === "ar"
-            ? "Ø§ÙƒØªÙ…Ù„Øª Ø¹Ù…Ù„ÙŠØ© ØªÙƒØ«ÙŠÙ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø¨Ù†Ø¬Ø§Ø­!"
-            : "Memory distillation cycle completed successfully!"
-        );
-        setIsSuccessToast(true);
-        fetchStats();
-      } else {
-        setToastMsg(data.error || "Failed to execute consolidation");
-        setIsSuccessToast(false);
-      }
-    } catch (err: any) {
-      setToastMsg(err.message || "Network error");
-      setIsSuccessToast(false);
-    } finally {
-      setIsRunning(false);
-      setIsOperationPending(false);
-      setTimeout(() => {
-        setToastMsg("");
-      }, 4000);
-    }
-  };
-
-  const filteredReports = reports.filter(
-    (item) =>
-      item.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.distilledFact.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Toast Notice */}
-      {toastMsg && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            isSuccessToast
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                : "bg-white border border-accent text-accent"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {isSuccessToast ? (
-            <CheckCircle2
-              size={20}
-              className="text-accent "
-            />
-          ) : (
-            <AlertCircle size={20} className="text-red-500" />
-          )}
-          <span className="font-medium text-sm">{toastMsg}</span>
-        </div>
-      )}
-
-      {/* Hero Header */}
-      <div
-        className={`p-6 rounded-lg border transition-theme ${
-          theme === "dark"
-            ? "bg-[#1a1a1c] border-gray-800/60"
-            : "bg-white border-gray-200"
-        } shadow-sm`}
-      >
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-accent/10 rounded-lg text-accent shadow-[0_0_15px_rgba(156,163,175,0.05)]">
-            <Brain
-              size={28}
-              className="text-accent "
-            />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
-              {language === "ar"
-                ? "Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„ ØªØ­Ø³ÙŠÙ† ÙˆØµÙŠØ§Ù†Ø© Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„ØªØ±Ø§ÙƒÙ…ÙŠØ©"
-                : "PERPLEXTA SYSTEM MEMORY OPTIMIZATION PROTOCOL"}
-            </h4>
-            <p className="text-sm text-gray-400">
-              {language === "ar"
-                ? "ØªÙ†Ø¸ÙŠÙ… ÙˆÙÙ‡Ø±Ø³Ø© Ø³Ø¬Ù„Ø§Øª Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù„ØªØ­Ø³ÙŠÙ† Ø§Ù„Ø¯Ù‚Ø© ÙˆØªÙ‚Ù„ÙŠÙ„ Ø²Ù…Ù† Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø©."
-                : "Organize and optimize user memory fragments to improve AI response and reduce context load."}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Real-Time System Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
-          className={`p-6 rounded-lg border transition-theme ${
-            theme === "dark"
-              ? "bg-[#1a1a1c] border-gray-800/60"
-              : "bg-white border-gray-200"
-          } shadow-md relative overflow-hidden group`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-              {language === "ar" ? "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø³Ø¬Ù„Ø§Øª" : "TOTAL MEMORIES"}
-            </span>
-            <Database
-              size={18}
-              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
-            />
-          </div>
-          <div className="mt-4 flex items-baseline">
-            {loadingStats ? (
-              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
-                ...
-              </span>
-            ) : (
-              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
-                {systemStats?.totalMemories ?? 0}
-              </span>
-            )}
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
-        </div>
-
-        <div
-          className={`p-6 rounded-lg border transition-theme ${
-            theme === "dark"
-              ? "bg-[#1a1a1c] border-gray-800/60"
-              : "bg-white border-gray-200"
-          } shadow-md relative overflow-hidden group`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-              {language === "ar" ? "Ø§Ù„Ù…Ø®Ø¯Ù…ÙŠÙ† Ø§Ù„Ù†Ø´Ø·ÙŠÙ†" : "ACTIVE PROFILES"}
-            </span>
-            <Users
-              size={18}
-              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
-            />
-          </div>
-          <div className="mt-4 flex items-baseline">
-            {loadingStats ? (
-              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
-                ...
-              </span>
-            ) : (
-              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
-                {systemStats?.usersWithMemories ?? 0}
-              </span>
-            )}
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
-        </div>
-
-        <div
-          className={`p-6 rounded-lg border transition-theme ${
-            theme === "dark"
-              ? "bg-[#1a1a1c] border-gray-800/60"
-              : "bg-white border-gray-200"
-          } shadow-md relative overflow-hidden group`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-              {language === "ar"
-                ? "Ù…ØªÙˆØ³Ø· Ø§Ù„ÙƒØ«Ø§ÙØ© Ù„ÙƒÙ„ Ø­Ø³Ø§Ø¨"
-                : "MEAN PROFILE DENSITY"}
-            </span>
-            <Cpu
-              size={18}
-              className="text-gray-400 group-hover:text-accent group-hover: transition-theme"
-            />
-          </div>
-          <div className="mt-4 flex items-baseline">
-            {loadingStats ? (
-              <span className="text-3xl font-extrabold text-accent/30 animate-pulse">
-                ...
-              </span>
-            ) : (
-              <span className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight font-sans">
-                {systemStats?.averageMemories ?? 0}{" "}
-                <span className="text-sm font-normal text-gray-500">
-                  rec/user
-                </span>
-              </span>
-            )}
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent"></div>
-        </div>
-      </div>
-
-      {/* Real-time Diagnostics & Active Context Sessions Panel */}
-      {diagnosticsData && (
-        <div
-          className={`p-6 rounded-lg border transition-theme ${
-            theme === "dark"
-              ? "bg-[#1a1a1c] border-gray-800/60"
-              : "bg-white border-gray-200"
-          } shadow-md space-y-4`}
-        >
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-accent animate-ping"></div>
-              <h4 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                {language === "ar" ? "ØªØ´Ø®ÙŠØµØ§Øª Ù…Ø­Ø±Ùƒ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ø­ÙŠ (Live Buffer Diagnostics)" : "Live Buffer Diagnostics & Engine Health"}
-              </h4>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                {diagnosticsData.engine} ({diagnosticsData.mode})
-              </span>
-              {(() => {
-                const limit = diagnosticsData?.bufferLimit || 50;
-                const count = systemStats?.totalMemories || 0;
-                const pct = Math.round((count / limit) * 100);
-                if (pct >= 80) {
-                  return (
-                    <span className="text-xs font-mono text-red-500 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
-                      <Bell size={10} className="animate-bounce" /> {pct}% {language === "ar" ? "Ø­Ø±Ø¬" : "CRITICAL"}
-                    </span>
-                  );
-                }
-                if (pct >= 50) {
-                  return (
-                    <span className="text-xs font-mono text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 font-bold">
-                      <Bell size={10} className="animate-pulse" /> {pct}% {language === "ar" ? "ØªÙ†Ø¨ÙŠÙ‡" : "WARNING"}
-                    </span>
-                  );
-                }
-                return (
-                  <span className="text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1">
-                    <CheckCircle2 size={10} /> {pct}% {language === "ar" ? "Ù…Ø³ØªÙ‚Ø±" : "HEALTHY"}
-                  </span>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Notification Alert System for Custom Percentage Thresholds & Token Spike Alerts */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#121214] border border-[var(--border)] font-sans">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded bg-accent/15 text-accent">
-                <Sliders size={16} />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-gray-900 dark:text-white block">
-                  {language === "ar" ? "Ø¹ØªØ¨Ø§Øª Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡Ø§Øª ÙˆØ§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ù…Ø®ØµØµØ©" : "Configurable Trigger Thresholds"}
-                </span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {language === "ar"
-                    ? `Ø§Ù„Ø¹ØªØ¨Ø§Øª Ø§Ù„Ø­Ø§Ù„ÙŠØ©: Ø§Ù„Ø£ÙˆÙ„ÙŠØ© ${lowThreshold}% | Ø§Ù„Ø­Ø±Ø¬ ${highThreshold}%`
-                    : `Active Triggers: Low ${lowThreshold}% | High ${highThreshold}%`}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsThresholdModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-            >
-              <Sliders size={14} />
-              <span>{language === "ar" ? "ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¹ØªØ¨Ø§Øª Ø§Ù„Ù…Ø®ØµØµØ©" : "Configure Thresholds"}</span>
-            </button>
-          </div>
-
-          {(() => {
-            const bufferLimit = diagnosticsData?.bufferLimit || 50;
-            const currentCount = systemStats?.totalMemories || 25;
-            const bufferUsagePercent = Math.round((currentCount / bufferLimit) * 100);
-
-            if (bufferUsagePercent >= highThreshold) {
-              return (
-                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-red-500/20 text-red-500 shrink-0 mt-0.5 animate-bounce">
-                      <AlertTriangle size={18} />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                        <span>
-                          {language === "ar"
-                            ? `ØªØ­Ø°ÙŠØ± Ø­Ø±Ø¬: ØªØ¬Ø§ÙˆØ² Ø§Ø³ØªÙ‡Ù„Ø§Ùƒ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø¹ØªØ¨Ø© ${highThreshold}% Ø§Ù„Ù…Ø®ØµØµØ©!`
-                            : `CRITICAL ALERT: Memory Buffer Exceeded Custom ${highThreshold}% Capacity!`}
-                        </span>
-                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-mono font-bold">
-                          {bufferUsagePercent}% {language === "ar" ? "Ø§Ù„Ø³Ø¹Ø©" : "LOAD"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
-                        {language === "ar"
-                          ? `ÙˆØµÙ„Øª ÙƒØ«Ø§ÙØ© Ø§Ø³ØªÙ‡Ù„Ø§Ùƒ Ø³ÙŠØ§Ù‚ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø¥Ù„Ù‰ ${bufferUsagePercent}%. ÙŠÙˆØµÙ‰ Ø¨Ø¨Ø¯Ø¡ ØªÙ‚Ù„ÙŠØµ Ø§Ù„Ø°Ø§ÙƒØ±Ø© ÙÙˆØ±Ø§Ù‹ Ù„Ù…Ù†Ø¹ Ø§Ù„Ø¨Ø·Ø¡ ÙˆØ§Ù„ØªØ£Ø«ÙŠØ± Ø¹Ù„Ù‰ Ø³Ø±Ø¹Ø© Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø©.`
-                          : `Buffer load has reached ${bufferUsagePercent}%. Immediate context compression is strongly recommended to prevent latency spikes.`}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleSmartCompress}
-                    disabled={isCompressing}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
-                  >
-                    {isCompressing ? (
-                      <RefreshCw className="animate-spin" size={14} />
-                    ) : (
-                      <Zap size={14} />
-                    )}
-                    <span>
-                      {language === "ar" ? "ØªÙ‚Ù„ÙŠØµ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ø¢Ù†" : "Shrink Memory Now"}
-                    </span>
-                  </button>
-                </div>
-              );
-            }
-
-            if (bufferUsagePercent >= lowThreshold) {
-              return (
-                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fade-in font-sans shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-amber-500/20 text-amber-500 shrink-0 mt-0.5">
-                      <AlertCircle size={18} />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                        <span>
-                          {language === "ar"
-                            ? `Ø¥Ø´Ø¹Ø§Ø± ØªÙ†Ø¨ÙŠÙ‡: Ø§Ø³ØªÙ‡Ù„Ø§Ùƒ Ø§Ù„Ø°Ø§ÙƒØ±Ø© ÙˆØµÙ„ Ø¥Ù„Ù‰ Ø¹ØªØ¨Ø© ${lowThreshold}% Ø§Ù„Ù…Ø®ØµØµØ©`
-                            : `WARNING: Memory Buffer Reached Custom ${lowThreshold}% Capacity`}
-                        </span>
-                        <span className="text-[10px] bg-amber-500/30 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded font-mono font-bold">
-                          {bufferUsagePercent}% {language === "ar" ? "Ø§Ù„Ø³Ø¹Ø©" : "LOAD"}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
-                        {language === "ar"
-                          ? `ÙˆØµÙ„Øª Ø³Ø¹Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª Ø¥Ù„Ù‰ ${bufferUsagePercent}%. ÙŠÙ…ÙƒÙ†Ùƒ ØªÙ†ÙÙŠØ° ØªÙ‚Ù„ÙŠØµ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ù„Ù„Ø­ÙØ§Ø¸ Ø¹Ù„Ù‰ Ø£Ø¯Ø§Ø¡ Ø³Ø±ÙŠØ¹ ÙˆØªÙˆØ²ÙŠØ¹ Ù…Ø«Ø§Ù„ÙŠ Ù„Ù„Ø±Ù…ÙˆØ².`
-                          : `Buffer capacity is currently at ${bufferUsagePercent}%. You can shrink memory now to maintain optimal response speeds.`}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleSmartCompress}
-                    disabled={isCompressing}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold transition-all shrink-0 flex items-center gap-2 shadow cursor-pointer disabled:opacity-50"
-                  >
-                    {isCompressing ? (
-                      <RefreshCw className="animate-spin" size={14} />
-                    ) : (
-                      <Zap size={14} />
-                    )}
-                    <span>
-                      {language === "ar" ? "ØªÙ‚Ù„ÙŠØµ Ø§Ù„Ø°Ø§ÙƒØ±Ø©" : "Shrink Memory"}
-                    </span>
-                  </button>
-                </div>
-              );
-            }
-
-            return null;
-          })()}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
-              <span className="text-gray-500 block mb-1">{language === "ar" ? "Ø³Ø¹Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª Ø§Ù„Ù‚ØµÙˆÙ‰" : "Buffer Limit Capacity"}</span>
-              <span className="text-base font-bold text-gray-900 dark:text-white">{diagnosticsData.bufferLimit} Records Max</span>
-            </div>
-            <div className="p-3 rounded bg-gray-50 dark:bg-[#0f0f11] border border-[var(--border)]">
-              <span className="text-gray-500 block mb-1">{language === "ar" ? "Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù†Ø´Ø·Ø© Ø°Ø§Øª Ø§Ù„Ø³ÙŠØ§Ù‚" : "Active Context Sessions"}</span>
-              <span className="text-base font-bold text-accent">{diagnosticsData.activeContextSessions?.length || 0} Sessions</span>
-            </div>
-          </div>
-
-          {diagnosticsData.activeContextSessions && diagnosticsData.activeContextSessions.length > 0 && (
-            <div className="space-y-2 mt-4">
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                {language === "ar" ? "Ø£Ø­Ø¯Ø« Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ø°Ø§Øª Ø§Ù„Ø³ÙŠØ§Ù‚ Ø§Ù„Ù†Ø´Ø·" : "Recent Active Context Sessions"}
-              </span>
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
-                {diagnosticsData.activeContextSessions.map((session: any) => (
-                  <div key={session.id} className="p-2.5 rounded bg-gray-100 dark:bg-[#0f0f11]/80 border border-[var(--border)] flex items-center justify-between gap-2">
-                    <div className="truncate flex items-center gap-2">
-                      <span className="font-bold text-accent">#{session.id}</span>
-                      <span className="text-gray-800 dark:text-gray-200 truncate">{session.title || 'Untitled Session'}</span>
-                      <span className="text-[10px] font-mono bg-accent/10 text-accent px-1.5 py-0.2 rounded shrink-0">
-                        âš¡ {language === "ar" ? "Ù†Ø´Ø·" : "Active Context"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                        {new Date(session.updated_at).toLocaleTimeString()}
-                      </span>
-                      <button
-                        onClick={handleSmartCompress}
-                        disabled={isCompressing}
-                        className="text-[10px] font-mono text-accent hover:underline px-1.5 py-0.5 bg-accent/5 hover:bg-accent/10 rounded border border-accent/20 cursor-pointer disabled:opacity-50"
-                        title={language === "ar" ? "ØªÙ‚Ù„ÙŠØµ Ø³ÙŠØ§Ù‚ Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©" : "Shrink Session Context"}
-                      >
-                        {language === "ar" ? "ØªÙ‚Ù„ÙŠØµ" : "Shrink"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Buffer Usage Density Trend Over Last 60 Minutes */}
-          <div className="space-y-2 mt-6 pt-4 border-t border-[var(--border)]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                {language === "ar" ? "ÙƒØ«Ø§ÙØ© Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø°Ø§ÙƒØ±Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª Ø®Ù„Ø§Ù„ Ø¢Ø®Ø± 60 Ø¯Ù‚ÙŠÙ‚Ø©" : "Buffer Usage Density Trend (Last 60 Minutes)"}
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono">
-                  <span className="text-gray-500 dark:text-gray-400 text-[11px]">
-                    {language === "ar" ? "Ù…Ø¹Ø¯Ù„ Ø§Ù„ØªØ­Ø¯ÙŠØ«:" : "Refresh:"}
-                  </span>
-                  <select
-                    value={refreshInterval}
-                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                    className="bg-gray-100 dark:bg-[#0f0f11] text-gray-800 dark:text-gray-200 border border-[var(--border)] text-[11px] rounded px-2 py-0.5 font-mono focus:outline-none focus:border-accent transition-theme cursor-pointer"
-                  >
-                    <option value={5}>5s</option>
-                    <option value={10}>10s</option>
-                    <option value={30}>30s</option>
-                  </select>
-                </div>
-                <span className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded">
-                  Real-time Telemetry
-                </span>
-              </div>
-            </div>
-            <div className="h-48 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={bufferTrendData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#2d2d30' : '#e5e7eb'} />
-                  <XAxis dataKey="time" stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
-                  <YAxis stroke={theme === 'dark' ? '#9ca3af' : '#6b7280'} fontSize={10} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: theme === 'dark' ? '#1a1a1c' : '#ffffff', 
-                      borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      color: theme === 'dark' ? '#ffffff' : '#111827'
-                    }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="density" 
-                    stroke="#10b881" 
-                    strokeWidth={2.5} 
-                    dot={{ fill: '#10b881', r: 4 }} 
-                    activeDot={{ r: 6, fill: '#10b881', stroke: '#ffffff', strokeWidth: 2 }} 
-                  />
-                  <ReferenceLine 
-                    y={40} 
-                    stroke="#ef4444" 
-                    strokeDasharray="4 4" 
-                    label={{ 
-                      value: language === 'ar' ? 'Ø¹ØªØ¨Ø© 80% Ù„Ù„Ø­Ù…Ù„ Ø§Ù„Ø£Ù‚ØµÙ‰' : '80% Capacity Threshold', 
-                      fill: '#ef4444', 
-                      fontSize: 10, 
-                      position: 'insideTopRight' 
-                    }} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Action Trigger Consolidation Form Console */}
-      <div
-        className={`p-6 rounded-lg border transition-theme ${
-          theme === "dark"
-            ? "bg-[#1a1a1c] border-gray-800/60"
-            : "bg-white border-gray-200"
-        } shadow-md`}
-      >
-        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-6 border-b border-[var(--border)] pb-3">
-          {language === "ar"
-            ? "Ø£Ø¯ÙˆØ§Øª Ø§Ù„ØªØ´ØºÙŠÙ„ ÙˆØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø£Ù‡Ø¯Ø§Ù"
-            : "TRIGGER MANIFEST & MANIPULATION"}
-        </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-              {language === "ar"
-                ? "Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ø¯Ù†Ù‰ Ù„Ù„Ø°ÙƒØ±ÙŠØ§Øª Ø§Ù„Ù…Ø³ØªÙ‡Ø¯ÙØ©"
-                : "MINIMUM ACCUMULATION LIMIT (THRESHOLD)"}
-            </label>
-            <input
-              type="number"
-              value={threshold}
-              onChange={(e) =>
-                setThreshold(Math.max(2, parseInt(e.target.value) || 2))
-              }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
-                theme === "dark"
-                  ? "bg-[#0f0f11] border-gray-800 text-white"
-                  : "bg-gray-50 border-gray-200 text-gray-900"
-              }`}
-              placeholder="e.g. 10"
-              min="2"
-            />
-            <p className="text-[10px] text-gray-500">
-              {language === "ar"
-                ? "Ø³ÙŠØªÙ… ÙÙ‚Ø· Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ø°ÙŠÙ† Ù„Ø¯ÙŠÙ‡Ù… Ù‡Ø°Ø§ Ø§Ù„Ø¹Ø¯Ø¯ Ù…Ù† Ø§Ù„Ø°ÙƒØ±ÙŠØ§Øª Ø£Ùˆ Ø£ÙƒØ«Ø±."
-                : "Process profiles containing this memory record count or higher."}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-              {language === "ar"
-                ? "Ù…Ø¹Ø±Ù‘Ù Ù…Ø³ØªØ®Ø¯Ù… Ù…Ø­Ø¯Ø¯ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)"
-                : "EXPLICIT USER IDENTIFIER ID (OPTIONAL)"}
-            </label>
-            <input
-              type="text"
-              value={targetUserId}
-              onChange={(e) =>
-                setTargetUserId(e.target.value.replace(/\D/g, ""))
-              }
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
-                theme === "dark"
-                  ? "bg-[#0f0f11] border-gray-800 text-white"
-                  : "bg-gray-50 border-gray-200 text-gray-900"
-              }`}
-              placeholder="e.g. 52"
-            />
-            <p className="text-[10px] text-gray-500">
-              {language === "ar"
-                ? "Ø§ØªØ±Ùƒ Ù‡Ø°Ø§ Ø§Ù„Ø­Ù‚Ù„ ÙØ§Ø±ØºØ§Ù‹ Ù„ØªØ´ØºÙŠÙ„ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªÙƒØ«ÙŠÙ Ù„Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‡Ù„ÙŠÙ†."
-                : "Leave blank to process all system users matching the criteria."}
-            </p>
-          </div>
-
-          <div>
-            <button
-              onClick={handleRunConsolidation}
-              disabled={isRunning}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent disabled:bg-accent/40 text-white rounded-[4px] font-medium text-sm transition-theme shadow-[0_0_15px_rgba(156,163,175,0.15)] hover:shadow-[0_0_25px_rgba(156,163,175,0.3)] disabled:shadow-none cursor-pointer`}
-            >
-              {isRunning ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white/35 border-t-white animate-spin"></div>
-                  {language === "ar"
-                    ? "Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙƒØ«ÙŠÙ ÙˆØ§Ù„ØªÙˆÙ„ÙŠÙ..."
-                    : "DISTILLING MEMORIES..."}
-                </>
-              ) : (
-                <>
-                  <Brain
-                    size={16}
-                    className="text-white "
-                  />
-                  {language === "ar"
-                    ? "Ø¨Ø¯Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªÙƒØ«ÙŠÙ Ø§Ù„ÙŠØ¯ÙˆÙŠ"
-                    : "EXECUTE MANIFEST CYCLE"}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Automated Context Cleanup Routine Panel */}
-      <div
-        className={`p-6 rounded-lg border transition-theme ${
-          theme === "dark"
-            ? "bg-[#1a1a1c] border-gray-800/60"
-            : "bg-white border-gray-200"
-        } shadow-md`}
-      >
-        <h4 className="text-base font-bold text-gray-900 dark:text-white mb-2 border-b border-[var(--border)] pb-3">
-          {language === "ar"
-            ? "Ù…Ø­Ø±Ùƒ ØªÙ†Ø¸ÙŠÙ Ø§Ù„Ø³ÙŠØ§Ù‚ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ (Context TTL Cleanup)"
-            : "AUTOMATED CONTEXT TTL CLEANUP ROUTINE"}
-        </h4>
-        <p className="text-xs text-gray-500 mb-6">
-          {language === "ar"
-            ? "ØªØ­Ø¯ÙŠØ¯ ÙˆÙ…Ø³Ø­ Ù…Ù„Ø®ØµØ§Øª Ø§Ù„Ø³ÙŠØ§Ù‚ Ù„Ù„Ø¬Ù„Ø³Ø§Øª ØºÙŠØ± Ø§Ù„Ù†Ø´Ø·Ø© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø¹ØªØ¨Ø© TTL Ù„Ù„Ø­ÙØ§Ø¸ Ø¹Ù„Ù‰ Ø®ÙØ© Ùˆ ÙƒÙØ§Ø¡Ø© Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø­Ø±Ùƒ."
-            : "Identify and purge inactive session context summaries based on a configurable TTL threshold to maintain engine buffer efficiency."}
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-              {language === "ar" ? "Ø¹ØªØ¨Ø© ÙØªØ±Ø© Ø¹Ø¯Ù… Ø§Ù„Ù†Ø´Ø§Ø· (TTL Ø¨Ø§Ù„ÙŠÙˆÙ…)" : "INACTIVITY TTL THRESHOLD (DAYS)"}
-            </label>
-            <select
-              value={ttlDays}
-              onChange={(e) => setTtlDays(parseInt(e.target.value, 10))}
-              className={`w-full px-4 py-2 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme font-mono text-sm ${
-                theme === "dark"
-                  ? "bg-[#0f0f11] border-gray-800 text-white"
-                  : "bg-gray-50 border-gray-200 text-gray-900"
-              }`}
-            >
-              <option value="7">7 Days (Aggressive)</option>
-              <option value="15">15 Days (Standard)</option>
-              <option value="30">30 Days (Recommended)</option>
-              <option value="60">60 Days (Extended)</option>
-              <option value="90">90 Days (Archival)</option>
-            </select>
-          </div>
-
-          <div>
-            <button
-              onClick={handleRunContextCleanup}
-              disabled={isCleaning}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
-            >
-              {isCleaning ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
-                  {language === "ar" ? "Ø¬Ø§Ø±ÙŠ ØªÙ†Ø¸ÙŠÙ Ø§Ù„Ø³ÙŠØ§Ù‚..." : "PURGING INACTIVE CONTEXT..."}
-                </>
-              ) : (
-                <>
-                  <Database size={16} />
-                  {language === "ar" ? "ØªØ´ØºÙŠÙ„ ØªÙ†Ø¸ÙŠÙ Ø§Ù„Ø³ÙŠØ§Ù‚ Ø§Ù„Ø¢Ù†" : "RUN CONTEXT CLEANUP ROUTINE"}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Smart Compress Heuristic Panel */}
-      <div
-        className={`p-6 rounded-lg border transition-theme ${
-          theme === "dark"
-            ? "bg-[#1a1a1c] border-gray-800/60"
-            : "bg-white border-gray-200"
-        } shadow-md`}
-      >
-        <div className="flex items-center justify-between mb-2 border-b border-[var(--border)] pb-3">
-          <h4 className="text-base font-bold text-gray-900 dark:text-white">
-            {language === "ar"
-              ? "Ø§Ù„Ø¶ØºØ· Ø§Ù„Ø°ÙƒÙŠ Ù„Ù„Ø³ÙŠØ§Ù‚ (Smart Context Compression)"
-              : "SMART CONTEXT COMPRESSION & HEURISTIC TRIM"}
-          </h4>
-          <span className="text-xs font-mono text-accent bg-accent/10 px-2.5 py-1 rounded">
-            {language === "ar" ? "ØªÙ‚Ù„ÙŠÙ„ Ø§Ø³ØªÙ‡Ù„Ø§Ùƒ Ø§Ù„Ø±Ù…ÙˆØ²" : "Token Load Reduction"}
-          </span>
-        </div>
-        <p className="text-xs text-gray-500 mb-6">
-          {language === "ar"
-            ? "ØªØ·Ø¨ÙŠÙ‚ Ø®ÙˆØ§Ø±Ø²Ù…ÙŠØ© Ø§Ø³ØªØ¯Ù„Ø§Ù„ÙŠØ© Ø°ÙƒÙŠØ© Ù„Ø¶ØºØ· ÙˆØªÙ‚Ù„ÙŠÙ… Ø§Ù„Ù†ØµÙˆØµ Ø§Ù„Ø·ÙˆÙŠÙ„Ø© ÙÙŠ Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© Ø§Ù„Ù†Ø´Ø·Ø© Ù…Ø¹ Ø§Ù„Ø§Ø­ØªÙØ§Ø¸ Ø¨Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø¬ÙˆÙ‡Ø±ÙŠØ© ÙˆØªØ®ÙÙŠÙ Ø§Ù„Ø­Ù…Ù„ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø­Ø±Ùƒ."
-            : "Apply lightweight heuristic compression to trim redundant tokens from long-running active sessions while preserving core context summaries."}
-        </p>
-
-        <div className="flex items-center justify-end">
-          <button
-            onClick={handleSmartCompress}
-            disabled={isCompressing}
-            className={`flex items-center justify-center gap-2 px-6 py-2.5 bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border)] text-[var(--text-primary)] hover:text-accent disabled:opacity-50 rounded-[4px] font-medium text-sm transition-theme cursor-pointer`}
-          >
-            {isCompressing ? (
-              <>
-                <div className="w-4 h-4 rounded-full border-2 border-accent/35 border-t-accent animate-spin"></div>
-                {language === "ar" ? "Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¶ØºØ· Ø§Ù„Ø°ÙƒÙŠ..." : "COMPRESSING SESSIONS..."}
-              </>
-            ) : (
-              <>
-                <Zap size={16} className="text-accent" />
-                {language === "ar" ? "ØªØ´ØºÙŠÙ„ Ø§Ù„Ø¶ØºØ· Ø§Ù„Ø°ÙƒÙŠ Ø§Ù„Ø¢Ù†" : "RUN SMART COMPRESSION"}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Dynamic Results & Verification Console */}
-      <div
-        className={`p-6 rounded-lg border transition-theme ${
-          theme === "dark"
-            ? "bg-[#1a1a1c] border-gray-800/60"
-            : "bg-white border-gray-200"
-        } shadow-md space-y-6`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
-          <div>
-            <h4 className="text-base font-bold text-gray-900 dark:text-white">
-              {language === "ar"
-                ? "ØªÙ‚Ø±ÙŠØ± Ù…Ø¹Ø§Ù„Ø¬Ø© ØªÙƒØ«ÙŠÙ Ø§Ù„Ø°Ø§ÙƒØ±Ø©"
-                : "DISTILLATION EXECUTION REPORT"}
-            </h4>
-            <p className="text-xs text-gray-500 mt-1">
-              {language === "ar"
-                ? "ØªØ­Ù‚Ù‚ Ù…Ù† Ø¬ÙˆØ¯Ø© Ø§Ù„ØªÙˆÙ„ÙŠÙ Ø§Ù„Ø°ÙƒÙŠ ÙˆÙ…Ø®Ø±Ø¬Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ù„ÙƒÙ„ Ù…Ø³ØªØ®Ø¯Ù… Ù†Ø´Ø·."
-                : "Audit the generated high-density facts and compression quality below."}
-            </p>
-          </div>
-
-          <div className="relative w-full md:w-80">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-4 py-2 pl-10 pr-4 rounded border focus:outline-none focus:ring-1 focus:ring-accent-500/50 transition-theme text-xs ${
-                theme === "dark"
-                  ? "bg-[#0f0f11] border-gray-800 text-white"
-                  : "bg-gray-50 border-gray-200 text-gray-900"
-              }`}
-              placeholder={
-                language === "ar"
-                  ? "Ø¨Ø­Ø« Ø¹Ù† Ø§Ø³Ù…ØŒ Ø¨Ø±ÙŠØ¯ØŒ Ø£Ùˆ Ù…Ø­ØªÙˆÙ‰..."
-                  : "Search name, email, or synthesized fact..."
-              }
-            />
-            <div className={`absolute top-2.5 left-3 text-gray-400`}>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {filteredReports.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded bg-gray-50 dark:bg-[#0f0f11] border border-dashed border-[var(--border)]">
-            <Brain
-              size={48}
-              className="text-gray-300 dark:text-gray-700/60 mb-4 animate-pulse"
-            />
-            <p className="text-sm font-bold text-gray-500">
-              {language === "ar"
-                ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø¹Ø§Ù„Ø¬Ø© Ø­Ø§Ù„ÙŠØ©"
-                : "No active runtime logs available."}
-            </p>
-            <p className="text-xs text-gray-500 mt-1 max-w-sm">
-              {language === "ar"
-                ? "Ø§Ø¨Ø¯Ø£ Ø¨ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª ÙˆØ¶ØºØ· Ø¨Ø¯Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªÙƒØ«ÙŠÙ Ø§Ù„ÙŠØ¯ÙˆÙŠ Ø£Ø¹Ù„Ø§Ù‡ Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ ÙˆÙ…ÙƒØ«ÙØ© Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†."
-                : "Select targets and run the manifest cycle to stream and capture direct synthesis details here."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {filteredReports.map((report) => (
-              <div
-                key={report.userId}
-                className={`p-5 rounded-lg border transition-theme ${
-                  report.success
-                    ? theme === "dark"
-                      ? "bg-[#0f0f11]/60 border-accent/15 shadow-[0_0_15px_rgba(156,163,175,0.02)]"
-                      : "bg-accent/15 border-accent/50"
-                    : theme === "dark"
-                      ? "bg-[#0f0f11]/60 border-red-500/15"
-                      : "bg-red-50/15 border-red-200/50"
-                }`}
-              >
-                {/* User Header Details */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-3 mb-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-gray-900 dark:text-white">
-                        {report.userName}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-gray-200 dark:bg-gray-800 text-gray-500">
-                        UID: #{report.userId}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {report.userEmail}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    {/* Compression indicator with glow */}
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">
-                          {language === "ar"
-                            ? "Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©"
-                            : "OPTIMIZATION SCALE"}
-                        </div>
-                        <div className="text-xs font-mono text-gray-400">
-                          <span className="text-red-400 font-bold">
-                            {report.oldCount}
-                          </span>
-                          {" â” "}
-                          <span className="text-accent font-bold">
-                            {report.newCount}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-extrabold text-accent  px-2.5 py-1 rounded bg-accent/10 border border-accent/20">
-                        {Math.round(
-                          ((report.oldCount - report.newCount) /
-                            report.oldCount) *
-                            100
-                        )}
-                        % {language === "ar" ? "ØªÙ‚Ù„ÙŠØµ" : "REDUCED"}
-                      </span>
-                    </div>
-
-                    {/* Status Badge */}
-                    {report.success ? (
-                      <span className="flex items-center gap-1.5 text-xs text-accent font-bold bg-accent/10 border border-accent/20 px-2.5 py-1 rounded">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse animate-duration-1000"></span>
-                        {language === "ar" ? "Ù†Ø§Ø¬Ø­" : "COMPLETED"}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-xs text-red-500 font-bold bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                        {language === "ar" ? "ÙØ´Ù„" : "FAILED"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {report.success ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Distilled segment */}
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        {language === "ar"
-                          ? "Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„ØªÙˆÙ„ÙŠÙÙŠØ© Ø¹Ø§Ù„ÙŠØ© Ø§Ù„ÙƒØ«Ø§ÙØ©"
-                          : "SYNTHESIZED INTEL FACT STATEMENT (RESULTS)"}
-                      </div>
-                      <blockquote
-                        className={`p-4 rounded border-s-4 border-accent leading-relaxed text-sm font-medium ${
-                          theme === "dark"
-                            ? "bg-[#131315] border-gray-800 text-gray-100"
-                            : "bg-white border-gray-200 text-gray-800"
-                        }`}
-                      >
-                        â€œ{report.distilledFact}â€
-                      </blockquote>
-                    </div>
-
-                    {/* Archived Segment list */}
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center justify-between">
-                        <span>
-                          {language === "ar"
-                            ? "Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ù€ 10 Ø§Ù„Ù…Ø¤Ø±Ø´ÙØ© Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø©"
-                            : "ARCHIVED LEGACY FACT STATEMENTS"}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-normal font-mono">
-                          Count: {report.archivedFacts.length}
-                        </span>
-                      </div>
-                      <div
-                        className={`p-3 rounded border font-mono text-[11px] leading-relaxed max-h-36 overflow-y-auto custom-scrollbar space-y-1.5 ${
-                          theme === "dark"
-                            ? "bg-[#131315]/80 border-gray-800 text-gray-400"
-                            : "bg-white border-gray-100 text-gray-650"
-                        }`}
-                      >
-                        {report.archivedFacts.map((fact, idx) => (
-                          <div
-                            key={idx}
-                            className="border-b border-gray-800/15 last:border-0 pb-1 last:pb-0"
-                          >
-                            {fact}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-red-400 font-mono p-3 bg-red-500/5 rounded border border-red-500/10">
-                    <strong>Error description:</strong>{" "}
-                    {report.error || "Failed to process consolidation."}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Notification Thresholds Configuration Modal */}
-      <NotificationThresholdsModal
-        isOpen={isThresholdModalOpen}
-        onClose={() => setIsThresholdModalOpen(false)}
-        currentLow={lowThreshold}
-        currentHigh={highThreshold}
-        onSave={handleSaveThresholds}
-        language={language as "ar" | "en"}
-        theme={theme as "dark" | "light"}
-      />
-    </div>
-  );
-};
-
-const SystemSettingsView = ({
-  theme,
-  t,
-  dir,
-}: {
-  theme: string;
-  t: (key: string, replacements?: any) => string;
-  dir: string;
-}) => {
-  const confirm = useConfirm();
-  const { siteSettings, setSiteSettings, token, setIsOperationPending, language } = useAppContext();
-
-  const [siteName, setSiteName] = useState(siteSettings.siteName);
-  const [siteNameAr, setSiteNameAr] = useState(siteSettings.siteNameAr || "");
-  const [seoSiteNameEn, setSeoSiteNameEn] = useState("");
-  const [seoSiteNameAr, setSeoSiteNameAr] = useState("");
-  const [siteDescription, setSiteDescription] = useState(
-    siteSettings.siteDescription,
-  );
-  const [siteDescriptionAr, setSiteDescriptionAr] = useState(
-    siteSettings.siteDescriptionAr || "",
-  );
-  const [seoDescriptionEn, setSeoDescriptionEn] = useState("");
-  const [seoDescriptionAr, setSeoDescriptionAr] = useState("");
-  const [keywordsEn, setKeywordsEn] = useState("");
-  const [keywordsAr, setKeywordsAr] = useState("");
-  const [googleAnalyticsId, setGoogleAnalyticsId] = useState(
-    siteSettings.googleAnalyticsId,
-  );
-  const [googleSiteVerification, setGoogleSiteVerification] = useState(
-    siteSettings.googleSiteVerification || "",
-  );
-  const [blockedPaths, setBlockedPaths] = useState(
-    siteSettings.blocked_paths || "",
-  );
-
-  const [logoBase64, setLogoBase64] = useState<string | null>(
-    siteSettings.logoBase64,
-  );
-  const [logoLightBase64, setLogoLightBase64] = useState<string | null>(
-    siteSettings.logoLightBase64,
-  );
-  const [faviconBase64, setFaviconBase64] = useState<string | null>(
-    siteSettings.faviconBase64,
-  );
-  const [seoImageUrl, setSeoImageUrl] = useState<string | null>(
-    siteSettings.seoImageUrl,
-  );
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSeoUploading, setIsSeoUploading] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  const [clearingCache, setClearingCache] = useState<string | null>(null);
-
-  // --- DIAGNOSTIC HELPER FOR SYSTEM SETTINGS & ORPHANED LOGO ASSETS ---
-  const [orphanedAssetsState, setOrphanedAssetsState] = useState<{
-    hasOrphanedAssets: boolean;
-    assets: Array<{
-      key: string;
-      label: string;
-      url: string | null;
-      exists: boolean;
-      isOrphaned: boolean;
-      reason?: string;
-    }>;
-    orphanedKeys: string[];
-  } | null>(null);
-  const [isCheckingAssets, setIsCheckingAssets] = useState(false);
-  const [isRepairingAssets, setIsRepairingAssets] = useState(false);
-  const [isSyncingMetadata, setIsSyncingMetadata] = useState(false);
-
-  const handleSyncSeoMetadata = async () => {
-    setIsSyncingMetadata(true);
-    try {
-      const res = await fetch("/api/admin/sync-metadata", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const msg = language === "ar"
-          ? `ØªÙ…Øª Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙˆØµÙÙŠØ© Ù„Ù€ SEO Ø¨Ù†Ø¬Ø§Ø­. (ØªÙ… ØªØ­Ø¯ÙŠØ« ${data.totalUpdated} Ø¹Ù†ØµØ±)`
-          : `SEO metadata sync complete. (${data.totalUpdated} items updated)`;
-        showToast(msg, "success");
-      } else {
-        throw new Error("Metadata sync failed");
-      }
-    } catch (err: any) {
-      showToast(
-        language === "ar"
-          ? "Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙˆØµÙÙŠØ© Ù„Ù€ SEO"
-          : "Error synchronizing SEO metadata",
-        "error"
-      );
-    } finally {
-      setIsSyncingMetadata(false);
-    }
-  };
-
-  const checkSystemAssetsDiagnostic = async () => {
-    setIsCheckingAssets(true);
-    try {
-      const res = await fetch("/api/admin/settings/check-assets", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOrphanedAssetsState(data);
-      }
-    } catch (err) {
-      console.error("Failed to run system asset diagnostic check:", err);
-    } finally {
-      setIsCheckingAssets(false);
-    }
-  };
-
-  const handleRepairOrphanedAssets = async () => {
-    setIsRepairingAssets(true);
-    try {
-      const res = await fetch("/api/admin/settings/repair-assets", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        showToast(
-          language === "ar"
-            ? "ØªÙ… Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ø´Ø¹Ø§Ø± ÙˆØ§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø© Ø¨Ù†Ø¬Ø§Ø­"
-            : "Orphaned assets repaired and restored successfully",
-          "success"
-        );
-        fetchSettings();
-        checkSystemAssetsDiagnostic();
-      } else {
-        throw new Error("Repair request failed");
-      }
-    } catch (err) {
-      showToast(
-        language === "ar"
-          ? "Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¥ØµÙ„Ø§Ø­ Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø©"
-          : "Failed to repair orphaned assets",
-        "error"
-      );
-    } finally {
-      setIsRepairingAssets(false);
-    }
-  };
-
-  const [missingAssetReport, setMissingAssetReport] = useState<any>(null);
-  const [isScanningMissingAssets, setIsScanningMissingAssets] = useState(false);
-  const [isPurgingMissingAssets, setIsPurgingMissingAssets] = useState(false);
-
-  const fetchMissingAssetReport = async () => {
-    setIsScanningMissingAssets(true);
-    try {
-      const res = await fetch("/api/admin/missing-assets-report", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMissingAssetReport(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch missing asset report:", err);
-    } finally {
-      setIsScanningMissingAssets(false);
-    }
-  };
-
-  const handlePurgeMissingAssets = async (ids?: number[]) => {
-    setIsPurgingMissingAssets(true);
-    try {
-      const res = await fetch("/api/admin/missing-assets", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(ids ? { ids } : {})
-      });
-      if (res.ok) {
-        const data = await res.json();
-        showToast(
-          language === "ar"
-            ? `ØªÙ… ØªØ·Ù‡ÙŠØ± ÙˆØ­Ø°Ù ${data.deletedCount} Ø³Ø¬Ù„ Ù…Ù„Ù Ù…ÙÙ‚ÙˆØ¯ Ø¨Ù†Ø¬Ø§Ø­`
-            : `Successfully purged ${data.deletedCount} missing file records`,
-          "success"
-        );
-        fetchMissingAssetReport();
-      } else {
-        throw new Error("Purge failed");
-      }
-    } catch (err) {
-      showToast(
-        language === "ar" ? "ÙØ´Ù„ ØªØ·Ù‡ÙŠØ± Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø©" : "Failed to purge missing assets",
-        "error"
-      );
-    } finally {
-      setIsPurgingMissingAssets(false);
-    }
-  };
-
-  const handleClearCache = async (target: string) => {
-    setClearingCache(target);
-    try {
-      const res = await fetch("/api/admin/cache/clear", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ target }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setToast({
-          message: data.message || (language === "ar" ? "ØªÙ… Ù…Ø³Ø­ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø¤Ù‚ØªØ© Ø¨Ù†Ø¬Ø§Ø­" : "Cache cleared successfully"),
-          type: "success",
-        });
-      } else {
-        const err = await res.json();
-        setToast({
-          message: err.error || (language === "ar" ? "ÙØ´Ù„ Ù…Ø³Ø­ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø¤Ù‚ØªØ©" : "Failed to clear cache"),
-          type: "error",
-        });
-      }
-    } catch (error: any) {
-      setToast({
-        message: error.message || (language === "ar" ? "ÙØ´Ù„ Ù…Ø³Ø­ Ø§Ù„Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø¤Ù‚ØªØ©" : "Failed to clear cache"),
-        type: "error",
-      });
-    } finally {
-      setClearingCache(null);
-    }
-  };
-
-  // --- DYNAMIC ROUTE SEO MANAGEMENT STATE ---
-  const [routeSeoList, setRouteSeoList] = useState<any[]>([]);
-  const [loadingRouteSeo, setLoadingRouteSeo] = useState(false);
-  const [editingRouteItem, setEditingRouteItem] = useState<any | null>(null);
-  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
-  const [routeSearchQuery, setRouteSearchQuery] = useState("");
-  const [routeUploadingImg, setRouteUploadingImg] = useState(false);
-
-  const fetchRouteSeoList = async () => {
-    setLoadingRouteSeo(true);
-    try {
-      const res = await fetch("/api/admin/seo-routes", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRouteSeoList(data);
-      }
-    } catch (e) {
-      console.error("Failed to load route SEO list:", e);
-    } finally {
-      setLoadingRouteSeo(false);
-    }
-  };
-
-  const handleOpenAddRouteModal = () => {
-    setEditingRouteItem({
-      route: "",
-      title_ar: "",
-      title_en: "",
-      description_ar: "",
-      description_en: "",
-      keywords_ar: "",
-      keywords_en: "",
-      og_image_url: "",
-      is_active: true,
-    });
-    setIsRouteModalOpen(true);
-  };
-
-  const handleOpenEditRouteModal = (item: any) => {
-    setEditingRouteItem({ ...item });
-    setIsRouteModalOpen(true);
-  };
-
-  const handleSaveRouteSeo = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!editingRouteItem?.route) {
-      showToast(dir === "rtl" ? "Ù…Ø³Ø§Ø± Ø§Ù„ØµÙØ­Ø© Ù…Ø·Ù„ÙˆØ¨ (Ù…Ø«Ù„ /marketplace)" : "Route path is required (e.g. /marketplace)", "error");
-      return;
-    }
-    try {
-      const res = await fetch("/api/admin/seo-routes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(editingRouteItem),
-      });
-      if (res.ok) {
-        showToast(
-          dir === "rtl" ? "ØªÙ… Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª SEO Ù„Ù„Ù…Ø³Ø§Ø± Ø¨Ù†Ø¬Ø§Ø­" : "Route SEO settings saved successfully",
-          "success"
-        );
-        setIsRouteModalOpen(false);
-        setEditingRouteItem(null);
-        fetchRouteSeoList();
-      } else {
-        const errData = await res.json();
-        showToast(errData.error || "Failed to save route SEO", "error");
-      }
-    } catch (e: any) {
-      showToast(e.message || "Error saving route SEO", "error");
-    }
-  };
-
-  const handleDeleteRouteSeo = async (id: number) => {
-    const isConfirmed = await confirm({
-      title: dir === "rtl" ? "Ø­Ø°Ù Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³Ø§Ø±" : "Delete Route SEO",
-      description: dir === "rtl" ? "Ù‡Ù„ Ø£Ù†Øª ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³Ø§Ø±ØŸ" : "Are you sure you want to delete this route SEO setting?",
-      variant: "danger"
-    });
-    if (!isConfirmed) return;
-    try {
-      const res = await fetch(`/api/admin/seo-routes/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        showToast(dir === "rtl" ? "ØªÙ… Ø­Ø°Ù Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³Ø§Ø±" : "Route SEO setting removed", "success");
-        fetchRouteSeoList();
-      } else {
-        showToast("Failed to delete", "error");
-      }
-    } catch (e: any) {
-      showToast(e.message || "Delete error", "error");
-    }
-  };
-
-  const handleRouteImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showToast(dir === "rtl" ? "Ø­Ø¬Ù… Ø§Ù„ØµÙˆØ±Ø© ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø£Ù‚Ù„ Ù…Ù† 2 Ù…ÙŠØºØ§Ø¨Ø§ÙŠØª" : "Image size must be less than 2MB", "error");
-      return;
-    }
-    setRouteUploadingImg(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/admin/settings/upload-asset", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.imageUrl) {
-          setEditingRouteItem((prev: any) => ({ ...prev, og_image_url: data.imageUrl }));
-          showToast(dir === "rtl" ? "ØªÙ… Ø±ÙØ¹ ØµÙˆØ±Ø© Ø§Ù„Ù…Ø³Ø§Ø± Ø¨Ù†Ø¬Ø§Ø­" : "Route SEO image uploaded successfully", "success");
-        }
-      }
-    } catch (err) {
-      showToast("Failed to upload image", "error");
-    } finally {
-      setRouteUploadingImg(false);
-    }
-  };
-
-
-
-  // --- SEO CRAWLABILITY AND ROUTE INDEXING AUDIT REPORT STATE ---
-  const [crawlScanning, setCrawlScanning] = useState(false);
-  const [crawlAuditFilter, setCrawlAuditFilter] = useState<"all" | "index" | "noindex">("all");
-  const [crawlAuditLogs, setCrawlAuditLogs] = useState<string[]>([]);
-  const [crawlComplianceRate, setCrawlComplianceRate] = useState<string>("100.00% SECURE");
-
-  useEffect(() => {
-    setIsOperationPending(isSaving);
-  }, [isSaving, setIsOperationPending]);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch("/api/admin/settings", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSiteName(data.site_name_en || "");
-        setSiteNameAr(data.site_name_ar || "");
-        const seoSiteNameEnVal = data.seo_site_name_en || "";
-        const seoSiteNameArVal = data.seo_site_name_ar || "";
-        setSeoSiteNameEn(seoSiteNameEnVal);
-        setSeoSiteNameAr(seoSiteNameArVal);
-
-        setSiteDescription(data.site_description_en || "");
-        setSiteDescriptionAr(data.site_description_ar || "");
-        const seoEnVal = data.seo_description_en || data.seo_description_en === "" ? data.seo_description_en : "";
-        const seoArVal = data.seo_description_ar || "";
-        const kwsEnVal = data.keywords_en || "";
-        const kwsArVal = data.keywords_ar || "";
-
-        setSeoDescriptionEn(seoEnVal);
-        setSeoDescriptionAr(seoArVal);
-        setKeywordsEn(kwsEnVal);
-        setKeywordsAr(kwsArVal);
-        setGoogleAnalyticsId(data.google_analytics_id || "");
-        setGoogleSiteVerification(data.google_site_verification || "");
-        setBlockedPaths(data.blocked_paths || "");
-        setLogoBase64(data.logo_url || null);
-        setLogoLightBase64(data.logo_light_url || null);
-        setFaviconBase64(data.favicon_url || null);
-        setSeoImageUrl(data.seo_image_url || null);
-
-        setSiteSettings({
-          ...siteSettings,
-          siteName: data.site_name_en || "",
-          siteNameAr: data.site_name_ar || "",
-          seoSiteNameEn: seoSiteNameEnVal,
-          seoSiteNameAr: seoSiteNameArVal,
-          siteDescription: data.site_description_en || "",
-          siteDescriptionAr: data.site_description_ar || "",
-          seoDescriptionEn: seoEnVal,
-          seoDescriptionAr: seoArVal,
-          keywordsEn: kwsEnVal,
-          keywordsAr: kwsArVal,
-          googleAnalyticsId: data.google_analytics_id || "",
-          logoBase64: data.logo_url || null,
-          logoLightBase64: data.logo_light_url || null,
-          faviconBase64: data.favicon_url || null,
-          seoImageUrl: data.seo_image_url || null,
-          blocked_paths: data.blocked_paths || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchSettings();
-      fetchRouteSeoList();
-      checkSystemAssetsDiagnostic();
-    }
-  }, [token]);
-
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "logo" | "logo_light" | "favicon" | "seo",
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        showToast(
-          dir === "rtl" 
-            ? "Ø­Ø¬Ù… Ø§Ù„ØµÙˆØ±Ø© ÙŠØªØ¬Ø§ÙˆØ² Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡ ÙˆÙ‡Ùˆ 2 Ù…ÙŠØºØ§Ø¨Ø§ÙŠØª" 
-            : "Image size must be less than 2MB", 
-          "error"
-        );
-        return;
-      }
-
-      setIsOperationPending(true);
-      if (type === "seo") setIsSeoUploading(true);
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/admin/settings/upload-asset", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to upload image");
-        }
-
-        const data = await response.json();
-        if (data.success && data.imageUrl) {
-          let updatedLogo = logoBase64;
-          let updatedLogoLight = logoLightBase64;
-          let updatedFavicon = faviconBase64;
-          let updatedSeo = seoImageUrl;
-
-          if (type === "seo") { setSeoImageUrl(data.imageUrl); updatedSeo = data.imageUrl; }
-          else if (type === "logo") { setLogoBase64(data.imageUrl); updatedLogo = data.imageUrl; }
-          else if (type === "logo_light") { setLogoLightBase64(data.imageUrl); updatedLogoLight = data.imageUrl; }
-          else if (type === "favicon") { setFaviconBase64(data.imageUrl); updatedFavicon = data.imageUrl; }
-
-          try {
-            const saveRes = await fetch("/api/admin/settings", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                logo_url: updatedLogo,
-                logo_light_url: updatedLogoLight,
-                favicon_url: updatedFavicon,
-                seo_image_url: updatedSeo,
-              }),
-            });
-
-            if (saveRes.ok) {
-              setSiteSettings({
-                ...siteSettings,
-                logoBase64: updatedLogo,
-                logoLightBase64: updatedLogoLight,
-                faviconBase64: updatedFavicon,
-                seoImageUrl: updatedSeo,
-              });
-              showToast(
-                dir === "rtl" 
-                  ? "ØªÙ… Ø±ÙØ¹ ÙˆØ­ÙØ¸ ÙˆØªØ·Ø¨ÙŠÙ‚ Ø§Ù„Ø´Ø¹Ø§Ø± Ø¨Ù†Ø¬Ø§Ø­ ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª!" 
-                  : "Logo uploaded, saved and applied successfully!", 
-                "success"
-              );
-            } else {
-              showToast(
-                dir === "rtl" 
-                  ? "ØªÙ… Ø±ÙØ¹ Ø§Ù„Ù…Ù„ÙØŒ ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù†Ù‚Ø± Ø¹Ù„Ù‰ Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª" 
-                  : "Uploaded. Click Save to complete.", 
-                "success"
-              );
-            }
-          } catch (persistErr) {
-            console.error('[AssetUpload] Persistence error:', persistErr);
-          }
-        } else {
-          throw new Error("Upload response was unsuccessful");
-        }
-      } catch (error) {
-        console.error('[AssetUpload] Frontend upload error:', error);
-        showToast(
-          dir === "rtl" 
-            ? "ÙØ´Ù„ Ø±ÙØ¹ Ø§Ù„ØµÙˆØ±Ø©ØŒ ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù„Ø§Ø­Ù‚Ø§Ù‹" 
-            : "Failed to upload asset. Please try again.", 
-          "error"
-        );
-      } finally {
-        setIsOperationPending(false);
-        if (type === "seo") setIsSeoUploading(false);
-      }
-    }
-  };
-
-  const handleSaveGeneralSettings = async () => {
-    if (!siteName || !siteDescription) {
-      showToast(t("allFieldsRequired") || "All fields are required", "error");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          site_name_en: siteName,
-          site_name_ar: siteNameAr,
-          site_description_en: siteDescription,
-          site_description_ar: siteDescriptionAr,
-          seo_description_en: seoDescriptionEn,
-          seo_description_ar: seoDescriptionAr,
-          keywords_en: keywordsEn,
-          keywords_ar: keywordsAr,
-          google_analytics_id: googleAnalyticsId,
-          google_site_verification: googleSiteVerification,
-          logo_url: logoBase64,
-          logo_light_url: logoLightBase64,
-          favicon_url: faviconBase64,
-          seo_image_url: seoImageUrl,
-        }),
-      });
-
-      if (res.ok) {
-        setSiteSettings({
-          ...siteSettings,
-          siteName,
-          siteNameAr,
-          siteDescription,
-          siteDescriptionAr,
-          seoDescriptionEn: seoDescriptionEn,
-          seoDescriptionAr: seoDescriptionAr,
-          keywordsEn: keywordsEn,
-          keywordsAr: keywordsAr,
-          seoImageUrl: seoImageUrl,
-          logoBase64,
-          logoLightBase64,
-          faviconBase64,
-        });
-        showToast(t("saveSuccess") || "General settings saved", "success");
-      } else {
-        showToast(t("saveFailed") || "Failed", "error");
-      }
-    } catch (error) {
-      showToast(t("saveFailed") || "Failed", "error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveVisualSettings = async () => {
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          logo_url: logoBase64,
-          logo_light_url: logoLightBase64,
-          favicon_url: faviconBase64,
-        }),
-      });
-
-      if (res.ok) {
-        setSiteSettings({
-          ...siteSettings,
-          logoBase64,
-          logoLightBase64,
-          faviconBase64,
-        });
-        showToast(t("saveSuccess") || "Visual settings saved", "success");
-      } else {
-        const err = await res.json();
-        showToast(err.error || t("saveFailed") || "Failed", "error");
-      }
-    } catch (error: any) {
-      showToast(error.message || t("saveFailed") || "Failed", "error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveSeoSettings = async () => {
-    if (!siteName) {
-      showToast(dir === "rtl" ? "Ø§Ø³Ù… Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø·Ù„ÙˆØ¨" : "Site Name in English is required", "error");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          site_name_en: siteName,
-          site_name_ar: siteNameAr,
-          seo_site_name_en: seoSiteNameEn,
-          seo_site_name_ar: seoSiteNameAr,
-          site_description_en: siteDescription,
-          site_description_ar: siteDescriptionAr,
-          seo_description_en: seoDescriptionEn,
-          seo_description_ar: seoDescriptionAr,
-          keywords_en: keywordsEn,
-          keywords_ar: keywordsAr,
-          google_analytics_id: googleAnalyticsId || "",
-          google_site_verification: googleSiteVerification || "",
-          seo_image_url: seoImageUrl,
-          blocked_paths: blockedPaths || "",
-        }),
-      });
-
-      if (res.ok) {
-        setSiteSettings({
-          ...siteSettings,
-          siteName,
-          siteNameAr,
-          seoSiteNameEn,
-          seoSiteNameAr,
-          siteDescription,
-          siteDescriptionAr,
-          seoDescriptionEn,
-          seoDescriptionAr,
-          keywordsEn,
-          keywordsAr,
-          googleAnalyticsId,
-          googleSiteVerification,
-          seoImageUrl,
-          blocked_paths: blockedPaths,
-        });
-        showToast(t("saveSuccess") || "SEO settings saved", "success");
-      } else {
-        const err = await res.json();
-        showToast(err.error || t("saveFailed") || "Failed", "error");
-      }
-    } catch (error: any) {
-      showToast(error.message || t("saveFailed") || "Failed", "error");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // --- CRAWLABILITY ROUTE LIST, SCANNER, AND EXPORT CONSOLE FUNCTIONS ---
-  const routesSchema = useMemo(() => {
-    const base = [
-      { path: "/", labelEn: "Home Gateway Redirect", labelAr: "Ø¨ÙˆØ§Ø¨Ø© Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "Ø¨ÙˆØ§Ø¨Ø© ØªÙˆØ¬ÙŠÙ‡ Ø¹Ø§Ù…Ø© ØªÙ‚ÙˆÙ… Ø¨ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù„Ù„ÙˆØ§Ø¬Ù‡Ø© Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ©." },
-      { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "ØµÙØ­Ø© Ø®Ø·Ø· Ø§Ù„Ø§Ø´ØªØ±Ø§ÙƒØ§Øª", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "ØµÙØ­Ø© Ø¹Ø§Ù…Ø© Ù„Ø¹Ø±Ø¶ Ù…Ø²Ø§ÙŠØ§ ÙˆØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø¹Ø¶ÙˆÙŠØ© ÙˆØ§Ù„Ø®Ø·Ø· Ø§Ù„Ø³Ø¹Ø±ÙŠØ©." },
-      { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "Ù…ØªØ¬Ø± Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª ÙˆØ§Ù„Ù†Ù…Ø§Ø°Ø¬ Ø§Ù„Ø°ÙƒÙŠØ©", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "Ù…Ø¹Ø±Ø¶ Ø¹Ø§Ù… Ù„Ø¹Ø±Ø¶ Ù…Ù„Ø­Ù‚Ø§Øª Ø§Ù„Ø£Ù†Ø¸Ù…Ø© Ø§Ù„Ù…Ø¯Ù…Ø¬Ø© ÙˆØ§Ù„Ù‚ÙˆØ§Ù„Ø¨ Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠØ©." },
-      { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "Ø§Ù„Ù…Ø¯ÙˆÙ†Ø© Ø§Ù„ØªÙ‚Ù†ÙŠØ© ÙˆØ§Ù„ØªØ¹Ù„ÙŠÙ…ÙŠØ©", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "Ù…Ø±ÙƒØ² Ù…Ù‚Ø§Ù„Ø§Øª Ø¹Ø§Ù… Ù„Ù†Ø´Ø± Ø§Ù„ØªØ­Ù„ÙŠÙ„Ø§Øª Ø§Ù„ÙÙ†ÙŠØ© ÙˆØ§Ù„Ø¯Ø±ÙˆØ³ Ø§Ù„ØªØ¹Ù„ÙŠÙ…ÙŠØ©." },
-      { path: "/terms", labelEn: "Terms of Service", labelAr: "Ø´Ø±ÙˆØ· Ø§Ù„Ø®Ø¯Ù…Ø© ÙˆØ§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "Ø§ØªÙØ§Ù‚ÙŠØ© Ù‚Ø§Ù†ÙˆÙ†ÙŠØ© Ø¹Ø§Ù…Ø© ØªÙ†Ø¸Ù… Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… ÙˆØ­Ù‚ÙˆÙ‚ Ø§Ù„Ù…Ù„ÙƒÙŠØ© Ù„Ù„Ù…Ù†ØµØ©." },
-      { path: "/privacy", labelEn: "Privacy Policy Charter", labelAr: "Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ© ÙˆØ­Ù…Ø§ÙŠØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª", type: "public", status: "index", descriptionEn: "Mandatory public charter highlighting database handling policies.", descriptionAr: "Ù…ÙŠØ«Ø§Ù‚ Ø®ØµÙˆØµÙŠØ© Ø¹Ø§Ù… ÙŠÙˆØ¶Ø­ Ø³ÙŠØ§Ø³Ø§Øª Ø§Ù„ØªØ¹Ø§Ù…Ù„ Ø§Ù„Ø¢Ù…Ù† Ù…Ø¹ Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª." },
-      { path: "/about", labelEn: "About Corporate Pitch", labelAr: "ØµÙØ­Ø© Ø§Ù„ØªØ¹Ø±ÙŠÙ ÙˆØ§Ù„Ø±Ø¤ÙŠØ©", type: "public", status: "index", descriptionEn: "Public company presentation showcasing core tech vision.", descriptionAr: "Ø¹Ø±Ø¶ Ø¹Ø§Ù… Ù„Ù„Ù…Ø¤Ø³Ø³Ø© ÙŠØ¹Ø²Ø² Ø§Ù„Ø«Ù‚Ø© ÙˆÙŠÙˆØ¶Ø­ Ø§Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ø§Ø¨ØªÙƒØ§Ø±ÙŠØ©." },
-      { path: "/chat", labelEn: "Intelligence Workspace (Chat Component)", labelAr: "Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© ÙˆØ§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø°ÙƒÙŠ Ø§Ù„Ù…ØªØ·ÙˆØ±", type: "private", status: "noindex", descriptionEn: "Highly sensitive user-curated environment containing active AI transcriptions.", descriptionAr: "Ù…Ø³Ø§Ø­Ø© Ø¹Ù…Ù„ Ø®Ø§ØµØ© ÙˆØ³Ø±ÙŠØ© Ù„Ù„ØºØ§ÙŠØ© ØªØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø³Ø¬Ù„ Ù…Ø­Ø§Ø¯Ø«Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ." },
-      { path: "/settings", labelEn: "User Profile & Security Vault", labelAr: "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨ ÙˆØ­Ù‚ÙŠØ¨Ø© Ø£Ù…Ø§Ù† Ø§Ù„Ø¹Ø¶Ùˆ", type: "private", status: "noindex", descriptionEn: "Sensitive account configurations, referral links, and session details.", descriptionAr: "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø´Ø®ØµÙŠØ© Ø­Ø³Ø§Ø³Ø© ÙˆÙ…ÙØ§ØªÙŠØ­ Ø§Ù„Ø¹Ø¶ÙˆÙŠØ© ÙˆØ³Ø¬Ù„Ø§Øª Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù†Ø´Ø·Ø©." },
-      { path: "/rewards", labelEn: "Affiliate Ledger & KYC Pending Board", labelAr: "Ù†Ø¸Ø§Ù… Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª ÙˆØ§Ù„ØªØ­Ù‚Ù‚ Ø§Ù„Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…ØªÙ‚Ø¯Ù…", type: "private", status: "noindex", descriptionEn: "Ledger transaction audits, KYC identities, and wallet addresses.", descriptionAr: "Ø³Ø¬Ù„Ø§Øª Ù…Ø§Ù„ÙŠÙ‘Ø© Ù„ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª ÙˆØ¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªØ­Ù‚Ù‚ ÙˆØ¥Ø«Ø¨Ø§Øª Ø§Ù„Ù‡ÙˆÙŠØ©." },
-      { path: "/reset-password", labelEn: "Credential Reset Gateway", labelAr: "Ø¨ÙˆØ§Ø¨Ø© Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙˆØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±", type: "private", status: "noindex", descriptionEn: "Temporary authentication token interface. Must stay isolated.", descriptionAr: "ÙˆØ§Ø¬Ù‡Ø© Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø±Ù…ÙˆØ² ØªØ­Ù‚Ù‚ Ù…ØªØºÙŠØ±Ø©." },
-      { path: "/admin-community", labelEn: "Sections Panel (Community Management)", labelAr: "Ù„ÙˆØ­Ø© ØªØ­ÙƒÙ… Ø§Ù„Ø£Ù‚Ø³Ø§Ù… (Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¬ØªÙ…Ø¹)", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged community, sections, and category moderation hub.", descriptionAr: "Ù…Ø±ÙƒØ² Ø¥Ø¯Ø§Ø±Ø© ÙˆÙ…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ø£Ù‚Ø³Ø§Ù… ÙˆØ§Ù„ÙØ¦Ø§Øª ÙˆØ§Ù„Ù…Ø¬ØªÙ…Ø¹ Ø°Ùˆ ØµÙ„Ø§Ø­ÙŠØ§Øª Ù…ØªÙ‚Ø¯Ù…Ø©." },
-      { path: "/admin-sections", labelEn: "Sections Control Panel (External Modules)", labelAr: "Ù„ÙˆØ­Ø© ØªØ­ÙƒÙ… Ø§Ù„Ø£Ù‚Ø³Ø§Ù… ÙˆØ§Ù„Ø£Ø¨Ø­Ø§Ø« Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠØ©", type: "admin", status: "noindex", descriptionEn: "External systems integration, categories block and custom module definitions.", descriptionAr: "Ù„ÙˆØ­Ø© Ø±Ø¨Ø· Ø§Ù„Ø£Ù†Ø¸Ù…Ø© ÙˆÙ…ØµØ§Ø¯Ø± Ø§Ù„Ø£Ø¨Ø­Ø§Ø« Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠØ© ÙˆØªÙ…Ø±ÙŠØ± Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ø­Ø³Ø§Ø³Ø©." },
-      { path: "/admin/sections", labelEn: "Sections Dashboard Internal Portal", labelAr: "Ø¨ÙˆØ§Ø¨Ø© Ø§Ù„Ø£Ù‚Ø³Ø§Ù… Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠØ© Ù„Ù„Ø£Ù†Ø¸Ù…Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©", type: "admin", status: "noindex", descriptionEn: "Internal database mappings and custom categories routing matrix.", descriptionAr: "Ù…ØµÙÙˆÙØ© ÙØ­Øµ Ù…Ø³Ø§Ø±Ø§Øª Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¯Ø§Ø®Ù„ÙŠØ© Ù„Ù„Ø£Ù†Ø¸Ù…Ø© ÙˆØ§Ù„Ù…Ø¬ØªÙ…Ø¹." },
-      { path: "/admin", labelEn: "System Command Center (Core)", labelAr: "Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© ÙˆØ§Ù„Ù‚ÙŠØ§Ø¯Ø© ÙˆØ§Ù„ØªØ­ÙƒÙ…", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged interface displaying infrastructure configurations.", descriptionAr: "ÙˆØ§Ø¬Ù‡Ø© ØªØ­ÙƒÙ… ÙØ§Ø¦Ù‚Ø© Ø§Ù„Ø­Ø³Ø§Ø³ÙŠØ© Ù„Ù„ØªØ­ÙƒÙ… Ø¨Ø§Ù„Ø¨Ù†ÙŠØ© Ø§Ù„ØªØ­ØªÙŠØ© ÙˆØ§Ù„Ù…ÙˆØ¯ÙŠÙ„Ø§Øª." }
-    ];
-
-    const dynamicBlockedList = siteSettings?.blocked_paths
-      ? siteSettings.blocked_paths.split(',').map((p: string) => p.trim()).filter(Boolean)
-      : [];
-
-    dynamicBlockedList.forEach((blockedPath: string) => {
-      const exists = base.some(r => r.path === blockedPath || r.path === '/' + blockedPath);
-      if (!exists) {
-        base.push({
-          path: blockedPath.startsWith('/') ? blockedPath : '/' + blockedPath,
-          labelEn: `Custom Excluded: ${blockedPath}`,
-          labelAr: `Ù…Ø³Ø§Ø± Ù…Ø­Ø¸ÙˆØ± Ù…Ø®ØµØµ: ${blockedPath}`,
-          type: "custom",
-          status: "noindex",
-          descriptionEn: "Dynamically added via SEO System Exclusions control panel.",
-          descriptionAr: "ØªÙ…Øª Ø¥Ø¶Ø§ÙØªÙ‡ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ§Ù‹ Ù„ØªØ£Ù…ÙŠÙ† Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¹Ø¨Ø± Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…."
-        });
-      }
-    });
-
-    return base;
-  }, [siteSettings, siteSettings?.blocked_paths]);
-
-  const runCrawlAuditScan = async () => {
-    if (crawlScanning) return; // Protect against concurrent scan execution
-    
-    // Explicitly reset all loading and data states for a fresh and reliable scan
-    setCrawlScanning(true);
-    setCrawlAuditLogs([
-      language === "ar" 
-        ? "â³ ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±... Ø¬Ø§Ø±ÙŠ Ø¥Ù†Ø´Ø§Ø¡ Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„ Ø§ØªØµØ§Ù„ Ø¢Ù…Ù† Ù…Ø¹ Ø®Ø§Ø¯Ù… Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚..." 
-        : "â³ Initiating secure diagnostic connection to strict compliance core..."
-    ]);
-    setCrawlComplianceRate(language === "ar" ? "Ù…Ø¹Ù„Ù‚" : "PENDING");
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds connection timeout
-    
-    try {
-      const response = await fetch(`/api/admin/seo-audit?lang=${language}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error("Failed to contact the SEO crawler audit core on server.");
-      }
-      const data = await response.json();
-      
-      const messages = data.logs || [];
-      setCrawlComplianceRate(data.compliance_score || "100.00% SECURE");
-      
-      let step = 0;
-      setCrawlAuditLogs([]); // Reset log queue to stream real logs
-      const timer = setInterval(() => {
-        if (step < messages.length) {
-          const logText = messages[step];
-          setCrawlAuditLogs(prev => [...prev, logText]);
-          step++;
-        } else {
-          clearInterval(timer);
-          setCrawlScanning(false);
-        }
-      }, 500);
-
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.error("[CrawlAudit] Scan failure:", err);
-      setCrawlScanning(false);
-      const isAr = language === "ar";
-      const isTimeout = err.name === "AbortError";
-      
-      setCrawlComplianceRate("0.00% HIGH_RISK");
-      
-      setCrawlAuditLogs([
-        isTimeout
-          ? (isAr 
-              ? "ğŸš¨ [TIMEOUT] Ø§Ù†ØªÙ‡Øª Ù…Ù‡Ù„Ø© Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…. Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø© Ù…ØªØ£Ø®Ø±Ø© Ù„Ù„ØºØ§ÙŠØ© Ù†ØªÙŠØ¬Ø© Ù„Ø§Ø±ØªÙØ§Ø¹ Ø²Ù…Ù† Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø© Ù„Ù„Ù…Ø®Ø¯Ù…." 
-              : "ğŸš¨ [TIMEOUT] The connection to the security compliance core timed out due to unstable network latency.")
-          : (isAr 
-              ? "ğŸš¨ [ERROR] ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø®Ø§Ø¯Ù… Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„ØµØ§Ø±Ù… Ù„Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ù…Ø§ÙŠØ© Ø¨ÙŠØ¦Ø© Ø§Ù„Ù…Ù†ØµØ©." 
-              : "ğŸš¨ [ERROR] Failed to establish high-fidelity connection to strict backend audit service.")
-      ]);
-    }
-  };
-
-  const downloadCrawlAuditReport = () => {
-    const report = {
-      platform: "Perplexta",
-      timestamp: new Date().toISOString(),
-      scanning_officer_id: "PERPLEXTA_ADMIN_V4",
-      security_compliance_rate: crawlComplianceRate,
-      total_analysed_endpoints: routesSchema.length,
-      indexing_policy_applied: {
-        strict_user_data_isolation: "enforced",
-        allowed_public_routes_whitelist: [
-          "/", "/subscription", "/marketplace", "/blog", "/terms", "/privacy", "/about"
-        ]
-      },
-      endpoints_analysis: routesSchema.map((r: any) => ({
-        url_path: r.path,
-        endpoint_role: r.labelEn,
-        route_class: r.type.toUpperCase(),
-        target_search_indexing: r.status === "index" ? "ALLOWED (STANDARD INDEX)" : "BLOCKED (STRICT NOINDEX)",
-        meta_robots_tag_verified: r.status === "noindex" ? "noindex, nofollow" : "index, follow",
-        confidentiality_protection_level: r.status === "noindex" ? "MAXIMUM SHIELDED" : "STANDARD PUBLIC"
-      }))
-    };
-
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
-    const link = document.createElement("a");
-    link.href = dataUri;
-    link.download = `perplexta_seo_indexing_report_${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
-
-  return (
-    <div className="space-y-8 max-w-5xl relative">
-      {/* Toast Notification */}
-      {toast &&
-        createPortal(
-          <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-              toast.type === "success"
-                ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                  : "bg-white border border-accent text-accent"
-                : theme === "dark"
-                  ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                  : "bg-white border border-red-200 text-red-600"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <AlertCircle size={20} />
-            )}
-            <span className="font-medium text-sm">{toast.message}</span>
-          </div>,
-          document.body,
-        )}
-
-      {/* General Settings */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-accent/10 text-accent">
-            <Globe size={24} />
-          </div>
-          <h2 className="text-xl font-bold">{t("generalSettings")}</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("siteName")} (English)
-            </label>
-            <input
-              type="text"
-              value={siteName || ""}
-              dir="ltr"
-              onChange={(e) => setSiteName(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("siteName")} (Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)
-            </label>
-            <input
-              type="text"
-              value={siteNameAr || ""}
-              dir="rtl"
-              onChange={(e) => setSiteNameAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("siteDescription")} (English)
-            </label>
-            <input
-              type="text"
-              value={siteDescription || ""}
-              dir="ltr"
-              onChange={(e) => setSiteDescription(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("siteDescription")} (Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)
-            </label>
-            <input
-              type="text"
-              value={siteDescriptionAr || ""}
-              dir="rtl"
-              onChange={(e) => setSiteDescriptionAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSaveGeneralSettings}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
-          >
-            {isSaving ? (
-              <RefreshCw className="animate-spin" size={18} />
-            ) : (
-              <Save size={18} />
-            )}
-            {t("saveSettings") || "Save"}
-          </button>
-        </div>
-      </div>
-
-      {/* Visual Identity */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
-      >
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-purple-500/10 text-purple-500">
-              <ImageIcon size={24} />
-            </div>
-            <h2 className="text-xl font-bold">{t("visualIdentity")}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSyncSeoMetadata}
-              disabled={isSyncingMetadata}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium transition-colors border border-emerald-500/20"
-              title={language === "ar" ? "Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¹Ù†Ø§ÙˆÙŠÙ† ÙˆØ§Ù„ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…ÙØªØ§Ø­ÙŠØ© ÙˆØ§Ù„ÙˆØµÙ Ø§Ù„Ù…ÙÙ‚ÙˆØ¯ Ù„Ù„Ù…Ù‚Ø§Ù„Ø§Øª ÙˆØ§Ù„Ù…Ù†ØªØ¬Ø§Øª" : "Sync missing SEO titles, descriptions, and keywords for blog & marketplace items"}
-            >
-              <RefreshCw size={14} className={isSyncingMetadata ? "animate-spin" : ""} />
-              <span>{language === "ar" ? "Ù…Ø²Ø§Ù…Ù†Ø© SEO Ù„Ù„Ù…Ø­ØªÙˆÙ‰" : "Sync Content SEO"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={checkSystemAssetsDiagnostic}
-              disabled={isCheckingAssets}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
-              title={language === "ar" ? "ÙØ­Øµ Ø³Ù„Ø§Ù…Ø© Ù…Ù„ÙØ§Øª Ø§Ù„Ø´Ø¹Ø§Ø± ÙˆØ§Ù„Ù‡ÙˆÙŠØ©" : "Scan system logo & asset files"}
-            >
-              <RefreshCw size={14} className={isCheckingAssets ? "animate-spin" : ""} />
-              <span>{language === "ar" ? "ÙØ­Øµ Ø§Ù„Ø³Ù„Ø§Ù…Ø©" : "Scan Assets"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Orphaned Assets Warning Banner */}
-        {orphanedAssetsState?.hasOrphanedAssets && (
-          <div className="mb-6 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2 flex-wrap">
-                  <span>{language === "ar" ? "ØªØ­Ø°ÙŠØ±: Ù…Ù„Ù Ø§Ù„Ù‡ÙˆÙŠØ© Ù…ÙÙ‚ÙˆØ¯ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ± (Orphaned Asset Detected)" : "Warning: Orphaned Asset Detected"}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 font-mono text-amber-800 dark:text-amber-300">
-                    {orphanedAssetsState.orphanedKeys.join(", ")}
-                  </span>
-                </h4>
-                <p className="text-xs text-amber-700/90 dark:text-amber-300/80 mt-1">
-                  {language === "ar"
-                    ? "ØªÙ… Ø§ÙƒØªØ´Ø§Ù Ø£Ù† Ø±Ø§Ø¨Ø· Ø§Ù„Ø´Ø¹Ø§Ø± Ø£Ùˆ Ø§Ù„Ù‡ÙˆÙŠØ© ÙŠØ´ÙŠØ± Ø¥Ù„Ù‰ Ù…Ù„Ù ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ Ø¹Ù„Ù‰ Ø³ÙŠØ±ÙØ± Ø§Ù„ØªØ®Ø²ÙŠÙ†. Ø§Ù†Ù‚Ø± Ø¹Ù„Ù‰ Ø²Ø± 'Ø¥ØµÙ„Ø§Ø­' Ù„Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø´Ø¹Ø§Ø± ÙˆØ¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ù ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹."
-                    : "The logo or asset URL in system settings references a non-existent file on the server. Click 'Repair' to restore and re-create the missing asset automatically."}
-                </p>
-                <div className="mt-2 space-y-1">
-                  {orphanedAssetsState.assets.filter(a => a.isOrphaned).map(a => (
-                    <div key={a.key} className="text-xs font-mono text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                      <span className="font-semibold text-amber-900 dark:text-amber-200">â€¢ {a.label}:</span>
-                      <span className="underline opacity-90">{a.url}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleRepairOrphanedAssets}
-                disabled={isRepairingAssets}
-                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
-              >
-                {isRepairingAssets ? (
-                  <RefreshCw className="animate-spin" size={14} />
-                ) : (
-                  <Wrench size={14} />
-                )}
-                <span>{language === "ar" ? "Ø¥ØµÙ„Ø§Ø­ (Repair)" : "Repair Asset"}</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Missing Asset Report Section */}
-        <div className="mb-8 p-5 rounded-xl border border-[var(--border-main)] bg-[var(--bg-secondary)] shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-red-500/10 text-red-500">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-[var(--text-primary)]">
-                  {language === "ar" ? "ØªÙ‚Ø±ÙŠØ± Ø§Ù„Ø£ØµÙˆÙ„ Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø© Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ± (Missing Asset Report)" : "Missing Asset Report (DB vs Disk Audit)"}
-                </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {language === "ar"
-                    ? "ÙØ­Øµ ÙˆØªÙ‚Ø§Ø·Ø¹ Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ù…Ù„ÙØ§Øª (user_files) Ù…Ø¹ Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„ÙØ¹Ù„ÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙŠØ±ÙØ± Ù„Ø§ÙƒØªØ´Ø§Ù Ø£ÙŠ Ù…Ù„ÙØ§Øª Ù…Ø³Ø¬Ù„Ø© ÙÙŠ Ø§Ù„Ù‚Ø§Ø¹Ø¯Ø© ÙˆÙ…ÙÙ‚ÙˆØ¯Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù‚Ø±Øµ."
-                    : "Cross-references user_files table against actual file system storage to detect missing files."}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={fetchMissingAssetReport}
-                disabled={isScanningMissingAssets}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-xs font-bold transition-colors border border-accent/20"
-              >
-                <RefreshCw size={14} className={isScanningMissingAssets ? "animate-spin" : ""} />
-                <span>{language === "ar" ? "ØªØ´Ø®ÙŠØµ ÙˆÙØ­Øµ Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø§Øª" : "Scan Missing Assets"}</span>
-              </button>
-              {missingAssetReport && missingAssetReport.missingCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => handlePurgeMissingAssets()}
-                  disabled={isPurgingMissingAssets}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-sm"
-                >
-                  <Trash2 size={14} />
-                  <span>{language === "ar" ? `ØªØ·Ù‡ÙŠØ± Ø§Ù„ÙƒÙ„ (${missingAssetReport.missingCount})` : `Purge All (${missingAssetReport.missingCount})`}</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {missingAssetReport ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
-                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙØ­ÙˆØµØ©" : "Total Checked"}</div>
-                  <div className="font-bold text-base text-[var(--text-primary)] mt-1">{missingAssetReport.totalChecked}</div>
-                </div>
-                <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
-                  <div className="text-gray-400 text-[10px]">{language === "ar" ? "Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø³Ù„ÙŠÙ…Ø©" : "Existing on Disk"}</div>
-                  <div className="font-bold text-base text-emerald-500 mt-1">{missingAssetReport.existingCount}</div>
-                </div>
-                <div className={`col-span-2 p-3 rounded-lg border ${missingAssetReport.missingCount > 0 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'}`}>
-                  <div className="text-[10px] opacity-80">{language === "ar" ? "Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø© (Ù…ØªØ·Ø§Ø¨Ù‚Ø© Ø¨Ø§Ù„Ø³Ø¬Ù„ ÙˆÙ…ØºÙŠØ¨Ø© Ø¹Ù† Ø§Ù„Ù‚Ø±Øµ)" : "Missing Assets Detected"}</div>
-                  <div className="font-bold text-base mt-1">{missingAssetReport.missingCount}</div>
-                </div>
-              </div>
-
-              {missingAssetReport.missingAssets && missingAssetReport.missingAssets.length > 0 ? (
-                <div className="border border-[var(--border-main)] rounded-lg overflow-hidden bg-[var(--bg-base)]">
-                  <table className="w-full text-start text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
-                        <th className="p-3 text-start">ID</th>
-                        <th className="p-3 text-start">{language === "ar" ? "Ø§Ø³Ù… Ø§Ù„Ù…Ù„Ù" : "File Name"}</th>
-                        <th className="p-3 text-start">URL / Path</th>
-                        <th className="p-3 text-center">User ID</th>
-                        <th className="p-3 text-center">{language === "ar" ? "ØªØ§Ø±ÙŠØ® Ø§Ù„Ø±ÙØ¹" : "Uploaded At"}</th>
-                        <th className="p-3 text-center">{language === "ar" ? "Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡" : "Action"}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border-main)]">
-                      {missingAssetReport.missingAssets.map((item: any) => (
-                        <tr key={item.id} className="hover:bg-red-500/5 transition-colors">
-                          <td className="p-3 font-mono">#{item.id}</td>
-                          <td className="p-3 font-medium text-[var(--text-primary)]">{item.file_name || 'N/A'}</td>
-                          <td className="p-3 font-mono text-xs text-red-500 truncate max-w-[200px]" title={item.file_url}>{item.file_url}</td>
-                          <td className="p-3 text-center font-mono">{item.user_id || 'N/A'}</td>
-                          <td className="p-3 text-center text-[var(--text-muted)]">{new Date(item.created_at).toLocaleString()}</td>
-                          <td className="p-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handlePurgeMissingAssets([item.id])}
-                              disabled={isPurgingMissingAssets}
-                              className="px-2.5 py-1 rounded bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-[10px] font-bold transition-colors"
-                            >
-                              {language === "ar" ? "Ø­Ø°Ù Ø§Ù„Ø³Ø¬Ù„" : "Purge Record"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-6 text-center text-xs text-emerald-500 font-medium bg-emerald-500/5 rounded-lg border border-emerald-500/20">
-                  {language === "ar" ? "âœ… Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø© ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù…ØªÙˆÙØ±Ø© ÙˆÙ…ÙˆØ¬ÙˆØ¯Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù‚Ø±Øµ Ø¨Ø³Ù„Ø§Ù…." : "âœ… All database file records are fully synchronized and present on disk storage."}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-6 text-center text-xs text-gray-400">
-              {language === "ar" ? "Ø§Ù†Ù‚Ø± Ø¹Ù„Ù‰ 'ØªØ´Ø®ÙŠØµ ÙˆÙØ­Øµ Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø§Øª' Ù„Ø¨Ø¯Ø¡ Ù…Ø·Ø§Ø¨Ù‚Ø© Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ù…Ù„ÙØ§Øª Ù…Ø¹ Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„ÙØ¹Ù„ÙŠ." : "Click 'Scan Missing Assets' to begin the cross-reference audit."}
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Logo Upload (Dark theme) */}
-          <div
-            className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
-          >
-            {logoBase64 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setLogoBase64(null);
-                }}
-                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
-                title={language === "ar" ? "Ø­Ø°Ù Ø§Ù„Ø´Ø¹Ø§Ø±" : "Remove Logo"}
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e, "logo")}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="mb-4 flex items-center justify-center h-8">
-              {logoBase64 ? (
-                <img
-                  src={resolveImageUrl(logoBase64, 'general')}
-                  alt="Dark Logo"
-                  className="w-8 h-8 rounded-md object-contain"
-                />
-              ) : (
-                <div className="bg-pink-600 p-1.5 rounded-sm text-white flex items-center justify-center w-8 h-8">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 2L2 7L12 12L22 7L12 2Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 17L12 22L22 17"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 12L12 17L22 12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <h3 className="font-medium text-sm mb-1">
-              {language === "ar" ? "Ø§Ù„Ø´Ø¹Ø§Ø± Ù„Ù„Ø«ÙŠÙ… Ø§Ù„Ø¯Ø§ÙƒÙ†" : "Logo (Dark Theme)"}
-            </h3>
-            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
-          </div>
-
-          {/* Logo Upload (Light theme) */}
-          <div
-            className={`p-6 rounded-[var(--radius)] border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
-          >
-            {logoLightBase64 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setLogoLightBase64(null);
-                }}
-                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
-                title={language === "ar" ? "Ø­Ø°Ù Ø§Ù„Ø´Ø¹Ø§Ø± Ø§Ù„ÙØ§ØªØ­" : "Remove Light Logo"}
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e, "logo_light")}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="mb-4 flex items-center justify-center h-8">
-              {logoLightBase64 ? (
-                <img
-                  src={resolveImageUrl(logoLightBase64, 'general')}
-                  alt="Light Logo"
-                  className="w-8 h-8 rounded-md object-contain"
-                />
-              ) : (
-                <div className="bg-sky-500 p-1.5 rounded-sm text-white flex items-center justify-center w-8 h-8">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 2L2 7L12 12L22 7L12 2Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 17L12 22L22 17"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 12L12 17L22 12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <h3 className="font-medium text-sm mb-1">
-              {language === "ar" ? "Ø§Ù„Ø´Ø¹Ø§Ø± Ù„Ù„Ø«ÙŠÙ… Ø§Ù„ÙØ§ØªØ­" : "Logo (Light Theme)"}
-            </h3>
-            <p className="text-xs text-gray-500">PNG, SVG, JPG (Max 2MB)</p>
-          </div>
-
-          {/* Favicon Upload */}
-          <div
-            className={`p-6 rounded-lg border border-dashed ${theme === "dark" ? "border-[var(--border-main)] bg-[#1a1a1c]" : "border-[var(--border-main)] bg-[var(--bg-secondary)]"} flex flex-col items-center justify-center text-center relative overflow-hidden group`}
-          >
-            {faviconBase64 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setFaviconBase64(null);
-                }}
-                className="absolute top-2.5 right-2.5 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full z-20 transition-colors shadow-md"
-                title={language === "ar" ? "Ø­Ø°Ù Ø£ÙŠÙ‚ÙˆÙ†Ø© Ø§Ù„Ù…ÙØ¶Ù„Ø©" : "Remove Favicon"}
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e, "favicon")}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            />
-            <div className="mb-4 w-8 h-8 rounded-md bg-gray-200 dark:bg-[var(--bg-secondary)] flex items-center justify-center overflow-hidden">
-              {faviconBase64 ? (
-                <img
-                  src={resolveImageUrl(faviconBase64, 'general')}
-                  alt="Favicon"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Globe size={16} className="text-gray-400" />
-              )}
-            </div>
-            <h3 className="font-medium text-sm mb-1">
-              {language === "ar" ? "Ø£ÙŠÙ‚ÙˆÙ†Ø© Ø§Ù„Ù…ÙØ¶Ù„Ø©" : "Favicon"}
-            </h3>
-            <p className="text-xs text-gray-500">32x32 PNG or ICO</p>
-          </div>
-        </div>
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSaveVisualSettings}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
-          >
-            {isSaving ? (
-              <RefreshCw className="animate-spin" size={18} />
-            ) : (
-              <Save size={18} />
-            )}
-            {t("saveSettings") || "Save"}
-          </button>
-        </div>
-      </div>
-
-      {/* SEO & Meta Tags */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-blue-500/10 text-blue-500">
-            <Search size={24} />
-          </div>
-          <h2 className="text-xl font-bold">{t("seoFields")}</h2>
-        </div>
-
-        <div className="space-y-5">
-          {/* Site Identity Name Fields (SEO integrated) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø§Ø³Ù… Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆØ§Ù„Ù…Ù†ØµØ© (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "Site Name (English)"}
-              </label>
-              <input
-                type="text"
-                value={siteName || ""}
-                onChange={(e) => setSiteName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="e.g. Perplexta Platform"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø§Ø³Ù… Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆØ§Ù„Ù…Ù†ØµØ© (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "Site Name (Arabic)"}
-              </label>
-              <input
-                type="text"
-                value={siteNameAr || ""}
-                onChange={(e) => setSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="Ù…Ø«Ø§Ù„: Ù…Ù†ØµØ© Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§"
-              />
-            </div>
-          </div>
-
-          {/* SEO Site Name Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù„Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« SEO (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "SEO Site Title (English)"}
-              </label>
-              <input
-                type="text"
-                value={seoSiteNameEn || ""}
-                onChange={(e) => setSeoSiteNameEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="e.g. Perplexta | Premium Financial Analytics"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">
-                {dir === "rtl" ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ø­Ø¯Ø¯ Ù„Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© ÙˆØ¹Ù„Ø§Ù…Ø§Øª ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…ØªØµÙØ­." : "Optimized English title displayed in Google search listings and browser tabs."}
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù„Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« SEO (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "SEO Site Title (Arabic)"}
-              </label>
-              <input
-                type="text"
-                value={seoSiteNameAr || ""}
-                onChange={(e) => setSeoSiteNameAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="Ù…Ø«Ø§Ù„: Ù…Ù†ØµØ© Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§ | Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠ Ù„Ù„ØªØ­Ù„ÙŠÙ„"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">
-                {dir === "rtl" ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ø¹Ø±Ù‘Ø¨ Ø§Ù„Ù…Ø­Ø¯Ø¯ Ù„Ø²ÙŠØ§Ø¯Ø© Ø¸Ù‡ÙˆØ± Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙÙŠ Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ø¨Ø­Ø« Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©." : "Optimized Arabic title targeting maximum visibility across Arabic search result engines."}
-              </p>
-            </div>
-          </div>
-
-          {/* Site Identity Description Fields (SEO integrated) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 dark:border-gray-800/60 pb-5">
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø§Ù„ÙˆØµÙ Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠ Ø§Ù„Ø¹Ø§Ù… (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "General Description (English)"}
-              </label>
-              <textarea
-                rows={2}
-                value={siteDescription || ""}
-                onChange={(e) => setSiteDescription(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="Enter general tagline description..."
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-accent mb-1.5">
-                {dir === "rtl" ? "Ø§Ù„ÙˆØµÙ Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠ Ø§Ù„Ø¹Ø§Ù… (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "General Description (Arabic)"}
-              </label>
-              <textarea
-                rows={2}
-                value={siteDescriptionAr || ""}
-                onChange={(e) => setSiteDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-                placeholder="Ø§ÙƒØªØ¨ Ù†Ø¨Ø°Ø© ØªØ¹Ø±ÙŠÙÙŠØ© Ø¹Ø§Ù…Ø© Ù‡Ù†Ø§..."
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                {t("seoDescriptionEn")}
-              </label>
-              <textarea
-                rows={3}
-                value={seoDescriptionEn || ""}
-                onChange={(e) => setSeoDescriptionEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                {t("seoDescriptionAr")}
-              </label>
-              <textarea
-                rows={3}
-                value={seoDescriptionAr || ""}
-                onChange={(e) => setSeoDescriptionAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                {t("keywordsEn")}
-              </label>
-              <input
-                type="text"
-                value={keywordsEn || ""}
-                onChange={(e) => setKeywordsEn(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                {t("keywordsAr")}
-              </label>
-              <input
-                type="text"
-                value={keywordsAr || ""}
-                onChange={(e) => setKeywordsAr(e.target.value)}
-                className={`w-full px-4 py-3 rounded-[var(--radius)] border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("googleAnalyticsId")}
-            </label>
-            <input
-              type="text"
-              placeholder={t("googleAnalyticsDesc")}
-              value={googleAnalyticsId || ""}
-              onChange={(e) => setGoogleAnalyticsId(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-            <p className="text-[11px] text-gray-400 mt-1.5">
-              {dir === "rtl" 
-                ? "ÙŠØ³Ù…Ø­ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø¹Ø±Ù‘Ù (Ù…Ø«Ù„ G-XXXXX) Ø¨Ù…Ø±Ø§Ù‚Ø¨Ø© Ø­Ø±ÙƒØ© Ø§Ù„Ù…Ø±ÙˆØ± ÙˆØ³Ù„ÙˆÙƒ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙˆØ¥Ø±Ø³Ø§Ù„ Ø¥Ø­ØµØ§Ø¡Ø§Øª ØªÙØ§Ø¹Ù„ÙŠØ© ÙÙˆØ±ÙŠØ© Ø¥Ù„Ù‰ Ø­Ø³Ø§Ø¨ Ø¥Ø­ØµØ§Ø¡Ø§Øª Ø¬ÙˆØ¬Ù„ Ø§Ù„Ø®Ø§Øµ Ø¨Ùƒ."
-                : "This ID (e.g., G-XXXXX) enables real-time user behavior tracking, page transit logs, and custom interaction telemetry reporting directly to your Google Analytics dashboard."}
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {t("googleSiteVerification")}
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. google-site-verification=..."
-              value={googleSiteVerification || ""}
-              onChange={(e) => setGoogleSiteVerification(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-            <p className="text-[11px] text-gray-400 mt-1.5">
-              {dir === "rtl" 
-                ? "ÙŠØªÙ… Ø­Ù‚Ù† Ø±Ù…Ø² ØªØ­Ù‚Ù‚ Google Search Console ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ ÙÙŠ ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ØµÙØ­Ø© Ù„Ø¥Ø«Ø¨Ø§Øª Ù…Ù„ÙƒÙŠØ© Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« Ù…Ø¨Ø§Ø´Ø±Ø© Ø¯ÙˆÙ† Ø±ÙØ¹ Ù…Ù„ÙØ§Øª ÙŠØ¯ÙˆÙŠØ© Ù„Ù„Ø¬Ø°Ø±."
-                : "This verification key is dynamically injected into the head element to verify Google Search Console ownership instantly without manual file uploads to the root."}
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              {dir === "rtl" ? "Ø­Ø¸Ø± Ø§Ù„ÙÙ‡Ø±Ø³Ø© Ø§Ù„Ù…Ø®ØµØµ Ù„Ù„Ù…Ø³Ø§Ø±Ø§Øª (Exclusions List)" : "Dynamic Index Exclusions (Blocked Paths List)"}
-            </label>
-            <input
-              type="text"
-              placeholder={dir === "rtl" ? "Ù…Ø«Ø§Ù„: /api/auth, /confidential-page (Ù…ÙØµÙˆÙ„Ø© Ø¨ÙØ§ØµÙ„Ø©)" : "e.g. /api/auth, /confidential-page, /custom-dashboard (comma-separated)"}
-              value={blockedPaths || ""}
-              onChange={(e) => setBlockedPaths(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
-            />
-            <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
-              {dir === "rtl"
-                ? "Ø£Ø¯Ø®Ù„ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø¥Ø¶Ø§ÙÙŠØ© Ø§Ù„ØªÙŠ ØªØ±ØºØ¨ Ø¨Ø­Ø¸Ø± ÙÙ‡Ø±Ø³ØªÙ‡Ø§ Ù…Ø·Ù„Ù‚Ø§Ù‹ ÙÙŠ Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« Ù„Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø®ØµÙˆØµÙŠØ©. ÙŠØªÙ… ÙØµÙ„ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø¨Ø¹Ù„Ø§Ù…Ø© Ø§Ù„ÙØ§ØµÙ„Ø© (,). Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© ÙˆØ§Ù„Ø®Ø§ØµØ© Ù…Ø¹ Ù„ÙˆØ­Ø§Øª ØªØ³ÙŠÙŠØ± Ø§Ù„Ø£Ù‚Ø³Ø§Ù… ÙŠØªÙ… Ø­Ø¸Ø±Ù‡Ø§ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ ÙÙŠ Ø§Ù„Ù‡ÙŠÙƒÙ„."
-                : "Inject secondary sensitive routing paths you permanently want to shield from search rankings. Separate clean endpoints with a comma (,). Private/admin paths and Sections Control Panels are automatically shielded default."}
-            </p>
-          </div>
-
-          {/* Real-time Google Search Results Preview (SERP Preview) */}
-          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-              <Globe size={16} className="text-accent animate-pulse" />
-              {dir === "rtl" ? "Ù…Ø¹Ø§ÙŠÙ†Ø© Ø­ÙŠØ© Ù„Ù†ØªØ§Ø¦Ø¬ Ø¨Ø­Ø« Ø¬ÙˆØ¬Ù„ (SERP Preview)" : "Live Google Search Result Preview (SERP)"}
-            </h3>
-            
-            <div className="max-w-2xl mx-auto">
-              {dir === "rtl" ? (
-                /* Arabic Search Snippet Card - displayed strictly when Arabic interface is loaded */
-                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between text-right`} dir="rtl">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5 justify-start flex-row-reverse text-right">
-                      {faviconBase64 ? (
-                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
-                      )}
-                      <div className="flex flex-col leading-none items-end">
-                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
-                          {seoSiteNameAr || siteNameAr || siteName || "Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§"}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
-                          https://perplexta.com
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans text-right">
-                      {seoSiteNameAr || seoSiteNameEn || siteNameAr || siteName || "Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§"} | Ù…Ù†ØµØ© Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„ØªÙ‚Ù†ÙŠ
-                    </h4>
-                    
-                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans text-right">
-                      {seoDescriptionAr ? (
-                        seoDescriptionAr.length > 160 
-                          ? `${seoDescriptionAr.slice(0, 157)}...` 
-                          : seoDescriptionAr
-                      ) : (
-                        "ÙŠØ±Ø¬Ù‰ ØªÙˆÙÙŠØ± ÙˆØµÙ Ø¯Ù‚ÙŠÙ‚ ÙˆÙ…Ø­Ø³Ù† Ù„Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« ÙˆÙŠØ±ÙƒØ² Ø¹Ù„Ù‰ Ø§Ù„ÙƒÙØ§Ø¡Ø© ÙˆØ§Ù„ØªØ­Ù„ÙŠÙ„."
-                      )}
-                    </p>
-                  </div>
-                  
-                  {/* Length optimization metric */}
-                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
-                    <div className="flex justify-between items-center text-[10px] font-sans mb-1.5 text-gray-400 flex-row-reverse">
-                      <span>Ø·ÙˆÙ„ Ø§Ù„ÙˆØµÙ (Ù…Ø«Ø§Ù„ÙŠ: 120-160 Ø­Ø±ÙØ§Ù‹)</span>
-                      <span className={
-                        seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
-                          ? "text-accent font-bold"
-                          : seoDescriptionAr.length > 160 
-                          ? "text-red-500" 
-                          : "text-amber-500"
-                      }>
-                        {seoDescriptionAr.length} Ø­Ø±Ù
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-theme ${
-                          seoDescriptionAr.length >= 120 && seoDescriptionAr.length <= 160
-                            ? "bg-accent"
-                            : seoDescriptionAr.length > 160
-                            ? "bg-red-500"
-                            : "bg-amber-500"
-                        }`}
-                        style={{ width: `${Math.min(100, (seoDescriptionAr.length / 160) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* English Search Snippet Card - displayed strictly when English interface is loaded */
-                <div className={`p-5 rounded-md border ${theme === "dark" ? "bg-[#0b0c0f] border-gray-800/60" : "bg-[#f8f9fa] border-gray-200"} flex flex-col justify-between`}>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {faviconBase64 ? (
-                        <img src={faviconBase64} alt="Favicon" className="w-[18px] h-[18px] rounded-full object-contain" referrerPolicy="no-referrer" />
-                      ) : (
-                        <div className="w-[18px] h-[18px] rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-[10px]">G</div>
-                      )}
-                      <div className="flex flex-col leading-none">
-                        <span className="text-[11px] font-sans text-gray-800 dark:text-gray-300 font-medium">
-                          {seoSiteNameEn || siteName || "Perplexta Platform"}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-sans tracking-tight">
-                          https://perplexta.com
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <h4 className="text-[16px] leading-[1.3] text-[#1a0dab] dark:text-[#8ab4f8] hover:underline cursor-pointer font-medium mb-1 truncate font-sans">
-                      {seoSiteNameEn || seoSiteNameAr || siteName || "Perplexta Platform"} | Best Technical Analysis
-                    </h4>
-                    
-                    <p className="text-[13px] leading-[1.4] text-[#4d5156] dark:text-[#bdc1c6] font-sans">
-                      {seoDescriptionEn ? (
-                        seoDescriptionEn.length > 160 
-                          ? `${seoDescriptionEn.slice(0, 157)}...` 
-                          : seoDescriptionEn
-                      ) : (
-                        "Please provide a high-quality, concise search engine description focused on technical analysis."
-                      )}
-                    </p>
-                  </div>
-                  
-                  {/* Length optimization metric */}
-                  <div className="mt-4 border-t border-gray-100 dark:border-gray-800/20 pt-3">
-                    <div className="flex justify-between items-center text-[10px] font-mono mb-1.5 text-gray-400">
-                      <span>Description Length (Optimal: 120-160 chars)</span>
-                      <span className={
-                        seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
-                          ? "text-accent font-bold"
-                          : seoDescriptionEn.length > 160 
-                          ? "text-red-500" 
-                          : "text-amber-500"
-                      }>
-                        {seoDescriptionEn.length} chars
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-1 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-theme ${
-                          seoDescriptionEn.length >= 120 && seoDescriptionEn.length <= 160
-                            ? "bg-accent"
-                            : seoDescriptionEn.length > 160
-                            ? "bg-red-500"
-                            : "bg-amber-500"
-                        }`}
-                        style={{ width: `${Math.min(100, (seoDescriptionEn.length / 160) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* SEO Share Image Upload */}
-          <div className="mt-8 border-t border-gray-100 dark:border-gray-800/80 pt-6">
-            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-              <ImageIcon size={16} className="text-accent" />
-              {t("seoPreviewImageTitle")}
-            </h3>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Image Uploader */}
-              <div className="space-y-4">
-                <div
-                  className={`p-6 rounded-[var(--radius)] border border-dashed transition-theme ${
-                    theme === "dark" 
-                      ? "border-gray-800 bg-[#161618] hover:border-accent/50" 
-                      : "border-gray-200 bg-gray-50/50 hover:border-accent/50"
-                  } flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px] group`}
-                >
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={(e) => handleImageUpload(e, "seo")}
-                    disabled={isSeoUploading}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
-                  />
-                  
-                  {isSeoUploading ? (
-                    <div className="flex flex-col items-center justify-center p-4">
-                      <RefreshCw className="animate-spin text-accent mb-3" size={28} />
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        {dir === "rtl" ? "Ø¬Ø§Ø±ÙŠ Ø±ÙØ¹ Ø§Ù„ØµÙˆØ±Ø©..." : "Uploading image..."}
-                      </p>
-                    </div>
-                  ) : seoImageUrl ? (
-                    <div className="relative w-full h-full flex flex-col items-center">
-                      <img
-                        src={resolveImageUrl(seoImageUrl, 'general')}
-                        alt="SEO Preview"
-                        className="max-h-[160px] rounded-md object-contain aspect-[1.91/1] shadow-md border dark:border-gray-800"
-                        referrerPolicy="no-referrer"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSeoImageUrl(null);
-                        }}
-                        className="mt-3 text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-full flex items-center gap-1 transition-theme z-20"
-                      >
-                        <Trash2 size={12} />
-                        {t("seoRemoveImage")}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-4">
-                      <div className="mb-3 p-3 rounded-full bg-accent/10 text-accent group-hover:scale-110 transition-transform duration-300">
-                        <Upload size={24} />
-                      </div>
-                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        {t("seoDragAndDrop")}
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-2">
-                        {t("seoSupportedFormats")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Google and Meta specifications card */}
-                <div className={`p-4 rounded-md border text-xs leading-relaxed space-y-2 ${
-                  theme === "dark" ? "bg-[#141416]/50 border-gray-800/80 text-gray-400" : "bg-gray-50/50 border-gray-100 text-gray-500"
-                }`}>
-                  <p className="font-semibold text-accent">
-                    ğŸ’¡ {t("seoBestPracticesTitle")}
-                  </p>
-                  <ul className="list-disc leading-loose list-inside pr-1 space-y-1">
-                    <li>
-                      <strong>{t("seoBestPracticesRecSize")}</strong> {t("seoBestPracticesRecSizeDesc")}
-                    </li>
-                    <li>
-                      <strong>{t("seoBestPracticesRatio")}</strong> {t("seoBestPracticesRatioDesc")}
-                    </li>
-                    <li>
-                      <strong>{t("seoBestPracticesFileSize")}</strong> {t("seoBestPracticesFileSizeDesc")}
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Real-time Rich Social Media Preview (Facebook / LinkedIn card simulation) */}
-              <div className="flex flex-col justify-start">
-                <div className="text-xs font-semibold mb-3 text-gray-500 dark:text-gray-400">
-                  âš¡ {t("seoSocialPreviewTitle")}
-                </div>
-
-                <div className={`rounded-lg overflow-hidden border shadow-sm flex flex-col ${
-                  theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-200"
-                }`}>
-                  {/* Image Section */}
-                  <div className="relative aspect-[1.91/1] w-full overflow-hidden bg-gray-100 dark:bg-zinc-900 border-b dark:border-gray-800 flex items-center justify-center">
-                    {seoImageUrl ? (
-                      <img 
-                        src={seoImageUrl} 
-                        alt="SEO Card Preview" 
-                        className="w-full h-full object-cover" 
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center text-center p-4">
-                        <ImageIcon size={32} className="text-gray-300 dark:text-gray-700 mb-2" />
-                        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">
-                          {t("seoNoImageYet")}
-                        </span>
-                      </div>
-                    )}
-                    <div className={`absolute top-2 ${language === "ar" ? "right-2" : "left-2"} bg-black/60 rounded-md px-2 py-0.5 text-[8px] tracking-wide text-white uppercase font-mono z-20`}>
-                      {language === "ar" ? "Ù…Ø¹Ø§ÙŠÙ†Ø© 1200x630" : "Preview Image 1200x630"}
-                    </div>
-                  </div>
-
-                  {/* Body Section */}
-                  <div className={`p-4 flex flex-col font-sans ${language === "ar" ? "text-right" : "text-left"}`} dir={language === "ar" ? "rtl" : "ltr"}>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wider font-mono">
-                      {window.location.hostname || "perplexta.com"}
-                    </div>
-                    <div className={`text-sm font-semibold mt-1 line-clamp-1 ${
-                      theme === "dark" ? "text-white" : "text-gray-800"
-                    }`}>
-                      {language === "ar" ? (seoSiteNameAr || siteNameAr || "Ù…Ù†ØµØ© Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§") : (seoSiteNameEn || siteName || "Perplexta Platform")}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
-                      {language === "ar" 
-                        ? (seoDescriptionAr || "ÙŠØ±Ø¬Ù‰ ÙƒØªØ§Ø¨Ø© ÙˆØµÙ ØªØ¹Ø±ÙŠÙÙŠ Ù…Ø®ØµØµ ÙˆÙ…ÙƒØ«Ù Ù„Ø²ÙŠØ§Ø¯Ø© Ø¬ÙˆØ¯Ø© Ø¸Ù‡ÙˆØ± Ù…Ù†ØµØªÙƒ Ø¹Ù„Ù‰ Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø« ÙˆØªØ³Ù‡ÙŠÙ„ Ø£Ø±Ø´ÙØ© Ø§Ù„Ø±Ø§Ø¨Ø· ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ù…Ø¹ Ø§Ù„ØµÙˆØ±Ø©.") 
-                        : (seoDescriptionEn || "Please enter high quality descriptive analysis parameters to automatically enhance your brand's digital footprints across social ecosystems.")}
-                    </div>
-                  </div>
-                </div>
-                
-                <p className={`text-[10px] text-gray-400 mt-3 italic leading-relaxed ${dir === "rtl" ? "text-right" : "text-left"}`}>
-                  {t("seoPreviewFooterNote")}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={handleSaveSeoSettings}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-6 py-2.5 rounded-md transition-theme font-medium shadow-[0_0_15px_rgba(156,163,175,0.4)] disabled:opacity-50"
-          >
-            {isSaving ? (
-              <RefreshCw className="animate-spin" size={18} />
-            ) : (
-              <Save size={18} />
-            )}
-            {t("saveSettings") || "Save"}
-          </button>
-        </div>
-      </div>
-
-      {/* Dynamic Route-Based SEO Manager (Database SEO Meta Tags per Route) */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${
-          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
-        }`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
-              <Globe size={24} className="text-accent " />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight">
-                {dir === "rtl" ? "Ø£Ø¯Ø§Ø© Ø¥Ø¯Ø§Ø±Ø© Ø¨ÙŠØ§Ù†Ø§Øª SEO Ù„Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ©" : "Dynamic Route SEO Meta Manager"}
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {dir === "rtl"
-                  ? "ØªØ®ØµÙŠØµ ÙˆØªØ­Ø¯ÙŠØ« Ø¹Ù†Ø§ÙˆÙŠÙ† SEO ÙˆØ§Ù„ÙˆØµÙ ÙˆØ§Ù„ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…ÙØªØ§Ø­ÙŠØ© ÙˆØµÙˆØ± Open Graph Ù„ÙƒÙ„ Ù…Ø³Ø§Ø± ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ø´ÙƒÙ„ ÙÙˆØ±ÙŠ ÙˆÙ…Ø¨Ø§Ø´Ø±."
-                  : "Dynamically manage SEO title, description, keywords, and Open Graph share images for specific application routes in database."}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={fetchRouteSeoList}
-              disabled={loadingRouteSeo}
-              className="p-2.5 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1a1a1c] text-gray-600 dark:text-gray-300 transition-theme"
-              title={dir === "rtl" ? "ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©" : "Refresh List"}
-            >
-              <RefreshCw size={16} className={loadingRouteSeo ? "animate-spin" : ""} />
-            </button>
-            <button
-              onClick={handleOpenAddRouteModal}
-              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-4 py-2 rounded-md font-medium text-xs transition-theme shadow-[0_0_12px_rgba(156,163,175,0.3)]"
-            >
-              <Plus size={16} />
-              {dir === "rtl" ? "Ø¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø± Ø¬Ø¯ÙŠØ¯" : "Add Route SEO"}
-            </button>
-          </div>
-        </div>
-
-        {/* Search & Counter Filter */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-gray-50 dark:bg-[#18181b] p-3 rounded-md border border-gray-100 dark:border-gray-800/80">
-          <div className="relative w-full sm:w-80">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={routeSearchQuery}
-              onChange={(e) => setRouteSearchQuery(e.target.value)}
-              placeholder={dir === "rtl" ? "Ø¨Ø­Ø« Ø¹Ù† Ù…Ø³Ø§Ø± Ø£Ùˆ Ø¹Ù†ÙˆØ§Ù†..." : "Filter routes or titles..."}
-              className={`w-full text-xs pl-9 pr-3 py-2 rounded-md border ${
-                theme === "dark" ? "bg-[#111111] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-800"
-              } focus:outline-none focus:border-accent`}
-            />
-          </div>
-          <div className="text-xs text-gray-500 font-mono flex items-center gap-2">
-            <span>{dir === "rtl" ? "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø©:" : "Configured Routes:"}</span>
-            <span className="px-2 py-0.5 rounded bg-accent/10 text-accent font-bold">
-              {routeSeoList.length}
-            </span>
-          </div>
-        </div>
-
-        {/* Routes List Table */}
-        {loadingRouteSeo && routeSeoList.length === 0 ? (
-          <div className="py-12 text-center text-gray-400 flex items-center justify-center gap-2">
-            <RefreshCw size={20} className="animate-spin text-accent" />
-            <span>{dir === "rtl" ? "Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª SEO Ù„Ù„Ù…Ø³Ø§Ø±Ø§Øª..." : "Loading route SEO configurations..."}</span>
-          </div>
-        ) : routeSeoList.length === 0 ? (
-          <div className="py-12 text-center border border-dashed rounded-md dark:border-gray-800 text-gray-400">
-            <Globe size={32} className="mx-auto mb-2 text-gray-500 opacity-60" />
-            <p className="text-sm font-medium">
-              {dir === "rtl" ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø³Ø§Ø±Ø§Øª Ù…Ø®ØµØµØ© Ù…Ø³Ø¬Ù„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹" : "No custom route SEO configurations found."}
-            </p>
-            <button
-              onClick={handleOpenAddRouteModal}
-              className="mt-3 text-xs text-accent underline hover:text-accent"
-            >
-              {dir === "rtl" ? "+ Ø¥Ø¶Ø§ÙØ© Ø£ÙˆÙ„ Ù…Ø³Ø§Ø± Ø§Ù„Ø¢Ù†" : "+ Create your first route SEO entry"}
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className={`text-[10px] uppercase font-mono border-b ${
-                theme === "dark" ? "border-gray-800 text-gray-400 bg-[#18181b]" : "border-gray-200 text-gray-500 bg-gray-50"
-              }`}>
-                <tr>
-                  <th className="p-3">{dir === "rtl" ? "Ø§Ù„Ù…Ø³Ø§Ø± (Route)" : "Route Path"}</th>
-                  <th className="p-3">{dir === "rtl" ? "Ø¹Ù†ÙˆØ§Ù† SEO (Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© / English)" : "SEO Title (Ar / En)"}</th>
-                  <th className="p-3">{dir === "rtl" ? "Ø§Ù„ÙˆØµÙ" : "Description"}</th>
-                  <th className="p-3">{dir === "rtl" ? "ØµÙˆØ±Ø© OG" : "OG Image"}</th>
-                  <th className="p-3">{dir === "rtl" ? "Ø§Ù„Ø­Ø§Ù„Ø©" : "Status"}</th>
-                  <th className="p-3 text-right">{dir === "rtl" ? "Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª" : "Actions"}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
-                {routeSeoList
-                  .filter((item) => {
-                    if (!routeSearchQuery) return true;
-                    const q = routeSearchQuery.toLowerCase();
-                    return (
-                      item.route?.toLowerCase().includes(q) ||
-                      item.title_ar?.toLowerCase().includes(q) ||
-                      item.title_en?.toLowerCase().includes(q) ||
-                      item.description_ar?.toLowerCase().includes(q) ||
-                      item.description_en?.toLowerCase().includes(q)
-                    );
-                  })
-                  .map((item) => (
-                    <tr
-                      key={item.id}
-                      className={`hover:bg-gray-50/50 dark:hover:bg-[#18181b]/50 transition-colors ${
-                        !item.is_active ? "opacity-50" : ""
-                      }`}
-                    >
-                      <td className="p-3 font-mono font-bold text-accent">
-                        {item.route}
-                      </td>
-                      <td className="p-3 max-w-[200px]">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {dir === "rtl" ? (item.title_ar || item.title_en) : (item.title_en || item.title_ar)}
-                        </div>
-                        <div className="text-[10px] text-gray-400 truncate dir-ltr">
-                          {item.title_en}
-                        </div>
-                      </td>
-                      <td className="p-3 max-w-[260px]">
-                        <p className="line-clamp-2 text-gray-600 dark:text-gray-400 text-[11px] leading-relaxed">
-                          {dir === "rtl" ? (item.description_ar || item.description_en) : (item.description_en || item.description_ar)}
-                        </p>
-                      </td>
-                      <td className="p-3">
-                        {item.og_image_url ? (
-                          <img
-                            src={item.og_image_url}
-                            alt={item.route}
-                            className="w-12 h-7 object-cover rounded border border-gray-200 dark:border-gray-800"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <span className="text-[10px] text-gray-400 italic">Default</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
-                            item.is_active
-                              ? "bg-accent/10 text-accent border border-accent/20"
-                              : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                          }`}
-                        >
-                          {item.is_active ? (dir === "rtl" ? "Ù†Ø´Ø·" : "Active") : (dir === "rtl" ? "Ù…Ø¹Ø·Ù„" : "Disabled")}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleOpenEditRouteModal(item)}
-                            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
-                            title={dir === "rtl" ? "ØªØ¹Ø¯ÙŠÙ„" : "Edit"}
-                          >
-                            <Settings2 size={15} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRouteSeo(item.id)}
-                            className="p-1.5 rounded hover:bg-rose-500/10 text-rose-500 transition-colors"
-                            title={dir === "rtl" ? "Ø­Ø°Ù" : "Delete"}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Route SEO Add/Edit Modal */}
-      <AnimatePresence>
-        {isRouteModalOpen && editingRouteItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border p-6 shadow-2xl ${
-                theme === "dark" ? "bg-[#141416] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
-              }`}
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-800 mb-5">
-                <div className="flex items-center gap-2 font-bold text-lg">
-                  <Globe className="text-accent" size={20} />
-                  <span>
-                    {editingRouteItem.id
-                      ? (dir === "rtl" ? "ØªØ¹Ø¯ÙŠÙ„ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª SEO Ù„Ù„Ù…Ø³Ø§Ø±" : "Edit Route SEO Setting")
-                      : (dir === "rtl" ? "Ø¥Ø¶Ø§ÙØ© Ù…Ø³Ø§Ø± SEO Ø¬Ø¯ÙŠØ¯" : "Add New Route SEO Setting")}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setIsRouteModalOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-200"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveRouteSeo} className="space-y-4">
-                {/* Route path */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1">
-                    {dir === "rtl" ? "Ù…Ø³Ø§Ø± Ø§Ù„ØµÙØ­Ø© (Route Path)" : "Route Path (e.g. /marketplace)"} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingRouteItem.route || ""}
-                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, route: e.target.value })}
-                    placeholder="/marketplace"
-                    className={`w-full text-xs p-2.5 rounded-md border font-mono ${
-                      theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                    } focus:outline-none focus:border-accent`}
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    {dir === "rtl" ? "Ø§Ù„Ù…Ø³Ø§Ø± Ø§Ù„Ù†Ø³Ø¨ÙŠ Ù„Ù„ØµÙØ­Ø©ØŒ Ù…Ø«Ù„: /blog Ø£Ùˆ /subscription Ø£Ùˆ /custom-page" : "Relative route path starting with /, e.g., /blog or /subscription"}
-                  </p>
-                </div>
-
-                {/* Title Ar & En */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø¹Ù†ÙˆØ§Ù† SEO (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "SEO Title (Arabic)"}
-                    </label>
-                    <input
-                      type="text"
-                      value={editingRouteItem.title_ar || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_ar: e.target.value })}
-                      placeholder="Ø¹Ù†ÙˆØ§Ù† Ø§Ù„ØµÙØ­Ø© Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©..."
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø¹Ù†ÙˆØ§Ù† SEO (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "SEO Title (English)"}
-                    </label>
-                    <input
-                      type="text"
-                      value={editingRouteItem.title_en || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, title_en: e.target.value })}
-                      placeholder="Page title in English..."
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                </div>
-
-                {/* Description Ar & En */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø§Ù„ÙˆØµÙ Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠ (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "SEO Description (Arabic)"}
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={editingRouteItem.description_ar || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_ar: e.target.value })}
-                      placeholder="ÙˆØµÙ Ù…Ø®ØªØµØ± ÙˆÙ…Ø­Ø³Ù‘Ù† Ù„Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø«..."
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø§Ù„ÙˆØµÙ Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠ (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "SEO Description (English)"}
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={editingRouteItem.description_en || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, description_en: e.target.value })}
-                      placeholder="Search optimized page description..."
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                </div>
-
-                {/* Keywords Ar & En */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø§Ù„ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…ÙØªØ§Ø­ÙŠØ© (Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©)" : "Keywords (Arabic)"}
-                    </label>
-                    <input
-                      type="text"
-                      value={editingRouteItem.keywords_ar || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_ar: e.target.value })}
-                      placeholder="ÙƒÙ„Ù…Ø§Øª, Ù…ÙØªØ§Ø­ÙŠØ©, Ù…ÙØµÙˆÙ„Ø©, Ø¨ÙØ§ØµÙ„Ø©"
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1">
-                      {dir === "rtl" ? "Ø§Ù„ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…ÙØªØ§Ø­ÙŠØ© (Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©)" : "Keywords (English)"}
-                    </label>
-                    <input
-                      type="text"
-                      value={editingRouteItem.keywords_en || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, keywords_en: e.target.value })}
-                      placeholder="keywords, separated, by, comma"
-                      className={`w-full text-xs p-2.5 rounded-md border ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                  </div>
-                </div>
-
-                {/* OG Image URL / Upload */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    {dir === "rtl" ? "ØµÙˆØ±Ø© Ù…Ø´Ø§Ø±ÙƒØ© Ø§Ù„ØªÙˆØ§ØµÙ„ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠ (Open Graph Image)" : "Open Graph Image (OG Image URL)"}
-                  </label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value={editingRouteItem.og_image_url || ""}
-                      onChange={(e) => setEditingRouteItem({ ...editingRouteItem, og_image_url: e.target.value })}
-                      placeholder="https://... or /uploads/..."
-                      className={`flex-1 text-xs p-2.5 rounded-md border font-mono ${
-                        theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
-                      } focus:outline-none focus:border-accent`}
-                    />
-                    <label className="cursor-pointer flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700">
-                      <Upload size={14} />
-                      <span>{routeUploadingImg ? "..." : (dir === "rtl" ? "Ø±ÙØ¹" : "Upload")}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleRouteImageUpload}
-                        disabled={routeUploadingImg}
-                      />
-                    </label>
-                  </div>
-                  {editingRouteItem.og_image_url && (
-                    <div className="mt-2">
-                      <img
-                        src={editingRouteItem.og_image_url}
-                        alt="Preview"
-                        className="h-20 rounded border object-cover border-gray-200 dark:border-gray-800"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Is Active Toggle */}
-                <div className="flex items-center gap-3 pt-2">
-                  <input
-                    type="checkbox"
-                    id="route_is_active"
-                    checked={editingRouteItem.is_active !== false}
-                    onChange={(e) => setEditingRouteItem({ ...editingRouteItem, is_active: e.target.checked })}
-                    className="w-4 h-4 text-accent accent-accent rounded border-gray-300 focus:ring-accent-500"
-                  />
-                  <label htmlFor="route_is_active" className="text-xs font-medium cursor-pointer">
-                    {dir === "rtl" ? "ØªÙØ¹ÙŠÙ„ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª SEO Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³Ø§Ø±" : "Enable dynamic SEO meta tags for this route"}
-                  </label>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsRouteModalOpen(false)}
-                    className="px-4 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                  >
-                    {dir === "rtl" ? "Ø¥Ù„ØºØ§Ø¡" : "Cancel"}
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-md text-xs font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)]"
-                  >
-                    <Save size={14} />
-                    {dir === "rtl" ? "Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª" : "Save Settings"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Search Engine Indexing & Route Security Verification (Crawlability Audit) */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${
-          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
-        }`}
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
-              <ShieldCheck size={24} className="text-accent " />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight">
-                {language === "ar" ? "ØªÙ‚Ø±ÙŠØ± ØªØ¯Ù‚ÙŠÙ‚ Ø£Ø±Ø´ÙØ© ÙˆÙ‚Ø§Ø¨Ù„ÙŠØ© Ø²Ø­Ù Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª" : "Search Engine Indexing & Crawlability Audit"}
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {language === "ar" 
-                  ? "Ù†Ø¸Ø§Ù… ØªØ¯Ù‚ÙŠÙ‚ ÙÙˆØ±ÙŠ Ù„Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø£Ù…Ø§Ù† ÙˆØ­Ø¬Ø¨ Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ø´Ø®ØµÙŠØ© Ù„Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù…Ù† Ø§Ù„ÙÙ‡Ø±Ø³Ø©." 
-                  : "Security ledger simulating Google Search crawler to verify compliance of user routes."}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={runCrawlAuditScan}
-              disabled={crawlScanning}
-              className="flex items-center gap-2 text-xs bg-accent hover:bg-accent text-white px-4 py-2 rounded-[var(--radius)] transition-theme font-medium shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
-            >
-              <RefreshCw className={crawlScanning ? "animate-spin" : ""} size={14} />
-              {language === "ar" ? "ØªØ´ØºÙŠÙ„ ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„ÙÙ‡Ø±Ø³Ø©" : "Execute Crawl Audit"}
-            </button>
-            
-            <button
-              onClick={downloadCrawlAuditReport}
-              className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c1c1e] text-gray-700 dark:text-gray-300 px-4 py-2 rounded-[var(--radius)] transition-theme font-medium"
-            >
-              <Download size={14} />
-              {language === "ar" ? "ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ± Ø§Ù„ÙÙ†ÙŠ" : "Download JSON Report"}
-            </button>
-          </div>
-        </div>
-
-        {/* Audit Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
-            <span className="text-xs text-gray-400">{language === "ar" ? "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª" : "Total Routes Indexed"}</span>
-            <div className="text-2xl font-bold mt-1 text-sky-500">
-              {routesSchema.length} <span className="text-xs font-normal text-gray-400">URI</span>
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800/85" : "bg-gray-50 border-gray-200"}`}>
-            <span className="text-xs text-gray-400">{language === "ar" ? "Ù…Ø³Ø§Ø±Ø§Øª Ù…Ø­Ù…ÙŠØ© (No-Index)" : "Shielded Secret Routes (No-Index)"}</span>
-            <div className="text-2xl font-bold mt-1 text-accent  flex items-center gap-1.5">
-              {routesSchema.filter((r: any) => r.status === "noindex").length}
-              <ShieldCheck size={16} className="text-accent" />
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
-            <span className="text-xs text-gray-400">{language === "ar" ? "Ù…Ø³Ø§Ø±Ø§Øª Ø¹Ø§Ù…Ø© (Ù…Ø¤Ø±Ø´ÙØ©)" : "Approved Public Domains"}</span>
-            <div className="text-2xl font-bold mt-1 text-amber-500">
-              {routesSchema.filter((r: any) => r.status === "index").length}
-            </div>
-          </div>
-
-          <div className={`p-4 rounded-md border ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50 border-gray-200"}`}>
-            <span className="text-xs text-gray-400">{language === "ar" ? "Ù…Ø¹Ø¯Ù„ Ø³Ù„Ø§Ù…Ø© Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ ÙˆØ§Ù„Ø£Ø±Ø´ÙØ©" : "Compliance & Indexing Rating"}</span>
-            <div className={`text-xl font-bold mt-1.5 uppercase tracking-tight flex items-center gap-1.5 ${
-              crawlComplianceRate.includes("SECURE") 
-                ? "text-accent " 
-                : crawlComplianceRate === "PENDING" || crawlComplianceRate === "Ù…Ø¹Ù„Ù‚"
-                ? "text-amber-500 animate-pulse"
-                : "text-rose-500"
-            }`}>
-              <span>{crawlComplianceRate}</span>
-              {crawlComplianceRate.includes("SECURE") && <CheckCircle size={14} className="text-accent" />}
-            </div>
-          </div>
-        </div>
-
-        {/* Live Terminal Monitor */}
-        {(crawlScanning || crawlAuditLogs.length > 0) && (
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 font-mono flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              {language === "ar" ? "Ø´Ø§Ø´Ø© Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„ÙÙˆØ±ÙŠ ÙˆØ§Ù„Ù…Ø·Ø§Ø¨Ù‚Ø©" : "Real-time Verification Console"}
-            </h3>
-            <div className="p-4 rounded-md bg-[#09090b] border border-zinc-800 text-xs font-mono text-accent/90 leading-relaxed max-h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-              {crawlAuditLogs.map((log, index) => (
-                <div key={index} className="flex items-start gap-2 animate-in fade-in duration-300">
-                  <span className="text-zinc-600">[{new Date().toLocaleTimeString()}]</span>
-                  <span>{log}</span>
-                </div>
-              ))}
-              {crawlScanning && (
-                <div className="flex items-center gap-1 text-accent/80 italic font-medium animate-pulse ml-4">
-                  <span>â—</span> <span>{language === "ar" ? "Ø¬Ø§Ø±ÙŠ ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø©..." : "Analyzing header packets..."}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Filter Controls */}
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
-          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-            {language === "ar" ? "Ø³Ø¬Ù„ ØªÙˆØ«ÙŠÙ‚ Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ù…Ø³Ø§Ø±Ø§Øª" : "Path Protection Registry Ledger"}
-          </span>
-          <div className="flex bg-gray-100 dark:bg-[#1a1a1c] p-0.5 rounded-[4px] border dark:border-gray-800">
-            {[
-              { id: "all", label: language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All" },
-              { id: "index", label: language === "ar" ? "Ù…Ø¤Ø±Ø´ÙØ©" : "Public Only" },
-              { id: "noindex", label: language === "ar" ? "Ù…Ø­Ù…ÙŠØ©" : "Shielded Only" }
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setCrawlAuditFilter(f.id as any)}
-                type="button"
-                className={`text-[10px] uppercase font-bold px-3 py-1 transition-theme rounded-[3px] ${
-                  crawlAuditFilter === f.id
-                    ? "bg-white dark:bg-[#27272a] text-accent dark:text-accent font-extrabold shadow-sm"
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Table Path List */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px] border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 text-xs text-left">
-                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "Ø§Ù„Ù…Ø³Ø§Ø±" : "Path / Location"}</th>
-                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "Ø§Ù„Ù†ÙˆØ¹" : "Category"}</th>
-                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "ÙˆØ³Ù… Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø«" : "Crawler Directive"}</th>
-                <th className={`pb-3 font-semibold ${language === "ar" ? "text-right" : "text-left"}`}>{language === "ar" ? "Ø­Ø§Ù„Ø© Ø§Ù„Ø£Ù…Ø§Ù†" : "Security Certification"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
-              {routesSchema
-                .filter((r: any) => {
-                  if (crawlAuditFilter === "all") return true;
-                  return r.status === crawlAuditFilter;
-                })
-                .map((route: any, idx: number) => (
-                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-[#151517]/30 transition-theme">
-                    <td className={`py-3.5 font-mono text-xs ${language === "ar" ? "text-right" : "text-left"}`}>
-                      <span className="text-gray-800 dark:text-gray-300 font-semibold">{route.path}</span>
-                    </td>
-                    <td className={`py-3.5 ${language === "ar" ? "text-right" : "text-left"}`}>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        route.type === "admin" 
-                          ? "bg-red-500/10 text-red-500" 
-                          : route.type === "private" 
-                          ? "bg-accent/10 text-accent" 
-                          : route.type === "custom"
-                          ? "bg-purple-500/10 text-purple-500"
-                          : "bg-sky-500/10 text-sky-500"
-                      }`}>
-                        {route.type.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className={`py-3.5 font-mono text-[11px] ${language === "ar" ? "text-right" : "text-left"}`}>
-                      {route.status === "noindex" ? (
-                        <span className="text-zinc-400 font-medium flex items-center gap-1">
-                          <EyeOff size={12} className="text-zinc-500" />
-                          noindex, nofollow
-                        </span>
-                      ) : (
-                        <span className="text-accent font-bold flex items-center gap-1 ">
-                          <Eye size={12} className="text-accent animate-pulse" />
-                          index, follow
-                        </span>
-                      )}
-                    </td>
-                    <td className={`py-3.5 ${language === "ar" ? "text-right" : "text-left"}`}>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5">
-                          {route.status === "noindex" ? (
-                            <>
-                              <ShieldCheck size={14} className="text-accent " />
-                              <span className="font-bold text-accent text-xs">
-                                {language === "ar" ? "Ù…Ø­Ø¬ÙˆØ¨ Ø¯Ø³ØªÙˆØ±ÙŠØ§Ù‹" : "SECURED AND ISOLATED"}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle size={14} className="text-amber-500" />
-                              <span className="font-bold text-amber-500 text-xs">
-                                {language === "ar" ? "Ù…Ø¤Ø±Ø´Ù Ø¹Ø§Ù…" : "APPROVED PUBLIC PAGE"}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-gray-400 mt-0.5">
-                          {language === "ar" ? route.descriptionAr : route.descriptionEn}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Cache Management Utility Center */}
-      <div
-        className={`p-6 md:p-8 rounded-lg border ${
-          theme === "dark" ? "bg-[#111111] border-[var(--border-main)] font-sans" : "bg-white border-[var(--border-main)] font-sans"
-        }`}
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-accent/10 text-accent shadow-[0_0_15px_rgba(156,163,175,0.2)]">
-            <Cpu size={24} className="text-accent " />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">
-              {dir === "rtl" ? "Ø¥Ø¯Ø§Ø±Ø© Ø°Ø§ÙƒØ±Ø© Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª ÙˆÙ†Ø¸Ø§Ù… Ø§Ù„Ù€ Caches" : "System Caches & Memory Management"}
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {dir === "rtl"
-                ? "Ù…Ø³Ø­ ÙˆØ¥Ø¹Ø§Ø¯Ø© ØªØ­Ù…ÙŠÙ„ Ø°Ø§ÙƒØ±Ø§Øª Ø§Ù„ØªØ®Ø²ÙŠÙ† Ø§Ù„Ù…Ø¤Ù‚Øª (ØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„Ù…Ù„ÙØ§ØªØŒ Ù…Ø³Ø§Ø±Ø§Øª SEOØŒ ÙˆØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…) Ø¨Ø´ÙƒÙ„ ÙØ±Ø¯ÙŠ Ø£Ùˆ Ø¬Ù…Ø§Ø¹ÙŠ."
-                : "Clear and refresh system caches (file permissions, route SEO, system settings) individually or globally with instant UI feedback."}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* File Permission Cache */}
-          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-accent">FILE PERMISSIONS</span>
-                <ShieldCheck size={16} className="text-gray-400" />
-              </div>
-              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "ØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„Ù…Ù„ÙØ§Øª" : "File Permission Cache"}</p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
-                {dir === "rtl" ? "Ù…Ø³Ø­ Ø°Ø§ÙƒØ±Ø© Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø£Ù…Ø§Ù† ÙˆØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…Ø±ÙÙˆØ¹Ø©." : "Invalidates cached authorization checks for secure file access."}
-              </p>
-            </div>
-            <button
-              onClick={() => handleClearCache('file_permission')}
-              disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {clearingCache === 'file_permission' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              {dir === "rtl" ? "Ù…Ø³Ø­ Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ù„ÙØ§Øª" : "Clear File Cache"}
-            </button>
-          </div>
-
-          {/* Route SEO Cache */}
-          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-accent">ROUTE SEO</span>
-                <Globe size={16} className="text-gray-400" />
-              </div>
-              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "Ù…Ø³Ø§Ø±Ø§Øª SEO" : "Route SEO Cache"}</p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
-                {dir === "rtl" ? "Ù…Ø³Ø­ Ø°Ø§ÙƒØ±Ø© Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØ³ÙˆÙ… Meta ÙˆØ¹Ù†Ø§ÙˆÙŠÙ† Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ©." : "Flushes cached Open Graph and meta tag configs per route."}
-              </p>
-            </div>
-            <button
-              onClick={() => handleClearCache('route_seo')}
-              disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {clearingCache === 'route_seo' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              {dir === "rtl" ? "Ù…Ø³Ø­ Ø°Ø§ÙƒØ±Ø© SEO" : "Clear SEO Cache"}
-            </button>
-          </div>
-
-          {/* System Settings Cache */}
-          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-gray-50/60 border-gray-200"}`}>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-accent">SYSTEM CONFIG</span>
-                <Settings size={16} className="text-gray-400" />
-              </div>
-              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…" : "System Settings Cache"}</p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
-                {dir === "rtl" ? "Ù…Ø³Ø­ Ø°Ø§ÙƒØ±Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ù†ØµØ© Ø§Ù„Ø¹Ø§Ù…Ø© (Ø§Ù„Ø´Ø¹Ø§Ø±Ø§ØªØŒ Ø§Ù„Ø¹Ù†Ø§ÙˆÙŠÙ†ØŒ Ø§Ù„Ø«ÙŠÙ…Ø§Øª)." : "Refreshes global platform parameters and site branding configs."}
-              </p>
-            </div>
-            <button
-              onClick={() => handleClearCache('system_settings')}
-              disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-accent/10 hover:bg-accent/20 text-accent rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {clearingCache === 'system_settings' ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              {dir === "rtl" ? "Ù…Ø³Ø­ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…" : "Clear Settings Cache"}
-            </button>
-          </div>
-
-          {/* Global All Caches */}
-          <div className={`p-4 rounded-md border flex flex-col justify-between ${theme === "dark" ? "bg-[#18181b] border-accent/30" : "bg-accent/40 border-accent/30"}`}>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold font-mono text-accent">GLOBAL PURGE</span>
-                <Zap size={16} className="text-accent" />
-              </div>
-              <p className="text-xs font-bold mb-1">{dir === "rtl" ? "Ù…Ø³Ø­ Ø´Ø§Ù…Ù„ (Global)" : "Global Cache Purge"}</p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4">
-                {dir === "rtl" ? "Ù…Ø³Ø­ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø°Ø§ÙƒØ±Ø§Øª (Ø§Ù„Ø§Ù‚ØªØµØ§Ø¯ØŒ Ø§Ù„Ø®Ø·Ø·ØŒ Ø§Ù„Ù…ÙˆØ¯ÙŠÙ„Ø§Øª ÙˆØ§Ù„Ù…ÙØ§ØªÙŠØ­) Ø¯ÙØ¹Ø© ÙˆØ§Ø­Ø¯Ø©." : "Clears all system, SEO, file permission, economy, and orchestrator caches."}
-              </p>
-            </div>
-            <button
-              onClick={() => handleClearCache('global')}
-              disabled={clearingCache !== null}
-              className="w-full py-2 px-3 bg-accent hover:bg-accent text-white rounded text-xs font-medium transition-theme flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
-            >
-              {clearingCache === 'global' ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
-              {dir === "rtl" ? "Ù…Ø³Ø­ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø°Ø§ÙƒØ±Ø§Øª" : "Purge All Caches"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Compliance Audit Logs View ---
-const ComplianceAuditLogsView = ({
-  theme,
-  t,
-  dir,
-}: {
-  theme: string;
-  t: (key: string) => string;
-  dir: string;
-}) => {
-  const { token, language } = useAppContext();
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [limit] = useState(25);
-  const [offset, setOffset] = useState(0);
-  const [actionFilter, setActionFilter] = useState("");
-  const [emailFilter, setEmailFilter] = useState("");
-  const [selectedLog, setSelectedLog] = useState<any | null>(null);
-  const [selectedLogIds, setSelectedLogIds] = useState<any[]>([]);
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string | { ar: string; en: string };
-    description: string | { ar: string; en: string };
-    variant?: 'danger' | 'success' | 'warning' | 'info' | 'purple';
-    confirmLabel?: string | { ar: string; en: string };
-    onConfirm: () => Promise<void> | void;
-  } | null>(null);
-
-  const isRtl = language === "ar";
-
-  const toggleSelectLog = (id: any) => {
-    setSelectedLogIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    const visibleIds = logs.map((log) => log.id);
-    const allSelected = visibleIds.every((id) => selectedLogIds.includes(id));
-    if (allSelected) {
-      setSelectedLogIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
-    } else {
-      setSelectedLogIds((prev) => {
-        const union = new Set([...prev, ...visibleIds]);
-        return Array.from(union);
-      });
-    }
-  };
-
-  const handleDeleteSelected = () => {
-    if (selectedLogIds.length === 0) return;
-    const confirmMessage = isRtl
-      ? `Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ù…Ø³Ø­ (${selectedLogIds.length}) Ù…Ù† Ø³Ø¬Ù„Ø§Øª Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„ØŸ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù† Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡.`
-      : `Are you sure you want to permanently delete (${selectedLogIds.length}) compliance logs? This action is irreversible.`;
-
-    setConfirmModal({
-      isOpen: true,
-      title: { ar: "Ù…Ø³Ø­ Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©ØŸ", en: "Delete Selected Logs?" },
-      description: confirmMessage,
-      variant: "purple",
-      onConfirm: async () => {
-        try {
-          const res = await fetch("/api/admin/audit-logs/batch-delete", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ ids: selectedLogIds }),
-          });
-          if (res.ok) {
-            setSelectedLogIds([]);
-            fetchLogs();
-          } else {
-            const errData = await res.json();
-            console.error("Failed to delete selected logs:", errData.error);
-          }
-        } catch (err) {
-          console.error("Batch delete compliance logs failed:", err);
-        }
-      }
-    });
-  };
-
-  const handleClearAll = () => {
-    const confirmMessage = isRtl
-      ? "ØªÙ†Ø¨ÙŠÙ‡ Ø£Ù…Ù†ÙŠ Ù‡Ø§Ù…: Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ ØªÙ…Ø§Ù…Ø§Ù‹ Ù…Ù† Ù…Ø³Ø­ ÙƒØ§ÙØ© Ø³Ø¬Ù„Ø§Øª Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø¨Ø§Ù„Ù…Ù†ØµØ© Ø¨Ø´ÙƒÙ„ ÙƒØ§Ù…Ù„ØŸ Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ø³ÙŠÙ‚ÙˆÙ… Ø¨ØªØµÙÙŠØ± Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø£Ù…Ù†ÙŠØ§Ù‹ ÙˆÙ„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù†Ù‡."
-      : "CRITICAL ALERT: Are you absolutely sure you want to completely clear ALL compliance audit logs? This will wipe the audit history permanently.";
-
-    setConfirmModal({
-      isOpen: true,
-      title: { ar: "ØªØµÙÙŠØ± ÙƒØ§ÙØ© Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø£Ù…Ù†ÙŠØ§Ù‹ØŸ", en: "Purge All Compliance Logs?" },
-      description: confirmMessage,
-      variant: "purple",
-      onConfirm: async () => {
-        try {
-          const res = await fetch("/api/admin/audit-logs/all", {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "x-confirm-action": "DELETE_ALL",
-            },
-          });
-          if (res.ok) {
-            setSelectedLogIds([]);
-            fetchLogs();
-          } else {
-            const errData = await res.json();
-            console.error("Failed to purge compliance logs:", errData.error);
-          }
-        } catch (err) {
-          console.error("Purge compliance logs failed:", err);
-        }
-      }
-    });
-  };
-
-  const fetchLogs = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const url = `/api/admin/audit-logs?limit=${limit}&offset=${offset}&action=${encodeURIComponent(actionFilter)}&email=${encodeURIComponent(emailFilter)}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.logs || []);
-        setTotal(data.pagination?.total || 0);
-      }
-    } catch (err) {
-      console.error("Failed to fetch compliance audit logs:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-  }, [token, offset]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setOffset(0);
-    fetchLogs();
-  };
-
-  const handleReset = () => {
-    setActionFilter("");
-    setEmailFilter("");
-    setOffset(0);
-    setTimeout(() => {
-      fetchLogs();
-    }, 50);
-  };
-
-  const formatDate = (isoString: string) => {
-    return new Date(isoString).toLocaleString(language === "ar" ? "ar-EG" : "en-US", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: "UTC"
-    }) + " UTC";
-  };
-
-  return (
-    <div className="space-y-6 font-sans" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Search & Audit Filters Bar */}
-      <form onSubmit={handleSearch} className={`p-4 rounded-lg border flex flex-col md:flex-row gap-4 items-end justify-between ${
-        theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-100"
-      }`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {isRtl ? "ØªØµÙÙŠØ© Ø­Ø³Ø¨ Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠØ©" : "Search Admin Action"}
-            </span>
-            <div className="relative">
-              <input
-                type="text"
-                value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
-                placeholder={isRtl ? "Ù…Ø«Ø§Ù„: UPDATE, POST..." : "e.g., CREATE_PLAN, HTTP_POST..."}
-                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
-                  theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
-                }`}
-              />
-            </div>
-          </div>
-          
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              {isRtl ? "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù„Ù„Ù€ Ø¯ÙƒØªÙˆØ±" : "Search Admin Email"}
-            </span>
-            <div className="relative">
-              <input
-                type="text"
-                value={emailFilter}
-                onChange={(e) => setEmailFilter(e.target.value)}
-                placeholder={isRtl ? "Ø§Ù„Ø¨Ø­Ø« Ø¨Ø§Ù„Ø¨Ø±ÙŠØ¯..." : "e.g., admin@perplexta.com"}
-                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
-                  theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
-                }`}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
-          >
-            {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
-            {isRtl ? "ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„ØªØµÙÙŠØ©" : "Apply Filter"}
-          </button>
-          
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={loading}
-            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-theme ${
-              theme === "dark" 
-                ? "border-gray-800 text-gray-300 hover:bg-gray-800"
-                : "border-gray-200 text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            {isRtl ? "Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ†" : "Reset"}
-          </button>
-        </div>
-      </form>
-
-      {/* Action Buttons for Log Deletion */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 pl-0">
-        <div className="flex items-center gap-2">
-          {selectedLogIds.length > 0 && (
-            <button
-              onClick={handleDeleteSelected}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95"
-            >
-              <Trash2 size={13} />
-              {isRtl 
-                ? `Ù…Ø³Ø­ Ø§Ù„Ù…Ø­Ø¯Ø¯ (${selectedLogIds.length})` 
-                : `Delete Selected (${selectedLogIds.length})`}
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={handleClearAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/30 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm"
-        >
-          <AlertTriangle size={13} className="text-purple-500" />
-          {isRtl ? "ØªØ·Ù‡ÙŠØ± ÙƒØ§ÙØ© Ø§Ù„Ø³Ø¬Ù„Ø§Øª" : "Purge All Logs"}
-        </button>
-      </div>
-
-      {/* Main Audit Logs Table Container */}
-      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme ${
-        theme === "dark" ? "bg-[#18181b] border-gray-800/60" : "bg-white border-gray-100"
-      }`}>
-        <div className="overflow-x-auto min-w-full">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead>
-              <tr className={`border-b text-[10px] uppercase font-black tracking-wider text-gray-400 ${
-                theme === "dark" ? "border-gray-800 bg-[#0f0f11]/40" : "border-gray-100 bg-gray-50/60"
-              }`}>
-                <th className="py-3.5 px-4 text-center w-12">
-                  <input
-                    type="checkbox"
-                    checked={logs.length > 0 && logs.every((log) => selectedLogIds.includes(log.id))}
-                    onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
-                  />
-                </th>
-                <th className="py-3.5 px-4 text-center">{isRtl ? "Ø§Ù„ÙˆÙ‚Øª (UTC)" : "Timestamp (UTC)"}</th>
-                <th className="py-3.5 px-4">{isRtl ? "Ø§Ù„Ù…Ø³Ø¤ÙˆÙ„ (Admin)" : "Admin User"}</th>
-                <th className="py-3.5 px-4">{isRtl ? "Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¦ÙŠØ©" : "Administrative Action"}</th>
-                <th className="py-3.5 px-4">{isRtl ? "Ø§Ù„Ù…Ø³ØªÙ‡Ø¯Ù" : "Target Resource"}</th>
-                <th className="py-3.5 px-4">{isRtl ? "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø±Ù‚Ù…ÙŠ IP" : "IP Address"}</th>
-                <th className="py-3.5 px-4 text-center">{isRtl ? "Ø§Ù„ØªÙØ§ØµÙŠÙ„" : "Compliance Audit"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
-                    <RefreshCw className="animate-spin inline-block mr-2 text-accent" size={18} />
-                    {isRtl ? "Ø¬Ø§Ø±ÙŠ Ø¬Ù„Ø¨ Ø³Ø¬Ù„ Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„Ø£Ù…Ù†ÙŠ..." : "Ingesting secure compliance records..."}
-                  </td>
-                </tr>
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
-                    {isRtl ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ù…Ø·Ø§Ø¨Ù‚Ø© Ù„Ù…Ø¹Ø§ÙŠÙŠØ± Ø§Ù„Ø§Ø³ØªØ¹Ù„Ø§Ù… Ø£Ù…Ù†ÙŠØ§Ù‹." : "No matching compliant audit trail records found."}
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <tr 
-                    key={log.id} 
-                    className={`transition-theme ${
-                      selectedLogIds.includes(log.id)
-                        ? "bg-accent/5 hover:bg-accent/10"
-                        : theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
-                    }`}
-                  >
-                    <td className="py-3.5 px-4 text-center w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedLogIds.includes(log.id)}
-                        onChange={() => toggleSelectLog(log.id)}
-                        className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
-                      />
-                    </td>
-                    <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap opacity-80">
-                      {formatDate(log.created_at)}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium max-w-[180px] truncate">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[var(--text-primary)]">{log.admin_email || ("ID: " + log.admin_id)}</span>
-                        <span className="text-[9px] opacity-40 font-mono">UID: {log.admin_id || "SYSTEM"}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-tight ${
-                        log.action.startsWith("HTTP_") 
-                          ? log.action.includes("POST") 
-                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/10"
-                            : log.action.includes("DELETE")
-                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/10"
-                              : "bg-purple-500/10 text-purple-400 border border-purple-500/10"
-                          : "bg-accent/10 text-accent border border-accent/10"
-                      }`}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-mono text-[11px] opacity-80">{log.target_resource || "GLOBAL"}</span>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-mono text-[11px] opacity-75">{log.ip_address || "LOCAL_EXEC"}</span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <button
-                        onClick={() => setSelectedLog(log)}
-                        className="px-3 py-1 border border-accent/20 rounded-md text-[10px] font-bold text-accent hover:border-accent hover:bg-accent/10 cursor-pointer transition-theme"
-                      >
-                        {isRtl ? "Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„" : "Inspect Payload"}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Database Audit Pagination Bar */}
-        <div className={`p-4 border-t flex items-center justify-between text-xs ${
-          theme === "dark" ? "border-gray-800/60 bg-[#0f0f11]/20" : "border-gray-100 bg-gray-50/30"
-        }`}>
-          <div className="text-gray-400 font-bold">
-            {isRtl 
-              ? `Ø¹Ø±Ø¶ ${logs.length} Ø³Ø¬Ù„ Ù…Ù† Ø¥Ø¬Ù…Ø§Ù„ÙŠ ${total}`
-              : `Showing ${logs.length} of ${total} compliance log records`}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              disabled={offset === 0}
-              onClick={() => setOffset(Math.max(0, offset - limit))}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
-                offset === 0 ? "cursor-not-allowed" : "cursor-pointer"
-              } ${
-                theme === "dark" 
-                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
-            </button>
-            <button
-              disabled={offset + limit >= total}
-              onClick={() => setOffset(offset + limit)}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
-                offset + limit >= total ? "cursor-not-allowed" : "cursor-pointer"
-              } ${
-                theme === "dark" 
-                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* JSON Expand Payload Modal -- Pure Emerald Glow Premium Transition */}
-      <AnimatePresence>
-        {selectedLog && (
-          <div className="fixed inset-0 flex items-center justify-center z-[130] p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedLog(null)}
-              className="fixed inset-0 bg-black/65 backdrop-blur-[4px] z-0 cursor-pointer"
-            />
-
-            {/* Modal Drawer */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className={`relative max-w-2xl w-full rounded-xl border p-6 z-10 shadow-2xl ${
-                theme === "dark" ? "bg-[#111113] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
-              }`}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border)] mb-4">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="text-accent " size={18} />
-                  <span className="text-xs uppercase font-black tracking-wider w-auto h-auto leading-none mt-0">
-                    {isRtl ? "Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ ÙˆØ§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù‚ÙŠØ§Ø³ÙŠØ©" : "Compliance Payload Audit Inspection"}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedLog(null)}
-                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-theme`}
-                >
-                  <X size={15} />
-                </button>
-              </div>
-
-              {/* Summary metadata grid */}
-              <div className="grid grid-cols-2 gap-4 text-[10px] mb-4">
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "Ø§Ù„Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„ÙØ§Ø¹Ù„" : "Action Operator"}</span>
-                  <span className="font-bold mt-0.5 text-[var(--text-primary)] truncate">{selectedLog.admin_email || "System/Cron Engine"}</span>
-                </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "Ø§Ù„Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¦ÙŠØ©" : "Action Identifier"}</span>
-                  <span className="font-bold mt-0.5 text-accent font-mono">{selectedLog.action}</span>
-                </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "Ø§Ù„ÙˆÙ‚Øª (ØªÙˆÙ‚ÙŠØª Ø¹Ø§Ù„Ù…ÙŠ)" : "Logged Timestamp (UTC)"}</span>
-                  <span className="font-semibold mt-0.5 font-mono">{formatDate(selectedLog.created_at)}</span>
-                </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆØ§Ù„Ø´Ø¨ÙƒØ©" : "Network Ingress Platform"}</span>
-                  <span className="font-mono mt-0.5 leading-none text-zinc-400">{selectedLog.ip_address || "Internal Sandbox Host"}</span>
-                </div>
-              </div>
-
-              {/* User Agent Block */}
-              {selectedLog.user_agent && (
-                <div className="mb-4 text-[9px] p-2 rounded bg-black/5 dark:bg-black/25 text-gray-400 font-mono border border-[var(--border)] leading-relaxed">
-                  <strong>User Agent:</strong> {selectedLog.user_agent}
-                </div>
-              )}
-
-              {/* JSON Payload Display */}
-              <div className="flex flex-col font-sans">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 pl-0.5">
-                  {isRtl ? "Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø´ÙØ±Ø© ÙˆØ§Ù„Ù…Ø­ÙÙˆØ¸Ø© (JSON Payloads)" : "Compliant Transaction Log (JSON)"}
-                </span>
-                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-accent font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
-                  <pre className="whitespace-pre-wrap select-text">
-                    {JSON.stringify(typeof selectedLog.details === "string" ? JSON.parse(selectedLog.details) : selectedLog.details, null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Footer disclaimer */}
-              <p className="text-[9px] text-gray-400 mt-4 leading-relaxed font-sans italic opacity-60">
-                {isRtl 
-                  ? "Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„ØªÙˆØ§ÙÙ‚: ØªÙ… Ø¥Ù„Ø­Ø§Ù‚ ÙˆØ­ÙØ¸ Ø§Ù„Ø³Ø¬Ù„ Ø£Ø¹Ù„Ø§Ù‡ ÙÙŠ Ø¨ÙŠØ¦Ø© Ù…Ø¹Ø²ÙˆÙ„Ø© Ø£Ù…Ù†ÙŠØ§Ù‹ ÙˆØºÙŠØ± Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„ØªØ¹Ø¯ÙŠÙ„ Ø£Ùˆ Ø§Ù„Ø­Ø°Ù Ù„Ø¶Ù…Ø§Ù† Ù†Ø²Ø§Ù‡Ø© Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ù…Ù†ØµØ© ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø¯ÙˆÙ„ÙŠ."
-                  : "Compliance Notice: This secure append-only audit log is recorded into a strictly cryptographic sandboxed database table and cannot be overridden, fulfilling absolute platform accountability. "
-                }
-              </p>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Action Confirmation Modal */}
-      {confirmModal && confirmModal.isOpen && (
-        <ActionConfirmationModal
-          isOpen={confirmModal.isOpen}
-          onClose={() => setConfirmModal(null)}
-          onConfirm={confirmModal.onConfirm}
-          title={confirmModal.title}
-          description={confirmModal.description}
-          variant={confirmModal.variant}
-          confirmLabel={confirmModal.confirmLabel}
-        />
-      )}
-    </div>
-  );
-};
-
-import { ErrorBoundary } from '../components/ErrorBoundary';
-
-export const AdminDashboard: React.FC = () => {
-  const {
-    t,
-    theme,
-    dir,
-    language,
-    token,
-    user,
-    socket,
-    setIsOperationPending,
-    isMobile,
-  } = useAppContext();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const [isRtl, setIsRtl] = useState(language === "ar");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const isSupport = user?.role === "support";
-  const path = location.pathname.split("/").pop() || "dashboard";
-
-  // Strict route protection
-  useEffect(() => {
-    if (user && user.role !== "admin" && user.role !== "support") {
-      navigate("/chat");
-    }
-    // Block support from sensitive financial/system paths
-    const sensitivePaths = [
-      "keys",
-      "databases",
-      "finance",
-      "settings",
-      "orchestrator",
-      "audit",
-    ];
-    if (isSupport && sensitivePaths.includes(path)) {
-      navigate("/admin/dashboard");
-    }
-  }, [user, path, isSupport, navigate]);
-
-  const [providerModels, setProviderModels] = useState<Record<string, any[]>>(
-    {},
-  );
-  const { toast, showToast } = useToast(3000);
-
-  const fetchProviderModels = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/admin/orchestrator/models", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProviderModels(data.providerModels);
-      }
-    } catch (error) {
-      console.error("Error fetching models:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (token && (path === "orchestrator" || path === "keys" || Object.keys(providerModels).length === 0)) {
-      fetchProviderModels();
-    }
-  }, [token, path]);
-
-  const [pulseData, setPulseData] = useState<any>(null);
-  const [isPulseOpen, setIsPulseOpen] = useState(false);
-  const [pulseErrorCount, setPulseErrorCount] = useState(0);
-
-  const fetchPulseData = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/admin/pulse", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setPulseData(data);
-        setPulseErrorCount(0);
-      } else {
-        setPulseErrorCount((prev) => prev + 1);
-      }
-    } catch {
-      setPulseErrorCount((prev) => prev + 1);
-    }
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchPulseData();
-      const interval = setInterval(fetchPulseData, 20000);
-      return () => clearInterval(interval);
-    }
-  }, [token]);
-
-  if (isMobile) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
-          <Monitor size={36} className="text-amber-500 animate-pulse" />
-        </div>
-        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
-          {isRtl ? 'Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… Ù…ØªØ§Ø­Ø© ÙÙ‚Ø· Ø¹Ø¨Ø± Ø³Ø·Ø­ Ø§Ù„Ù…ÙƒØªØ¨' : 'Command Center is Desktop-Only'}
-        </h2>
-        <p className="text-xs text-gray-400 max-w-sm">
-          {isRtl 
-            ? 'ØªÙ… ØªØ¹Ø·ÙŠÙ„ Ù„ÙˆØ­Ø© Ù‚ÙŠØ§Ø¯Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© Ù„Ø¨ÙŠØ±Ø¨Ù„ÙŠÙƒØ³ØªØ§ Ø¹Ù„Ù‰ Ø£Ø¬Ù‡Ø²Ø© Ø§Ù„Ù‡Ø§ØªÙ Ù„ØªÙ‡ÙŠØ¦Ø© Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ø´ÙƒÙ„ Ø£Ø³Ø±Ø¹ ÙˆØ£ÙƒØ«Ø± Ù…Ø±ÙˆÙ†Ø©. ÙŠØ±Ø¬Ù‰ Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø­Ø§Ø³ÙˆØ¨ Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ø§Ù„Ù…Ù‡Ø§Ù… Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠØ©.' 
-            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
-        </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
-          {isRtl ? 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Back to Home'}
-        </a>
-      </div>
-    );
-  }
-
-  const formatPulseUptime = (seconds: number) => {
-    if (!seconds) return "0s";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h}h ${m}m`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  };
-
-  const formatPulseRelative = (isoString: string | null) => {
-    if (!isoString) return language === "ar" ? "Ù…Ø¹Ù„Ù‚" : "Pending";
-    const diffMs = Date.now() - new Date(isoString).getTime();
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    
-    if (diffSec < 10) return language === "ar" ? "Ø§Ù„Ø¢Ù†" : "Just now";
-    if (diffSec < 60) return language === "ar" ? `Ù…Ù†Ø° ${diffSec} Ø«Ø§Ù†ÙŠØ©` : `${diffSec}s ago`;
-    if (diffMin < 60) return language === "ar" ? `Ù…Ù†Ø° ${diffMin} Ø¯Ù‚ÙŠÙ‚Ø©` : `${diffMin}m ago`;
-    const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return language === "ar" ? `Ù…Ù†Ø° ${diffHour} Ø³Ø§Ø¹Ø©` : `${diffHour}h ago`;
-    return new Date(isoString).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const getTitle = () => {
-    switch (path) {
-      case "dashboard":
-        return t("commandCenter");
-      case "radar":
-        return language === "ar" ? "Ø±Ø§Ø¯Ø§Ø± Ø§Ù„Ø£Ù…Ø§Ù†" : "Security Radar";
-      case "keys":
-        return t("aiInfrastructure");
-      case "databases":
-        return t("dbOrchestration");
-      case "orchestrator":
-        return t("toolOrchestrator");
-      case "finance":
-        return t("financeVault");
-      case "plans":
-        return t("plansSubscriptions");
-      case "users":
-        return t("userManagement");
-      case "memories":
-        return language === "ar" ? "Ù…Ø±ÙƒØ² Ø§Ù„Ø°Ø§ÙƒØ±Ø©" : "Memory Center";
-      case "emails":
-        return t("smartEmailHub");
-      case "broadcast":
-        return t("smartBroadcast");
-      case "settings":
-        return t("systemSettings");
-      case "audit":
-        return language === "ar" ? "Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚ ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„" : "Compliance Audit Trail";
-      case "referrals":
-        return t("referralDashboard");
-      case "seo":
-        return language === "ar" ? "ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„Ù…ÙŠØªØ§Ø¯Ø§ØªØ§ ÙˆØ§Ù„Ø³ÙŠÙˆ" : "SEO Audit & AI Population";
-      case "metrics":
-        return language === "ar" ? "Ù…Ù‚Ø§ÙŠÙŠØ³ Ø§Ù„Ø£Ø¯Ø§Ø¡ ÙˆØ±Ù†Ø¯Ø± Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª" : "Render & Latency Metrics";
-      default:
-        return t("commandCenter");
-    }
-  };
-
-  const getSubTitle = () => {
-    switch (path) {
-      case "dashboard":
-        return language === "ar"
-          ? "Ù…Ø±Ø§Ù‚Ø¨Ø© ÙˆØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø´Ø§Ù…Ù„Ø©"
-          : "SYSTEM-WIDE MONITORING & INTELLIGENCE";
-      case "radar":
-        return language === "ar"
-          ? "Ø±Ø§Ø¯Ø§Ø± Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ù‡Ø¬Ù…Ø§Øª Ø§Ù„Ù…Ø¨Ø§Ø´Ø±"
-          : "LIVE SECURITY RADAR & THREAT INTELLIGENCE";
-      case "keys":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ù…ÙØ§ØªÙŠØ­ Ø§Ù„ÙˆØµÙˆÙ„ ÙˆØ§Ù„Ø¨Ù†ÙŠØ© Ø§Ù„ØªØ­ØªÙŠØ©"
-          : "ACCESS KEYS & INFRASTRUCTURE VAULT";
-      case "databases":
-        return language === "ar"
-          ? "ØªÙ†Ø³ÙŠÙ‚ Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØ§Ù„Ù†Ø³Ø® Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠ"
-          : "DATABASE SCHEMAS & SYNC ORCHESTRATION";
-      case "orchestrator":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù†Ù…Ø§Ø°Ø¬ ÙˆØ§Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø°ÙƒÙŠØ©"
-          : "INTELLIGENT MODELS & ROUTING";
-      case "finance":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø¹Ø§Ù…Ù„Ø§Øª ÙˆØ§Ù„Ù…Ø­Ø§ÙØ¸ ÙˆØ§Ù„Ù…ÙƒØ§ÙØ¢Øª"
-          : "LEDGER, WALLETS & REWARDS CONTROL";
-      case "plans":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¨Ø§Ù‚Ø§Øª ÙˆØ§Ù„Ø§Ø´ØªØ±Ø§ÙƒØ§Øª ÙˆØ§Ù„Ø£Ø³Ø¹Ø§Ø±"
-          : "SUBSCRIPTION PLANS & PRICING";
-      case "users":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‡ÙˆÙŠØ© ÙˆØ§Ù„ØªØ­Ù‚Ù‚ ÙˆØ§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª"
-          : "IDENTITY, KYC & PERMISSIONS CONTROL";
-      case "memories":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© ÙˆØªÙƒØ«ÙŠÙ Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙˆØ§Ø³ØªÙ‚ØµØ§Ø¡ Ø§Ù„Ø°ÙƒØ§Ø¡"
-          : "MANUAL MEMORY DISTILLATION & AUDIT CENTRAL";
-      case "emails":
-        return language === "ar"
-          ? "Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‚ÙˆØ§Ù„Ø¨ ÙˆØ§Ù„Ø§ØªØµØ§Ù„Ø§Øª Ø§Ù„Ø°ÙƒÙŠØ©"
-          : "SYSTEM COMMUNICATIONS & TEMPLATES";
-      case "broadcast":
-        return language === "ar"
-          ? "Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø­Ù…Ù„Ø§Øª ÙˆØ§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ø¬Ù…Ø§Ø¹ÙŠØ©"
-          : "MASS CAMPAIGN & BROADCAST ENGINE";
-      case "settings":
-        return language === "ar"
-          ? "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù… ÙˆØ§Ù„Ø¨Ø±ÙˆØªÙˆÙƒÙˆÙ„ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ"
-          : "CORE SYSTEM PROTOCOL CONFIG";
-      case "audit":
-        return language === "ar"
-          ? "Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ø­Ø³Ø§Ø³Ø© ÙˆØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ø£Ù…Ù†ÙŠ"
-          : "SECURE CRITICAL METADATA AUDITING & SECURITY COMPLIANCE";
-      case "referrals":
-        return language === "ar"
-          ? "Ù…Ø±Ø§Ù‚Ø¨Ø© ÙˆØ¥Ø­ØµØ§Ø¡Ø§Øª Ø¨Ø±Ù†Ø§Ù…Ø¬ Ø§Ù„Ø¥Ø­Ø§Ù„Ø§Øª ÙˆØ§Ù„ØªØ­ÙˆÙŠÙ„Ø§Øª"
-          : "REFERRAL PROGRAM STATISTICS & CONVERSION INTELLIGENCE";
-      case "seo":
-        return language === "ar"
-          ? "Ù…Ø±Ø§Ù‚Ø¨Ø© ÙˆØªÙˆÙ„ÙŠØ¯ Ø§Ù„Ù…ÙŠØªØ§Ø¯Ø§ØªØ§ ÙˆÙØ­Øµ Ø¬Ø§Ù‡Ø²ÙŠØ© Ù…Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø¨Ø­Ø«"
-          : "METADATA AUDITING, AI GENERATION & REAL-TIME PROGRESS MONITORING";
-      case "metrics":
-        return language === "ar"
-          ? "Ù…Ø±Ø§Ù‚Ø¨Ø© Ø²Ù…Ù† Ø§Ù„Ø§Ù†ØªÙ‚Ø§Ù„ ÙˆØªØªØ¨Ø¹ Ø£Ø¯Ø§Ø¡ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª Ø¨Ø±Ù…Ø¬ÙŠØ§Ù‹"
-          : "COMPONENT RENDER TELEMETRY & LATENCY MONITORING";
-      default:
-        return "MANAGEMENT COMMAND CENTER";
-    }
-  };
-
-  const getIcon = () => {
-    const iconClass =
-      "text-accent ";
-    switch (path) {
-      case "dashboard":
-        return <Activity size={28} className={iconClass} />;
-      case "radar":
-        return <Shield size={28} className={iconClass} />;
-      case "metrics":
-        return <Activity size={28} className={iconClass} />;
-      case "keys":
-        return <Key size={28} className={iconClass} />;
-      case "databases":
-        return <Database size={28} className={iconClass} />;
-      case "orchestrator":
-        return <Cpu size={28} className={iconClass} />;
-      case "finance":
-        return <Landmark size={28} className={iconClass} />;
-      case "plans":
-        return <CreditCard size={28} className={iconClass} />;
-      case "users":
-        return <Users size={28} className={iconClass} />;
-      case "memories":
-        return <Brain size={28} className={iconClass} />;
-      case "emails":
-        return <Mail size={28} className={iconClass} />;
-      case "broadcast":
-        return <Send size={28} className={iconClass} />;
-      case "settings":
-        return <Settings size={28} className={iconClass} />;
-      case "audit":
-        return <ShieldAlert size={28} className={iconClass} />;
-      case "referrals":
-        return <UserPlus size={28} className={iconClass} />;
-      case "seo":
-        return <Globe size={28} className={iconClass} />;
-      default:
-        return <Settings2 size={28} className={iconClass} />;
-    }
-  };
-
-  // Determine if the "Add" button should be shown
-  const showAddButton = ["plans", "broadcast"].includes(path);
-
-  const getAddButtonText = () => {
-    switch (path) {
-      case "plans":
-        return t("addNewPlan");
-      case "broadcast":
-        return t("newBroadcast");
-      default:
-        return t("add");
-    }
-  };
-
-  const handleAddClick = () => {
-    switch (path) {
-      case "plans":
-        window.dispatchEvent(new CustomEvent("admin-add-plan"));
-        break;
-      case "broadcast":
-        window.dispatchEvent(new CustomEvent("admin-add-broadcast"));
-        break;
-      default:
-        break;
-    }
-  };
-
-  const isOptimal = pulseData && pulseData.status === 'optimal' && pulseErrorCount < 3;
-  const isDegraded = pulseData && pulseData.status === 'degraded' && pulseErrorCount < 3;
-  const pulseColor = isOptimal ? '#334155' : isDegraded ? '#f59e0b' : '#f43f5e';
-  const pulseText = isOptimal 
-    ? (language === 'ar' ? 'Ù…Ù…ØªØ§Ø²' : 'Optimal') 
-    : isDegraded 
-    ? (language === 'ar' ? 'Ù…Ù†Ø®ÙØ¶' : 'Degraded') 
-    : (language === 'ar' ? 'Ù…Ø¹Ø·Ù„' : 'Disrupted');
-  const pulseGlowClass = isOptimal 
-    ? 'text-accent ' 
-    : isDegraded 
-    ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]' 
-    : 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]';
-
-  if (isMobile) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-[calc(100vh-72px)] bg-[var(--bg-base)] text-center p-6 transition-theme">
-        <MonitorSmartphone size={64} className="text-gray-400 mb-6 drop-shadow-sm" />
-        <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">
-          {language === 'ar' ? 'ØºÙŠØ± Ù…ØªØ§Ø­ Ø¹Ù„Ù‰ Ø§Ù„Ø¬ÙˆØ§Ù„' : 'Not Available on Mobile'}
-        </h2>
-        <p className="text-base text-gray-500 max-w-sm leading-relaxed">
-          {language === 'ar'
-            ? 'Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© Ù…ØµÙ…Ù…Ø© Ù„Ù„Ø´Ø§Ø´Ø§Øª Ø§Ù„ÙƒØ¨ÙŠØ±Ø© Ù„Ø¶Ù…Ø§Ù† ØªØ¬Ø±Ø¨Ø© ØªØ­ÙƒÙ… Ø§Ø­ØªØ±Ø§ÙÙŠØ©. ÙŠØ±Ø¬Ù‰ ÙØªØ­ Ù‡Ø°Ù‡ Ø§Ù„ØµÙØ­Ø© Ù…Ù† Ø¬Ù‡Ø§Ø² ÙƒÙ…Ø¨ÙŠÙˆØªØ± Ù…ÙƒØªØ¨ÙŠ.'
-            : 'The Admin Dashboard is optimized for larger screens to ensure a professional control experience. Please access this page from a desktop computer.'}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div 
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={perplextaPageTransition}
-      className="flex flex-col w-full"
-    >
-      {/* Sticky Admin Header - Elite Command Layer */}
-      <div
-        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme ${
-          theme === "dark" ? "bg-[var(--bg-base)]/95" : "bg-[var(--bg-surface)]/95"
-        } backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between`}
-      >
-        <div className="flex items-center gap-4">
-          {path !== "dashboard" && (
-            <button
-              onClick={() => navigate("/admin/dashboard")}
-              className="p-2.5 rounded-md transition-theme flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
-              title={t("back")}
-            >
-              {dir === "rtl" ? (
-                <ArrowRight size={20} />
-              ) : (
-                <ArrowLeft size={20} />
-              )}
-            </button>
-          )}
-          <div className="flex items-center gap-4">
-            <div
-              className="p-2.5 rounded-md bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-theme"
-            >
-              {getIcon()}
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-theme">
-                {getTitle()}
-              </h1>
-              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1 opacity-60">
-                {getSubTitle()}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {showAddButton && (
-            <button
-              onClick={handleAddClick}
-              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(156,163,175,0.3)] hover:shadow-[0_8px_20px_rgba(156,163,175,0.5)] active:scale-95"
-            >
-              <Plus size={18} />
-              {getAddButtonText()}
-            </button>
-          )}
-
-          <div className="relative">
-            <button
-              onClick={() => setIsPulseOpen(!isPulseOpen)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-theme hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
-            >
-              <div className="relative flex items-center justify-center">
-                <div 
-                  className="w-2 h-2 rounded-full absolute animate-ping opacity-75" 
-                  style={{ backgroundColor: pulseColor }} 
-                />
-                <div 
-                  className="w-2 h-2 rounded-full relative" 
-                  style={{ backgroundColor: pulseColor }} 
-                />
-              </div>
-              <span className={`text-[10px] font-black uppercase tracking-tighter ${pulseGlowClass}`}>
-                {language === 'ar' ? 'Ù†Ø¨Ø¶ Ø§Ù„Ù†Ø¸Ø§Ù…' : 'System Pulse'}: {pulseText}
-              </span>
-            </button>
-
-            <AnimatePresence>
-              {isPulseOpen && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsPulseOpen(false)} 
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme ${
-                      theme === 'dark' 
-                        ? 'bg-[#0f0f11] border-gray-800/80 text-white' 
-                        : 'bg-white border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border)]">
-                      <div className="flex items-center gap-2">
-                        <Activity size={16} className={pulseGlowClass} />
-                        <span className="text-[11px] font-black uppercase tracking-wider">
-                          {language === 'ar' ? 'ÙØ­Øµ ØªØ´Ø®ÙŠØµÙŠ Ù„Ù„Ù†Ø¨Ø¶' : 'Pulse System Diagnostics'}
-                        </span>
-                      </div>
-                      <span className="text-[9px] font-bold text-[var(--text-muted)] font-mono">
-                        {pulseData ? formatPulseUptime(pulseData.uptime) : '0s'}
-                      </span>
-                    </div>
-
-                    <div className="mb-4 bg-black/10 dark:bg-black/40 rounded p-2 border border-[var(--border)] overflow-hidden">
-                      <svg className="w-full h-10 stroke-current opacity-90" viewBox="0 0 100 20" fill="none">
-                        <motion.path
-                          d="M 0,10 Q 15,10 20,10 T 30,10 T 32,5 T 34,15 T 36,1 T 38,19 T 40,10 T 50,10 T 60,10 T 62,3 T 64,17 T 66,10 T 80,10 T 90,10 T 100,10"
-                          stroke={pulseColor}
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          initial={{ strokeDasharray: "200", strokeDashoffset: "200" }}
-                          animate={{ strokeDashoffset: ["200", "0"] }}
-                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                        />
-                      </svg>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
-                          {language === 'ar' ? 'Ø¹Ù‚Ø¯ Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆÙ…Ø²Ø§Ù…Ù†ØªÙ‡Ø§' : 'Database Node Synchronization'}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-[10px]">
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
-                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø±ÙƒØ²ÙŠØ©' : 'Core Engine DB'}</span>
-                            <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
-                              {pulseData?.databases?.core?.status === 'connected' ? `Connected (${pulseData.databases.core.latencyMs}ms)` : 'Offline'}
-                            </span>
-                          </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
-                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'Ø¯ÙØªØ± Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª ÙˆØ§Ù„Ù…Ø§Ù„ÙŠØ©' : 'Ledger Vault DB'}</span>
-                            <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
-                              {pulseData?.databases?.ledger?.status === 'connected' ? `Connected (${pulseData.databases.ledger.latencyMs}ms)` : 'Offline'}
-                            </span>
-                          </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
-                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'Ø§Ù„Ø³Ø­Ø§Ø¨Ø© Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠØ©' : 'External Sync Registry'}</span>
-                            <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
-                              {pulseData?.databases?.external?.status === 'connected' ? `Connected (${pulseData.databases.external.latencyMs}ms)` : 'Offline'}
-                            </span>
-                          </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
-                            <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'Ø­Ù…Ø§ÙŠØ© ÙˆØ£Ù…Ù† Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª' : 'Security Registry'}</span>
-                            <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
-                              {pulseData?.databases?.security?.status === 'connected' ? `Connected (${pulseData.databases.security.latencyMs}ms)` : 'Offline'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
-                          {language === 'ar' ? 'Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ø®Ù„ÙÙŠØ© Ø§Ù„Ù†Ø´Ø·Ø©' : 'Background Process Handlers'}
-                        </div>
-                        <div className="space-y-1 text-[9px] text-[var(--text-muted)] font-medium font-sans">
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
-                            <span>{language === 'ar' ? 'Ø§Ù„ØµÙŠØ§Ù†Ø© ÙˆØ§Ù„Ù…Ø³Ø­ Ø§Ù„ÙŠÙˆÙ…ÙŠ' : 'Daily Maintenance & Trash Purge'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
-                              {pulseData?.cronTasks?.dailyMaintenance ? `${formatPulseRelative(pulseData.cronTasks.dailyMaintenance.lastRun)}` : 'Pending'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
-                            <span>{language === 'ar' ? 'Ù†Ø¨Ø¶ Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø°ÙƒÙŠØ©' : 'Database Pulse Tracker'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
-                              {pulseData?.cronTasks?.databaseHeartbeat ? `${formatPulseRelative(pulseData.cronTasks.databaseHeartbeat.lastRun)}` : 'Pending'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
-                            <span>{language === 'ar' ? 'ØªÙ†Ø¸ÙŠÙ Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ù…Ø¤Ù‚ØªØ©' : 'Auth Token & Session Purge'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
-                              {pulseData?.cronTasks?.expiredTokensCleanup ? `${formatPulseRelative(pulseData.cronTasks.expiredTokensCleanup.lastRun)}` : 'Pending'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
-                            <span>{language === 'ar' ? 'ØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„Ø§Ø´ØªØ±Ø§ÙƒØ§Øª Ø§Ù„ÙØ¹Ø§Ù„Ø©' : 'Subscription Renewal Audits'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
-                              {pulseData?.cronTasks?.subscriptionAudit ? `${formatPulseRelative(pulseData.cronTasks.subscriptionAudit.lastRun)}` : 'Pending'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
-                            <span>{language === 'ar' ? 'Ø¶ØºØ· ÙˆØªÙ‚Ù„ÙŠØµ Ø°Ø§ÙƒØ±Ø© Ø§Ù„Ø°ÙƒØ§Ø¡' : 'Memory Distillation Cycle'}</span>
-                            <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
-                              {pulseData?.cronTasks?.memoryCompaction ? `${formatPulseRelative(pulseData.cronTasks.memoryCompaction.lastRun)}` : 'Pending'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-1.5 border-t border-[var(--border)]/40">
-                        <div className="grid grid-cols-2 gap-4 text-[9px] text-[var(--text-muted)] font-bold">
-                          <div>
-                            <div className="flex justify-between mb-1">
-                              <span>CPU UTILIZATION</span>
-                              <span>{pulseData?.cpu ?? 0}%</span>
-                            </div>
-                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
-                              <div className="h-full bg-accent" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex justify-between mb-1">
-                              <span>HEAP ALLOC</span>
-                              <span>{pulseData?.memory?.percent ?? 0}%</span>
-                            </div>
-                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
-                              <div className="h-full bg-purple-500" style={{ width: `${pulseData?.memory?.percent ?? 0}%` }} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div
-        className={`relative transition-theme ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
-            path,
-          )
-            ? ""
-            : `p-6 md:p-8 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl`
-        }`}
-      >
-        <ErrorBoundary name="Admin Command Panels">
-          {path === "dashboard" ? (
-            <CommandCenterView theme={theme} t={t} showToast={showToast} />
-          ) : path === "radar" ? (
-            <AdminRateLimitMetricsView theme={theme} t={t} />
-          ) : path === "metrics" ? (
-            <AdminRenderMetricsView />
-          ) : path === "keys" ? (
-            <ApiKeysVaultView
-              theme={theme}
-              t={t}
-              dir={dir}
-              providerModels={providerModels}
-              setProviderModels={setProviderModels}
-              showToast={showToast}
-            />
-          ) : path === "databases" ? (
-            <DatabaseOrchestrationView
-              theme={theme}
-              t={t}
-              dir={dir}
-              language={language}
-            />
-          ) : path === "orchestrator" ? (
-            <OrchestratorView
-              theme={theme}
-              t={t}
-              dir={dir}
-              providerModels={providerModels}
-              showToast={showToast}
-            />
-          ) : path === "finance" ? (
-            <FinanceVaultView theme={theme} t={t} dir={dir} showToast={showToast} />
-          ) : path === "plans" ? (
-            <PlansSubscriptionsView theme={theme} t={t} dir={dir} />
-          ) : path === "users" ? (
-            <UserManagementView theme={theme} t={t} dir={dir} showToast={showToast} />
-          ) : path === "memories" ? (
-            <MemoryCenterView theme={theme} t={t} dir={dir} language={language} />
-          ) : path === "emails" ? (
-            <SmartEmailHubView theme={theme} t={t} dir={dir} showToast={showToast} />
-          ) : path === "broadcast" ? (
-            <MassBroadcastView
-              theme={theme}
-              t={t}
-              dir={dir}
-              language={language}
-            />
-          ) : path === "settings" ? (
-            <SystemSettingsView theme={theme} t={t} dir={dir} />
-          ) : path === "audit" ? (
-            <ComplianceAuditLogsView theme={theme} t={t} dir={dir} />
-          ) : path === "referrals" ? (
-            <ReferralDashboardView theme={theme} t={t} dir={dir} />
-          ) : path === "ads" ? (
-            <AdsManagementView theme={theme} t={t} dir={dir} language={language} />
-          ) : path === "seo" ? (
-            <SeoCenterView theme={theme} t={t} dir={dir} language={language} showToast={showToast} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <div className="mb-6 opacity-50">{getIcon()}</div>
-              <p className="text-lg font-medium">
-                This section is currently under construction.
-              </p>
-              <p className="text-sm mt-2">
-                We are building the {getTitle()} module according to the AGENTS.md
-                architecture.
-              </p>
-            </div>
-          )}
-        </ErrorBoundary>
-      </div>
-
-      <AnimatePresence>
-        {(toast as any) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              (toast as any).type === "success"
-                ? "bg-accent/10 border-accent/20 text-accent"
-                : (toast as any).type === "error"
-                  ? "bg-red-500/10 border-red-500/20 text-red-500"
-                  : "bg-blue-500/10 border-blue-500/20 text-blue-500"
-            }`}
-            style={{
-              boxShadow:
-                (toast as any).type === "success"
-                  ? "0 10px 30px rgba(156,163,175,0.15)"
-                  : "0 10px 30px rgba(239,68,68,0.15)",
-            }}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${(toast as any).type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
-            />
-            <span className="font-bold text-sm tracking-tight">
-              {(toast as any).message}
-            </span>
-          </motion.div>
-        )}
-        {previewUrl && (
-          <PagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-};
+      const xœì½ksÇµ(úİ¿¢ƒd[`6‚/Y¡E¹(’’¹Ã×!©$®JCb" ƒ=3àÃ«¶dëíSukWİO§Î½§G²,Ù‘eÇQ~	ø5¿àü„»Öêî™î@RŠDb›L¿V¯w¯^+pC6Íœ]Ç‹Ø–UëÅÂˆÓöFšnÓ<7©6\§Õi—ª~+r÷¢Â0;x‹‰OÓê~mŠVWÖ7
+ÃñóºëÔÜ œR^e¬0‹=´¢ÒÆ~Û-@#§İnxU'òüÖÈïB¿¥tÀØLº¼éç)vë²ënÀ~vù·İÖá­äİÃäÏM¿¶?Åşm}e¹F×Úö¶ö‹,ŠsÎ~È‡ä«‡CïŠ¿`YaÄjNäÄ`Ü°Œó)Æ/y[¬ˆOıÛCÊ’B7Úğ0Z
+·‹ÊÌNk»ãl»lzz”ß{İê>=ºÇà_÷»;ztt‡u}Ü}yôş{—uŸÀógİÇİçeF/İë¾ì>‡…ãË´nmÖï´¢CÖ}†-»Ÿ±îß¡ùM¿î~Ûı¬|KÀ7Ëw‰İ„e7Û7rke¶t Gû ^Ë©FŞkCØˆPé9†Ab!\ïT«ğ¤Wy0k=r¢0ê!s¡›Oš‹~À~ÿ{V¸âx˜cä3wÏ­v"—Uõrg³åÀHÉÀoñáõªuV„Q¦˜ÓÚO¶VüZnBG¸¡8“e7ÚõƒÛŒæ–Œš?æ!ÛH6ûêá,Î°Ô˜ı¶ÒvÂıU·U³¾³á5]¿‹ClúRÉ‡ÙD¥R‘3‚¾ûÖ[’ ’B2÷[U¦ö}.úÎƒo¢²½Q¬Š÷u=ÄwÖÜp˜Õ<gş¸ÓÖjà7½Ğ-0Š×uôŒÇ©5½VÂ~¨/é¨ì¥'›P¹CBşÌÎêp¶-?Œ¼ê©xcˆ€d&BG±0£øM#Ñ–¬ï‡‘Ûä;‚çC‰-°¿Å#É-Í%€™ƒq¨ÏrÒÂo¸œ’‹
+7 ›~Ÿ/‘¥+ğŸ‚ÀrèGCHÚbÜî„îüÖ–[Õ‰¡òÚ­!àõQ'hñvi&ÅŸ”7ê  ê~£ÿÈAè
+vœÆB ‰”+¾d™îè1p·°SÙ„ıœr
+¥øÔ"›â¾“A©3èê:­'Õ¥@;>ÕºÓª5ÜµNk–vÅ«
+gÑûBowRˆİÎšôÖÜ¶À:¯ßÈäA†ÒaĞ~5§û=T;”^#'Øv£k¡,À´Õo ´ taÃŠêó!ÚVÍ¼wkê#‰‡SÉŸ6†s˜0œUööÛôr9äâÌPyäöÒ+}AÁï¶xí8šQ4 Pé­æ)ë¾Â?@¯ù¡ºŸ'ÊÒ_èÅøK¬.ıDï6z‰³—š¥ÑàÈ^İJJ´&Ö¸Õæ¢ôğO×múü^j6’u|¯¬Ğ­	´
+à8–ù/?‹°xNR|-ƒô–¦[üE×fĞ-•½VµÑ©¹a1ŞP­ÿ·ìë¯<Íæ›°Í'îIà²[»zùà½½E˜ıV"[¨ï‹5oŒ†¸ÚéBØvªni¿tpÇkó-y-¶¬ÿ[ëğİ+MV*	®ƒ‘Ÿ3Ú¶ìƒôvÙÏG¤
+Œ“o²•„à˜
+½&£ÜÚòö€6ı(ò›¥óh—xçAÔ( ›h¸[Qé|i<ğ¶ëø÷!ûfÄ¶îA*,U]”lÛi—ÆY{zjï—&Xà#[­•Û,¬;5·4¶× å´BÖÕİ¦«®<JÄ?J[ »–Ä¼&a^¿ñ4Ñ~BÖÆ{¥UÔœàvÁx¸ßævéúOGø_õ¬? Y&şSrª¸œ‘ñ
+C£G|Mw2EìÖÖòZOt@dˆñ$Å÷Af‰MÆ*JûózûÃ[‡ñ·KÊóú0Ñ¢6êÅÙº[½=ëÀüÇŒù„Ş‡€uc•Cã¹B
+Ô˜¾œu(³qgnñq“R]KHİ©3ºDÙRnVSjº5¯Óäà
+›…K1±^ÁIwÁ¸Ù‘_¡g…pßwş…ª“B·ªäÙJRˆHl`Š€4òÈÅ,;V•¶XàÓùJJ²èÃßSqåPRwØŒqæ’Æ}4`&lŒPhkLÔİ0› WiÂ­¨0QñELãzåfåæèd{ïf°½éG'Ï}gr¸R®LİĞƒá.×²£ê…“£ª†Y)2)
+FÍéÕ'R£ÂÂ	)7A#å  mùĞ3nú=¢m3:4Ì×ñƒÚá“î‹£‡ ><úşùÔÂîstœİgğüò İG¥ĞĞñëSø€J	
+¥•'­Î¯­.Îÿfc†­°¾1¿Ä–æ—VÖ>`+«K¿ÙXXYf«k++³+‹}.Ô'µS 
+›
+X&ñ9 ¤çğ¬úèÎÑXù _’;ğ1ªÎúâÉ…ø´ûE÷K\>Bëct/îÂËİ»¨t#t¿‚·ÅÏ©Ô³Ÿt?+[Á·lƒĞüEgùíÈkâT}¤¿8ÛM@Ìu]¯Ùü—Í, 1Ò]·^Ø©&î=ô”SÀnçà²öU|Q¸İšë4J¨a2n×³%L¶jh°>uó¶¯Æğ_¥ªß*šµ©äë81‹ó»dè6Ça=Øçà´Oª0Ñ&îZP°a°iÁVÖ½ZÍm`üN;C.çğY¡ı®
+íÖ~iŒ×m™lÆ”z’RÒ¦2”uÚ`_TAİE¨VoƒQÚı-èƒØˆ¸>"ºGDóH8æ%U‘¾¹±²1³È9ÃÂüz
+1u¡KÏĞa¶	ó±òòÑ¼\2çRÁ?¥ryõy
+“N"š¨ËÊá"^ËäŞÅ—Ò¼²öp”nÚDø8‰ÈH]©·;`¦v±r¹ldZ'tFYB,Á¯mŞ6ğ[æz&Ú÷À&‹œÆ’pr±÷Şc)İÓº’ÃA6ÏÙıF‡È›ì•
+#£	Ô2˜*¬|x ¬®æ¡w,òK#‡p¨íˆ\;“*9ğ–òsá’÷qBú|Ï9!W¥Ğ#~%n83»±ğ«yTŠ®,,öÇÑ½ñÂ3^Èy!ê‡á¯½¨~ÆÏøáw–ÚÌ0à`‰‚zø-çŒu?‡ÿŞA+
+¾ ıLVkii~fYòM67¿¼¾°ñA?ìs¶İ9cgÌ“3O¶
+ĞTgV0q¡½´ü é4tz±ŒçÕdÙéş- ûŞómí‹éCˆĞ‡ F°·Ù•’±Vë"fŠ­:-·¡‰ÔôxŠ¾F¾¿BB:'NKÈ7å×wœ X*ñoC7X{³4n
+ƒ +g,…ùf»İÒXy0ÿ-·O‡pÂt€®Sè%zµøP%AöÁ5úg™
+şSĞå¿8zÔı†|† Ïw_}dõ>?zÄŠ‹ˆÜ—;[[ (ñ‡ÈÈø¨b¾µÌOQ=Åš,Ó4°½qV®·
+-ÁoùºGVp’ıÒ¨¸| „€‡ˆcxˆXI¶İlƒ¸Ë.­ÿS¿4ıš{8ÔÏ„^S§áòÃ¹^Ó‹Ø43†x¯¼I[²H?ÿş÷l²ònFUŒøÄ¦lW´ÏlŞ®bã%'ª—	6Å"ïp„Omˆ7¥›cà	6¾4Í.T†,4N«ÍO¿{,Ùp‹åI%‚Ì#LËfgœ.&$k•™4ÉË.°¡ªé'€’SlÂ UÏ ÙÀãğ_²È¨´ûŒhnvmacavÆ<Œˆµb~,ÛîBÙ˜É×¹1Ns@/¶&ş’Şœä§Æöpí±÷îàáÌ“£GGh‡~=³¶¼°|õõlPôû…=(Óˆ	Cùš†¿úã`;wíT^~/óã¬£»İã÷çg7Ş7­§|§à{8T2Í/S55Œy®bÀË–'dtÜ/–¶ü€Í‚Òâ7Ù*Hj€.$‰#Ñ¸A…l½íİvy[õŠÆ´	>:›­ú€°Í)ú;ğwµÓkx«:‰˜øGU&·¥†K>Ğ	Çàf¤‡©jeY,§¥o
+)H¦œºOj-ém¾¸±;A(‘ëü¡nºZ÷YÎÀÒ].Uõ¡³m6üêm+5dp“W ¤=áGºtˆ-™×ØÒÃOA{^Äï‘Ûöøßg\Lø­-o»¶hğ§m€|‚‡6k1ƒlì ¸>:ÚŞ»ax[’¥gwÛ×mexk×jÀã9?¨ë~6Å¿‚a1ú³ƒ†¿¯XÉïeğkÌGåç[ÖQ§Ø-aÒ	¨…SlhÍÒùûĞŸ¥Û~AkÓy-6;`›Q!~k¶áUoOp‘‚,ã9,ù5§±Òv[<j5ÇIü|ù¹Bj‚-$1.Ü9”<KÉh[œšIH0vAC+Æ¬2¹Ú	B?(µ}
+yO‚zt4IÓ û	İÓ>dšF¯º_ò(ˆ4Úe—«Ñ”Õ{7Â7°‡T±ªú\ËVµùÁ•}¡èwtzÌö¥ïMÚºàã\ÃĞa!ÚLİ_cDvbhı¢²iétO¤Òjh¦”"^÷4&ôHD…§á´OSKMSFÚÆRUÁzí+˜Ít…dCi,åÒàÓ;aZ×º]ª°fDZ aÉd*Û¤é GÊ‹Ã"G/XHT¼oĞÉì3‡1Á’bBY”î”ÖS”Á²yùéSÎÉİaõºÖÉ¥Öã!X ö¿b<"ëè†¦X|6œa}––Hû‰]ğÉ^6&›Yœ_Û˜bâR…ğôÌïU]•2¡è¦Ç›uÚNÕ‹öb‘…1ô2í ºµ£‚j‡@Ğó2l˜kZVë$¶}z[„´gi†”m÷ñP¡WB&,®ÌÌe}½œƒğÖ¸B@åDÑz'­{WˆDGYÃ¥–ØíYWñÒAW@V
+¿ÄK;Ê1˜‰¢ñgW?„ü`ÚeBûş|~Òı²ûG&C»ß˜]İw1Ìó?ñî(Ë¯ø+OºßBC¡/?í~‚w‰®^ÑĞ0Í¸s¶PÇ<úÀëaœè6cİ	A9Õ:]¦¶¯f¡‰G“zÙo¶~PÀ<`õQà[ÜÇ“^&Ä|ïì @l@ÛVuŸ…h3†åL¢2b$û@®ì¬Z'ÿÄº'¿[¸Şy3+VdŸZÍÑ©Mx¡|pÒş²®N A©ë£øàHª·ØhºŠ‹±¶/Ä¯©ŠÊ…LùœÁH´‰}ôÅ[;cà¯ñ³»6§`A«§äòíì2à·N»2Xyl,ÓA–A½ôõO"²h6EJ›ew`šMÙ–¿X0İğö«ª–à©j§}yB¥†ÊŸè:*ö£ÑR ŒULÇ²¡©öPMµû:gŠ©öAÅ4v8±Ä!5ÕC#å
+‚öŠ~jxRtõ´§v*üë¦Zº&Äp¬•£H¥ô5ê¤Úi…‚,4:f?\<SXß€ÂÊa ï}Ñı*‰u½×ıßGwñ•ê½£î#Ò=€ú¨û—<-õc:P¿ó·XıTÛÇ¨Ü‚.
+^ñ«8q:øåiÕx'Z¿€á·>µÓªÀvÔ/…cL'Ê\Ñ~µÛ”×wZ /@m: ÿÀ?üÓH®ï„m°´:i"‚/)=:ÓK¿×ziZıçª¢B¥lÚ£¾Ç0sóo±ñ+¯:V¢èéq¤§"ÚO+[•­ÑÑ'ˆ}îÄ‡KtÆš›x´œ±}°uürÄÀÃ£?Ğ&vÉİçRE°{ò³fˆ¡­ıß‚M)~òCPbª -9{öÃ„aRßÙÍÁ]á©ëâ3‘¹®®Êã=á1âWMì±•'ßyxœÚùN(Ç{¯Üp[ÛQb¡ãiôµA–£¾Æ¤„<ı¼(çv‰UôRrÈˆÌ1Tµ&3°Û~à›mÇdƒg Ë'İç }ÎLœÁˆÅÇø‹oÄ"‚B£=“Rg²VÄ2ƒÛ½R½4q!¹ı°_r: '%ğm2)	¼Ù³Fw÷·ËM§],Š„Œ"¿Ïô%{Nö¶»?} ^/{µCÃÖ#+RÑ1“¹`º!Ra =cvó¬U°QĞiUÑS:¨ÑkO•‘&øŸª@éaàds¼iÔ§&böÀWä(‘5(ÓÒ¹k-ú»&qïÜ±†¶f‚XÚQ½zşz*­“u;Nbı2ÇªúÇÿøcVVBV:=e‘yKìáIé#†¨÷jr¨ó-Ïœ~Áè	œváÙrw«+)²ÜicÂºÚM'¢ôKU§ábÂuJg†™õ |‹?ƒ[=øÈòÁOO$TñBˆmŞ÷ÑğpRA×ÉT`I’OÅ`2V9¦ÙÃ?D~Ó½)Htÿrô€)z‹f2îIƒ¸/ô©(£åX–•ÁÌÆJái?1Jº	‚ñ‘B©&›sÑÀİgÛª±•Ô¶1_Óù
+[òZ ºñšÒrµñf™ÀŒ¨?õõ¤¿SšQê´¯kÃƒ{f˜Lèr×~Ìº‚^àF`*xñ®@ñœı+{7tLªß_K
+#ëaÇæmeŞÆ)B!3f#Ê>–»ñÃËºŸO	Å”|)S…0ãìİ†[5sÍñÏÓè ‡3ÒÁÚYˆÛğzÑ•!„kzÃâr}YE·Ì“”–©ÿ4à ¹*%ë©Få+œjô©ª]õŸW;á”ß‰PPo¹â‘‘Ï¼I§™şıhÑ9
+AlÃäá¥I°ùÃ¾ZŒV/Vk3mÆóÛ 2Îôé‰ê[õT¥¾&Åû»3Å”+•0Á¦û–) tÖàd²íòÃC"–ô5îÖö—x0àÑQ}º Èü/Vwñ
+ªøfÜ"4Â
+xêİiák'Ö‰Æİ!mÛkM°ÈoO±Éa~©uŠU†éšë+áŸüê+¼À­›:ƒ¸¡ç´®¢CHn»sNcMÆÙxA<>H.ƒCz;ÌéÜOÇjcµñÊ9àEç~êNºï¸›ç2\®3³ç…´¢_‚]YÀ-ëÑù/ªÎ¸³Å;?¿ùÎØ…
+t¨³ßø ƒ÷6‚kú€’Áfıı†ÛğıFäµ™ÃñœÒëÑ>ê‘ö—ÛÙ¾Mh?ë7ü@M±©Ì™_¼åsŞ¢Ï¹áÌ‰_åõ6şÎÄèä¨¶—Ã¹­958!;w¡½—ùª!¼6:–ó^5gfbm4³ÑÑÑcïœ³örxh[½}—p#í°ŠöÛèî:1à¨ıäGâqk6¯	”+üt´²yáÂhî[¿&q0V´.Æô#D™-¯Ñ HP—°ã ¶‰Œµ3Æ=As¼)¼y~8İ_Ã"eJÀV‚,h .ğªª›âıéƒ‰JÆ„c¹[ğÉ™Â«&XÖ«gÓmäĞ	Á)=Çø9' Ô‹ã.TşE¿Ş“ÊØ'tğÂKü]zş“pşlr”{À™ó^L>£•Ì—Ú>×= C°±ænøí5”çì-úŞÍ‹#±,JKO‹œëÏmıª§–E×è'òÎ‘^wàŠ4Å#÷˜x¶Y³%µÜùäÌUÎú Gt÷±‰ñ±ñM³î×XSh„¹ò¥$˜deŞIgcmáêÕù5¶4³¼pe~}ƒ½M®^[¤ì©Š}Ã¯ı'_“rSX~ Oåfê}¦'€8Ê›5äûÌğÊoªIpìïıó­¿ Q^©ä„¢®à;ym—––®-±™ÙÙkKb'ØâÂÒÂ+n¼¿6¿şşÊâœi»_!èóZíior9Û"ûĞ_&q¡
+Ó\4-ÏÔô1å¿l\¤FMg¯86œÍ0,Rº³4dæTÈ¾övpKq,‡áxÌ4Ñ›K;ñnöPĞ×d%Í™s)lš‰Zœ½’°'|K?½MìhåˆÙÒšs1ylğ1û˜ÍS¡=íĞnLÜòvä›Ùª	6Na,'”5F,å˜·¥$ê“œĞK¥Ôî€¨ÿ–‘/†\¹Yù‘yˆL•Œ`óèU“7¿úL$ktùÉÑCü:ç^Ø“%¯>f«gíÀÂÉ  Ù‹A7QŒsP€ÈÍátÎúKˆüƒb‰´g/şëèSw‹g­Á­(è¿€]Æ-€²‚}ş7«‹³Àø®­ƒ”Z˜›_ŞX¸²@²"æù^YY<)+¤#€F¨Tø9/TÚœKñ 1Gş¯¹‘íaV(œqÁœü§ò»Ç˜íşè#a=Ç£$FQ§/ºw¤5O­¶ÄSÈŠKtæuâP3™%(< Äñ÷íoÑuv0‚ÓºÍï3qH<_¥eM,]ÄÙ Ëªl_à9ÇbxÈóïÎÛk£™­—ŠG}Uö“v‚-kÔŒ©g£æÉhrÎ™¸Y'lñ¥¥ë‰‹V+’&É~jTŒN‚aÁ'£¾>–ñú8¼OU4 ®¡{ÔRJá{fk(êÅ~.šìG«+·kø}NğcòİÈød|˜(€©´ÚÓ¸Ñ<ûÍbQ ‹…/dny…ÈÄİDÀâèN¹l!#ü )Í-¬o,,..,_Ñãë¶\©ĞRkÄ­¶
+$ügS±ûFÎÆ!i[Õñ4 ,Å}ĞLÎ%²ƒ€a{ô(šó¿™Ÿ½¶1ŸØ¬³Ì.Î÷M“+e¦w°~M'–œéD>â[-N›õz×@ô¢ÎL%yæ-éá-{Ş’$WbVgˆ_ü¸ûgL(7tccQnêP
+`3×6V–f6æçØìÊòÆüo6øë‹ó3Ë×VÙÚÊµ…åù”%şÖã¦êëè?Ô5”¸€x5j*Ñø…È©­œ¼Jœ&/L­‡øbÍÆÇİ?‚
+"¯¿Hÿ,.×z?æYù!;úˆ~ù£ùÔ«ÜĞ¦”S`]¨˜yKfÚPšS…­ãûØa§Ùt(û	bZ4æàJ%˜cìÑĞnÄğL"Û	s·¶¼ª‡·µËÚ–µí÷ûù½”ôVxqŸê3Qâ
+´êbtyæzéwH2ò„£ËT}`aãÚ‘Ø“ÅŠs3¬÷gÄY(¤­Æ‹Æ÷2ÓÈ,ã¯3œRÃl´’•8³¾NÅúJhh1…w
+—Şa¸9¬8³½Má;îPVˆ„Ñxt²pitR4_€{8A­ßÆã`¾WDãµ$›C¿íA^:/ÛÏïE5ş4ş…l<€E?d4¶Å„œ²E…;*„^IE¯¼N›Jˆş°l!o;›QÃí-p¥ŸÈ#şşn`(ûq_j@Œ%4õ8VÚ –“„æk6dÊ7Åv2r`l<é†’]ÅB‹‡<©×Ö®¢%$ÄÁ¼Ôœ^‡E$Kyå¥“ÌY‘âlÉSe
+ŒµkË±˜­æ¬ì´­Š)g2Lœ½ïv,G\ı‘%gª?rRã'U]£‡Y-ÏÿÚı»(i‚‡òÆ¹ÄĞ¢Da&Ù‹RwŒX_šYÛHxei”´u<|›½?m³lcmaIÃh3'|ß™¤3ùƒÑŒ ÄüØ{ŠIg¶7ğyM@Êâ»ˆ9 Ö°z%Um××“SŒ÷uÚmßRr»h>=$ÇïW¼ş©Œÿ’GóG´Û”Ÿ@à€R4VÉ¿ÁÄ	ß¢[şKy·å_ÎSÍ?<Ê‘©¶ÃÂĞ{"Z¡Á‡fflY>ƒ¯èp(E[0a"G˜‰¹fàL»İØgŒ¨Ù¥ØMVY˜š†LºÄ9•"•ã‚q‡C*+Â>&¤^IİˆñæXˆØ“ìàU?pÓ¶eÿa6wI™u¬ÿKA}]Òª´Ÿ)`
+lÒ+‹‚E½øgè^½4/›8zWÌÌA÷ZçLİê…6õk%8”ôçÓÓÅN›úÕ[ù²J¹”ê%eW,³z/Mçù¦ºÕC»šÛo9MàDknØiD˜şWn¤–ÿ!ÊÅw¥Ï÷«oÅÉÌšµ$™üİóöñD?ŠXºò»aù®j6@áï»$_!,ú‰‡’º$ÕKrzÄÃÀøáşµ6¿º²¶qœ²æi]%²”|èw‰tP}WDÖ€è">×gcšrú²…½ ¦õ4‰Å¡\J\Çø4ô7¿âº,–æÓCHH1±ŸZÏtj^DGÑÛnËèhcpJ"^œZE¿²ªAü{Çià¯›nÃß=q´N\`Qø> ÏwîL·î±"RB×	ªõÿÖqƒı~<ëÉëfäİ@şÍv£„ºy¸ÓwuJäü;8õğ’ôZú9.å‡¥Ï1…Æ+ŠØ {î^÷¿£ÒüäKüƒÖHwF:ûCÆù3Út„„•;ÌÜ¦ã5†12-ÜoTQb×ˆ(,èë2Cbt¤?¸Wş‹|¥‚
+ÿëWõo¥.D]w¶SOëUéÅa(ÿt.ıÛçî^ö÷¦Vacğÿô;òÂCœú¾á§öÂ¢ç´¨n4ïÃö«NX ‰mC’÷~çcœeùå3“jÓ…¥±Q66Ú(/o•&wØ;°àÑÑÒèü—«Œâ—Ó=X*«À^ë.Aüı vD¹[[sÛ~Ån×+†b¯(ä™*íÒèÇ+ñàI“jNX¹X¯;è¶Ğ
+®ìNôWÇu<}*÷)bè(˜0Jæ’]ZgÔ <~<JaFÙŸáò}¼»î>3´˜¸˜‹U/ûÒØÛ›.Š6üm¼;À€Ğ¸ë!eû×\fô±¦±í;úãR>Aæj\œø‚G§Êâ=Â$ŠE¾"§Í&s•£BˆÒ…¨åxIı@µgWwÖé ˆq¹ÎÕ€6é?MÀ©-Ë‡ìcr\Lp®ÓäºÓ° JÍ°½”!«¹ìOÈê@ÃıéAò«i'fnŸ7½y&Ç lI}±æI2Ê­òåLâ¨Dy:\×4¹&6¹äGvªiyÑª…¿¨i-ÈtWÁèd_Ñ~•1`Zcpİ&éO +íÊÔÉ—×k™ÌŸO™>#-1İ0­nY\
+`cĞ5Ö0Å}X­ç*áŸl)„‰„z§ÇêË@'6ßWmI'™EøŒC´ï‘m+lh+`Wû>fâ¤¼ùY—¥ø³UƒÍ—ŒÉçÚÂÜûi/fÒ{%äÈJ7ÊŸ›
+?ê$çQ³ÏJtšŸJ¨¬´c™£9ıÍªu2Z5t‹ù˜”Ám0²­´ØÿÈ9ømƒ-åiÈËºnkd‹ğ×³ÿªqTq€U~ÆïA³·Ë¼ß†n«aùí¿â-™¥…ßr÷ÑúìŒ5T6†C^bğl¼Í¨Îœ	;™ÇuºúÊŸP ¼IµË²—Ö‹íPoöÿïÿa9 Êš·Y8¯Ïi·ÜİO;?™{î¹Ç´ğwà˜Y™í|–åœÅùßòä†R‰.R+Œ7›•˜Ç!6’w£ƒ!öóÜ×G+•Ìß3Ó2–SkXM·6?wmv>;‹Â%“ûbyÀNÈ.;µm7“Õèšl^öğ”ÒĞ3‘—•,úÂ”>B rç¶Kó¨k…1ã¢#úiÙÛñ·Z' ³L~UÁC¸|ÂËL´ùóóøĞmq~ã˜›œ›nı˜;"kj[Ò³°âëİ1Ê±!~§ûõÑÇï+3‹Ç¶=—›=ÉVõõGP=cÈÛéòMk#"˜6t·›ˆŞıêVYçÙ-zEg…™Ÿ^%‚­
+U|ÔÄı1¯’ ü#Nº˜×3zS>XŞx~}á·óslayc~‘]™™İ`ë3óKóË¬¸6¿~mq#¬®À+WŞR¬ı¿wüÈÍœˆî¤0O[Jabo
+Vf”\ašKPDHXİòÓ§™Ï?ñÉò8üo2ã”E&ì©›f:ëy³»Iûä'İşñÿS’iMÎ§şã?şßÌMM6îxâ˜GtSiN¡ú;H¦½S‚¿ÑÒUVãç?@-‹ï0øZ¤S¥Ë[˜úá^VÑÌÚìû¿:_œ¿:3ûAèëÇ®¬ÔÃ}a1ğ[~€Eyzûø!­u*–3@+Ä_yÔrÜ™çs.›ÏU~t–5> ÖŒC‘şÓd[<-ÿøùTZş*•+…ÕÀo46 =AMâµ1¶$y¾·M—·jİœÏKy}ŞfÇr¨ãï0ój{™µä'w¯ñC¾vè)ÏhÕsÊÒ8it’Á[‘LêZAWé(åÂ¸‡}ËÍ7ªsY‰ró½zƒfìÎPïs½ƒšƒ„¨
+INÑá'3±':~–c™—²½4~Àj.PœG·¦€qğŸ
+Y¾‰y.5şıïAw¼†,…ËSGTÕL¶ËÙê#µùÍ§NÅ1x©0¾e?J‚öâÜU!Æïñ+¤ôÃ’_s´j³¤½ê…+m·…ºñô>M&‹1¿~ˆQ;2hgÁò~‘rŸ*ka‹şî´^-Ñ|ã}o»>m”ùV_wvÜ8ŞşN“¼%å¶’ß	¹ı;íªÁóÄte®W|‰X/¾FqÜñ›âX;Ş§¡wß:|÷­·G"¶N	FÖİ(şÊswÙ4+"¯§~1—i„ÿªyÁğ[‡S,şe
+9¡Ú9YV%3‘põ¯ğ½¤KÒºK:8¤±g>'ºR4a"Ğå_ŠTù‹ÿ~ÀBàörÎÃ|¥= ˜ôa¾¿°£±VİV&ö0Ón‹;8H<Êud™ByÄ øåoƒN·¨N£,_W&w1hÌ½»™á´]Ğºs}ÙÅ<_ßºúDë4³¥œ‹ú$¯%¼4—p¨xÊ3­5áZjEjo‰2nöPiODB/5˜ë+o%@ÔæÃÑ2WãaN{ ’]¬\&Fşeüµ6b´_Æ_sÚlûşvÃi9}¬˜´P£¦WÍ§=€šîÅ '÷JÈVÆ2êk@³‘}+ÉPtk«NTç<à²ò Ç8¢íMŒ0µî“şş¶ì¶óÔûbüUíû"çaÀt±èà%ËPJ7Æğ—EäÔÆ(Ê³Á‡R;4ÆÛrv<øSíŠúd°±ôÎÒT¶Ğ{-hH‘ßEíÈÜ/Jø<ÿ¢í;—ãïjM\ÿZ»á;5¥¡ò(¿yäƒºL­6ğ/m)Ü:j‚òÓUe#4+Ex*¹Gİ­€?Æ«Çk¬‚á†½ÌbÁfvV}’É¤¯‘V*•ØÜÂÌÕåºRøşüâêü»²²ÆÖ?X+œ­Ïol,,_]go³•µÕ÷g–ÑX_¹ºÂfÖá§uì ™•´Aƒqk3!L(¤Ñin+éç ÕPq
+”focsX9âá¦¼¾(MNE·u=)e…ù°Ä(ä/î¦#µQÌ&õSà:¡ßzOâğÿ¯ğâP¾qı†u?ä›­»ä â+è§?ì…¿knÛñ³ãiO"ØoUáå%7r0É»¤ı©µ“¸¡ÄB ÙZ8!<bÅX¡cÖ¾‹QĞqE)×(ØgrŸyß cO»±-7ªÖ‹…§í8µ¦×ÁJMÑQa8n‹ÄÕıŞ{D/$Yøë™ût€I¤ê~à}èğ\â·.=İö³Òo±CÙì0®4ëm±"L©ìßRãS•«¦¹âK¿œ)*EjùkÍpŞÊsÉaíø§G÷0øñ^÷+,Stt_zÜŸĞıâû‰[ësß÷QşÈw…çÂ{ÏË¬H	]“B:°<œg9ò#§qW`;¤h÷î7İCj¡l 	ö&ÁËh7ñöFÃ\èÙÚù0™(í6t+Y<Ø6»Ä)‹ €á„Æğ9d.
+&PêxY	ËÆ‘i\,,i3Ù"CWiÏ‰’U11"+W¶†ì1™AÊÀ²ïBA–Óü¢û-Æ©~Òıœ'd:Ş¾4Ø¸½Ku¶¼‘O©ğVVˆñ]¬ømy Œ5Š±RWBòD‡
+áV‘İp£3‹¹¸®f6ùê<êDÔ+$ûÍ£ÄÙ½FÅÿLjµ‹±"¶ËÁ¹! D¸k¦¨øe0RX¤ò¤%+5kùL°«Ü}6¶!o›E†’ú’²wÙ"§²ÍõiÛçï"·¶°‹^—ˆx¬	°ÛOøéÚ>g_ãÉ(ŞF|ÈÏOàŸ;JT¦Û–øbÖº)*wN¨EŒC¿cô¹F>~lø÷jñ™˜áÆÏ”µÒ¦IE[YÙ¢8 çæØ³ü÷†Æ÷fİ¯…kÛ’³«Vh—/Ä×÷â˜¬Ú¤±<¾Şôè’<½ÊCöIU[J=Öm€6ås½êP^µµÔ­¿õÒ"W;X¢ËÚŸí§|}’°1½°Ò6å“°,lÁªJÜÉ~|Étê‚)œSK&–.D_y_É¾	½åâ‡«5J6Ú«¡Ç˜×Ì¸~ÃÜvfŞ®ÛÔÜ<Æ•YE”Êlgyİ³Ò˜ûhæ´ÛáÀÁıÔXs/Š_=LZmú50ƒÿm}e¹Ì-NokÁğ€áq2êG&Ş’&È·Gø¥ü‡À¢ÿrtGÚ"5-
+H,.d1ÎYÂ•ÙxKíEêñÄ¥5{ç»±˜„(ŞLLZho IHØ~ê0	ÇSáÜKÈé¢ç{ÕÈÿ¸‚ÍJ˜½9y´È•p ~ÅNºUt yÀÄ›Ç$ı*v1BN¶Ó×FõÃ}“ı¸ˆT~ú6G=u™±_“èK|C¿y1+úúé-1„²Ä²®üR/aí‰©Ø©€4\ª
+Ü²é’¯PúË‡ÖÉ¹»}í‚&ûY½A´lFhi]-§FëZS¼ÄOyBÒëRWå½wõÔWf]×aŸÑÉ?VrUî"Ş,Ï,-ÌRVÈyr²,Í,Ï\åÁ¥}¦»µ¿ƒçş¢'\ükÊS¿¾~ãRtí,‡Îd#q–£=Ë×§İšÉ—Àô¢æ‡æ<r|ÍÔ&i~bíaş„@âœ&*Pâ‡9'Ô>>XYhn'¨Oû0ÔÈ2XŸÌwá—hòß)¿”
+„|Å¿µÁÏhD!Kú~é™î-ÛÇfjµé0²Dß6ÁcîD“›Ç²´‹^Ôpo:Aú™ÛRŸ)ÁTÆÛê/zyÀn4ˆëoûÛ7=<“¼I§MÉsÚS†)†ØÇK°_‚£vĞ!ltØ¡£=	¦É"+—Ëøòq‡Çà$¹Ñ	Å¹`—­¹˜¿Ë“Îï¸­H™"8à[n.ş4çn9F¬(ãÏ?1™Ü{eÚg›â[ó.|‚¨Qu%^’GÏ7 Œó„™ß’çı	+ÂßŸƒ|i:Ám7¢ $ŸÆcxÖ›D)r¢©•şú°G1ynÔ	Z	ŸCù^è™æõ­mZÍÆÔ¦r3Zü]uX9ğ1ıó”¦×Mö]W×bö%Í,tvíµQˆÊâ²hMÑAğ“X9†b¬Îõoƒ‹·­ÁŸ¸ü„«[PÙ”™‡e®ªÊS+Š¯Èéß.æÈO3¯&<
+á1C(ÅüÁ²$TDH`,ˆõOYŠ{\Š³¼ òğY±µd1i!aéóc6°ûØçS*c)]ZÇUŠÌÉá»ÿ‹&0¸lßï ²Š?vy.]Æ}¼Ğe`¢ø{ñ<w@vğ~B¡†yè„‘~¨2[ŒCë‡İ²ò¯‘Ÿx5`zÉNQaÊ‚—ôµÿ)æ húÀ=
+¶cêÁÈ:™¢B›|[O&Ó©/Jä<‹¢©HÿV»”ë<©!Iö‹ïo,-.`ÚÄùÅñ^JÑ)9Ô¦Yœëªµ¾W¾^¹¡`!>ÔÑãÓ2fõb—Øû9­ŒMˆÿô¥À6?‰·)í6Z G@:<!ò„¿>:zˆtù	¯íˆ4:Æ(Ã÷ß)Õc¬{Ë‹å H(Åkv`Y›.k`}À`cK—ûÒ	l¦M¾²:”`üè+¼"¾&ˆ%_(ƒ¨w[µb“!ˆ¾kÒ/Ö©wû9‘íĞ¹ÃûõÈJuB."“¾iŞ}YEüMS4b7ä”’ß~›;©<78¤éQ6^D5Ñ«¹úŒÏ†]_ë–¢L£Îô´œW,FW•'eë64ã{–Òm¬¬ê0ƒ±ØıË
+‹âƒğÓ,Åf¦1Şf*N\ÑìÚÌ¯g./,buª™å9á¡YX›ÿ&Ì¹6·°!RîÚ5ÕÀÙmÈƒ'©>ÉwjPcJ\{…R¡%í•‡š—¥ ‹¦M¯Us÷è¯–Ïÿ¾T¤íı/úâfÂ¬öÈ´™v&Q/˜Ô§2¾ê®ÉËÙôsK0­ÑJ¥\©üÀ{öÚÚ|{Tàµù­-·S‡©æ‰¢Œ­åöáp*ØÖlpCuÚÄØ…6«;œ«OJ8+¥“’·SíÙ¯éşã«<¼éãÃl¼R©¤Œ[-äÁêI:nœËwÉS$ou¶ßnbBÚ›nK¹P’z{&0ßw‚ÔûbÕ;'¿"×oêú7ÓÃå´	2[ËÁõ¹ªÍie½K3åèªA¹Á¡@BweP»ı‘Ñ:œ)0¦‡Íú‰J™¬¦ì{‚½m®f»Û»¡6UÅC–Ù@Hñ´ÉÆ¦iqŠ6©½Õ!.×£¿–\®)Ê‰Û_€äDõR÷eøŞò[*7ùü¦W³a†ıŒÖaÉNêª‹Şz¯…·¶\_Ñ›$—Ux¼‚:¾kx,Ò—N”&t‘0»¡v„7÷B²Û(wAŠ1òÅJ–ÒÆ$²8VMÕç@SÓîª
+™ x¡·¥9“íå™ õºX^WyÏTŠ#f¼Š›œÈœÄœæ€ÈåC9MõeØHÛ˜¢FvS1OÊ~K¬%µ†ä‚ÛTÌ.l¿c{Itêï©+gb!™4§6NîZ‰V&Ş›/+X¯¶H¡½ÚN»ù$ZY°Ş Äù)–ôjÄE£Œ[kü“œy(Ä{¤Ù D*4"üËe>KD¥…tšd Œ ÓWJ‘§‡B¥±4­“;9¬şjÙŸ“ƒÃSè¨ˆü>uŒôUì6ıÉ¯Ç;Â#`};Fúò®+?°—ÉS4;±\›(&óqrt^‹Ë†½¤šnÏÑP}€É´=´úS´Qûs®(Mô€#Í?¯º\+Ôb¾(šh<lp¿†ÒÿdÑFµúvØôtÙŠ×&Ûo“q’4Èév>”åÒá¬GsÈü$Ã±c	Ëğ?h7áj¸‘¼Â„ê^×Š…É»Ùï‘ /+Â$£…Ğ—à}Mˆd¼ÍÏKÙ¡@ÙÖV+^ğ»zÏÚïj%HÈ¥­@ÌPaª—éB°Ye ”fjMîÄ`CJV.Æ³(´éÑ’]L¥bºÆBìÅSºµÁ
+ü“MëøÉ wüv~Ì?ƒğ	üšì‘‹©q¤’6¥ngz:ºf6•ÚûtE+›26/ı²¦‘M)”’ZæşDã~øA»œâ|¤l{†r¬šRí	4MÉíjFƒ<¸%ºmÔŞ5Á`Óaø'G“áÃ©ª	ÅPÔ¸²«z+ñ°ó’¬ Ş<¦3ÂôeÎŸX‡š!¦&}ñÃ"Ü ¯b1îùŸèªÿ¤CøÇ NêLñÔ!¦Ä‰ÿwFURIeï>VÒ‹«ÆŠØÊüIE"yESÕ‹atM€§Ì¨¼*ÃP"
+•—ˆOU1‘æè~!Xóêùÿè–Î¹ëdSğùİ`«¼™ÛªŠSÔ©sÃLéK9×²1)FX±v·ë„¬ÓJPÃzX“a¬õXÄ•€¸zMêNñBTÓ?Ç°äİ‚_¤ÙÂ*gŒiay…äÇX§ügÚHi{¤Ğ–ÙjÃå2÷™³íx­rŸvAúX*Ë$0cyú³
+ôV‡†)l†Ì]¥:ˆÜR¥·	møŸ®Û)]D'MW<·Q×DøÌ= 3À ` ãà¶~­eŞ”Ó¸ìûı‹nÓN†ÿàTì4}lÒ%8¥xSï˜‘¦–X™ïË®õ,Sj‹”‹*åÀË{ß	Ì÷õşµ¨W%]•íìKÉN¥¼bq×M¥}{–)¸l–J2¥M±©g[Ò~WTGK¢$ùÑtÆT’#¨Š²h¤)È§ÅJ*ÎKTÓÉ<ÜvGv{8×sÜÓ3œ‡jiqOD›ï‰g3™h¦)ŸÖ]`9(‘æ‡Vy
+¬õÀuˆALY#2Õ°‘>&º¾".*Ñ}Ä‘ézÄ±:ÍºôËFïø‰¿òÂN‰x&…şyœìõó¨õqœ;ñõyGPÇNB±OL¯Ù±Ÿæ½7LÅLÑ·RÛ_ '•Y–fèC°^1:Eø¸û)êTSâ+K)¾âA±qˆ„Œ”g¯Åæ[Û/Ô®uœi¾´Ì7¯ùÑ?Æ©xö«y*~¦OWŸNŸˆªU[ƒzªº©ãj57kú ú;¤ç h6B†&§7Ûµd»fœ;‘ş1ÏŠ|k%ÓW¶Îdó ²Y„RkaÔ<„zqa}cëN./Ï¯Slõüo(Œzvey}eq]¹¶<‹Å)õ”®ünÏzµî6N¼ä6}-¼ƒ¿¸éĞaõu1×ºR	2k¤0Ìó±¢)WxßÙ|Õ‰Ü]gŸ­¹¼îµ|M¹B÷	fEqŸ””‰ÿèèÿú¢ûgü/©Üy/Üîl‚\„ï!•Û›’ÙÃê•-•ŞdÛb¸:ŒlÁÂ­!¿ŠCSV¥ßô †¡É*é.ëİ¥&«Lë^İãÏîbqq*i®­Ã,+Îo3b_ÏÈ¥c­¬§äQÿ+®·\H$wŞ°³ÏIõºò[m8­­òè}Øòª,%GûVÛıš{ô9ófÊA·…~hQĞaİtñb_X÷Ú˜Œßƒ?‡éœ¤xUúİEÈİ
+ïx¾Ä0ßW0×¿Êœºé ‡rÜ| ı˜/êÀğ!WòšòÉ‚_bÙVî k Y °v¶AÓ|›­~³±¥ô«4oLŞÚ}&ï'Úı+í­(gÏÏUîÁ×¿tŸ‰ÔGÃ‘Qa)táÈİ4œZ­ô* î6±,Y›&o8•¸Eğr€«àÆ€ :({*ƒ‚îwÿÆÑ#8 6VÆ•K¼+ ÿDbÙsew²Aòd[ƒù†[­·@<5ŞÔuşº¬¼Ä±Dÿ0ÉÇŠ”x_İÿ§tˆõˆ¢”Nh3~'¨º¬ŞÙäi“6Éê m,ôĞóò¶árG>é,`¿ šû
+{W éiyXÌ×…ìqöJ=®;úú¾„¾v_²ôbí Ü °†'ˆ?ën f·Á9¾¦şKÆ~,™Îü8°]Xaê}Î*k¸ÛhµãMªÛ¶å©ğJb‹0êˆ°<À$€ŞVŞñ˜s@Bø>¢HR«PğlÂc–^	?JF~79#ıHæôı˜Òÿ~“_`o;Nu_ƒğ*ÆV}Xã>›­®¸gu8‹Ï$¤¿¡TÂb§Ÿ#ßˆ+,ªÕ§ö*ŸÃª5äXBˆc`I{òĞàü=;Ë&œÃºw™6y‰ÖàÉ_1xP.4f(Où+’ƒÿ‰îi"Cbœ—à	}jÙvà;› èuæOØ¬´}àŒ.[õ@Ër2/°²¥Äñİÿ}BÎ§Ş˜§Ë³Nsş,ø6Bµ
+Â“EÀğØR©&RÜYTã{Ió{BQDo~8“@\Y†ÄvÔSPêçˆCÀ	”@xÀ:.ÿµÜ¦Êp¬èQùy¿…Ù@Lø’DÀgÊ)1¦iU´`qŠH”/cN»‡İ
+ğ‘’èu}y/¬Äj5 ¬2oÇ%õ¯TÅSn¹­Tb3 Ú‚ÚB|†§oa ô£ t)Ùa#W÷Šcğ¨ğÅ½äĞ¥İÂ YÌÈåSÅÑ2ïaš˜2şB{ôG¹iß 4ù_=ÊĞWT²m×`Ñ¨·P,òÛÀä ^´Ï~…
+°N	éó0'\áÉqøbG÷•ë˜[´ïS­RñªZ,Ä*R[`.P t[¨!ZHD\Ù´Kc-_S¢àKzÉ‰ä×Ïà—çR/…I_ÆErúÛ,ò	Àğ ã\gF[°	²¡E·¶Ûò6ûå³L„'°Ëhˆèä"Š(^ˆ¡HŸüS¬OñÜÅı;!ªÏyï˜;#fHDÀ¥-sğ+lÎÙ«İÀÎ¹bKvÁ‚u#T;Ë…Z}N9×£ÿâº=*.È@²­ÔL²/~ûæI²'øæeí	PH©í„!:N´­™\Z Ú¾%×l›•4†W„aŸñ˜3¹à`«
+ò‹ğ°·‰’cb:Qg(|täíåÊĞ°á2[ÂĞzèqŸy¡ß@geYªí©/ÏZI•Aó&¼¦Áó{ü²@¼÷x\eft•—@6;-`>ºëreÌÖ–Û y"ß3«–l3-U>¦T²œ›Â¼ï%×^Ò‹€_R¦•xQiWCÉ>ĞœúÛ…ù½l(·„[lÓÌÆkÁÛĞUÁ¬`ÜmÔ­š~MÄ¡Ík(ÓEDæÒİÄ7’,LØXwºV­ÊxuDÆC&³“¢E´&XAşîÈeØ7Ï(¿!7	 Š9PË’_ë€Õ3à	öõ	¬¥ŞçRé}L!eš¾5Ø6ñIñ2¡jË–Åı—|·¨Ü-î¬İB dËûxY/`âßšö0mİ7DNÂ|Ë^w^Ü#AfìRüVì™"{_æîÚHş®ÍÅş-ÔŞ6«~9\_\²OÂÄ|ÜıBx'eFwt?¥šïO‘_p+ëX›O0¶;šN»Mbe£”M”N=r$íeĞcyH«IËÿ†Å9˜ˆ4²ŒK7i/g“ô½á%@ËáºfyÙoàz›EDRäÅ„¤xG·Ë£D)N‹ßÅ’†Õ¼Œñ}½×Ú
+œØsjèn½Ä\i`&«EEûæñÒŸˆMºŸ˜2\Và€¢éKé1Á=¡-¹!™Äå¡ı–ÓôªâNµH)ª$½§_³»ú^NıÀ2ÀÄ‹Šç†ÏñĞm-wu»7‹CCx Y¼ÌÉ<íSìºœbzrå-?˜wªõbQ9w±¤ÆG¨Î,	©¨úM·à[A™Òâ¼ÒM(¿œ9ÇşUı]»C÷Ş·z>Gƒ´;a];™ãø¯tS´¢ğ×^T/ÂC MuSéµXI>·f9˜ß«6:5,Ùö³¥~!%¦¥[q’2³şFŠü	6A÷›Ü.ípî£Ÿ‰¦ÈHùÑ$¨9¾©tÌ:2ĞÓçP*Áh=!ñìª´m”´å¬n9ãæåÂbOóS<v@ì¿O•Gäµz|ôŸ\ÅşDœA¤Yİ+ ­ÌÊpÊIÄuêv±<ºå±„	øŞÍ5ŠófÓ–v7è´’T9˜Í'3ÒDË çÃƒ10u#<†œ•™Yˆ=º{`#©/ú´šßÃ/‚ı!+ÁV1Nò‡ CÇdˆ·™Ã¶°p³¨ÂVİ&è8€Œ-Ñ2©&©|@Ey˜–Î¸Ãş=VøÇÿıR¹§ı{Šb÷E¹\ftµå€Ÿ’mJ®ƒ'¤Æ£Ç“¡¡“š|ƒÍ™êj#İäK)_ÂŸwñşt«LbŠObU$'âWÅ«ÈøÕJV~«ÅµJG‰g<¿øAùŠÈÛ…½r¶l€DÏk”‘ü9NîR ĞêüòÜÂòUy–ªğxAE7wug6Añ™ŸÊóbşvÄ	-Ôè²¥‘W(éªìlRİ‡a6:FÉ…uFÇ~«j‹ç]$Ó²ÆÙîşšiÉì~a1ı³¸ ¸€ÑV¤E
+ú,0zÛ „M©‹æ”x±ÌÃ.!0şY•Ws.“G0l^b“Dï0ww™¢Õv`‚æ©ı —„µâ?”×:@(¯ß¯g`*½`ùÍfˆ§şé4\Ú¸è4Ğ†+æ
+ƒ¸ÁQ»&`Vìß;nÇæ:M¬TŠüj;ÔÖƒ»p”&õzÇihGúrƒhãå—nk$¿†N¼GbÃİC}I¾|Çğ±Ïéá¨×ã¤z¢ŸCZCèé_ÿU¹•¾iEH¯…Ö7d;f¼æŸø¶Õ0›¤ô`©8#Ê£š©4®'+¿ÁH‚aÍà‘z-¥•Ypg[ÑPó-1=L5eŒ¨ã¯Ï›ë+x—Ç¬ï/\}ÿæÚÂú/Søš-¼X2e?ŞcEZ„òˆ?.üŸÿõ?°ëKó+×6n0.ÌÀ2@‡ÅÑºG&ÏF¥¼z[Ñ ©ÊêÉİ3a¾’'êxå…éx§ŞñƒêÉ ä± ú¾âÙ{-½ñs:õ,§.;N¥Ö°Qwù‡ì+”wC
+uÖî[Órv“ôˆ–íúÁm†n¼VuÜ[ê¸ù _[[Y»Áäİ½í’^Üî#â´»´äÆÉ$ê]kñih|Ä„æîÒ2ñôK[^(EwØt@YÄûµÄùC~F@äFFàrÍßm¡ş–`k\M.ÔÈŸ$ÑËÓfT1Ü İ V•fÅ}ƒ4ÁÄCÙ5‡„3Tü…õ•u²ÉŠqtc(¨û¦¿µÓ(d´–µÕÅùßlÌÜœ™[ZX¾ù«‰¸o‰,7a‚çUSÌ–RNKñò¸Ğôj€Vl,u­†u	®.‘Ñ‚S£Sİı›âş²ªCğ¸‰Çf7QÂİäe
+-¸- PÚâ÷AgöwQ±§ƒÏ›|ğ›»uĞş©¼»® EŒ¥âšÌ0œ86$‰\PÏØå‘oÜï˜½‹?b`Ü”‘TÈZÔÔ¯qg q“²Ü@NV*{…5b
+ò ,Ôäãfµá„8`íH@‘kí¶Ì‚TTKàPr ›!•T¹)÷[q“ór‘{È|fqqå×ós¬¸¾1³<7³6Ç§ò:—WfÉ\[˜İ`Ë+âÇd<¬4ßô(‘³-b‚qëõ¥a‹cŠ¿‡YËßòq›i0ñL<IF G8OAdns›C¥îÖlÏiiæ7K×–Øúûó‹sós<à_®tõÚåÅ…Y¹ß‡Cœêî@Õkä\À?§Ìpúw1ÜÙt'Ú*].°…ı¬ú5÷@Lc`ù@ÔŞ¤]llH3ğluF¿ÚÁÓŠrÔ±Èù¤ŠGŠQ|¯\Ü-¡`Â,•$Ë‚oµ%×¹I±×’Vù,nşì ‹ñ?Ta£0t½rã”]Q;^Ù‰fë^£VÄÑÕVñÖ~Q}Â3£•lªÂæçwÉ/Ö¼F¸ÁÒÓŠ(í—.°¦³WÚ-Mî5ĞHvğ¤·pI:IG~ÎxŠØe?J‚Ï>"U40Sğ×·ßNğŠàÊ=Øê-v_“>É\nmy{ v Û#¿Y:õÍ‹(w+*'D0úş>d–®ƒî^¹Á¶`x}óR•;k·viœµ÷ ·ö~ii6¨Vº¾ãÅR)pj^'ºÁÂº{ZƒÕÓ9*,”@' ıÌiyMXKÉ+¦´”¶˜¡˜è$LÔ¨²raİ0U>½U~š~…ô…ÍíÒõŸ:ğ¿ê P 6¤øOÉ©âZGÆ+,,_mİLQ7Äã­]ä·Ÿ:ùL <hòñTÅ÷ÁæŠÀ¢Oz8oöpxKÍ<qIûí kgPı5æq‘
+xÏzØc”mú`¬rÈFô.‡PÍ3›Î€ñ¦9-µ¯[*mne]Å#Bi¹a³pI¬@Øt‡G°•ÚïÅ ±Kš/Re'ÉCq$¤oy	6¾9–P·F³*½¶¬šµ©6pIXm¹_?;0&AúHôÄ(¾5¯5t£`Aû‹Év'P0¹\chn¹d°'µ!¾$—ÖÖ´-ÉmT'7}c/^mø›ñÆOÏ7H}PSÇ¤~Ñöoúnz±°­§«(ÁŞ×Ç”5ón3a°x5†ÿ*UıFXÅK¾DÒÀ0FÊ“Ú+?ŸØÉR»8û¥w€\¦’Gãğ€?Z4@‡$Z,Èë?°HV·‡ô™ŒĞTŒéy˜ÒäÅ@ë¨&£ÙqØ 5½G¡ph¼"hºĞˆ³±ßâ™)§°ÏiçòÓHÒCfŸ*í–0ÿŠ¨	Q:ºqJÚú§@Kï–Z ôˆG¨HÀÎ)_8:—¬¤EYMj,ÛJj|K‰"%yÊ×¶KÜ±êûCùt­sgÖ‹4¾((âÍ^=ıÙkÇÄ™ Q g‚3lüa`£réğñEeÌÓajŞş3¼üAâåd–Ú=ÜÓá™z©‚3=5¿ÚÔóßuÂÈÛÚ/¡¹™ªèflí–6 ì z?¦2Sºé¬y!ºìkÓ²<ş{O{a,ÑÿY¯;M%ßˆÆŞ†±òd¦¿!µ¡*A
+gÄõÊÍÊÍÑÉöŞÍ`{Ó)N=?><úÎäp¥<ÈMùm§êEû€-*––¯\´ÍÒ]s)DbvW‚ô{„m¯UÆÌè…şì_Ê#™İDü¼x›6üæ9<ÒÈùâÇ‚¼Ò ´iEj™¿ÿ7i%mºÑ®ë¶ú5q3lcÓ¤íi·;è%%ãäQJx\¤Ü˜˜9ÃL¶È¹~MåÚw¹í)K9C‚öÁ L X¸’”\ü'‹ÔÑxÖ~«ºîúKnä “9-»¯qd½Úó¾4|	d9ß½ĞØBÀmà5¹‡1SŸ‰½•ÏÎk:ƒ|:O5#áwU¿á¡áÕÓG0¡Fåc§²‚Œ¾¢ºøbñ+Š©{È/xğPSóÂ]ãçq÷q8*^ƒ¼ÿNñÆ_Ê[¤Éİß8võ¾8}æU)qwXÓéš FÁĞ”C-¬VÜ:É@(6ÌØÛL9Iã;g¨1)êI¶`²@=
+K¡BJççS¨+™'œ—ú µRğ™_“ûC‘%‰JõZ<”6N~BrÊ©E’GTäá0ñ6¯…¦H‹­(ÔDOÆ$ÙÈäı½w¤«;OAOQ×@Ä£í»/)L‘âåy¦é8´^&å¸/.nñíÆ¸~‡ƒ²Ä.S`ª¡qr,Ö÷çtX,—ÒLÈ%'ká#õµvE7şZÈJĞnïÖDßì×¿'Ùi¶ª(%ğº/Şå¯RÈ÷Êu'\ÑcqóPMÅV”ù¬­w%*Œ<ñÁŒÒº@-6ş;¶éÉ/4„ãÏu‰ğ_ˆp¨0Ñß#È‰„BÈñyOeBª»`•ÊÍİrè”­‡
+¢Ğ$Î¦·Ø4—1Ó¥/~L[üyËâQ°…u0Ñn—*h¦T,†±<ÿÙÀ¢ßÛy'@VÇfÏÓÓúDêtuØ¨W¦yÁ2õq¹o>FÛ·8mËbòé‰îuü£§ãĞ®w2U˜ÆÁ[xe3•¿`E:Øœ‹án‡HR™boÙéT™tZY‘g!Ï®(ö™î&*pÆoù}@Ö
+7;A—å³_ºûaùw¾×*b|LÊ¹ÀÑÃ¾<Ph',OÛ¶õ*ù1òëüG.:Z×‘Şyëbã¢é’Ù×xÑø¦K\ñ=¼¸ÈÃ'xRC–Gİ¯ù5»OéÆ½D(º±ÊèÆĞ3B¥øF~ŒH"FîLCytŸBõÒ_ÁßçºŸÊ+—çXD(ïÕšÂN‰Íë/`6’)ÉÎŸù…²x!¸îr™ˆwm¯­-bL!/ã¬jtqs5„Ìa-âtu(Ê€1vœHÔ¢PÃ¹5·íxÁ9¿ŠiÄ‡½ 6R#åÃ;ÈşÊ/·”S2Äª¶©LáùÈ°‘|±a=Í!”·ªt¹9e/–lü2=N×ËˆçÊóô&=´¡ú ›Å3(9ë|>t›^Â…s¥fáÒ?şãO¦O>ĞÃ©lŞe9U€C&ı=¿€.¡»NĞÈáƒ2?CcHKÜò¨?#:–ŸiQm5 òM€”MÍ	CW˜ÒËT­ Ş"ÓèÛ3+‰sPr]Ã?HbM±à²î”Ùœ(K=¼øIïyzµw mEÿ.Á´ã?6· uükduõ-x™§ƒÄ\ùò¸úÀÿæ:C–ªaŠ¦Dúƒ¡C]Ç_Œ–«'"~YÜíÖ4|‹ª~TõDÙkªºÕŸé±ñ£·Ï/VßÃf¢¾Ãß}¨ì0ë‰şµó·¢U=Wô24\¶ãÀ±Q#pì)Şã}(Şb?¸ã3 :ÁıèSªÓ]%É@÷LÍ%®$J4×¨Ój´9XQ³8w™í„lÎo3
+¹²ªõñ”LrH …”i¢KÊ4 	2»ßâg”DğcE##?E‘"ßÉé0$®Ijú HÈÇ“îÅ*¡CrhŠë#ÕB“ŸñªIwdî¤,ÏPo’2nk÷›l=q6ğÃ°¤(ÉZ¿d"/È:ÕÏ3H+”J$h~LÊ”J·i¥ÎGô©åª|?m±Nw-sÎ—éò²–Úî8’{ª“OgLI0 q˜x”ãA© rŞÑÃ#÷Ó[¨÷á¶A£owZOÀ×İ/€ŠTïšB±—=l?Êğ´e‰e`Í" 7,ı´,ÍR®²K¬b:ÍÄ8¸Ù;üä—”¸ò¹Ú	¶]ÊE«]¯¢*¶é©'ÆU+`*>0TÓ~Ğ4Ñ0Rs´ºa6'¬åë{¹v‹’>HÒï|ü¿ø3&h{~8tpîíÃºk}5É4¤²ÒâÎP•'66•ğ¬k¦ÖÕ3Ìw5ºäë„8mÓ rz9"%Š'¦‘2£ü­'ÚÖ-7FÒU®SVÚ{Ğ:Síf¤ÒÓ.èœï9ì	ÿŞ¾ct¨À}‡vqJĞé¥<ÊÖù„Í†ltıOŒŸ5|ÖãïÑ¾X·B¸îP7zÉS‹]™GoJ0•P!=QÎ“s¶Ã#sâ?Ñ~Üú*!ë@ç²±72z¤)õ;§[<ù—gÎa>ôÑ½åX}¼’Í¹Ã[‡}c ßóØ÷t¡2Øö'ªq‘§‹E0O%Å/‹‹äª˜™íï2{é+©¹“
+m±gBí(àX“$š€GÒœ?9C$‡{½Ş„ÂX´cÅ}x|Ea«2¾îÕj`ó[x‹qpkEWÄDr;™Îè¤†!¢i8íĞÍpº^Œ0_J¦‡4
+´EöˆbÜì©òóf¡n¨±Eó yš¼9YsáÒÂÜÅ‘¨~ìæYd¦Öäj#ê¸‚¶!İ[8<Ñ˜xT1Â0ËÖñºáj)ôƒ9»~ÙI¦áÁÓb!Rí¡}_P«Z³™è¸`è14%SÄúx<DcÎ¯/8ø-ÈrÑç`úÅ/î©ÓòÆ‹¨ûLüÑ·lÇOOÄ/Ú£y¡ÜµÏ`Àe°AÙ«i3š±Aá–`•ìİÁŞkæşÄ‡<…K? fò‰Ü~”øİ)TcSÏ-Ìœ;ş˜ñ•tœ	è l:-Ì›).c_«%ãw’‰à‘Ï%ãû1¦£ º
+VŞ1¹¡¼Ú‰Ö«Åaa¼ø<Ì0k7¯Ì/úU§áÊ[ó'œD.®åyÔO/Ï€úé×Kp] ò«»@ıÇu ~Tàì‘³İRş+Í­%½ºò_MÿPs|ù@Ëß¢L÷9F¡Üa‰*É³Î‘õ¿Ê@P³¸BÕO–¯¿“‡|Ùìİ~Ô*Ú s·ªS#¤Oõ©mÚÏÛÒVãù4MJ.¤M*s4Ì‹Éì°2#Œ·ÿÃüOĞdQe’WvS^w¾+÷TLÊ¢H™¤[5=M·<Z"°Lƒ3AoQœÛ˜¼ía–‚ÌŠ¹.ëßò>¢µ›°hZ±5<Vy»Ş¶=Iéhs¥Ÿ¾Æ•¥áhá3çúsóRTÍøûT6±ñ2ÎmzÕğ=!/÷1Å¿lºXòã]ªúQ
+ÏDeî@²Êñì‰.Ñ“wí‚b<^Ä( ®”²âœÜæ¹4†´“aãR
+~Ì‹)Y·‰t"ÄJy€“—Uz*Ëëcü²Ê1N ‡Fp¨õ8YÅPñ·Ì:“2?·aÙí¼œIÑj›ÿ„§Oâv ™á?nh¼½ømg›2âµ‡Ék˜H9ÇKÚßl^Œ×QÄÜE–×sO°œÍĞotPûâRäˆ§E¿%Û¹ ×â"?,YbÌåA@³–†^^¼¹*¨E°ÖÀÄED+)–i‘ú±Â¸õ„ß&ĞM6›}÷¿¹4<•kGÓ*±;òó—J¹¾Çë´ıİaV@„MÇ{ÚvÒka”
+”:ÿôÁUXµ„~P¢g@C–FóBóJU:üdÂgiİàiøQ©Îê‚òšÛ64ªÓX¡¯±ãÊòµE¥ê<;'òœœ³*LN€O”ğ$ÿ”l·t§®†Yù›¿s«Àrx©tûõ§Váõ7iC*jkgo2:„“UOH‹)gDaïØ ÊØ®W‹êÓ…ôQ1ÿÔ]dÙ¿ïxîîeoºPa66ÿ·¿ôĞ˜.à­eûï{ÍF+“?ŠÚS##»»»åİñ²l`æ˜¼­Y†ÇsøehÒµéÂÒè[cï,Â£ğ—øsì·Y–EşmØ(‘_|9Xş»¿@ÍkÑk¹U§=] ıîı.F{ç¾l=í ‡ cô1Æ)Ş!8ô˜õ÷‘šúµ{(¿öğ6=ëe€èßpP‚è?¦2‡”ú4Gİ'yOJ1×†7HN©éfôY¯È3
+	\]¾:ÌÖÿú·Õ«¬¸äì±±¥ËCFĞ“åTŞÔÓ‘k)ê§­¨X(Úº²˜™Ê.­tÌWı\Óß‰l~,ZüMªÁûƒĞåUÂ<…^é¯/­^AœïZŞ&¹r¦ÕŸiõÙïiõgZıW«×´ ®Õs^ş]Që¯8;&šı1uùÔa×N}ßâpü!(ïWÔ¥üT÷O°rV}MŠÁÜéşTUå]€å‡®¹Dş©íÖ–)ÈßØSÿ4(=ÍóuÊ>©ö¯õÖ—î/ñ®—â¯í€ÔùaqÇ×øÕLí£çÓIâcsKoZ÷ a;ñSŞí1º˜½bavÅ.h³¾¾®ü<¡ãYzOüÂùG˜ŞSĞ½Í0ÅÛpÎ*Vd%æÜltô´œòyƒÊZrÙŠĞõ¯xn£6xÁ
+yçm2Oƒyš“¬®T»ÁŠˆ(ˆ·±[Íæ¸¸&Fêş@œÒ‹eåá€òù
+ko–ÌËï¶Ì¹Iºã[˜u°Y•®7¥Ä+íz5©Ù&•‘§`–ª£¤_xxt·ûJMmù^Ó÷r0Ò3ŒÅÂğ¬îgüí >NCŸR­¹¾34¾¼|ß}ê8YI³\Ş&<(ièØ¦ny»ÌâúŠlU]4·ª¾ß[:H2Ú›08›^õ@V®û“V9#İë~¨@‰9rF ^à…Ö(›ÜãA‰Âî´BA–à˜ogÒŒY©øÕÑ}¢Úû%óìÄ/`gâd¶OàÁçİ|'Á¿Î•7*å\_Rì|FÑ•:W‘úiÊ»ß³ÕÀm¢ñvÅk9­ªç4Ø©¼jê6KÚ–6¸Å™TÖ$[>E›ÔâiÎ5œ¼ş’g,ÏÀy²£°{%² ÓëO—a.Î'²×§˜½ûœâ¯´#¯I7=pß#šª ¾}xîµØUß§Ü[Üšhğ+ö!İ‘Øü]¼9›–ÔD©ÄDßıáDœÇT)óæôŠ„s¨Z¨ÏXÎ›Ğ.€‰b_tŸâ­'™/î1æáÇÉü‚/ÿœš~ü]aQ€ğGÿ•ğÉ±ˆ‰¼ÃdÀ2¾(&'ZÒ}ºñıçî³W‹	ÉdSœ„—âØ‰>²¦³ç5›ïx¡·éQE{‡îÉ‚ynØiDÌmm‹ce(wšC-²væÇĞ~Ó*wP2ç€ñ2AXƒ}—«êÉÊ·ê6®ïáœÀuR“F‘7}0–¦şAÊìJA½3lÂCcÀóÜÍ*°!r¶)×²RÀ¥\N%qü:<"CC±’Ê jÊiQÊà^jûQ‹	ZD®Ô'(–Ÿtÿ‚¢[Á%ºj-ËÉ<À‹ÙÇ ´ì<yMëcä)•Ëa®¯`á¼%á˜d3M6Æ*øZÛ3¢Œh^ƒ|xè8¼qtØŞ<ãá¯{ÖEüş1\YnoV{lGJ2Ø XıË¸Õ)ásÆµ³9rW0q.{bLŒ¿ş2nu†‰ošÍmŞP÷mrÖÇg57O£b»j8XE‘&	È©	ÚñÙ†ÍWÍ¦gåÜYÎ=ÃA<jwÛPMwD¤˜	–ûx„¡İç`/‚9ùXsİ¡¬ÁŸ}Ì®–~ƒŸ!tß#w÷]+˜Ÿ¶ÈÈXøòWqÃdÓ>JÒˆa¦©/1Õ¯ü)tòdğçóî7˜ÑSœ…ÑÍÊCÅó=¤t£ŸÉêtğöKÌp•jøŒ2ñdW0ØcJ3vô‘¥•‰óB¶0ÇŠxæ8œ¬Ïmaô'V‡s¥ÈìÀ„ŒlÓ­;;Äş aÖ¦ §°âœ(4ÈùMò"Ã«ä«‰Ü YìC¯˜÷}á°3n5jìc&­}¿Èó»˜n^tÙô –Î¤Õãö¥v\ªnĞetèú•x[^•®‘¼nnÇ’ùØ%ô_•v”Ñ§-Ní™Ó”÷™íÏàw›RõÌçGw©d&–Ûft†w÷è®¤J£;ë·B¾šÕ(Ei¢§Èş¡Êüˆt†LÓÎ]J¾GÅ4x•Vûi5<Çw¿¦\Š”ÂfvÏä”,~è'êÏŸ‘ÃíTÀÜÁÕö[N“—¦–õ;Êé¼Ë§Ä~˜™óÂ`|Ÿ÷°Ÿ·åaİkãİÈi!sÛõ¢: *k:­¸„R‡n…LŒø¾%Wà÷„Ã¥ıÏ»‹Ó4€H}#ìé ­¾‘åÛQ†½àU´æ÷ªNˆµêÙ¢Šbs|gØPÿS^)^ÆuÀ6ašpÙâ5k©u&Çæ#NÛq:Q}˜ Éoyt¾
+Â“äc‘nËPI5~²¨‹UÅÑ1êÜ.ğ‰ÔR,Y±ê7›ğ˜¶ÃjSÌYğóM*©¾¹øe¥Õï~C¼›5€Ùàºñ¦ì›Îû¯#¡•w?é~Ùı"Nwª˜ÈÿW¦!ÙóSÁ´»Gmò‰ İ˜nŸÂSBUÎí%ŸÏäÚƒĞÀÂ8ñ _ æÃ?"Á„ !r°MñIöYrÁ›H…‡‡Ê‹‚ñø“î_edY¬şr	CaQa†"Òì%¨àI¹CXØK:{Œå V’rütRH©Ç÷ e>¶Ë+,F*ø‹0y‡nà’2Ü&ú5˜µİ d…Ë…‡Ã¥È·Qc[ßŒ#Dœ*áa„ç€j®Óõ½FWBC=ÌaÄ)8 WoŞqjM¯%ÆD]Q’Eß ÆÚr<ë°V¼YÌXo_tXnaÊZlYèrt¢^BŒyÄ,"Œ²¶*¿õ
+Eº i5ê/ÒäB…µÍ©Ë“š´Œåfä¼á×ùz	Ót-­^·AÅy»¼:×î4B×r3Ô*¥ğ8ô¿»ù\ªJJD“ˆf’¦£sZÕ¶SúFõN¸ò‰jûG•Æö¬¹WB¤ë­k¤¯Õr‰@*1Ñõ–×n»›E¡YRâEÃ(ğÈúÜ­»-ÙˆLÖ-ú¨ŠR?I’*Á¤ÖÑM$]|ªlVª•­ÌÄÈó•XıtëÂÖ/¶ı,æmæ_0+åòLù˜àÖ!ÙÓ.kâŒºEıŞ
+Za<^jGÖô-aJ„@VÆ¢e×é}<›×Üæ÷¿µ6‡únışöõÑ(uëò-ñ‘Ä‰QïÀVı†WİÇE%ùÈBsò“UwÚĞS’·'G­åâmI6äİJ½NÚÕÌÚT4eÛ½øÌíNª)¤»ñ‰ĞÉ«RdV”W5!ÎWAµSØæ»¢,¹õ4ÒqÅ¡õéÃÖ›4Y€A®–]ï>o­–˜Veå2Ä*Ê%ü`>¬pjd¤-ï”A¾s¶9È‘ó“ııú„eÑçqÑ]®–Çe¹+PĞ+5gó†²Ë×zÁÙœØºpCÜGj(ÎHt¡š­È’â5*õà8i$1/ÀŒ5ì÷Jõc5ZªÛwî=Ê€x}b€ÛL‹qŞ1¼'j“£“çuxoÖª£Õó)
+ì6=Œ"W›/'õãFÏWìãŸ÷Ø­Ÿ¥†*‡Àİbe˜N¾3tX.—oåõ1•şX¬»@;ııîTŞƒLÊø%ìè££»¼|às°,îç\Á W>ÿJ«òÙ9LL—k2jwgrnK…mş8ƒ˜-(-ß$ŸG³sozïACÒuğx ‹3j@]|Œtññ¬z|y‰=¤â£ÉÈTE Bp¡¯|ØĞW2qŸ×
+c8.(Â± (}AG¦ØèX¥„ÈM(p­Æ¡\Ø¶4Tü“IMÓ8*&ÆÊzãâ4\.½i†F’Ka ú€¼jA'‹_ZFL­¹	ƒog¼l-)Ê?iVÂgz(¶)S@fo\ğL){R©K%VŠÕzR
+Kh¥=r'iƒe.\µRDş"‹-ú¯ç˜0‡8Îå×æêk}Œ"Q­Ç04¡^˜¸f	S–Ÿ0ÚÇ´h<“êJ²%'ª—›^«üo˜³Ö2‚kb?gğÚĞá¿Ü²e‚ãŸ¬„–™¥h¨k‡ äİËÁlkÙê‡`\g—->;úÌ:şYÇßQ›X·nÈ±¤X9³¿×6p_†¯À„,wI&j€¡{Ù#¶áVë-<àQ;¡~WmÛ~Z€Hÿí|ë$-´>™A;ŸU0¶‡A»
+`]Ö|,âÌV’+ı{ÇÁÉÃX}ÕãD
+ü²z‘ŸÑ‚ø¦È.‰À€3£5c€c­T±Ùf´ö°QÕ{’0Eºœî4µZw‚ğ5§
+ed
+ÉoÄ8ˆTÿ©Æi<ÓC¾Cg¶iÖç5¢ÜIlSÕ¾×¶i²–ïˆmÚ#÷qNN³:F3P®èì„ü?˜€ZçèT`#à4Åé>uE™ÒAËxÂ¯?êuo¯±º·g©{¦î "-Ã³Ò¶šaò]æ¨|ZÌ«ş   ÿÿì}[sÇ•æ»~EºWC c q#(Å…5`ĞƒA6Ğ ­î®ªn‚kêÆÕNÄÆîËFìËÄŒÇ#‰&-S–,Ó¿|_°?aÏ9y©¼VUãBÒ6[6Ñ]•••—“'OËw
+x•£§,›,yƒb¼Ü—íü§¢Ÿ»ñ™ğî4kV7Å«@ÛèO¨ÏSİ™g| n3Gû©)’tÜüüãåşÀ4ç x?ÿ˜ş]`à_ÑÔ÷ıh«ë¼$Ä?¬7¤ˆ ğ(æ9páòsF)24oq³ÃÊoÁdD^ùÉË¼}"·Ù‡à¡)_Y’GI]ïJµ"‹Û8%Ój|ÊÅ×êõBÔ›œz`f¬šë-ıÑ‹;·§ùGè÷A¸Œ³A&ÅËAÕ”ÿ,•³ùpñEæP(=jm›´Şğ\ú3<ğ7ÏƒÖŞ¢,üCºOÄ––,‡4Ô?^šĞNÒ7VO»øóödõÊäøä,aŠÜ6|¢B¸yúÕÁ.Ì‹#?ùùqä§Lù)™/G~8´‚šØ@>ù	JœÌ’Û¦¢Q&\ç&Âé>€gºF®½Œ‰lÒİü1{Nhs4¥f6›©Ö¤Ä22‡Æ,´Ó°@œìn785ÏeÜnx-P@F…@"SFN¢ÂŸÉt»ŞŠÆ&'ÍÈ üŠ:JÖè'D€,yNœÉJİ<çC`¦$õİùNcÖWŞÜ6€fÕ·8UÜš~ƒ9£Æû0àõ^z‚&…)Ñ­Ê=Û‰ÖÀiA¸'£3;åå@¬B½R¶&JŸĞcm¼è±6Êù´"4˜<sLù…ÿp|ÊEøïÒÃ=gHSÓ'şšänŸE³ò^½ÀQÀjiĞ‚‡RÅùĞ?qÿïŸÿ÷¿H:@SÀ…únG©÷¤('Ğ¯éíAjÜ;Rë¶íV§úŒ*ën<X¾”êm5ÃjÍ^wvßóu`=ÚŞ f@iCD1oGE9?ˆ€ìp¨	'mÒsqË°ÔKm×ûMŒù-1h²àIZ77Şw€JÄÏ*ÌØ“õ&ú0Ä„©}3j4ëY8Ãû@X[qü!gËÍÎ‡Qc©ÃYHÚl÷[ÄSìpzkîi8ÉtÅ{m˜Æ‚·7’uà?ş¯Z°¼×¢»Áâ·ÏÔ2Ù'}Á?…LŒZ/cLäš—á¿-Ç±Ã› Iyt”e‡™ÎIDC•4©ƒ}Ø÷êÊ•fRÓ´Ôìl]™Pœ}Ë{f(ôuğÁÃ2ç;á9’Ó*:
+U§-r’G®2v€¼L{áçÏîÄ”g7@ Öu`yÂ°GO;=H8í.ôwxXöTÛÍ@¾È×´—Ù"ó]L8sYá4òóÈ“^k×I½2B›†Í”Ì4©Ài¼¹EîTb!­h¿qÿ"„¢ÖdA8$Ná!qBco“k’1Xú¡2ÏÌ–‹ÇD?ÿ¡ô¶Ñˆá›öàÒ4gzrÃâ|Kİ
+m«ùö— O¼7c‰\ˆ6×Gæç˜-ô@UqB0Äš¢Øó‡z4œ»^R	«w_d$%èÿp¿Ù®ÚŠù‘£º§½t¡1•ÏøLH=´¯`T=”m£–"h=õm±V<¼áyæç£”ÆÃ7[ÃqY•üôFÄvc
+™¥MäR+’ºT6S…1ı9ä×\b>|2P…’¿$x*¨¢ãmg@`Ä?>ş0“!`4°‘AÌÌcÄ³â¡+á Š°ÿœG=ı
+Zôİ‹_Êx¨gÔª<ğ1ŸÚÊo˜îà Ìºfj>ıÜ±‰ï¼èÔÄ„SSæ½„‚špTb7ß ,A±˜îQg¯ŞÙ82ÕVRï4†RàC»Í¢¸Äq¯›P½HßòsD´§)ÊÕ	o3¸Ç$cç‹év¦v£¹íè3Şv-yŒÙ+GÆã÷a¤¢dşñŸ0…€=³ Æğe%Æ¤3¯]à¶Çı&éï9$ı•hDë1•cèUß ¿’›ÀNva‡ë½ú²ºª’ÃŞÏŸ9ƒ<ÁZN“2Xs‹-›<X{D5¢t>a%B×d´~÷e¥g$.Œ‹Åy‡	‹=XĞùÙŠı‡2ËgjäN>¢ZˆÎÙ­,zpAäbwz-Áƒ¾$˜IúòL
+b_bØå‘°ì.Ú´¿¡ÓÉ—nIÀn€‘¶,ÄŠñäíĞ³4‹kÅ9ã’ØD‰Ä$íÇá1Á}Aãb÷#å9õñxÒX<Ò‚@ÅixäÀöŠbO%4‰7lµ~#©w÷†É1 K(=ç"‰VÚ,€ õD ƒòàc—çõ¾Îæ‚d›6M uTêÎİ£LB8s4O­©)¹Ğ‘ª%eeaõn·%qõÒî7;01œ#Mşª²±TÄ`ö¡Á6ğÃÕ>¿õ¶÷ˆRaŸGH9»ÍÙ./Ü1dá0 °k¯6=É,—[Kİ§$Aé¼”ºš¡œe´É$dK6x0îtâÿRIìŸŠå-6zÂß³fØYÆ™PàóG´GßmJ³\çòJŸ‘»`¹<‡T=ßhĞoÆz+gO+³Ş”NòâƒÔ•âŒ­gÊ¿õLÃÖ“?ğk­~ªy	È(‰Ç±Ó8S:~BdğMŒ[ÆÒĞ'wJüâºúMº<Ôä[€AÂ~¿ÙêY^Ÿù’EÚÎ$‹B±bšÄ
+f/-ÃÈ`KîÂÍqÎ•Xl×)húşØeÛh3'ÆÄë¿«”›¤³œ&çäøãş-\7tÁ2%Ûh0@L)™ğUŠ­û¯ı(9((¹n=S*™½)AË#Ü†¢Ñ_½xÄ²ÔÒ{NP’Ø•¿™]êó¢ó YÊÕÙm]A«ó´³–}²¹È’ºbø."¥×¤ÅrUsGa„MÃ×7¹²0‹_ËÔÜ–i“8™ ¼è	ÁH~"ám“.<AdÈYªÄLİí'‘àLélåÈgap¬!ºN_Ljø09\4Ñ¾c1F»5%Ø"ïm°p˜áÃ`ˆÎ®yáó´ƒÆvÂ:©;ç!`S†áÊÅHÉõÖõÎ¯½ëOM…”†Ë‰Ã§B„¢¼g2çS®rü5	Î_ÒÿıgÉ–…[m¢Î'Û‚¸ÛñˆÂ‰CÅÙ»7Ô@c7^I1ÏøoœD-ó¢@Z$+¢µ–¥è’g×pÏd&št	”hÄm%<%”,˜±¾¥vZÊO8pòSÎP[L“·ËD¡éƒ&Á° ”ƒ¼h8 êü#çæ£Nò¹Rœ;~?fš˜†;Ÿ~„¤#ã¿¾øŒÆéÇl!‰02œ4Ù;ÍxI6bğêä`pÎÖÓÙt­œ¼Ps=âe®İ_)—åğ¹z•!²‡4İ>“«ò©(»Eç-.¦Ëˆ_¹Œ2ÓÙ§}êó¹^â5 ;1•W7ÔvJ6Ìuü FÓ`ŞÈÎz{§xE–Y›ç“7rµ²q¦ÒË¼ò*¥<İ9u”Â…k˜2½Å©k†'¶zƒçò¾ÁÍêgÑbÎ¼Ä±y£WïõÓAª5pùo ‘‰ø'e‚áÇ4éz\uhKÂòrİ:h‚åŞlÀƒ‰/æyH¿(€w<š8}ÏôCu‡÷áa”:râš;løGö‘d„%Q¯Ÿt#òÀ^œğØUf?\íÅËñ~”, 	…/ˆêCÎBØæ*Õ{Í¬­Úìl·ú(ş4Lä=Nç”»õä´5D“× éOÕ½Üöx+ñÎÁ‘¯lµ]ïjeè…€ ?Œ®Rƒ›ë’µnièÆ}J:¾WX¶ãVœ¤yáí?âíHï¢çìıºfš#…XàÙPüwĞÙª×°v’Ë,
+…>áø9ÌH?ĞsXLN[80ømØ[	´)øfG?ˆ½¸âêHÉ‰^ èä»¸9äÆRES£±òHN2®XEêI®\NÀÉ M
+š?†®R¹}4Ú{ÂÖp/Í±qô0mr•à3è¯IG¨È+‡ÆÃ?ç&kTÓjrºlşÍëŞâ´êh¬×n¼{—L<wû¹îÂT{^è&~ÈkØ©5ÜKü ûp	.Â?ÆÒ{cïnÃ™R§¼á%†ãŞÆøÉqÑÍGkÈ…—»õTŞ[äÙ9Š€ÚrâµÎˆ¤¨í9}ÓwÓf‡´«jò)é\¨$nNÉŒÒˆÚTs‹š0¶.Ğ¤'Q&*?F,×„ª4;^ºd:C@Syç¾sz]Äv5Ÿwüƒ:PÜ¸¦?ÑÈ/>áÇ2a*=ø@ûG	àò2dİKŒâ|s09©Æ‚øjüdÑÓjª“jf/Ó'q¡µ4³ëê¡Ê–¥XÃÌË¦.£ØRÌEÔ|‚Î1?'§NØÕ<É|*%SwæRÒ3¹Ò!Ë°Uæ¤“·µ¢^$µîÃâ¼pê¹Kâ42˜‚¼pf“òôøwJo‚]8Í”˜ë§ŸJ“>-~F<™ÎI‹a{*2OÓ©\öÀÌ­i¾ÑGg´”u?¿ynâXK¢4êlk/:l¦Ùâ'›la=iĞY²ÂkyjÖæJVÉQa>BCv¡¡êT€Ë;°ãÀßFw#7Kmåı\;¦x@©ÙibŠBÓY61Ê(,¾U¯Ì¸€Ââc<3©™tˆ4{½ÁcÃÕ2KqH+÷÷îdyÜâú[¢3¦ğÂÀ§2ñò ï30ñ^ñ˜x­ıŞÑ×•Şè¤SDw+Ã¾Ü*çÔŞóm¥½´L½Bk×Ÿ¡Š¯BÈe™UÑË}æÂÆ¡½Ô€ƒ˜O*Êö·"{£Úÿ4v!¶³Š_ÛÅ¼ò•Ï+ër<sV¢}ß«üñøş
+E"7Lk›v´dq·áz+uİ<ğÚE(èà¢ÍEå;—]óF{iæïÂ®æ|lü;™?ˆn HâÎF«Œ,&PÎƒe!ì²ó6Á,¼}ÊK,#Ìi-#à,4­ä‚7¡f””é ‡3“”m¢âùèÙx¦9ê‘ĞHåˆı­—~=I~Å­"œ8Ÿÿ$Ñ?ô›IägÂÊáÜ¢êÍ¯Ë?>§¨šUËğ!«V«vİ£Ü@1ËL—)v84ğú0ú»›çôğ^Í´ÃòäWà?7†ß³1J×<½ätÑÖÈ?'ôâÿVR8§üÚ0¶ôã3øñzt’-–ãBÿÊ4ëv—;º§ı­ã™_Y¢1g´pĞ†IÆ7}^(;ìø(ÃÕ6*j³^/-{5‘yØ<Ü<Ÿ°¬æ!.Dm7ÔPX}N*2LP‡ÙÍ£w&m»øW¦eÜcÇ„£nÖn9šAÆ–ËÚŠ™[˜ƒé6Œ;“o(ÍÉ,^¦²±™Øƒn[%Œw%™]BñÕ2¹S²¹£†§¾V+ë×À*Ÿ?Ø·Şõ¥üP^·Æm?ç¹À¢ÎIØFQ%½#†ğÍj:ûÕ”·[ê©ş²÷Ì,vNd½Ì
+r6P}|Nµb'êIT48‰÷Ó«‡Ó¡…Zå®Yø|Öºù“®x»ˆ.·¿§Ä¦"‘éÿÊKeú†)ü%m±%bp¿5–ã©vİó_ç¹÷šï9éz1_"‰QÔ`x–Óë~³ğ^înüıW°çF®6d5<¯áV†±Ÿë6¬½äÄ{°øQfºøı=Fwà/yÌş=¹’¿áIÛo©Åçİ„³%øyÕò8Ï­W{ÉI×`y‘Fˆ
+Ö‹£l‹r!¶Ûõ7kí%î¸2î†İZ_fãşT]¢–Ó˜»Ê¬Öœ !X¬ßQìéÇ¢c‰7óŸ_?K¸¤Ÿ£­¡¨PïøÚµ¯B9­÷ş…œgôòÙŞ¹¹½D&–sb†;ñ¹ñ ı-'e2­0¼€,!}"½t¼¤ÌMğ“ga<ûËä¾…i§5ög[qô¡f€r¦ü>ï}÷'àPy`„ƒo7cŸî´ÏSæ¼T­Fê‘ÉÜÔ#< ìx*ÔRñ÷*"šİã2B)¥´R?Ïë6gXÃ™eíoKeZYDƒE3ÆÀı'øºÏ¯…İ3Ì&gèB³W†ÙnH ,`†–sŸV¡›‰2œ¥8}Vn+ÂcG0îƒ$ÌÚƒ¥gÇ[±§¾8;˜÷³J:³”2îÏ6ãİ]CUP¯‡ú'¹Ğ•e{/Úşp+~à…fãj…ˆÿ®rô8‚`5¸T\×8!ğ#à/äÉuöN.ê%Úö-šÜÀèŸ‹lş¯;*ñ?ò—I™ÏæÛZ‚¾Nâ@v]¿„Ë÷´½^»õ~œ¸CÌè!6s,/ˆ>FŞã€øùñïaãKÛ±CĞÌˆ…ÛˆÉØC¨R„ôëí5Sî/2˜ô™·ND$ú	—‡”AK%©=ÈU¼S— PœïT>¦×£"î”BÇIü&IÉ<Í/M¥¿†“ĞŸ•€£4!¢v+@Wá âyJÉ½²È¿íÔ@~3¥féD¸}yãj  ‡¥D_À0‰?J£ÎŸ€[|Á1v¸õkU0ÉƒMJ éz»ÚYü@¹('bBÜÑ`k]ÑY‚Yx€®l¤ÃsÜÑŞ%*ù^HêûÀµš?ß‡çó_óÆ^3j5P–x­™½	N`£ˆÖXô}|üÍ‹‡°Šêy^<"XVJ•º¨oqÕ;¨y|Å‡–»B^8s©<(õˆ6­I††ü	±»§pı!å­@ïØOÉƒJ<=~rü•î?¨¾¨Ï_gñıáÊ}&jÂaı%WÏàî×Uoûh #‚£'bÃË´q0Ø"Q¥˜Šmxt¯Ù}äY¨pî¶š”z"ŞaıTAWD9»0ğâu ıòÁÒ’~‡h‰hhc»îÀGdrê:éxR —Ø´%¹…W0Ö¤{v:rg€$
+á-½(‰B..²¶õCÂBÎ‘BœHüOüÈ qƒ¢ùá/Í¤—øƒA†³ƒº˜ŒZÖ#Ì%{B8Shímø/ºSJcx
+Ê* E1J'šìï)0ì™´N¨]„Oøg/¾à‘Àòÿecu…ñI8LgšUDüOšÛi.’³ã/‘¶‰Ö®öóbIi$”Ê÷íÃ“æ—ôiÔ1®ÌAòóv[#át¦.ı–Ú²c"KÛxÔàİú ‚¦¹„²†qÏya‡Âø´±ãV—à¶áNRÕÌİ²;|k}ÉÛÊÁÿÏnrÇ/Ï¼äùµÁN	¸­ü+ñM¦p®#©“ÌDÛIÔ“Ó­•:ıŒ‹2lw) 	Ñ—Ì²zç€ô I5%|CŞåNÜÄ¶VF¼˜È^ÙÜB:Ï…~…tó*‰†ÒA~Š$ÿş›<	p²™ïvØÆl­¿…¾c<4¦gA,í-è`1ƒ($Š<’øëšRŒ!iì÷è/@Ê]àëããßàw‘U&;î	´suF¸ãÖé€Qj¢h®3ÑÕ_0Xsl³›ä×¬‘Ğ°(Ãx¬lÔn­×|éıd¶9uwJÌúêæ£ºV[Y\Z¹QAƒ`!sÌcâ*ßÔ»%•K¬Š±n¿•zL&2Di1KxĞ}…×Ó¶€UÖWÔ7.°9â Íd»¥k
+Ã|´Üª³~âİ2Ù½¢¤İì`õ¸ÓìÅfÂÃaó #'†Ãåx7•Héï±‰‘"¨GÜC•ËtPşPî=ùí™NbKbR¿ÀÃöÇƒnÊÄ0È¤&M•æ¿£ÜNÒÑÈ>»É$PBVü´AU’™ïŞPŠ.Ä4nÙ6¹ñ½é"eİEKYgû¤H¶I9Í•AéÈqt5Z¿2á$¡(-“—)¾Ú†i‘	ÈyÒí$nµ¶ê	œ¬šãgfT6Áİ°,:$ÔØV¼;Êho
+`ÇÒXpˆX,u8œR„µ8›Êù†ÆíÔô·!àéÉ¶D-q›úr	¹}Ø‰öÙ"T;<B@º‡³	3¼ÑC#æğÈÑ°—‡`BĞ× +ˆW·ïâ)YZ
+¯3C9“!Œ_–(††ÆX8¬İ
+ùÏS—şãÿüOÑ9Õ_ï²2²G|Â5#ÜwUOx]™,b³Æ~„]EˆlDvõBI"òÆr0æÅÆ+ÚÀ
+î¹çŸ¬‹‘¼ ?¡ÌFˆD¹“ÌÑÏ?
+z xıŠakF“F	!xêˆßp.ø”NË_şèœ–	Td-‰{"‡ùz´ÛL{É[&å¬•ÔIöáQŸ7Z–­«Uİ¾ˆ\LğÆ¶éÃÛöBcÍt£ŞjUFYßg™h„#9'W(ÎFıuq	<¿6ıhÁÇ‘(V;­ƒpÍòÀWX·8õšG]Q·QõâÎ;>–2Şñbx»VûLÉÖ0>Èê)^Ü
+òJæ¥ å }']¡¢i|Øë'ºm5›Æw'„buM³,f;õüW¿cè²e©'=‚ßIZ-TáiÛom7Çû€˜.™M.²©Çj´S%ZsÍ#>%µ¹‘•syŞ%b"”‡)İæ¥=ÉOzr{r:c¨èlÕ»©E>ÈÎ¾î1tD¶<¿R’oÏ–f¤§€Ó÷–Ä‹WŒşm?ëÖ@ZİLânoû/Ñ<Œ3zò’~¼üF"HÅsáåÒ‹vcÌªó´ZõûŸ²@7o¯°A.6“ˆû¬½—)Sxk…·bW¢¤§N4şF»ğ Ş'§Mpr±@'æ¥OIæãò˜ÜÄËéI(Ìr"nê7»:÷9Of~B8dĞ`8(5Ì²Nµ%ÁTÈ™øy©a–JåÍ˜ÿŞ¹3>íI_Š 7CÁŞ:‚˜uî|ˆJ½o‰¾Š½z†Æ‚©Ÿş*bså:çç@àú»}„w”Ad!P)ã~U¨Dm4oËK1&ÉÈÀIæ¿sŸœuŞÖMš÷1İGñû¼îH¾C³åá6ówuûI·eÂ@g—òçªkaÂSÏJ“^àÁœ9—ŒúPíÅ·P‚åùzÂIÎ|­U+òvœ!Q‹îù¬U¹Y/rÔ3UT®´¨;ò!åkÑêÎTâN¹J\zÕŒ'›¯ù…/; NÆûáåÆåg§ğ†/54¬p(rÆ¡¤JUÿˆ9İx„¢«_!Îsô<UB„2INº¨ySx çMO…6Áz\óOzºÔp?éû+vüª¹–^e/åÆ›E6¿²È–6V—ç7k‹¹püÔö‚t.¼LŞı¢T3ef¤¤©IY‹Ï`N”Mî¦E(µ„ëÊÖÖÖW
+³±vëúòÒ[›¿Q{“qòÌ_å3m³w¨ø¢Ö‡æ%ÖhWk¹	Âò3¼„á6¼ÔŸìÁ6Mx=8iŒ—»™êplc7ë”6²ƒ[=î½ÀÙâ_mô€'n±0*à|ıûçºı½ú½ùímãòéüù½Yí¿!ÃÄ×có^|Ì¿r“îoÒE:˜“zñÃeîxı¿qÂäs½qb†~…]`7£vœhDëÚv-ş³uß7;ì¬RéÃôÕ±ˆñŠ_‰Ûå (U`X†	‰ƒãhˆ9Ÿ8Òc—9KmÔVñÒ#+LRÀmÓè „ğwh:aPÇ3ô›åˆÚÜã,=¨:kEõ$Ğ'£7Kù¬lóYÆXyÖE'‰4ÅÈÑ,õö¨,›Š¬OQ±Ô¯·Zˆ@±ÛŠ·è;au7; b!/Zb;QÔÀ¼-¹Í´Ûgá†k°NFlMõX°R3ò³¤—¯d.Oíß5~©Œ‹—/Ôg`#+z—øTéåì¦^Ç‰Ê{ï/-×ØZmıæÒÆÆÒêÊFĞ]ÎÇRYa]yÍíçåš?áêx!tÂ‹—¦ÈKB¨ßupç½¨ü“¦âb¶[°?ÅSËÖŒ45#(M§‹8Œ›ˆ-’ı•Œí¹ñ<§"¥Îız«Ù¨£Ã/±’«÷{{qÒüˆ»ïP`<ØNQ1â4Hé‰"…
+6ôhÄöhV†‡ğ½w37äµZÄ>œ³„èô[ÙÎ5QtYKÙÁ
+÷Ÿ2Å	C-i…èº!EY³¸;ÏÀñ=VŸ‘°œ"ÓÂ€¼'*3şgü= ï#¶__yz¶– ßØh!ŠÕg‘O0"ÄÚ²LDo6‚óÚÖWomÖpŒƒ; Ï¢õêy¿-˜i©‰¼NŒş+ÒØ|Æ#5Ğ’úDñ›ˆ—ÜoÀ•/Ì|JzÅô`X¥Û)/ßİZıt/ãëÊ‘ŒƒmÇænŠÂ£8u¿L®ÎQLÒ(~ÃÏMªñğól¬^9'—KŠ³omI{‹3¦‰xÃÃÏ‡oü|c³v“-¬®¼¿t#,ÉË‰xõ¬<ç8­«'LÒyx»§ı Ê/|c%ÀËëøŸDŒÿËKèJ(¾#Uá|O+¸=?Ê#ŞdR"È,ğú(I‰í§¤´.†ğ’÷¿TÏ•w¥2âß7)ÊÃ÷í{EÜ¿`Š­ÀZ†'Ünp*‡ÉzÇWº‚™V›¸pqÂ-ñç´ÜX^½>¿ÌÖn­ß¨÷‚¿¯w˜=yhğ;s?aÃœ@x$ª ¾bÖúÉî«gÿOÈéü9gÖººyX^>$Ü\L‚£ÿöøøïŸäşğˆ'ı•	Õ?¡Ş§#nÿÕ8tßH©Ÿ–!ğzX9œoŒr°¥ e0ÿ¸}0JÛBœà".‡¡u\§üR7¾k½¤½ ¿å<6suñmb$O¸Ghk}Àİ!Dñ"¢¥ÆÍOŒûáüP_GŞ}ëèİ·ŞgcccL\æè }Ç~ÚŒöñö[@úiO+¤ô¨ÄU6ŒfSšcŒ>éá?ĞñÑ·f™º3ËR
+ƒC·ÖŞ,ş0:—xÄ‡ºf…”.oÄ!ëÅFÑ,~åĞO£ùn#¯€‡GŞUÅo· •˜<€š{‡İèÁ<ÎÕ;·ï¼7|ûYœBÅô]H GjôòƒŠø‡QxÂ¨¹ÙnöŒÛS3úıxg*¡šVék¸ª:ÅKq/az`^»`<V©èÏEíz³¥=VË~ç<•F­h»5–c>,Ùo{<Ù?—yoÿÔ±Ä“9èÕÀ¥â™!Ù;iˆ'U° ]0ç6üfŠœY8bXõîMM9%qAkY=£5†ÅÅ­#^^s¨à©ûÀdêŞµY6Ô@ÔİdJûd ïûõƒ3é{³³ÓîO:Äëİ]Æ šk¼¶ş$,1Z:kI{X4w?n6Şƒ
+ğ/=²'Ku3]ïµ`@ï­Lp•ùÂ"À03ÓeŞ™åáánİÇ‚3áÏ,r¾ÙI×¤>îT#~¡mÍ²ÛÕj¢¿ûªŒhå(ĞDd¥WÅ€Êñ…2÷›i¶höW8¦¢ğ·
+ï{W{Ù'x${¾Áy0L} ø5½ßFEuA U6¢ÂrFÍşªi0Ş#^tÄ"Í-S}æıÂ;Ûï MDàòpRÎF¾d¯½3’Å*ˆÈ†ùdÁêĞŞ0U¢JÉVY³ÅeœEhY/ÒXŸ21k\Nè„ºĞgK2XwDÈœ¶ES®±{/>Gÿ†_ÁÁŒÃ×¿á¶C±S¿}è})lLÜÄHq¯ºo„>|d£†ÿ3Ãµ/>–êéÇ´ó?Aaà9¾7CˆFÄ)ºù/Õ{¢Ñ³ìŞ|±ƒ¸ÏÒ¾ø²Ş½˜ÄÕzD©Öp.É¼Ök€†Hù×Ø&"Ló½Æ‰5“iš&¹zïİ·ä’Öùî°¤Ém1àEF 
+fË9–|°[æ‘Kæ7(’ÿse”xZ…S”€»÷5-ºÕ`Ìæ,Ë"‚Ceœ±VäEÖÓƒÎ¶AdÔğäÀúá´²!P}¿âÑNÔÛŞ®Œ×»ÍqŠ¯£H4†9¾U‡›c| ?fœE;êíÅ»¶º±Y1ƒuyüz:ëDUH²Ézó U0æ¸SÇã«Æ‘ÆŠõ;¯[¥f®ƒàË±wPz:ºg–·‚†ÑKo–pçª|s}ãˆ¡i&5ÁrÖ=Ò_¯0hÕøÃ«G.º}Çx”ñÆY6nXÌLŸŸ(Ië½ºš#|5Í°Uó6GØ¨Bù8®¼2`b¹ddiUÌ"AòŠùfkÔw8)à¬³a(4âöºëTL¼ÊZ‚l‡Ú"Ş©½I¾‡ÿ=r¶:í€Úé
+8!ÂÙ~†fµŸ*+Â"'æ5Ë\’§Q¢ÿÿƒeb8#AàÂE¶øL×«<¿>æJd>Öˆ0MP%™ á¡ÇhîËğµˆnñæ>*dÄ/>W¾e¨'X_Ú\Z˜_fóËµõÍY&™p}f·ß‹€å:ü˜¦7¢{tò„g—õ9'¡3ßı&ÌŞ~³á‘IÜ†ë=ôÔ˜{µrjn¬S6[áñÊ³v4Í:òçÄ9\C€)/Ö–k›µ²ly0&lõªÔ·1¾ÍVÔ+ïiTr˜òŸ7gíÑXÜîÌYëšï-'æ©j˜°Û!âüˆ¦Ù;3µÁ0.>ñ>d…d ›¾ç%Ñk¤*¸úö!ı=ºÀ5ğ›9ºÀ‰.Dí¸İZ_Âµ#sÖu#GèÈï/©iFî½k4Ï]MĞ`}Õdk¢pd„œ±Ÿ€ù»E¤&”9ÃX°JsüÿÈ2—Ú^¤[ßmv¨u×ª¤®ÁòÙ‰ä­0•)šÅÏËMR;b;ˆÃÖ:Ğ`’D2m’~ ê§QmgÖğ°NqÖ²=EİiÂ8YÜqeâ 0şõH£ú~œ´k÷aúµš#:ÓÁµÅh§ŞoõäX+MÔ°,»Î×#(nÉ–~Jj—˜¥2®[ïÅùl¶£¸o‰‡—Á°ÌL¸kAo{‹„6È†›iÌ¹ı#¯R_—*›!z	4/oS=«İ nÔ»µ¡m4í»~;JšÛŠÕ·A°ßƒëéÂ;«ı³òwej¬ÑÜmfW÷â~â¹Ìƒ¢ÿ)š,Š&§fyÂ¨L>hGœ“Òm.TWd?f†¿³!CÄ£ÕlÃœ»¤À4šÉÕC®Uº&4áğ–V/©(ÓŸ–Dä‚PAs²HÙõº×CVú¸³A™edâ9şèQĞÄ™Eø„smpôjnÀ”F®ù3ANècÄ Iä
+)d†Ğe.g"Ó%7ågQÃà&Í·•ZÈahöA:º!)Š”
+âçS>¿’.ŸÊ´\Öÿ†#ÂI\*N)ó¸qŠ$V‰¤Ta	VÅ±|ú»å¥ZIVõİ×‹qåda3X£™Õ†¨§EÍQt„še·Öç7k£•/ªîVGÙÂzîÜ][_eln®İ•eÜ·ä¤OÖí{
+aß›NÕÊP*˜vÂYO2L-²‰‰¿ÓÌ6z’'#êøLˆÂÎHúÊ„ãºªØ©×ÅÇ*	‘]øsX½°æ7b¥"Ò¤1DNä|yñßĞüş1µv×/É ¯ÇòÕDâr«W—_N¸x3Ğ'¡‘j®_:$üg˜!8+? ¡DÏ7+÷µ\¹EÑ|c˜
+1c°µï{`ê<"á${™#ˆ°h›²šÃå	úÆ'½œ£†Ê¼Çó@—öqô7²RN;Ş#™[ÈÅîƒÓ8†˜Ó)Èô 	ú}èŞè"XYØ	Äu~ ëC©n¢Ì ‡DÎK,èS×Û£]ø°0•g‘v^;:åØ”b#‚wœj†SÌ]³‘§„BŞ<Æ³fSF—|);Hù0ue³oÄVc†Ø/nMBÁ”[ş<<Ÿ£vvâb$»NñøC4Ë“o˜À~Yb?©wó*E–W‚øî¶Ætp½“d-ó›&uŞE­.p”ó™NYEİ’à¯œ§™°_Š²Ë6˜«ªïpr?Ò*Ì’rû—‹³>¬õ£_u4óâ¸Ç®Ì¤°ÚLêéŞ”d\Ó¾Vœv=kîfÌ•ÖÛSó=_¾ˆ{¶‰7çùb÷7MÜrö_‡r,ª‘v3ı-¯­LŸ­dTaó­(ém¢If7Cšvİ—5Ì;“`ÌmîÅçy¦%ËÇõw}şÌéuQ`nÖñØŸù)r$`´‘ÃÆØ²ä >h)iWBï5àqÙªÊÛŸÎfué”@Š1jşÆ|º\@cÄ,³áŒEM·¡!ˆTttãÃ{
+Ş8^N@æçûğœ2¼cmmúúñQ_íM}’—É‚Òl1À‹âfëV@‰=ÔjÁöÇ&}±Á“(uŠD4‚ØŠ2dã].‰íÚ»#]>gÒ]-ät&ÜØ°VÙ¹Öò˜ó×OàÂùÛÎ{nBâ±5æâ
+1>‹;íÁ€î]ô‚¨«rh®*ï™'oJÒû˜ßÚ\àÁhgH{õvW\+¹¬¿Íyn•ÿFÃ¤ğéÀH÷q+Eaÿ´¯pÕ¥Ü5âß³Ã¾­I˜HªLÏ¤o_|Ñ|ôHÂ@¢ûÉvIÀê‚®}F¾"ÂEãÙ‹‡è8Ï–Ö8Ç›o4àÌ–şª<²€NağÈ÷SbgöyW_!ªõ¥0Şvšõd}ñ¡´1ƒ·6ºõÎÕÃw¬ášœ2x]^bUaá9š5;¤bÚjÅ°!´™-VFG	ä²G*ıÌ¦K%‹Aéâ+&ó¸™¤C‹T¬-ÓK)÷³€jÑÌ¹I´L-õëÇY Ïƒ‡ÎÊ:û&WÕW:;šİ ] H-ûõ·™ë¬ŠÑ2Ç Û/2¯*ˆç9÷à2<…øĞ®€p‚æt4ËGµ'läÀ„š-9À°?Àrƒì¨ëÏÂB÷¤ó­óÈ_ÂH*R¨ÌŸ‚]:ğ”…y=ãDçNæ PÏze(U_ápù8{
+üÅ@İ®®?¦` í.KQay
+?ed*ü(¹ª`*Âšš-€Ë
+‡(®à%KQø	pÒ²øÈÁsàå)n–N9Ü “fI*c/‡fŒQ4„ÛI_wë½S‚;×-!˜Òn_¥´ë%ıÎ6bÏ	ğ¤€Î@º”±Ø'“Ô$öC–Ÿ»dšBÇ¥áÊÒ"¬Qöc–İDR+‚½@Ó^¡T~bj.Nd3Xyï¾èP¾¿Â1Â©ÕäÌŒ"›;i=…ç¨LR:ß;yèxL´š“1‰„ê*eLÖìíWÈÎîK¨š}®éÏf9D): ÷A¹!lµúfZºpQYÀT"¹¬\^ºÆå·EÂ56¼?é’¹W³TxÁm”V.¿QÒÖNÃàVn”-NÑà¿5«,Ükó7d{©ÎhİTü™t6NâVï»‰8óà@	ù<âõêÎ;3¢;Íîİ:?RRO–Wæ—ïÖş®¶p½1N ¡~réÉ›8Os 'É·”’%½óR¼ÇVád”Ñ—!õ:<k‘E0´Êr–Xv.|~üìøÌ{š_ê¤]"¶V?ÀórRŞŸ©.»;º}h91:ºúÊpôŸßÂİŠ+Ä×”³³å8 SäK#n[ÿ²,MZK(g	L×ÏNêg§5k±T[3ÕÇŠíä^[Ö5vOÉÛºõH*x€ç¯9Ú4jØÈ«½Woİ³jše÷6öâ}<ïZUÅ;ê!+6Aï™¦_ßç$–ÕÛÈŒûÜiœ«#lòwYŠğÇ¾YïíÁ‰úÁğ„ô:gcŒ¢\å²IhS!´¡</çLí8v€ÀÊÏpÜoÅ#¡éıDÚ§«Âd3QƒhÑdDq ”YÂÃ
+Ê»'¨”ØZNë àÔƒ.}sóIï¯“¼k»ºĞ­e4…½]ü³$1ş˜Ó{ï*ã¦,]šÏ¿æ¤h÷òUÊOU:¤§ˆÒ¥×3Ì¿p—Å`hV{ĞEğ'!50Š¹dccˆ¡±Z;Jê İ€éckIÔFõÂ¦"İ(=Ï5áP(`/È¡+¤lgh>ˆ˜{ êMğG˜Évs`ÛÈ\Ø½ëpĞm$q×‚ƒ·¶c:êÙTø§Ù~Õ[W¥=öÈ^{Bëo›t‹E0˜#¿ª|I—PLò\~Œñ¢ƒ3tzüÒÛÇ#r"Ò‚4f§&ñ[´pK zXLêûQrÚe)ÆÁ·ê•™Q†ƒ6SrpÕ£“ôœg İÁ.÷ºŒ	âÓ~"Bş&ª“ğPB(º+ÃŸÕ~¯â>nøaçm¡€›zĞ’Ş¯®‡fìùø‡tÍÀÂeİTºiÇ%CsL»f˜\íÊ	xÆ,éÄI`1µ¯ò¶ÌrIù„Fî„ øN&JŠgy¶
+r
+gó)0ÜƒÊ8Šp§h¶Çÿ´"2tòİSßš»üÚÙû³=¤ì¿W¶sÍô+9??j‰S¤|$úˆôkFÃçüğ=ü˜± —aÜ²ŒW´ÒÊÊ>j×µzÆ_İ˜¶—kn²PÑ¡ßcSò’ÒßIb›ñ[èìî°ğCñ‡ı6*Ş	ê‚)è®xÕZ±y2OW’²U\OWÏÈv¬‘0^şš±T63ğ¯æpzdã-Ì¿úùKÊÇÄõ+ÂyE„Ì<ÍYe„ç³Ê1hö]r²-&òz|!6Õ:»ÍNnQhuşÏT	÷ >_KXğÍft3¦§šåö$s¸ü¯h¤«:\Ğ&ó˜§ºDÈ›/¸SÌ.´Üãƒ6Ød(c1!ú$h&V}>tSë_Ë¤èYD$0ÌÑs)|%>Kd°8ù6ı]²¬	ÀøÁ'‡Lbb!†/óU[ËÅ²J,áÎÙÓÆH·âìƒ8íÈÔÂ!z%²ù]\¾×ÉAËİÆõ¡üİ:•wâ6|‚»!ÓÌÏšN&—@<³Kƒ™K8jŒñÈGÀ !õ`sØ}/ëù,Œ%¿ê«+¦x‡d3Ï“>AŠ“‹Í´Ûª”= ¨¥•A,x¦</í !À„3.b~9kí€Vgian_Jğ á¹ŸRnµ?b*}8ÒCìîq%ŠÀ%DÅ•ñÈÜAò·FqoìâåÌïÿ€Ÿ't¨ˆ]y ±AÏíMe&I~Ò™JÑ]+ÁÎ×IÜj¥í8îí‰_[õDŞfÇO’İÄôáÏ,Ÿp‡k	…#Å4N?ŠºHÅ;ºZµân³%„ó’xv¦»õ$5÷	Q=î<—G	Rv”MyO$sãĞòSs§÷aa¸ÍFvJïÁÚƒ]Å›ƒù¢Í´ˆçf¯/e"¾ä;b†‚¤DbUoˆ\œ6‘úùâá,Áç1˜ÇÜTü<
++âøZ°;ş•p²üœa¨(O|õï¸ˆĞ%ó[B±ûÚF¶;ş¾yH.œŸpN<ù>ç ù"…ê—ôæß½ø%b’şAæHüìø[|Ö*ÅF'‹¼'Öz„xR²2ë ½÷šÛÑ,G½Ş·u`>ÆXÜidhJDÊÍd¤¼ƒuZ'ĞmÄ8İNº½xstÁ4¥|+„riå0¨³İ®w:qmE´î
+õepŞi¶Zhµ“8~Y&XëÀ 
+Ê0]ePq‡fÀÿLë—£{V‹enÜQk:h!¥x<nãå:Çlê0Ù¸ë¿«ĞÜ¤çxµz­TXk.ìê¡§.}PO¬NÓSà„¢B½ÔªY]×|¡U®é…4ÜA«¨vG@ Z…ÅU#Pƒã¶Jë·²G”FBtÙŞo¶»q‚pö5„»›êb&³¡ju|["µ¥ãF™!x:z@Ost+
+îX¬§{[q=i(¤¯‡K çS[zóIö´~ü"Q­D	£¯(÷ğo)H„‘¨æx)åÇ|ÙµˆÒ$ñ[ÍôfK‡jÊ…è	“Ó2•Y¿ôúıæ.ï‚+â×°xv›Øğ(o|3ğì¨.W±ÏšÑş­„?½¦~˜ò
+İ‹oßL7@tÂ¡G’kUØŞÅëR~§’•îÖ1@õ»Š¿;°QUA
+lö†+ã•‘j7îÂÜ¡¨ßËA?ÇÇÙñ?‘°º›ÀnH+ø­r‚ía«pİã_Ş¸ÑX éT<7d«3(<9	Ğ¾í½z¯¢ÁÖQ«øIA<Ç©X*öîG„×ÙnÖ[ã"·6ö9}K¬,UtoÀèÜ¯­|¤
+¹¬"Y»v‰×ˆVdâ§ìŠ®%»J›Œøy'eÏ&†ÅlWæ‰íñGsÌfM‡÷e·iQ÷G3²U(~@›1Fş$Àh¢V*èS¿dĞè:í“‚T1OfQxsúCaÔHóhÔSÌ7±ïoâW¹JéÇğôÄÄÄˆ‡i¾| `L3±UŸ2ØEñ}•×€Ò	3i\ËÁ—ŒÃ“Äéùp ¿áˆ’
+!µ*;G}§³\ÔÆ2@æ’İ¢U†—V·~ÕUñ÷°Õ!mÄa´Ä¢zT‰ï³(¼ßJ#taãÄ-Ùé@ÜŒ"Í”
+£"¸¾úŸ°…ŞHÃ¼€â]öŞìš“yÅZ²•çº ¨¯ÉËnµ{îe8¬¡«Ú°ÂÒf~öc6X<„jé:J/› UwUcÄfº·ûuÄïEº¿†Í‡à<Á9(T‚fÒ‹	\=(ëó-±Xø¶Äå©©T
+ò­ÙÛ»ıÎÄı½;èe­mízpæÒdáx%½Öë†Z½d(´`lòÛÃLããîX½½%Òhy«[*é¤¼Rl¯tŒms7ãN3µqƒá´/-Ÿª^†©òõ§[m¡½)§šÖ®a¿[®xâ>­Ù¸¢¥ æRapüôÅÇ/>å¸û_ÒuTÿ€Æƒ¯0ó÷Ç?((ÂŞûŠ¦NÛm<ù.ğAsôb”~Ø‹»c«pÂÒñ6ö¦´^y3ZjòÙHÛ¾ç_è×r îáÒ=¨Ş	;û7Æ'i+HÍñ•˜¢›bM¿D}Ä'/ş;ªD¼øüø[ñæ(@>#åÊçB=¢gÛÌ2	À£¿‡jI¿)~ƒZ’O9Váñ×UF/}‚ïàñ­¿Å&aOÉ!àÑñWÌL<ÀÇüs^È*­™cSò>  ÆG$ş·ÕŸ2!³¥Ô±<TA!R4{£”ÀXüw§ÏÃG@>MA\m §ƒ‚LnA“j3Ô5§U¶ÖBWäŠ¬ÎÖªIhŠŒ¹:ÛK¢«p.1LX…B óGh¨5iÛ kU‹Qm+F91‘®ë7É‡ƒÃuZ1û nGF?ë–Ë~åğÑ6z4±ö[]„IÆƒ5W†Í¸ÓGÖa â¶Xe"­è‰‰ğ HŞÔ;­ä>Qœ³éKj×à%ÛfIUôoxQxä’ù@ê¯úo²rØBQÍ»÷öáŞÑÈí£ö½¬PÛ.·¡Pz”ŠBÙyÍ…İ¦[—ş^>ümq¬¶Ç0ÃŞ–ïñbn£*İv8ªWAcİhîìÜÄQA£gµïÃ.<æ…øŞå8ãÃ#öãÑ¶9ª¢Îq69aÍİivÜâX‡6YªŸòŞÔ•ßS¢ó¨qÿ¥š‘x¿ò®§¦Kù5İ#Uîï`*Å#GŒô¸¨Cşú3dwRVßï™/ÁşøxäˆIß+ã%x§­½$Æâ~âvxù¸IÌªğ›º8@£ğ
+öøsÃjm¢{Z£JàÂãõ±áHwÌİ“™‚¨´×Šlœıı&0I5‘5ÇkJ¤YÅüD—zÃ•m¾£ğ¥’‰»ôhRo@œÇüúLä»~¦ 7ªæ/ßÄØ:Uh¾„Ÿ¾¦Õ›K¤|¢¿×"»u™>È÷tckUyÑMÏzØ8ûïÅqkU/dU UO¾gÅ½ŸbFû9Ø;şÓş–ÒV§ö³¨@ò?‹wnÖ;0)mQ±kGm81ú*ÄUŸˆô­™ –ûBÜÄª„ bÍ$y]ùÛ—‚ìË“?èoÙÍÛJâz¾öÂ^WE¬g•ÂÏû()euûQ®,IİE)¬¼HAh¾n¶¬Qy*J’z` äİE[‰˜u8.Ûf‡’?–Ié1ïfĞzÄ—imU´û›_bk1œƒøâ±É	…ËòÔ„ÖHBù½`Ô„Á<ü`”ëwà¨”+/°e`¯ívS¼X6§Á“–”ækvâIà¦°ŞÎ¡: É¬baQBó¯¸%õ1ÙiŸ)lìØÂ]xî³¯õZf%ÃØÏ–kìæêÊÒæêúÒÊ¦¥•ÍÚòòÒÚÊBÍ&º’œÜl¯ÆÓ¦‹Ã…FfN_ÁïŸY­]^úimÔn­/mşœ­Ï/Î¯CS7?Àœy-öoEÖN’ZxŞÂGÇß“Ëª û¯¸È£ÚTÔëù……ÚÆûIíç4Àï¯Ïol®ßZØ¼µ^c?¿µ¼Y)½)µ³ğı³—‡”ªş¹DÖ×=j„=ş­dâmÿÙVûç7ç¯ÏoÀ,|P»9ØøùÊ[]‡ßĞ“ùÍ¥Õ•Ê [cùàí$ùİñ“Ì÷ç÷t_%ü¬zwà3ÊØ"_¬-cÓ×Wom©WJîÄ6•#]}*q°”«á˜şQ]À¦ÿ
+LÊ¢ôÚâÚú(ûÙüòrm“Ú[ûÙüúâ[X]Ù\_]®”’k5åx¨µ˜!e3Ä†f—Qÿ ÔöúÜ¸u}ca}i	aŠløÚúÒ‚;ĞñcÀaşá™'	*¹f[ê÷œ ¹ë‰M‹@ÀEFÙO~¾€­¬­ß\ÚØ€†‡†x Á'ÌHO|üX™¿d™4Ä5“²wWô¡yÄõG0%ß+=’8ş°ºss~åÖü2»Y»¹ºşs¶¸´±¹´¼L÷ß[‹K›l:¼>o÷*$g8%#Ì(ç1¶ZÏÚé_œ|‚1¿yóÖÊÒµÉ.mÖ6*¥¼â6?C†!İŒZëîÇÉ:k3ß–{Ú(eşæÚüÒäëë«ó‹ÀÑYmåÆÒŠ½…eËâV?§±ş&ÛåÖ.Uäş±Š£ 5JáGV»Va·ƒ¾¶¾º¹º°ºŒÿş’½DËÊ´9r‰6 õ)o_n÷\‡0á—fS
+5¦2ªŞ¬mÎãÅé‹1JX úZ[^š÷H3az@	ì×Ğ1Z¨¼'_‘@Š}y"•ºOÕ‚ĞÖ#Ôg{8ÔzíıÚ:,Xœ¥ëó7ÙÆ&,XØ¸<`Æ~Z[G~•'ø”ğ‹KòÆòƒGò‡:Î@êœ!ã^÷LìÇ*5½†ìÅ³t¤¶.yˆvËc›K7k|P€ÊäÔŸ%òHö[ÖÁ	ñ3.WsIï1E0«¯<tØ'>é0áÜ‡ÒYy7×VWPY¯­,ÖÖÅ-×`€aÃ±XİÊÂÏ}LéÏß€ FdŸó+‹Ääkë•àei›¤Ü¼ÎÍmt»«§)»*ŞcFd¾{š£ùŞG¥·œM]6Rì©wc ^©³†"¸º …œ¼…ş³ÅÜO¢Á«Ê‘÷ç<Ï •æKàsİşÀU…ä¹e8&·ëÉ‡W_ç’6¡ ª«H˜s›‘€rBÒßÜõóZaHğš»‰á†ƒÖ–#Ím`ÊA+Ë+sR6pÂˆ˜A„·ošéµVğ†z·Í¹­xkõâÛj §JW–qòñq¶õ¢¤¶ßæYr+óF…ñ0eôÃëgÄ–îÅûÅüñ”ã™}Ğ1R¬¹QxîX‰ææ¡ß„a %WXM]o4V¢ı5¸?˜·í{´¸9*<xQHqÇ“·@ß(:şİÚovñ~-ãèeDé‘‡ÑÒ³ĞO{1O—<Ì]eÇ =c]ê¶æ µ•Dõ‹‡aĞ÷du_æŒœv×/tØï5Ûä¸¤ÜîĞCPı@ìÒ^ŸGÅ¼ğ*‘9[±96ı®Vïb´û}Ô(WqC”.®™n.Ä­­€Yó¯±¡ÿ4=}qrfmûÚëñÆÎÌ•hb‹ŒşÿiçâôÎL4dU(AVÖ5fZí†êÉyã|*<o¾¥:Å3CšÕx}Q=ŸÿDî?P=ò¡¬¢Ğcä9ó	¨™&ınŸ²ú„ CB
+t;6¤„Cá†YP„‰“eİ›¸{Y¦Ü›º83:9sytrrt¢ziäªtÈDzÈ«áâè¥éÑ+E'us+ïÙ&àeöÆno×[ÛÃ“÷÷ÆŞ™ê>¹Cè„"jtw¥µ‘;†yÅ…}Q¤ÙZ©º{ËË7ˆK]O³Ì‹jjÕG(m›îfÿ2„¾±ÌTÆKŠ—Õ’IÁ¦-cÓÆKq2zLø›)·+®U¡ã/ãJÜcó÷Aæ¡+
+EÂyÄ±ŒÇh©>Ìh®e¹Q»nÃµ›Ìõ¡ÓÇßÓŠ~Bß‘¦Tég>g_ë!q0èğõOÜÇ½ñ¸¾NŸ”ÁQóƒ%¥œ¨÷âs&ô™¿ä.ot@}B.kß2¬ˆÒAâœ;ï½ø¢jvÆz„0F™ÑÛ‹X4Zƒòıµ‡7ÁĞÒ(ê¤èí(°ƒDv¢4åŞdÀ6z	,–èA7ÉÊyğFåuq|)Œ£®œÇ0$©"à+æõ¡2ÓÅgñpÒ;NÂ_UÄyø–ØV2oˆ¼NàUüW^áZéÕC•wŸa¯ÉÆù†H¢EÅdg¦’Åzâ4Æj-\]Òo¹~à¤Sƒ£cğ¤¼2ôÀ¼|AÆ¦&ØXûğvc¿\F:úÕ¥°‚y´|nz‰ô•ÅÓÆ¯ÌH¤«ìzò»ªÎ#MA%†1§
+Á«°OØYØHezóRÔÂxg¥êbà„‘\XÌ‹ÛÉÁ’ëÚ™“é)tRöÏA†µäßtgâ6¬Ä†z$Ç×8!ËwÇ+¿Û;ŞUD`‚ˆŠ¤aƒ{Öh&œ"“^«âOxã`7NMx œüÉ]HHÿ³e<=ZKòˆ%0õÙDäOX>H¶3By8ì…t?çÃß›ô
+!À¡èû´%˜2<	è$„è”ãñ›õˆÜ5ì.‘Ä1éôÀÀQ0‚+Êƒcb [nol² @ó,ñ5Õ‰?´âÓVÂ]C™p²$»òÄ=pzİ©rIÂõ¬â¹,Ö1u“4f0CøL8C¸ÁênósÉÔ„¿ü”Gô‘ûÑ,d§ÖÕtW^$ÄC['ã.N/ŸÊaTO³
+¸(¨EÏ¡ßµú‘¨Ìc/s	LéŞÿùL-ÀIwRSÍ8™n5æÁ¦-0¤…{yØÏ¹jß>Ï6Dt:Uá*
+	İãµ¾JÓŞA‹0`q_Ş¥úHi2«+P<9Ì|¨‰'l¸¢¿óm *ÆIø3`fŠœ4õ(Ş<.şó‹ÏàløÃÀOd:Èh-Í²C¥}r÷·(cæå v´h¢¶x`\^°¡À´ç (4†Ùâ¼Ïäó‘ëM©çÇŒ"'óO ?1ŒM\c‘˜(Ê.²²š|XÊå_‡¨zF'tÅ/ŞöÓ&&{› rLÒáû@iÑ‚3gß+¯<3AXV:
+gØèrù‡Ùt¤CáDVĞH=7ˆ“7û²ÓœSÏ,ÕSÀyÈ[Å@™Fm&M\wK…ÉÑƒ%+‰Ü,j°,å“F¬ÍşBÙ©¦ ´Üd1»%4¹œFy¬pUy|üİño_|pÍ¤Àã¼—è›Lw±YßíÄ¨qI‡ü«ˆ:rÒvÁ1¸âA×08 g°u‡™-åšƒ8œWútÉCáîæ'¯ò­‰{>ğF…Ê89aÁ4^T!Ÿë˜/õ)¾=äÊÉåu×“Ï~@á{Iüa4R`‚	)+]Í	|®Ç®V&Øê1L<„€_W+ĞCâbÏAUS±6®VnÃ‡VüW69ƒ§è×&›–§FgğÏÅÑIúüsytò
+ü½(JÍˆ¿—äß©ÑiüO½ƒ/ñË—Åí+â/ti4?³±ºIÎ
+¯YúgÍFoïje²:S\ór³m×»"‰i¹ò¿ A½ÄÚ¶ÎŸEÕw=.Ñq•Qí:O­"n„6NşÑv{÷ùÛ¢æÊDåN~5æÎDİ¨Ï/uv°İ£Ú^>¥R#`ÊkˆÉ©8ÈvaùŞß=ıêå ’–^À~"gaø²o•f{Eø¢»#2ØEC¤ò°k=ñğø›‚°ŠŸüá§ä?øùñ—Üì*]¸Vâî0í½$îğ•Üíe ¡ôÂÈOé0ò¹½¶«ëÒˆj°ºÙ‰9Ÿ)›¦K”ÉmBp[¼\Nİ†½»ÿC>c*ÜÁ—¥XEî¿cBBzg‹×‡
+sãúš~xOeŞÎ6ãkUåîw­º/ºfx7lÇ¡¢Y–÷!Ç<>”›,”NöŞ{òÖšÕ@T[<¤îfzÔNGî‘{ÃÎ2©¢¦¡*ÎÒÿ‹¦ÖãoÈüL÷™ÿÊ'ú’ÃñI,G4ÛRœğùk‹Şô*ÈµğÍÅË«xC²çC²qø)Qª`²¿%—‰'ŠNk$ä<"­G»MŸÎ‘\#ñÂWA°%Ş]L²²’7D{>Dû”8©#üUı¡‰\«'ÎŸh%TÓ« Úï.&ZYÉ«#Ú|½KÎYç/øìâÇû-f]Ráë@ğßÿ á]qC[Kbrêú€Œ·I¾>l ñ“gÉI=—GÊ+j`ZÌ¼Äá÷²U«†Ôàgİpz¢Œæ‚İ•áRyä÷‚¯|­‡±\/ğìøâq^l¶ØÍ:Ú#)à£b“zº‡‰Bw£Óq¤QƒùlÃYt³~˜"/€kï5AÚ'ï>:IuI¿ÓE0d9_œ˜È˜Z·şxtm@¶–Ódcoz°Å4•¨zÜyøZÚ[ïwFˆ§	¼°—¿¿BbÖ–™¾ãk#ØÛT|pİú&ò½(9Oúåïû ª'½­¨Ş;5çÖ÷)ØjÇ $l=ş††‡(å{¦Bm¥ú7L¶&èÑ’Ù&ÄfÜú¼yqô ÛL¢½5]hEõN¿{Jr.®ò¥Q´¯)ƒµ¯†7t=dáu9@.Ç<Õ&åÔ­£ÅÁ§íÃ! ¼Òó#ïT{)½ë”´]PßK#l§ƒQµóø’:şÃñŸPgt‚ùŞ†Ğ‘à84™]pq’[{-l·Î‘YSø"÷ñ4s§$æüê^-ÛÍŒ”í§_%ŸR`¨¾zú9½>§çù’ú¹Äy˜ë·
+Öq½—YéÜ¼·&š«…µ[ìÖæÒòÒß”K™%§Ö¿N‡İ>»vMıM©E[ÄÏÜ~îsÒ¼†¥ÒğJ-ë_~‡ÊU@K¾’¹²î£—á{;}ıYs|¨Juº—¹ÔñAm~Í//¯.œ”08_¹VEm:ìü‰àÚ3èƒ’O(şAxDS†¡t+”ãPŞ-ÉÊñhö‡À?Ä/ŒÖD-£s0¢óIT/•©¼üó[ok±†£ŞhÔÈGf§“©Ë´e,Ãîà(7£
+OÆ€óÕ“˜©De:h
+^mĞ	4ÊáO4$cœ)ã˜veÄ¸{UL_, Ø®D»ìñ
+,ŒCø?hİS/9òEƒš¹;´¼xğ­Œ¶]«w0˜zÕŠµçt0àŸ6£}î¤|õş±|;Ê²¡]=T_­5‰–Ù+9%¸¯£f¯]/7ÛÍ -¾6çr~C¯ |d½şœºx–/·¢nó'p‡\°
+kÅ¶ïaó­k”&ş±¯›éÄ®š¿íÒN’5˜û’óŒoöŒ29ƒ“-ew„¤&Ô€“?Ç¡’©«êHUºf’7§':œıë3×§™7É]İ¾¾¯Ağ—êÁàkŸ3s÷½kˆ‰·ç¼‡ïî{n€ÿçÑC…æ¾œÓØiöjEç½XìŠîk7ô$çÑålöôä…_õz.%7x†ÎÈ„p:’ä"‰w—ÙHıµŸöE™Èã¾lİÎ“pÊ>5ü»l:ĞĞQfóLUŸje•¤zë­'ÆVÚ»tÑÌçœ¢<a$—T°Æ”×€
+üQn¿Ì¶Ç½
+<7™^´_ğU‰´XŸ²J‚f–Áó‹ı>;@ßÛ„´MQtwÿ,bõ$b[ıfeø§C`n×~‹0w@z¦1šG¼ûj»áTY‡½»‰ÙûITØ\gµƒ×œ™QÜ¤
+‡šSî`VO1Éğˆg
+ØjNåGK(@3˜9“û*CoLñ®[q¯·Xßv M*^y‰0uxxå¥Êûhìö•+Wî(ƒiÇ@àĞĞì§ÙÁˆ`½üø!7öÒœ”jï «2“şÚ¶á(A"WŸÊÁ)/¨Ì›\õå<=~#%+ö÷ğ7&0FÚOuE¾SüöUÁñ‹`0"«uIV"/˜µØ‘RQc½j+~°A“3ë´ağ¦cZ÷›Æ<0“3#î:NM_½tÿÇ5;¨÷Ïâ	¨d³^¢S¼7´ÿíÃÂ”dgPÕç¼bÿ¸§…Æ&ä |ä ÚáÇnmèP®ºÑ¯ÆÒxæ!æ†İøVÒrÂ­ñÛpÀ©·X?i]Õ8¢ø8´ø5u—ç¶6¶gõŞ€zÌníÈ»o½ûÖÿ  ÿÿ |Jš

@@ -12,11 +12,18 @@ export const EXTERNAL_SCHEMA_TABLES: { name: string; query: string }[] = [
         title_ar VARCHAR(255) NOT NULL,
         content_en TEXT NOT NULL,
         content_ar TEXT NOT NULL,
+        summary_en TEXT,
+        summary_ar TEXT,
         image_url TEXT,
         image_asset_id UUID,
-        category_en VARCHAR(100) NOT NULL,
-        category_ar VARCHAR(100) NOT NULL,
+        category_en VARCHAR(100),
+        category_ar VARCHAR(100),
         views INTEGER DEFAULT 0,
+        view_count INTEGER DEFAULT 0,
+        reading_time_minutes INTEGER DEFAULT 5,
+        tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+        is_published BOOLEAN DEFAULT false,
+        published_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -27,7 +34,11 @@ export const EXTERNAL_SCHEMA_TABLES: { name: string; query: string }[] = [
         id SERIAL PRIMARY KEY,
         article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
         user_id INTEGER NOT NULL,
+        parent_id INTEGER,
         content TEXT NOT NULL,
+        comment TEXT,
+        is_approved BOOLEAN DEFAULT true,
+        like_count INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`

@@ -6,7 +6,10 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'token_blacklist',
     query: `CREATE TABLE IF NOT EXISTS token_blacklist (
         id SERIAL PRIMARY KEY,
-        token TEXT UNIQUE NOT NULL,
+        token TEXT UNIQUE,
+        token_hash VARCHAR(64),
+        user_id INTEGER,
+        reason VARCHAR(100),
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -16,12 +19,16 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
     query: `CREATE TABLE IF NOT EXISTS security_alerts (
         id SERIAL PRIMARY KEY,
         user_id INTEGER,
-        type VARCHAR(100) NOT NULL,
+        type VARCHAR(100),
+        event_type VARCHAR(50),
         severity VARCHAR(50) DEFAULT 'medium',
         description TEXT,
         metadata JSONB DEFAULT '{}',
         is_resolved BOOLEAN DEFAULT false,
+        resolved_by INTEGER,
+        resolved_at TIMESTAMP,
         ip_address VARCHAR(100),
+        user_agent TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -34,6 +41,8 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
         admin_email VARCHAR(255),
         action VARCHAR(100) NOT NULL,
         target_resource VARCHAR(100),
+        target_entity VARCHAR(50),
+        target_id VARCHAR(255),
         details JSONB DEFAULT '{}',
         ip_address VARCHAR(100),
         user_agent TEXT,
@@ -44,10 +53,12 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'registered_agents',
     query: `CREATE TABLE IF NOT EXISTS registered_agents (
         id SERIAL PRIMARY KEY,
-        client_id VARCHAR(255) UNIQUE NOT NULL,
+        client_id VARCHAR(255) UNIQUE,
         client_secret VARCHAR(255),
         api_key_hash VARCHAR(255),
-        client_name VARCHAR(255) NOT NULL,
+        client_name VARCHAR(255),
+        agent_id VARCHAR(100),
+        name VARCHAR(255),
         identity_type VARCHAR(50) DEFAULT 'agent',
         credential_type VARCHAR(50) DEFAULT 'client_credentials',
         redirect_uris TEXT[],
@@ -55,8 +66,12 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
         user_agent VARCHAR(500),
         signature_keys JSONB,
         permissions JSONB DEFAULT '[]',
+        api_endpoint TEXT,
+        public_key TEXT,
+        status VARCHAR(50) DEFAULT 'active',
         is_active BOOLEAN DEFAULT true,
         user_id INTEGER,
+        last_seen_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   }
