@@ -3544,6 +3544,105 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     await p.query(table.query);
   }
 
+  // === 1. Core DB Column Enforcement (Before Indexes/FKs) ===
+  const coreColumns = [
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_asset_id UUID',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by INTEGER',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT \'active\'',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT \'user\'',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true',
+    'ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS image_asset_id UUID',
+    'ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS image_url TEXT',
+    'ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS preview_url TEXT',
+    'ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS video_url TEXT',
+    'ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS download_url TEXT',
+    'ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS blog_article_id INTEGER',
+    'ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS marketplace_item_id INTEGER',
+    'ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT \'{}\'',
+    'ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS page_id INTEGER',
+    'ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS status VARCHAR(50)',
+    'ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS ad_format VARCHAR(50)',
+    'ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    'ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS category VARCHAR(100)',
+    'ALTER TABLE bulletin_page_inquiries ADD COLUMN IF NOT EXISTS page_id INTEGER',
+    'ALTER TABLE bulletin_page_inquiries ADD COLUMN IF NOT EXISTS sender_id INTEGER',
+    'ALTER TABLE bulletin_ad_comments ADD COLUMN IF NOT EXISTS ad_id INTEGER',
+    'ALTER TABLE bulletin_ad_likes ADD COLUMN IF NOT EXISTS ad_id INTEGER',
+    'ALTER TABLE bulletin_ad_likes ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE bulletin_page_followers ADD COLUMN IF NOT EXISTS page_id INTEGER',
+    'ALTER TABLE bulletin_page_followers ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE bulletin_saved_ads ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE bulletin_saved_ads ADD COLUMN IF NOT EXISTS ad_id INTEGER',
+    'ALTER TABLE marketplace_purchases ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE marketplace_reviews ADD COLUMN IF NOT EXISTS item_id INTEGER',
+    'ALTER TABLE video_resources ADD COLUMN IF NOT EXISTS chat_id INTEGER',
+    'ALTER TABLE video_resources ADD COLUMN IF NOT EXISTS user_id INTEGER'
+  ];
+  for (const q of coreColumns) {
+    try {
+      await targetPool.query(q);
+    } catch (err) {
+      console.warn('[initDb Columns] Core column notice:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  // === 2. External DB Column Enforcement ===
+  const externalColumns = [
+    'ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image_asset_id UUID',
+    'ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image_url TEXT',
+    'ALTER TABLE blog_comments ADD COLUMN IF NOT EXISTS article_id INTEGER',
+    'ALTER TABLE blog_ratings ADD COLUMN IF NOT EXISTS article_id INTEGER'
+  ];
+  for (const q of externalColumns) {
+    try {
+      await targetExternalPool.query(q);
+    } catch (err) {
+      console.warn('[initDb Columns] External column notice:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  // === 3. Ledger DB Column Enforcement ===
+  const ledgerColumns = [
+    'ALTER TABLE wallets ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE wallets ADD COLUMN IF NOT EXISTS balance NUMERIC DEFAULT 0',
+    'ALTER TABLE wallets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    'ALTER TABLE ledger_transactions ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE ledger_transactions ADD COLUMN IF NOT EXISTS wallet_id INTEGER',
+    'ALTER TABLE ledger_transactions ADD COLUMN IF NOT EXISTS transaction_type VARCHAR(50)',
+    'ALTER TABLE ledger_transactions ADD COLUMN IF NOT EXISTS status VARCHAR(50)',
+    'ALTER TABLE ledger_transactions ADD COLUMN IF NOT EXISTS reference_id VARCHAR(255)',
+    'ALTER TABLE kyc_requests ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE withdrawal_requests ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE coupon_usages ADD COLUMN IF NOT EXISTS coupon_id INTEGER'
+  ];
+  for (const q of ledgerColumns) {
+    try {
+      await targetLedgerPool.query(q);
+    } catch (err) {
+      console.warn('[initDb Columns] Ledger column notice:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  // === 4. Security DB Column Enforcement ===
+  const securityColumns = [
+    'ALTER TABLE security_alerts ADD COLUMN IF NOT EXISTS user_id INTEGER',
+    'ALTER TABLE token_blacklist ADD COLUMN IF NOT EXISTS token VARCHAR(500)',
+    'ALTER TABLE token_blacklist ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP',
+    'ALTER TABLE admin_audit_logs ADD COLUMN IF NOT EXISTS admin_id INTEGER',
+    'ALTER TABLE registered_agents ADD COLUMN IF NOT EXISTS client_id VARCHAR(255)'
+  ];
+  for (const q of securityColumns) {
+    try {
+      await targetSecurityPool.query(q);
+    } catch (err) {
+      console.warn('[initDb Columns] Security column notice:', err instanceof Error ? err.message : err);
+    }
+  }
+
   const settingsCheck = await targetPool.query('SELECT count(*) FROM system_settings');
   if (parseInt(settingsCheck.rows[0].count, 10) === 0) {
     await targetPool.query(
@@ -3767,7 +3866,11 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   ];
 
   for (const idx of indexes) {
-    await idx.pool.query(idx.query);
+    try {
+      await idx.pool.query(idx.query);
+    } catch (idxErr) {
+      console.warn('[initDb Index] Notice:', idxErr instanceof Error ? idxErr.message : idxErr);
+    }
   }
 
   const relations = [
@@ -3900,11 +4003,12 @@ export async function verifySchemaIntegrity() {
   const expectedSchema: Record<string, Record<string, { columns: string[]; repairCols?: Record<string, string | { type: string; default?: any }> }>> = {
     core: {
       users: {
-        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications'],
+        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications', 'avatar_asset_id'],
         repairCols: {
           email_notifications: { type: 'BOOLEAN', default: 'true' },
           avatar: { type: 'TEXT' },
-          referral_code: { type: 'VARCHAR(6)' }
+          referral_code: { type: 'VARCHAR(6)' },
+          avatar_asset_id: { type: 'UUID' }
         }
       },
       chats: {
@@ -3932,6 +4036,7 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
         repairCols: {
           meta_title_en: { type: 'VARCHAR(255)' },
+          image_asset_id: { type: 'UUID' },
           meta_title_ar: { type: 'VARCHAR(255)' },
           meta_description_en: { type: 'TEXT' },
           meta_description_ar: { type: 'TEXT' },
@@ -3960,7 +4065,7 @@ export async function verifySchemaIntegrity() {
         }
       },
       marketplace_items: {
-        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
         repairCols: {
           slug: { type: 'VARCHAR(255)' },
           meta_title_en: { type: 'VARCHAR(255)' },
@@ -3992,6 +4097,14 @@ export async function verifySchemaIntegrity() {
       },
       google_tool_connections: {
         columns: ['id', 'user_id', 'tool_id', 'is_connected', 'config', 'access_token', 'refresh_token', 'expires_at', 'scopes', 'last_connected_at', 'created_at', 'updated_at']
+      },
+      media_assets: {
+        columns: ['id', 'stored_path', 'original_filename', 'context', 'format', 'width', 'height', 'size_bytes', 'sha256_hash', 'is_public', 'user_id', 'blog_article_id', 'marketplace_item_id', 'metadata', 'created_at', 'updated_at'],
+        repairCols: {
+          context: { type: 'TEXT', default: "'general'" },
+          format: { type: 'TEXT', default: "'webp'" },
+          metadata: { type: 'JSONB', default: "'{}'" }
+        }
       },
       advertisements: {
         columns: ['id', 'title_ar', 'title_en', 'description_ar', 'description_en', 'image_url', 'video_url', 'poster_url', 'target_url', 'sponsor_name', 'badge_text_ar', 'badge_text_en', 'position', 'format', 'display_order', 'is_active', 'meta_title_ar', 'meta_title_en', 'meta_description_ar', 'meta_description_en', 'keywords_ar', 'keywords_en', 'click_count', 'impression_count', 'start_date', 'end_date', 'created_at', 'updated_at'],
@@ -4030,7 +4143,7 @@ export async function verifySchemaIntegrity() {
     },
     external: {
       blog_articles: {
-        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
         repairCols: {
           meta_title_en: { type: 'VARCHAR(255)' },
           meta_title_ar: { type: 'VARCHAR(255)' },
