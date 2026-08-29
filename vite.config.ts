@@ -9,6 +9,9 @@ const rootDir = path.resolve(process.cwd());
 const pwaConfig: any = {
   registerType: 'autoUpdate',
   includeAssets: ['favicon.ico', 'app-assets/icon.png', 'app-assets/og-image.png'],
+  workbox: {
+    navigateFallbackDenylist: [/^\/api\//]
+  },
   manifest: {
     name: 'Perplexta Intelligence Platform',
     short_name: 'Perplexta',
