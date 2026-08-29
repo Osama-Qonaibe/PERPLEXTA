@@ -36,7 +36,6 @@ export const AuthModal: React.FC = () => {
 
   const handleClose = () => {
     setIsAuthModalOpen(false);
-    // Reset state
     setMode('login');
     setEmail('');
     setPassword('');

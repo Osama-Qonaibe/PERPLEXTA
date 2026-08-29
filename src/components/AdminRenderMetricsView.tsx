@@ -71,7 +71,6 @@ export const AdminRenderMetricsView: React.FC = () => {
     return true;
   });
 
-  // Calculate stats
   const totalRenders = filteredMetrics.reduce((acc, m) => acc + m.renderCount, 0);
   const avgDuration = filteredMetrics.length > 0 
     ? Math.round(filteredMetrics.reduce((acc, m) => acc + m.renderDuration, 0) / filteredMetrics.length) 
@@ -80,7 +79,6 @@ export const AdminRenderMetricsView: React.FC = () => {
     ? Math.max(...filteredMetrics.map(m => m.renderDuration)) 
     : 0;
 
-  // Prepare chart data (group by timestamp or sequence)
   const chartData = filteredMetrics.slice(0, 30).reverse().map((m, idx) => ({
     name: `#${idx + 1} (${m.componentName})`,
     duration: m.renderDuration,
@@ -89,7 +87,6 @@ export const AdminRenderMetricsView: React.FC = () => {
     timestamp: new Date(m.timestamp).toLocaleTimeString()
   }));
 
-  // Group by component for bar chart
   const componentLatencyMap: { [key: string]: { totalDuration: number; count: number } } = {};
   filteredMetrics.forEach(m => {
     if (!componentLatencyMap[m.componentName]) {

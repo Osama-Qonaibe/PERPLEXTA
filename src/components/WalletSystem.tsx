@@ -482,7 +482,6 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
           }
         }
       } catch (err) {
-        // Stripe checkout session failed to load silent handling
       }
     }
 

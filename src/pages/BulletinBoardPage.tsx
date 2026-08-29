@@ -25,19 +25,10 @@ import { ReelsFeed } from '../components/ReelsFeed';
 import { ReelUploadModal } from '../components/ReelUploadModal';
 import { StoryUploadModal } from '../components/StoryUploadModal';
 import { StoryViewerModal } from '../components/StoryViewerModal';
+import { BulletinAvatar } from '../components/BulletinAvatar';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
+import { stopAllMedia } from '../utils/mediaCoordinator';
 import { SOCIAL_COLORS } from '../constants/socialColors';
-
-const CATEGORIES = [
-  { id: 'all', nameAr: 'جميع التصنيفات', nameEn: 'All Categories' },
-  { id: 'تكنولوجيا / Tech', nameAr: 'تكنولوجيا وذكاء اصطناعي', nameEn: 'Tech & AI' },
-  { id: 'خدمات / Services', nameAr: 'خدمات وأعمال برمجية', nameEn: 'Services & Freelance' },
-  { id: 'تجارة إلكترونية / E-Commerce', nameAr: 'منتجات وتجارة إلكترونية', nameEn: 'E-Commerce' },
-  { id: 'عقارات وسيارت / Real Estate', nameAr: 'عقارات وسيارات', nameEn: 'Real Estate & Vehicles' },
-  { id: 'دورات وتدريب / Courses', nameAr: 'دورات واستشارات', nameEn: 'Courses & Coaching' },
-  { id: 'وظائف / Jobs', nameAr: 'فرص عمل وتوظيف', nameEn: 'Jobs & Careers' },
-  { id: 'أخرى / General', nameAr: 'عام ومتنوع', nameEn: 'General' },
-];
 
 const PALESTINE_CITIES = [
   'القدس الشريف',
@@ -141,7 +132,65 @@ export const BulletinBoardPage: React.FC = () => {
   const { language, user, token, setIsAuthModalOpen, theme } = useAppContext();
   const isRtl = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>('board');
+  const [activeTab, setActiveTab] = useState<'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlTab = searchParams.get('tab');
+        const validTabs = ['board', 'reels', 'pages', 'inquiries', 'my_ads', 'analytics', 'saved'];
+        if (urlTab && validTabs.includes(urlTab)) {
+          return urlTab as any;
+        }
+        const savedTab = sessionStorage.getItem('perplexta_bulletin_active_tab');
+        if (savedTab && validTabs.includes(savedTab)) {
+          return savedTab as any;
+        }
+      }
+    } catch (e) {
+      // Ignore sessionStorage errors
+    }
+    return 'board';
+  });
+
+  // Synchronize Active Tab to SessionStorage & URL search params for page refresh persistence
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('perplexta_bulletin_active_tab', activeTab);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('tab') !== activeTab) {
+          url.searchParams.set('tab', activeTab);
+          window.history.replaceState(null, '', url.toString());
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, [activeTab]);
+
+  // Persist and restore scroll position on window refresh/navigation
+  useEffect(() => {
+    try {
+      const savedScroll = sessionStorage.getItem(`perplexta_scroll_${activeTab}`);
+      if (savedScroll) {
+        const scrollY = parseInt(savedScroll, 10);
+        if (!isNaN(scrollY) && scrollY > 0) {
+          setTimeout(() => {
+            window.scrollTo({ top: scrollY, behavior: 'instant' as any });
+          }, 80);
+        }
+      }
+
+      const handleScroll = () => {
+        try {
+          sessionStorage.setItem(`perplexta_scroll_${activeTab}`, String(window.scrollY));
+        } catch (e) {}
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      return () => window.removeEventListener('scroll', handleScroll);
+    } catch (e) {}
+  }, [activeTab]);
   const [activeReelModalId, setActiveReelModalId] = useState<number | null>(null);
   const [isReelUploadModalOpen, setIsReelUploadModalOpen] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -840,6 +889,12 @@ export const BulletinBoardPage: React.FC = () => {
         return;
       }
 
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || (isRtl ? 'تم تجاوز حد الطلبات، يرجى الانتظار قليلًا' : 'Rate limit exceeded, please wait a moment'));
+        return;
+      }
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const data = await res.json();
@@ -1182,12 +1237,18 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  const handleAddComment = async (adId: number, parentId?: number) => {
+  const handleAddComment = async (adId: number, parentIdOrText?: number | string, optParentId?: number) => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول للتعليق' : 'Please log in to comment');
       return;
     }
-    if (!newCommentText.trim()) return;
+    let text = newCommentText;
+    let parentId = typeof parentIdOrText === 'number' ? parentIdOrText : optParentId;
+    if (typeof parentIdOrText === 'string') {
+      text = parentIdOrText;
+    }
+    const contentToSend = text;
+    if (!contentToSend || !contentToSend.trim()) return;
 
     try {
       const res = await fetch(`/api/bulletin/ads/${adId}/comments`, {
@@ -1196,7 +1257,7 @@ export const BulletinBoardPage: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ content: newCommentText.trim(), parent_id: parentId })
+        body: JSON.stringify({ content: contentToSend.trim(), parent_id: parentId })
       });
       const data = await res.json();
       if (data.success && data.comment) {
@@ -1204,8 +1265,10 @@ export const BulletinBoardPage: React.FC = () => {
           ...prev,
           [adId]: [...(prev[adId] || []), data.comment]
         }));
-        setNewCommentText('');
-        setReplyToCommentId(null);
+        if (typeof parentIdOrText !== 'string') {
+          setNewCommentText('');
+          setReplyToCommentId(null);
+        }
         setAds(prev => prev.map(a => a.id === adId ? { ...a, comments_count: a.comments_count + 1 } : a));
         toast.success(isRtl ? 'تم إضافة تعليقك' : 'Comment added');
       } else {
@@ -1836,22 +1899,46 @@ export const BulletinBoardPage: React.FC = () => {
     });
   }, [orderedStories]);
 
+  const handleMobileBack = () => {
+    if (isMobileSearchOpen) {
+      setIsMobileSearchOpen(false);
+      return;
+    }
+    if (selectedPageDetail) {
+      handleBackToBoard();
+      return;
+    }
+    if (activeTab !== 'board') {
+      setActiveTab('board');
+      return;
+    }
+    navigate('/chat');
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme pb-20">
       
-      {/* MOBILE SOCIAL HEADER (Facebook Clean UI Style) */}
-      <div className="block lg:hidden sticky top-0 z-30 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] px-8 sm:px-4 md:px-6 py-2 transition-theme">
+      {/* MOBILE ADS & SOCIAL HEADER (Facebook Pro Mobile UI Style) */}
+      <div className="block lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] px-3 sm:px-4 py-2 transition-theme">
         {isMobileSearchOpen ? (
           /* Expandable Mobile Interactive Search Bar */
           <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }} className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchOpen(false)}
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-700 dark:text-gray-200 border border-[var(--border-main)] transition-all active:scale-95 shrink-0 shadow-2xs"
+              title={isRtl ? 'إغلاق البحث' : 'Close search'}
+            >
+              {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+            </button>
             <div className="relative flex-1">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isRtl ? 'ابحث عن منتج، صفحة، أو إعلان...' : 'Search ad, product, page...'}
+                placeholder={isRtl ? 'ابحث عن إعلان، صفحة، أو منتج...' : 'Search ad, product, page...'}
                 autoFocus
-                className="w-full ps-9 pe-8 py-2 text-xs font-bold rounded-[10px] bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
+                className="w-full ps-9 pe-8 py-2 text-xs font-bold rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
               />
               <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
               {searchQuery && (
@@ -1861,43 +1948,78 @@ export const BulletinBoardPage: React.FC = () => {
               )}
             </div>
             <button
-              type="button"
-              onClick={() => setIsMobileSearchOpen(false)}
-              className="px-3 py-2 rounded-[10px] text-xs font-bold text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[var(--bg-secondary)]"
+              type="submit"
+              className="px-3.5 py-2 rounded-xl bg-accent text-white font-bold text-xs shadow-2xs hover:opacity-90 active:scale-95 transition-all shrink-0"
             >
-              {isRtl ? 'إلغاء' : 'Cancel'}
+              {isRtl ? 'بحث' : 'Search'}
             </button>
           </form>
         ) : (
-          /* Standard Compact Facebook Style Header */
+          /* Standard Compact Facebook Style Header with Professional Back Button */
           <div className="flex items-center justify-between gap-2 h-10">
-            {/* Brand Logo & Name */}
-            <div 
-              onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-2 shrink-0 cursor-pointer transition-theme h-full"
-            >
-              <div className="w-10 h-10 rounded-[10px] bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20">
-                <Megaphone size={16} />
-              </div>
-              <div className="flex flex-col justify-center">
-                <h2 className="text-[13px] font-black tracking-tight flex items-center gap-1 leading-none text-gray-900 dark:text-gray-100">
+            {/* Start Side: Professional Back Button + Platform Logo & Title */}
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Professional Back Button */}
+              <button
+                type="button"
+                onClick={handleMobileBack}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-800 dark:text-gray-100 flex items-center justify-center border border-[var(--border-main)] active:scale-95 transition-all shadow-2xs shrink-0"
+                title={isRtl ? 'رجوع' : 'Back'}
+                aria-label="Back"
+              >
+                {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+              </button>
+
+              {/* Brand Logo & Name */}
+              <div 
+                onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="flex items-center gap-2 cursor-pointer transition-theme select-none min-w-0"
+              >
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20 shrink-0 shadow-2xs">
+                  <Megaphone size={17} />
+                </div>
+                <h2 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5 leading-none text-gray-900 dark:text-gray-100 truncate">
                   <span>{isRtl ? 'بيربليكستا' : 'Perplexta'}</span>
-                  <ShieldCheck size={12} className="text-accent shrink-0" />
+                  <ShieldCheck size={14} className="text-accent shrink-0" />
                 </h2>
-                <p className="text-[9px] text-accent dark:text-accent font-extrabold pt-0.5">{isRtl ? 'سوشيال' : 'Social'}</p>
               </div>
             </div>
 
-            {/* Left/End side: Search + Notifications Capsules Only */}
-            <div className="flex items-center gap-2 h-full">
+            {/* End Side: Search + Messages/Inquiries Shortcut */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Search Toggle Button */}
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(true)}
-                className="w-10 h-10 rounded-[10px] bg-transparent hover:bg-gray-100 dark:hover:bg-[var(--bg-secondary)] flex items-center justify-center text-gray-400 hover:text-accent transition-theme border border-[var(--border-main)]"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-accent transition-theme border border-[var(--border-main)] active:scale-95 shadow-2xs"
                 title={isRtl ? 'البحث بالمنصة' : 'Search Platform'}
+                aria-label="Search"
               >
                 <Search size={16} />
+              </button>
+
+              {/* Inquiries / Messages Shortcut with unread badge */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!token) { setIsAuthModalOpen(true); return; }
+                  setSelectedPageDetail(null);
+                  setActiveTab('inquiries');
+                }}
+                className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-theme border border-[var(--border-main)] active:scale-95 shadow-2xs ${
+                  activeTab === 'inquiries' && !selectedPageDetail
+                    ? 'bg-accent/10 text-accent border-accent/40'
+                    : 'bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-600 dark:text-gray-300 hover:text-accent'
+                }`}
+                title={isRtl ? 'الرسائل والاستفسارات' : 'Messages'}
+                aria-label="Messages"
+              >
+                <MessageSquare size={16} />
+                {inquiriesList.length > 0 && (
+                  <span className="absolute -top-1 -end-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
+                    {inquiriesList.length}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -2224,13 +2346,9 @@ export const BulletinBoardPage: React.FC = () => {
               onMessageAdvertiser={handleMessageAdvertiser}
               onShare={handleShareAd}
               onOpenPageDetail={handleOpenPageDetail}
-              onUploadReelClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'video/*';
-                input.onchange = (e: any) => handleReelFileUpload(e);
-                input.click();
-              }}
+              onClose={() => setActiveTab('board')}
+              onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
+              onUploadReelClick={() => setIsReelUploadModalOpen(true)}
             />
           </div>
         ) : activeTab === 'pages' && !selectedPageDetail ? (
@@ -2292,9 +2410,9 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
-                {pagesList.map(page => (
+                {pagesList.map((page, pIdx) => (
                   <motion.div
-                    key={page.id}
+                    key={`page-item-${page.id}-${pIdx}`}
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-3xl bg-white dark:bg-[#1a1a1c] border border-gray-200/80 dark:border-gray-800/80 shadow-sm hover:shadow-md transition-theme space-y-4"
@@ -2312,10 +2430,11 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="px-4 sm:px-6 -mt-12 sm:-mt-16 space-y-3 relative z-10">
                       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                         <div className="flex items-end gap-3 cursor-pointer min-w-0" onClick={() => handleOpenPageDetail(page.id)}>
-                          <img
-                            src={getMediaUrl(page.avatar_url)}
+                          <BulletinAvatar
+                            src={page.avatar_url}
                             alt={page.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-xl shrink-0 bg-white dark:bg-gray-800"
+                            size="xl"
+                            isPage={true}
                           />
                           <div className="mb-1 min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -2403,14 +2522,12 @@ export const BulletinBoardPage: React.FC = () => {
               {user ? (
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 gap-2">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="relative shrink-0">
-                      <img
-                        src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                        alt={user.name}
-                        className="w-11 h-11 rounded-full object-cover border-2 border-accent/40"
-                      />
-                      <span className="absolute bottom-0 end-0 w-3.5 h-3.5 rounded-full bg-accent border-2 border-white dark:border-[#1a1a1c]" />
-                    </div>
+                    <BulletinAvatar
+                      src={user.avatar}
+                      alt={user.name}
+                      size="md"
+                      isOnline={true}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <h3 className="text-xs font-extrabold truncate">{user.name}</h3>
@@ -2618,9 +2735,9 @@ export const BulletinBoardPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {myPagesList.map(page => (
+                    {myPagesList.map((page, idx) => (
                       <div
-                        key={page.id}
+                        key={`my-page-${page.id}-${idx}`}
                         onClick={() => handleOpenPageDetail(page.id)}
                         className={`p-2.5 rounded-xl border transition-theme cursor-pointer flex items-center justify-between gap-2.5 hover:border-accent/50 ${
                           selectedPageDetail?.page.id === page.id
@@ -2629,10 +2746,11 @@ export const BulletinBoardPage: React.FC = () => {
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <img
-                            src={getMediaUrl(page.avatar_url)}
+                          <BulletinAvatar
+                            src={page.avatar_url}
                             alt={page.name}
-                            className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                            size="md"
+                            isPage={true}
                           />
                           <div className="min-w-0">
                             <h4 className="text-xs font-extrabold truncate">{page.name}</h4>
@@ -2675,16 +2793,17 @@ export const BulletinBoardPage: React.FC = () => {
                 <p className="text-xs text-gray-400 text-center py-2">{isRtl ? 'لا توجد صفحات حالياً' : 'No pages'}</p>
               ) : (
                 <div className="space-y-2.5">
-                  {pagesList.slice(0, 5).map(page => (
+                  {pagesList.slice(0, 5).map((page, idx) => (
                     <div
-                      key={page.id}
+                      key={`rec-page-${page.id}-${idx}`}
                       className="p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 hover:border-accent/40 transition-theme"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <img
+                        <BulletinAvatar
                           src={page.avatar_url}
                           alt={page.name}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                          size="md"
+                          isPage={true}
                         />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1">
@@ -2788,7 +2907,9 @@ export const BulletinBoardPage: React.FC = () => {
                   <div className="my-1 border-t border-gray-500/10" />
                   <button
                     onClick={() => {
-                      localStorage.clear();
+                      sessionStorage.clear();
+                      sessionStorage.removeItem('perplexta_bulletin_scroll_y');
+                      localStorage.removeItem('perplexta_bulletin_scroll_y');
                       window.location.reload();
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors text-start"
@@ -2898,10 +3019,11 @@ export const BulletinBoardPage: React.FC = () => {
                 {/* Page Profile Header */}
                 <div className="px-6 -mt-14 pb-4 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <img
-                      src={getMediaUrl(selectedPageDetail.page.avatar_url)}
+                    <BulletinAvatar
+                      src={selectedPageDetail.page.avatar_url}
                       alt={selectedPageDetail.page.name}
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white dark:border-[#1a1a1c] object-cover shadow-xl shrink-0"
+                      size="xl"
+                      isPage={true}
                     />
 
                     {/* Action Bar */}
@@ -3014,8 +3136,8 @@ export const BulletinBoardPage: React.FC = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full">
-                          {selectedPageDetail.ads.map(ad => (
-                            <div key={ad.id} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 space-y-2.5">
+                          {selectedPageDetail.ads.map((ad, adIdx) => (
+                            <div key={`page-ad-${ad.id}-${adIdx}`} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 space-y-2.5">
                               <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}>
                                 <img
                                   src={getMediaUrl(ad.image_url)}
@@ -3109,9 +3231,9 @@ export const BulletinBoardPage: React.FC = () => {
                   {pageDetailTab === 'media' && (
                     <div className="pt-2">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {selectedPageDetail.ads.map(ad => (
+                        {selectedPageDetail.ads.map((ad, gIdx) => (
                           <div
-                            key={ad.id}
+                            key={`page-gallery-ad-${ad.id}-${gIdx}`}
                             onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}
                             className="aspect-square rounded-2xl overflow-hidden cursor-pointer relative group bg-gray-100 dark:bg-gray-900"
                           >
@@ -3237,13 +3359,13 @@ export const BulletinBoardPage: React.FC = () => {
                         </div>
 
                         {/* User & Merchant Stories */}
-                        {representativeStories.map((story: any) => {
+                        {representativeStories.map((story: any, sIdx: number) => {
                           // Find index in orderedStories for the viewer
                           const viewerStartIndex = orderedStories.findIndex((s: any) => s.id === story.id);
                           
                           return (
                             <div
-                              key={story.id}
+                              key={`rep-story-${story.id || 'st'}-${sIdx}`}
                               onClick={() => {
                                 if (previewingVideoStoryId === story.id) return;
                                 setSelectedStoryIndex(viewerStartIndex);
@@ -3312,10 +3434,10 @@ export const BulletinBoardPage: React.FC = () => {
                     {/* Facebook Post Creation Bar (Composer Box) */}
                     <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                       <div className="flex items-center gap-2.5">
-                        <img
-                          src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                        <BulletinAvatar
+                          src={user?.avatar}
                           alt={user?.name || 'User'}
-                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                          size="md"
                         />
                         <button
                           onClick={() => {
@@ -3456,7 +3578,7 @@ export const BulletinBoardPage: React.FC = () => {
                 {/* TAB: REELS & VERTICAL SHORT VIDEOS (9:16 FULL-SCREEN FEED) */}
                 {/* ========================================================== */}
                 {(activeTab as string) === 'reels' && (
-                  <div className="w-full h-[calc(100dvh-110px)] md:h-[88vh] bg-black rounded-2xl md:rounded-3xl overflow-hidden border border-gray-800/80 shadow-2xl relative">
+                  <div className="fixed inset-0 z-[9999] bg-black w-screen h-[100dvh]">
                     <ReelsFeed
                       ads={ads}
                       isRtl={isRtl}
@@ -3468,6 +3590,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onOpenPageDetail={handleOpenPageDetail}
                       onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
                       onUploadReelClick={() => setIsReelUploadModalOpen(true)}
+                      onClose={() => setActiveTab('board')}
                     />
                   </div>
                 )}
@@ -3800,7 +3923,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="max-h-[30vh] overflow-y-auto pr-3 space-y-3 scrollbar-hide flex flex-col justify-end [mask-image:linear-gradient(to_bottom,transparent,black_20%)]">
                       {liveComments.map((comment, idx) => (
                         <motion.div 
-                          key={comment.id}
+                          key={`live-comment-${comment.id || idx}-${idx}`}
                           initial={{ opacity: 0, x: -30 }}
                           animate={{ opacity: 1, x: 0 }}
                           className="bg-black/60 backdrop-blur-md rounded-[4px] p-2.5 inline-block max-w-fit border border-white/10 shadow-2xl"
@@ -3894,9 +4017,9 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-4 gap-3 mb-6">
                       {giftsCatalog.length > 0 ? (
-                        giftsCatalog.map(gift => (
+                        giftsCatalog.map((gift, gIdx) => (
                           <button
-                            key={gift.id}
+                            key={`gift-opt-${gift.id}-${gIdx}`}
                             onClick={() => handleSendGift(gift)}
                             className="flex flex-col items-center justify-center p-3 bg-gray-800 rounded-2xl border border-gray-700 hover:border-accent hover:bg-gray-700 transition-theme group"
                           >
@@ -3982,13 +4105,12 @@ export const BulletinBoardPage: React.FC = () => {
                   <form onSubmit={handleCreateCampaign} className="space-y-2.5 sm:space-y-4">
                     {/* User Info Header */}
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden ring-2 ring-accent-500/20 shrink-0">
-                        {adFormData.page_id ? (
-                          <img src={myPagesList.find(p => p.id === Number(adFormData.page_id))?.avatar_url} className="w-full h-full object-cover" />
-                        ) : (
-                          user?.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold">U</div>
-                        )}
-                      </div>
+                      <BulletinAvatar
+                        src={adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.avatar_url : user?.avatar}
+                        alt={adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.name : user?.name}
+                        size="md"
+                        isPage={Boolean(adFormData.page_id)}
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
@@ -5907,29 +6029,30 @@ export const BulletinBoardPage: React.FC = () => {
       {/* FULL-SCREEN REELS MODAL OVERLAY WHEN CLICKED FROM FEED */}
       <AnimatePresence>
         {activeReelModalId !== null && (
-          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-2 sm:p-4">
-            <button
-              onClick={() => setActiveReelModalId(null)}
-              className="absolute top-4 end-4 z-50 p-2.5 rounded-full bg-black/70 hover:bg-black text-white text-xs font-bold border border-white/20 transition-theme shadow-lg"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="w-full max-w-md h-full max-h-[92vh] my-auto">
-              <ReelsFeed
-                ads={ads}
-                initialAdId={activeReelModalId}
-                isRtl={isRtl}
-                token={token}
-                user={user}
-                onToggleLike={handleToggleLike}
-                onMessageAdvertiser={handleMessageAdvertiser}
-                onShare={handleShareAd}
-                onOpenPageDetail={handleOpenPageDetail}
-                onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
-                onUploadReelClick={() => setIsReelUploadModalOpen(true)}
-              />
-            </div>
+          <div className="fixed inset-0 z-[9999] bg-black w-screen h-[100dvh]">
+            <ReelsFeed
+              ads={ads}
+              initialAdId={activeReelModalId}
+              isRtl={isRtl}
+              token={token}
+              user={user}
+              onToggleLike={handleToggleLike}
+              onMessageAdvertiser={handleMessageAdvertiser}
+              onShare={handleShareAd}
+              onOpenPageDetail={handleOpenPageDetail}
+              onOpenUploadReels={() => {
+                stopAllMedia('reel_upload_preview');
+                setIsReelUploadModalOpen(true);
+              }}
+              onUploadReelClick={() => {
+                stopAllMedia('reel_upload_preview');
+                setIsReelUploadModalOpen(true);
+              }}
+              onClose={() => {
+                stopAllMedia();
+                setActiveReelModalId(null);
+              }}
+            />
           </div>
         )}
       </AnimatePresence>
@@ -5961,9 +6084,10 @@ export const BulletinBoardPage: React.FC = () => {
                 />
               )}
               <div className="absolute top-4 start-4 flex items-center gap-2 bg-black/20 backdrop-blur-md p-1.5 pr-3 rounded-full">
-                <img 
-                  src={getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.author_avatar)} 
-                  className="w-8 h-8 rounded-full border border-white/50 object-cover"
+                <BulletinAvatar 
+                  src={stories.find(s => s.id === previewingVideoStoryId)?.author_avatar} 
+                  alt={stories.find(s => s.id === previewingVideoStoryId)?.author_name}
+                  size="sm"
                 />
                 <div className="flex flex-col">
                   <span className="text-white text-[11px] font-bold drop-shadow-md leading-none">

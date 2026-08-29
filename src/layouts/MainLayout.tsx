@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
@@ -10,6 +10,8 @@ import { SIDEBAR_TRANSITION } from '../constants/motions';
 
 export const MainLayout: React.FC = () => {
   const { isSidebarOpen, setIsSidebarOpen, language, isMobile, resolvedTheme, themeTransitioning } = useAppContext();
+  const location = useLocation();
+  const isBulletin = location.pathname.startsWith('/bulletin');
 
   const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 56);
 
@@ -32,7 +34,10 @@ export const MainLayout: React.FC = () => {
     <div 
       className="flex h-[100dvh] w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme"
     >
-      <Header activeLanguage={language} />
+      {/* Hide Header on mobile when visiting /bulletin (Ads Board) so the Ads Board header acts as the primary display header */}
+      <div className={isBulletin ? 'hidden lg:block' : 'block'}>
+        <Header activeLanguage={language} />
+      </div>
       <Sidebar activeLanguage={language} />
 
       <AnimatePresence>
@@ -42,7 +47,7 @@ export const MainLayout: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={SIDEBAR_TRANSITION}
-            className="fixed top-[64px] bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer"
+            className={`fixed ${isBulletin ? 'top-0' : 'top-[64px]'} bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer`}
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -56,7 +61,7 @@ export const MainLayout: React.FC = () => {
         style={{ willChange: 'padding-inline-start' }}
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
-        <main className="flex-1 overflow-hidden relative pt-[64px] bg-[var(--bg-base)] transition-theme flex">
+        <main className={`flex-1 overflow-hidden relative ${isBulletin ? 'pt-0 lg:pt-[64px]' : 'pt-[64px]'} bg-[var(--bg-base)] transition-theme flex`}>
           <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0 touch-pan-y overscroll-y-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Outlet />
           </div>

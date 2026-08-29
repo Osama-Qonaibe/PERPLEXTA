@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { BulletinAvatar } from './BulletinAvatar';
 import { toast } from 'sonner';
 
 export interface MessengerThread {
@@ -71,7 +72,6 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
         'I would like to buy this item now!'
       ];
 
-  // Fetch messages when thread changes
   useEffect(() => {
     if (!token || !selectedThread) return;
     let isMounted = true;
@@ -106,7 +106,6 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
     };
   }, [selectedThread, token, user?.id]);
 
-  // Real-time Socket Event Subscribers
   useEffect(() => {
     if (!socket || !user?.id || !selectedThread) return;
 
@@ -267,16 +266,12 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                       : 'hover:bg-gray-100/70 dark:hover:bg-[#1a1a1e]/60'
                   }`}
                 >
-                  <div className="relative shrink-0">
-                    {inq.sender_avatar ? (
-                      <img src={getMediaUrl(inq.sender_avatar)} alt={inq.sender_name} className="w-11 h-11 rounded-full object-cover ring-2 ring-accent-500/20" />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full bg-accent/10 text-accent flex items-center justify-center font-extrabold text-sm ring-2 ring-accent-500/20">
-                        {(inq.sender_name || 'U')[0].toUpperCase()}
-                      </div>
-                    )}
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-accent rounded-full ring-2 ring-white dark:ring-[#121215]" />
-                  </div>
+                  <BulletinAvatar
+                    src={inq.sender_avatar}
+                    alt={inq.sender_name}
+                    size="md"
+                    isOnline={true}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-extrabold text-xs text-gray-900 dark:text-gray-100 truncate">{inq.sender_name}</h4>
@@ -316,16 +311,12 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 >
                   {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
                 </button>
-                <div className="relative">
-                  {selectedThread.sender_avatar ? (
-                    <img src={getMediaUrl(selectedThread.sender_avatar)} alt={selectedThread.sender_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-accent-500/30" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent-500/30">
-                      <User size={18} />
-                    </div>
-                  )}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
-                </div>
+                <BulletinAvatar
+                  src={selectedThread.sender_avatar}
+                  alt={selectedThread.sender_name}
+                  size="md"
+                  isOnline={true}
+                />
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-extrabold text-sm text-gray-900 dark:text-gray-100">{selectedThread.sender_name}</h4>

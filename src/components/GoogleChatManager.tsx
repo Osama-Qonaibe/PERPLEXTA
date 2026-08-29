@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Use unified auth instance
 
 const chatProvider = new GoogleAuthProvider();
 [
@@ -62,18 +61,15 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
   const [isLoadingSpaces, setIsLoadingSpaces] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  // Send message state
   const [messageText, setMessageText] = useState('');
   const [showSendModal, setShowSendModal] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  // Create space state
   const [showCreateSpaceModal, setShowCreateSpaceModal] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
 
   useEffect(() => {
-    // Restore token from localStorage if available
     const savedToken = safeStorageGet('google_chat_token');
     if (savedToken) {
       cachedChatToken = savedToken;
@@ -176,7 +172,6 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
     if (!activeToken) return;
     try {
       setIsLoadingMessages(true);
-      // spaceResourceName is like "spaces/AAAA..."
       const spaceId = spaceResourceName.split('/')[1];
       const res = await fetch(`/api/google-chat/spaces/${spaceId}/messages`, {
         headers: { Authorization: `Bearer ${activeToken}` }
@@ -185,7 +180,6 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       const data = await res.json();
-      // Messages come in oldest-first or newest-first depending on API, sort by createTime
       const msgs = (data.messages || []).sort((a: Message, b: Message) => 
         new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
       );
@@ -236,7 +230,6 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
     e.preventDefault();
     if (!newSpaceName.trim() || !cachedChatToken) return;
     
-    // Explicit user confirmation for space creation (Workspace guideline)
     const confirmed = window.confirm(
       isAr 
         ? `هل أنت متأكد من إنشاء مساحة عمل جديدة باسم "${newSpaceName.trim()}"؟`

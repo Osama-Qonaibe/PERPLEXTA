@@ -33,7 +33,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
   const [hoveredPoint, setHoveredPoint] = useState<TrendDataPoint | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Generate realistic historical engagement data based on timeframe
   useEffect(() => {
     const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
     const points: TrendDataPoint[] = [];
@@ -50,7 +49,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
         day: 'numeric',
       });
 
-      // Synthetic organic trend curves with noise
       const baseProgress = (days - i) / days;
       const wave = Math.sin(baseProgress * Math.PI * 3) * 15;
       const randomNoise = Math.floor(Math.random() * 12) - 5;
@@ -77,7 +75,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     setData(points);
   }, [timeframe, language]);
 
-  // Render D3 chart inside SVG with Responsive ResizeObserver
   useEffect(() => {
     if (!data.length || !svgRef.current || !containerRef.current) return;
 
@@ -93,13 +90,11 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Color definitions
     const isDark = resolvedTheme === 'dark';
     const strokeColor = '#334155'; // Emerald 500
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.06)';
     const textColor = isDark ? '#9ca3af' : '#6b7280';
 
-    // Linear Gradients for Area Fill & Glow Filter
     const defs = svg.append('defs');
 
     const gradient = defs
@@ -122,7 +117,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('stop-color', '#334155')
       .attr('stop-opacity', 0.0);
 
-    // Filter for line drop shadow / glow
     const filter = defs.append('filter').attr('id', 'accent-glow').attr('height', '130%');
     filter.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', 3).attr('result', 'blur');
     filter.append('feOffset').attr('in', 'blur').attr('dx', 0).attr('dy', 2).attr('result', 'offsetBlur');
@@ -130,7 +124,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     feMerge.append('feMergeNode').attr('in', 'offsetBlur');
     feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-    // Scales
     const xScale = d3
       .scaleTime()
       .domain(d3.extent(data, (d) => d.date) as [Date, Date])
@@ -139,7 +132,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
     const yMax = (d3.max(data, (d) => d[activeMetric]) || 100) * 1.15;
     const yScale = d3.scaleLinear().domain([0, yMax]).range([height - margin.top - margin.bottom, 0]);
 
-    // Gridlines
     const yGrid = d3.axisLeft(yScale).ticks(5).tickSize(-width).tickFormat(() => '');
     g.append('g')
       .attr('class', 'grid')
@@ -148,7 +140,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('stroke', gridColor)
       .attr('stroke-dasharray', '3,3');
 
-    // D3 Area Generator
     const area = d3
       .area<TrendDataPoint>()
       .x((d) => xScale(d.date))
@@ -161,7 +152,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('fill', 'url(#accent-area-gradient)')
       .attr('d', area);
 
-    // D3 Line Generator
     const line = d3
       .line<TrendDataPoint>()
       .x((d) => xScale(d.date))
@@ -177,7 +167,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('filter', 'url(#accent-glow)')
       .attr('d', line);
 
-    // Animate Line Path Entry
     const totalLength = (path.node() as SVGPathElement)?.getTotalLength() || 0;
     path
       .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
@@ -187,7 +176,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .ease(d3.easeCubicOut)
       .attr('stroke-dashoffset', 0);
 
-    // Axes
     const xAxis = d3
       .axisBottom(xScale)
       .ticks(Math.min(data.length, containerWidth < 480 ? 4 : 8))
@@ -218,10 +206,8 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('font-size', '10px')
       .attr('font-weight', '600');
 
-    // Remove domain axis lines for cleaner look
     g.selectAll('.domain').attr('stroke', gridColor);
 
-    // Interactive Overlay & Crosshair
     const crosshair = g
       .append('line')
       .attr('y1', 0)
@@ -239,7 +225,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       .attr('stroke-width', 2.5)
       .style('opacity', 0);
 
-    // Mousemove / Touch handler overlay rect
     g.append('rect')
       .attr('width', width)
       .attr('height', height - margin.top - margin.bottom)
@@ -276,7 +261,6 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       });
   }, [data, activeMetric, theme, language]);
 
-  // Aggregate metrics summaries
   const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
   const avgMatch = data.length ? (data.reduce((acc, curr) => acc + curr.matchScore, 0) / data.length).toFixed(1) : '94.5';
   const totalImpressions = data.reduce((acc, curr) => acc + curr.impressions, 0);

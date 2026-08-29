@@ -41,22 +41,16 @@ export const FloatingPopover: React.FC<FloatingPopoverProps> = ({
 
       if (placement === 'outward-sidebar') {
         if (direction === 'rtl') {
-          // Sidebar is on the right in RTL.
-          // Pop OUTWARD to the left (into the main content canvas).
           left = rect.left - popoverWidth - 8;
           top = rect.top - 4;
 
-          // Screen boundary safety
           if (left < 12) {
             left = Math.max(12, rect.right + 8);
           }
         } else {
-          // Sidebar is on the left in LTR.
-          // Pop OUTWARD to the right (into the main content canvas).
           left = rect.right + 8;
           top = rect.top - 4;
 
-          // Screen boundary safety
           if (left + popoverWidth > viewportWidth - 12) {
             left = Math.max(12, rect.left - popoverWidth - 8);
           }
@@ -65,12 +59,10 @@ export const FloatingPopover: React.FC<FloatingPopoverProps> = ({
         top = rect.bottom + 6;
         left = direction === 'rtl' ? rect.left : rect.right - popoverWidth;
       } else {
-        // default bottom-start or auto
         top = rect.bottom + 6;
         left = direction === 'rtl' ? rect.right - popoverWidth : rect.left;
       }
 
-      // Vertical screen boundary safety
       if (top + estimatedHeight > viewportHeight - 12) {
         top = Math.max(12, viewportHeight - estimatedHeight - 12);
       }
@@ -81,7 +73,6 @@ export const FloatingPopover: React.FC<FloatingPopoverProps> = ({
     computeCoords();
 
     const handleScroll = (e: Event) => {
-      // If scroll happens outside the popover itself, close popover
       if (popoverRef.current && popoverRef.current.contains(e.target as Node)) {
         return;
       }

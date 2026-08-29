@@ -9,34 +9,26 @@ export const IncentiveCard: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Hidden/Visible state based on milestoneData
   const isVisible = !!milestoneData && !isClosing;
 
-  // Use dynamic site name for share
   const currentSiteName = dir === 'rtl' ? (siteSettings.siteNameAr || siteSettings.siteName) : siteSettings.siteName;
   const shareTitle = currentSiteName || 'AI Platform';
 
-  // Function to handle close
   const handleClose = useCallback(() => {
     setIsClosing(true);
-    // Slight delay to allow animation to finish
     setTimeout(() => {
       setMilestoneData(null);
       setIsClosing(false);
     }, 500);
   }, [setMilestoneData]);
 
-  // Handle global mouse move or click to hide
   useEffect(() => {
     if (!isVisible) return;
 
     const hideHandler = () => {
-      // We use a small delay so human eyes can at least see it popped up
-      // but the user requested "if user clicks or moves mouse anywhere it disappears"
       handleClose();
     };
 
-    // Delay adding listeners to prevent immediate closing during the trigger action
     const timeout = setTimeout(() => {
       window.addEventListener('mousemove', hideHandler, { once: true });
       window.addEventListener('click', hideHandler, { once: true });
@@ -84,7 +76,6 @@ export const IncentiveCard: React.FC = () => {
     }
   };
 
-  // Milestone specific content
   const getMilestoneContent = () => {
     if (percentage === 50) {
       return {
@@ -93,7 +84,7 @@ export const IncentiveCard: React.FC = () => {
         color: 'text-accent',
         bg: 'bg-accent/10',
         progress: 'w-1/2',
-        icon: <Megaphone className="text-accent" size={24} />
+        icon: <Megaphone className="text-accent" size={18} />
       };
     }
     if (percentage === 90) {
@@ -103,7 +94,7 @@ export const IncentiveCard: React.FC = () => {
         color: 'text-amber-500',
         bg: 'bg-amber-500/10',
         progress: 'w-[90%]',
-        icon: <Megaphone className="text-amber-500" size={24} />
+        icon: <Megaphone className="text-amber-500" size={18} />
       };
     }
     return {
@@ -112,7 +103,7 @@ export const IncentiveCard: React.FC = () => {
       color: 'text-rose-500',
       bg: 'bg-rose-500/10',
       progress: 'w-full',
-      icon: <ArrowUpRight className="text-rose-500" size={24} />
+      icon: <ArrowUpRight className="text-rose-500" size={18} />
     };
   };
 
@@ -122,14 +113,15 @@ export const IncentiveCard: React.FC = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.div 
-          initial={{ opacity: 0, y: 50, scale: 0.9, x: '-50%' }}
+          initial={{ opacity: 0, y: 30, scale: 0.95, x: '-50%' }}
           animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
-          exit={{ opacity: 0, scale: 0.9, y: 20, x: '-50%' }}
-          className={`fixed bottom-12 left-1/2 z-[200] w-[92%] max-w-[420px] rounded-[var(--radius)] border border-[var(--border-main)] shadow-2xl overflow-hidden bg-[var(--bg-secondary)]/95 backdrop-blur-2xl`}
+          exit={{ opacity: 0, scale: 0.95, y: 20, x: '-50%' }}
+          transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+          className={`fixed bottom-6 left-1/2 z-[200] w-[90%] max-w-[350px] rounded-2xl border border-[var(--border-main)] shadow-xl overflow-hidden bg-[var(--bg-secondary)]/95 backdrop-blur-2xl`}
           onClick={(e) => e.stopPropagation()} // Prevent close when clicking the card itself
         >
           {/* Progress Bar (Header) */}
-          <div className="h-1.5 w-full bg-[var(--bg-primary)]">
+          <div className="h-1 w-full bg-[var(--bg-primary)]">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
@@ -138,61 +130,61 @@ export const IncentiveCard: React.FC = () => {
             />
           </div>
 
-          <div className="p-6">
-            <div className={`flex items-start gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-14 h-14 rounded-[var(--radius)] ${content.bg} flex items-center justify-center shrink-0`}>
+          <div className="p-3.5 sm:p-4">
+            <div className={`flex items-start gap-2.5 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`w-9 h-9 rounded-xl ${content.bg} flex items-center justify-center shrink-0`}>
                 {content.icon}
               </div>
               
-              <div className={`flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                <h3 className="text-[var(--text-primary)] font-bold text-lg tracking-tight">
+              <div className={`flex-1 min-w-0 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+                <h3 className="text-[var(--text-primary)] font-extrabold text-xs tracking-tight truncate">
                   {content.title}
                 </h3>
-                <p className="text-[var(--text-secondary)] text-sm mt-1 leading-relaxed">
+                <p className="text-[var(--text-secondary)] text-[10.5px] mt-0.5 leading-snug line-clamp-2">
                   {content.desc}
                 </p>
               </div>
 
               <button 
                 onClick={handleClose}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5 rounded-lg transition-colors cursor-pointer"
               >
-                <X size={20} />
+                <X size={15} />
               </button>
             </div>
 
-            <div className={`mt-6 p-4 rounded-[var(--radius)] bg-[var(--bg-primary)] border border-[var(--border-main)] ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <Users size={16} className="text-accent" />
-                <span className="text-[13px] font-bold text-accent uppercase tracking-wider">
+            <div className={`mt-3 p-2.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-main)] ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Users size={13} className="text-accent" />
+                <span className="text-[11px] font-extrabold text-accent uppercase tracking-wider">
                   {t('rewardFriends')}
                 </span>
               </div>
-              <p className="text-[var(--text-secondary)] text-[13px] leading-snug">
+              <p className="text-[var(--text-secondary)] text-[10.5px] leading-tight line-clamp-2">
                 {t('quotaMilestoneIncentive')}
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex items-center gap-1.5">
                 <button 
                   onClick={handleShare}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-accent hover:bg-accent text-white text-xs font-bold transition-theme shadow-lg shadow-none active:scale-95"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:opacity-90 text-black text-[11px] font-extrabold transition-all shadow-sm active:scale-95 cursor-pointer"
                 >
-                  <Share2 size={14} />
+                  <Share2 size={12} />
                   {dir === 'rtl' ? 'مشاركة الرابط' : 'Share Link'}
                 </button>
                 <button 
                   onClick={handleCopy}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius)] bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-xs font-bold transition-theme active:scale-95"
+                  className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
                 >
-                  {copied ? <Check size={14} className="text-accent" /> : <Copy size={14} />}
+                  {copied ? <Check size={12} className="text-accent" /> : <Copy size={12} />}
                   {copied ? (dir === 'rtl' ? 'تم النسخ' : 'Copied') : (dir === 'rtl' ? 'نسخ' : 'Copy')}
                 </button>
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-2 opacity-50">
-              <MousePointer2 size={12} className="text-[var(--text-muted)]" />
-              <span className="text-[10px] text-[var(--text-muted)] italic">
+            <div className="mt-2 flex items-center justify-center gap-1.5 opacity-40">
+              <MousePointer2 size={10} className="text-[var(--text-muted)]" />
+              <span className="text-[9.5px] text-[var(--text-muted)]">
                 {dir === 'rtl' ? 'حرك الماوس أو اضغط للإخفاء' : 'Move mouse or click to dismiss'}
               </span>
             </div>

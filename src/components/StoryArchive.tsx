@@ -21,7 +21,6 @@ export const StoryArchive: React.FC<StoryArchiveProps> = ({ dir, token, showToas
       });
       const data = await res.json();
       if (data.success && data.ads) {
-        // Filter for expired stories
         const now = new Date().getTime();
         const expired = data.ads.filter((ad: any) => 
           ad.ad_format === 'story' && 

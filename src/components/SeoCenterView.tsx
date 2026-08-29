@@ -83,7 +83,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
   }>({ total: 0, completed: 0, currentTitle: '', elapsedSeconds: 0 });
   const [syncingItemId, setSyncingItemId] = useState<string | null>(null);
 
-  // Smart Suggestion state
   const [smartSuggestItem, setSmartSuggestItem] = useState<SeoAuditItem | null>(null);
   const [loadingSmartSuggest, setLoadingSmartSuggest] = useState(false);
   const [smartSuggestData, setSmartSuggestData] = useState<{
@@ -222,7 +221,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
     }
   }, [token, fetchAuditData]);
 
-  // Handle global metadata sync
   const handleRunFullSync = async () => {
     if (!summary) return;
     setIsSyncingAll(true);
@@ -277,7 +275,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
     }
   };
 
-  // Sync single item
   const handleSyncSingleItem = async (item: SeoAuditItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const itemKey = `${item.type}-${item.id}`;
@@ -301,7 +298,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             : `SEO metadata generated for "${item.title_en || item.title_ar}"!`,
           "success"
         );
-        // Refresh audit list
         await fetchAuditData(true);
         if (selectedItem && selectedItem.id === item.id && selectedItem.type === item.type) {
           setSelectedItem({
@@ -324,17 +320,14 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
     }
   };
 
-  // Filter items
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      // Category filter
       if (filterCategory === 'missing' && !item.requires_metadata_population) return false;
       if (filterCategory === 'optimized' && item.requires_metadata_population) return false;
       if (filterCategory === 'blog' && item.type !== 'blog') return false;
       if (filterCategory === 'marketplace' && item.type !== 'marketplace') return false;
       if (filterCategory === 'bulletin' && item.type !== 'bulletin') return false;
 
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const titleEnMatch = item.title_en?.toLowerCase().includes(q);

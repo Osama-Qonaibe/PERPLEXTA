@@ -7,6 +7,7 @@ import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 import { ThemeToggleButton } from './ThemeToggleButton';
+import { NotificationIconRenderer } from '../utils/imageProcessor';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { language: globalLang, setLanguage, theme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending } = useAppContext();
@@ -77,9 +78,12 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           }
         });
         if (res.ok) {
-          const currentChat = await res.json();
-          if (currentChat && currentChat.title) {
-            setChatTitle(currentChat.title);
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const currentChat = await res.json();
+            if (currentChat && currentChat.title) {
+              setChatTitle(currentChat.title);
+            }
           }
         }
       } catch (error) {
@@ -93,12 +97,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
     fetchChatTitle();
 
-    const handleChatUpdated = () => fetchChatTitle();
+    let debounceTimer: any = null;
+    const handleChatUpdated = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchChatTitle(), 400);
+    };
     window.addEventListener('chat-updated', handleChatUpdated);
     window.addEventListener('chat-created', handleChatUpdated);
     return () => {
       window.removeEventListener('chat-updated', handleChatUpdated);
       window.removeEventListener('chat-created', handleChatUpdated);
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [chatId, token]);
 
@@ -273,7 +282,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex items-center gap-2 px-3 h-8 rounded-[4px] bg-[var(--bg-secondary)]/30 border border-[var(--border-main)] hover:border-accent/30 dark:hover:border-accent/30 transition-theme max-w-[120px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-xs cursor-pointer group"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-transparent hover:bg-[var(--bg-secondary)] border border-transparent hover:border-[var(--border-main)] transition-theme max-w-[130px] xs:max-w-[180px] sm:max-w-[220px] md:max-w-sm cursor-pointer group"
                   onClick={() => {
                     if (!isEditingTitle) {
                       setIsEditingTitle(true);
@@ -313,9 +322,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-1.5 overflow-hidden w-full h-full select-none">
-                      <h2 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] truncate lowercase tracking-tight transition-theme">
+                      <span className="text-[11px] sm:text-xs font-normal text-[var(--text-primary)] truncate tracking-normal transition-theme">
                         {chatTitle}
-                      </h2>
+                      </span>
                       <Edit2 size={10} className="text-gray-400 group-hover:text-accent transition-theme flex-shrink-0" />
                     </div>
                   )}
@@ -491,10 +500,14 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           }`}
                           dir={dir}
                         >
-                          <div className={`mt-0.5 h-7 w-7 sm:h-8 sm:w-8 rounded-sm flex items-center justify-center shrink-0 transition-theme ${
+                          <div className={`mt-0.5 h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center shrink-0 transition-theme overflow-hidden ${
                             !notif.is_read ? 'bg-accent/20 text-accent font-bold' : 'bg-[var(--bg-primary)] text-[var(--text-muted)]'
                           }`}>
-                            {getNotifIcon(notif.type)}
+                            <NotificationIconRenderer
+                              src={notif.image || notif.icon_url || notif.avatar || null}
+                              size={28}
+                              fallbackIcon={getNotifIcon(notif.type)}
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1.5 flex-row-reverse">

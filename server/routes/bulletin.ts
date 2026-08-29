@@ -94,31 +94,146 @@ export async function ensureBulletinSeedData() {
     }
 
     const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_ads');
-    if (checkRes.rows[0].count === 0) {
+    if (checkRes.rows[0].count < 8) {
       await pool.query(`
         INSERT INTO bulletin_ads (
-          user_id, page_id, location_city, author_name, author_avatar, title, description, image_url, whatsapp_number, target_url, hashtags, category, price_paid, duration_days, status, starts_at, expires_at
-        ) VALUES (
+          user_id, page_id, location_city, author_name, author_avatar, title, description, image_url, video_url, ad_format, aspect_ratio, whatsapp_number, target_url, hashtags, category, price_paid, duration_days, status, starts_at, expires_at
+        ) VALUES 
+        (
           1,
           1,
           'القدس',
           'شركة القدس للتكنولوجيا والحلول الذكية',
           'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
-          'إطلاق لوحة الترويج والتواصل التجاري في فلسطين والوطن العربي! 🚀',
-          'تسهيلاً على التجار والمواطنين في كافة المحافظات، يمكنك الآن إنشاء صفحتك التجارية وتنشيط إعلاناتك بأسعار ميسرة والتواصل المباشر عبر الواتساب والمكالمات والاستفسارات الفورية.',
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80',
+          'إطلاق منصة التحليل المالي الذكي والربط البرمجي السريع 🚀',
+          'تسهيلاً على المؤسسات والمتاجر في فلسطين والوطن العربي، يمكنك الآن الاستفادة من منصات التحليل المالي الذكي والربط البرمجي عبر API بأعلى سرعة وكفاءة.',
+          'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1080&q=80',
+          'https://assets.mixkit.co/videos/preview/mixkit-woman-running-on-the-beach-at-sunset-40008-large.mp4',
+          'post',
+          '16:9',
           '+972599000111',
-          '/subscription',
-          '#فلسطين,#تتسويق,#القدس,#غزة,#تجارة,#أعمال',
+          'https://perplexta.ai',
+          '#فلسطين,#تكنولوجيا,#القدس,#أعمال,#ذكاء_اصطناعي',
+          'تكنولوجيا / Tech',
+          18.00,
+          30,
+          'approved',
+          NOW(),
+          NOW() + INTERVAL '60 days'
+        ),
+        (
+          1,
+          2,
+          'غزة',
+          'متجر الأمل التجاري - غزة',
+          'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=200&q=80',
+          'عروض الشاشات الذكية والأجهزة اللوحية مع خدمة التوصيل السريع 📱',
+          'تخفيضات كبرى على الحواسيب المحمولة والشاشات وملحقات الطاقة الشمسية والبطاريات المنزلية مع ضمان معتمد وخدمة التوصيل لكافة مناطق القطاع.',
+          'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1080&q=80',
+          NULL,
+          'post',
+          '1:1',
+          '+970599123456',
+          'https://pal-store.com',
+          '#غزة,#أجهزة,#إلكترونيات,#توصيل,#عروض',
+          'تجارة إلكترونية / E-Commerce',
+          10.00,
+          30,
+          'approved',
+          NOW(),
+          NOW() + INTERVAL '60 days'
+        ),
+        (
+          1,
+          3,
+          'رام الله',
+          'معرض الضفة للسيارات والمعدات',
+          'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=200&q=80',
+          'وصول أحدث سيارات الهايبرد والكهرباء مع تمويل إسلامي ميسر 🚗',
+          'معرض الضفة يوفر لكم أحدث المركبات الاقتصادية فحص كامل، مع إمكانية التقسيط المباشر بدون وساطة بنكية وتأمين شامل معتمد.',
+          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1080&q=80',
+          'https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smartphone-with-green-screen-41551-large.mp4',
+          'reel',
+          '9:16',
+          '+970598888777',
+          '',
+          '#رام_الله,#الضفة,#سيارات,#أقساط,#هايبرد',
+          'عقارات وسيارت / Real Estate',
+          18.00,
+          30,
+          'approved',
+          NOW(),
+          NOW() + INTERVAL '60 days'
+        ),
+        (
+          1,
+          1,
+          'نابلس',
+          'وكالة النخبة للحلول التسويقية والبرمجية',
+          'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=200&q=80',
+          'تصميم الهوية البصرية وإدارة الحملات الإعلانية الموجهة 📈',
+          'نقدم خدمات متكاملة لتطوير المواقع، إدارة الحسابات التجارية، وتحسين محركات البحث SEO لرفع مبيعات المتاجر والشركات المحلية.',
+          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1080&q=80',
+          NULL,
+          'post',
+          '16:9',
+          '+970599444333',
+          'https://perplexta.ai',
+          '#نابلس,#تسويق,#برمجة,#تصميم,#سيو',
+          'خدمات وأعمال / Services',
+          10.00,
+          30,
+          'approved',
+          NOW(),
+          NOW() + INTERVAL '60 days'
+        ),
+        (
+          1,
+          1,
+          'الخليل',
+          'شركة القدس للتكنولوجيا والحلول الذكية',
+          'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
+          'قصة نجاح اليوم: تحديثات خوارزميات التداول والتحليل اللحظي ✨',
+          'تابعوا كيف ساعدت أدوات بيربليكستا المتطورة في تحسين دقة القرارات المالية بأكثر من 45%.',
+          'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1080&q=80',
+          'https://assets.mixkit.co/videos/preview/mixkit-set-of-plateaus-seen-from-the-sky-in-a-sunset-26070-large.mp4',
+          'story',
+          '9:16',
+          '+972599000111',
+          'https://perplexta.ai',
+          '#الخليل,#قصص,#نجاح,#تكنولوجيا',
           'تكنولوجيا / Tech',
           5.00,
           30,
           'approved',
           NOW(),
-          NOW() + INTERVAL '30 days'
-        );
+          NOW() + INTERVAL '60 days'
+        ),
+        (
+          1,
+          2,
+          'جنين',
+          'متجر الأمل التجاري - غزة',
+          'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=200&q=80',
+          'عروض حصرية خلال 24 ساعة فقط! تخفيض 30% على كافة الإكسسوارات 🔥',
+          'استمتع بأفضل العروض اليومية على السماعات السلكية واللاسلكية والشواحن السريعة الأصلية.',
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1080&q=80',
+          NULL,
+          'story',
+          '9:16',
+          '+970599123456',
+          'https://pal-store.com',
+          '#جنين,#عروض,#تخفيضات,#إلكترونيات',
+          'تجارة إلكترونية / E-Commerce',
+          5.00,
+          30,
+          'approved',
+          NOW(),
+          NOW() + INTERVAL '60 days'
+        )
+        ON CONFLICT DO NOTHING;
       `);
-      console.log('[Bulletin] Bulletin tables verified/created successfully.');
+      console.log('[Bulletin] Bulletin tables & rich seed ads verified/created successfully.');
     }
     isBulletinTablesEnsured = true;
   } catch (err: any) {
@@ -231,7 +346,27 @@ router.get('/ads', async (req, res) => {
     const offsetIdx = params.length;
     query += ` LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
 
-    const result = await pool.query(query, params);
+    let result = await pool.query(query, params);
+    let isFallbackToNational = false;
+
+    // If city search returned 0 items on page 1, fallback to national ads so content never disappears
+    if (result.rows.length === 0 && pageNum === 1 && targetCity && targetCity !== 'all' && targetCity !== 'الكل') {
+      const fallbackQuery = `
+        SELECT b.*,
+          (CASE WHEN b.is_boosted AND (b.boosted_until IS NULL OR b.boosted_until > NOW()) THEN TRUE ELSE FALSE END) as is_boosted_active,
+          u.name as u_name, u.avatar as u_avatar,
+          bp.name as page_name, bp.avatar_url as page_avatar, bp.cover_url as page_cover, bp.is_verified as page_is_verified
+        FROM bulletin_ads b
+        LEFT JOIN users u ON b.user_id = u.id
+        LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
+        WHERE b.status = 'approved'
+          AND (b.audience = 'public' OR b.audience IS NULL OR b.audience = '')
+        ORDER BY (CASE WHEN b.is_boosted AND (b.boosted_until IS NULL OR b.boosted_until > NOW()) THEN 1 ELSE 0 END) DESC, b.created_at DESC, b.id DESC
+        LIMIT $1 OFFSET $2
+      `;
+      result = await pool.query(fallbackQuery, [limitNum, offsetNum]);
+      isFallbackToNational = true;
+    }
 
     let likedAdIds = new Set<number>();
     let savedAdIds = new Set<number>();
@@ -301,7 +436,8 @@ router.get('/ads', async (req, res) => {
       ads: formattedAds,
       hasMore: formattedAds.length === limitNum,
       page: pageNum,
-      limit: limitNum
+      limit: limitNum,
+      isFallbackToNational
     });
   } catch (error: any) {
     console.error('[Bulletin API] Error fetching ads:', error.message);
@@ -588,11 +724,11 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
 
 /**
  * GET /api/bulletin/stories
- * Fetch active non-expired user & page stories (valid for 24h)
+ * Fetch active non-expired user & page stories (valid for 24h) with resilient fallback
  */
 router.get('/stories', async (req, res) => {
   try {
-    const result = await pool.query(`
+    let result = await pool.query(`
       SELECT b.*,
         u.name as u_name, u.avatar as u_avatar,
         bp.name as page_name, bp.avatar_url as page_avatar
@@ -602,10 +738,34 @@ router.get('/stories', async (req, res) => {
       WHERE b.status = 'approved'
         AND b.ad_format = 'story'
         AND (b.expires_at IS NULL OR b.expires_at > NOW())
-        AND b.created_at > NOW() - INTERVAL '24 hours'
       ORDER BY b.created_at DESC
       LIMIT 40
     `);
+
+    // If fewer than 4 stories exist, pull approved visual reels or posts as active stories
+    if (result.rows.length < 4) {
+      const fallbackStories = await pool.query(`
+        SELECT b.*,
+          u.name as u_name, u.avatar as u_avatar,
+          bp.name as page_name, bp.avatar_url as page_avatar
+        FROM bulletin_ads b
+        LEFT JOIN users u ON b.user_id = u.id
+        LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
+        WHERE b.status = 'approved'
+          AND (b.image_url IS NOT NULL OR b.video_url IS NOT NULL)
+          AND (b.expires_at IS NULL OR b.expires_at > NOW())
+        ORDER BY (CASE WHEN b.ad_format = 'story' THEN 1 WHEN b.ad_format = 'reel' THEN 2 ELSE 3 END), b.created_at DESC
+        LIMIT 20
+      `);
+
+      const existingIds = new Set(result.rows.map((r: any) => r.id));
+      for (const row of fallbackStories.rows) {
+        if (!existingIds.has(row.id)) {
+          result.rows.push(row);
+          existingIds.add(row.id);
+        }
+      }
+    }
 
     res.json({
       success: true,
@@ -726,8 +886,33 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
       isLiked = true;
     }
 
-    const updatedRes = await pool.query('SELECT likes_count FROM bulletin_ads WHERE id = $1', [adId]);
+    const updatedRes = await pool.query('SELECT likes_count, user_id, title FROM bulletin_ads WHERE id = $1', [adId]);
     const likesCount = Number(updatedRes.rows[0]?.likes_count || 0);
+    const adOwnerId = updatedRes.rows[0]?.user_id;
+    const adTitle = updatedRes.rows[0]?.title || 'منشورك';
+
+    if (io) {
+      io.emit('reel_like_update', { reelId: adId, likesCount, userId, isLiked });
+    }
+
+    if (isLiked && adOwnerId && Number(adOwnerId) !== Number(userId)) {
+      try {
+        const userRes = await pool.query('SELECT name, avatar FROM users WHERE id = $1', [userId]);
+        const likerName = userRes.rows[0]?.name || req.user.name || 'مستخدم';
+        const { dispatchNotification } = await import('../services/notifications.js');
+        await dispatchNotification(
+          adOwnerId,
+          'new_like',
+          'New Like on Your Post/Reel',
+          'إعجاب جديد بمنشورك أو المقطع',
+          `${likerName} liked your post/reel "${adTitle}"`,
+          `أعجب ${likerName} بمنشورك أو المقطع "${adTitle}"`,
+          { adId, likerId: userId }
+        );
+      } catch (nErr) {
+        console.error('[Bulletin API] Like notification error:', nErr);
+      }
+    }
 
     res.json({ success: true, isLiked, likesCount });
   } catch (error: any) {
@@ -795,6 +980,43 @@ router.post('/ads/:id/comments', authenticateToken, async (req: any, res) => {
 
     await pool.query('UPDATE bulletin_ads SET comments_count = comments_count + 1 WHERE id = $1', [adId]);
 
+    // Dispatch notification to ad/reel owner
+    try {
+      const adOwnerRes = await pool.query('SELECT user_id, title FROM bulletin_ads WHERE id = $1', [adId]);
+      const adOwnerId = adOwnerRes.rows[0]?.user_id;
+      const adTitle = adOwnerRes.rows[0]?.title || 'منشورك';
+      if (adOwnerId && Number(adOwnerId) !== Number(userId)) {
+        const { dispatchNotification } = await import('../services/notifications.js');
+        await dispatchNotification(
+          adOwnerId,
+          'new_comment',
+          'New Comment on Your Reel/Ad',
+          'تعليق جديد على مقطعك أو إعلانك',
+          `${authorName} commented on "${adTitle}": "${content.substring(0, 40)}..."`,
+          `قام ${authorName} بالتعليق على "${adTitle}": "${content.substring(0, 40)}..."`,
+          { adId, commentId: insertRes.rows[0].id }
+        );
+      }
+    } catch (nErr) {
+      console.error('[Bulletin API] Comment notification error:', nErr);
+    }
+
+    if (io) {
+      io.emit('reel_comment_update', { 
+        reelId: adId, 
+        comment: {
+          id: insertRes.rows[0].id,
+          ad_id: adId,
+          user_id: userId,
+          author_name: authorName,
+          author_avatar: authorAvatar,
+          content: content.trim(),
+          parent_id: insertRes.rows[0].parent_id,
+          created_at: insertRes.rows[0].created_at
+        }
+      });
+    }
+
     res.json({
       success: true,
       comment: {
@@ -820,7 +1042,12 @@ router.post('/ads/:id/comments', authenticateToken, async (req: any, res) => {
 router.post('/ads/:id/impression', async (req, res) => {
   try {
     const adId = parseInt(req.params.id);
-    await pool.query('UPDATE bulletin_ads SET impressions_count = impressions_count + 1 WHERE id = $1', [adId]);
+    const updateRes = await pool.query('UPDATE bulletin_ads SET impressions_count = impressions_count + 1 WHERE id = $1 RETURNING impressions_count', [adId]);
+    const newCount = Number(updateRes.rows[0]?.impressions_count || 0);
+
+    if (io) {
+      io.emit('reel_impression_update', { reelId: adId, count: newCount });
+    }
     
     try {
       const ip = req.ip || req.headers['x-forwarded-for'] || '';
@@ -833,7 +1060,7 @@ router.post('/ads/:id/impression', async (req, res) => {
       console.warn('[AdStats] Failed to log impression:', err);
     }
 
-    res.json({ success: true });
+    res.json({ success: true, count: newCount });
   } catch (e) {
     res.status(500).json({ error: 'Impression tracking failed' });
   }
@@ -1661,6 +1888,29 @@ router.post('/pages/:id/follow', authenticateToken, async (req: any, res) => {
       );
       await pool.query('UPDATE bulletin_pages SET followers_count = followers_count + 1 WHERE id = $1', [pageId]);
       isFollowing = true;
+
+      // Dispatch notification to page owner
+      try {
+        const pageRes = await pool.query('SELECT user_id, name FROM bulletin_pages WHERE id = $1', [pageId]);
+        const pageOwnerId = pageRes.rows[0]?.user_id;
+        const pageName = pageRes.rows[0]?.name || 'صفحتك';
+        if (pageOwnerId && Number(pageOwnerId) !== Number(userId)) {
+          const followerRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+          const followerName = followerRes.rows[0]?.name || 'مستخدم';
+          const { dispatchNotification } = await import('../services/notifications.js');
+          await dispatchNotification(
+            pageOwnerId,
+            'new_follower',
+            'New Page Follower',
+            'متابع جديد لصفحتك',
+            `${followerName} started following your page "${pageName}"`,
+            `بدأ ${followerName} متابعة صفحتك "${pageName}"`,
+            { pageId, followerId: userId }
+          );
+        }
+      } catch (nErr) {
+        console.error('[Bulletin API] Page follow notification error:', nErr);
+      }
     }
 
     const countRes = await pool.query('SELECT followers_count FROM bulletin_pages WHERE id = $1', [pageId]);

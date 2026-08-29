@@ -15,7 +15,6 @@ export interface CronJobInfo {
 export const cronTracker: Record<string, CronJobInfo> = {
   dailyMaintenance: { lastRun: new Date(Date.now() - 4 * 3600000).toISOString(), status: 'success', error: null },
   databaseHeartbeat: { lastRun: new Date(Date.now() - 2 * 60000).toISOString(), status: 'success', error: null },
-  expiredTokensCleanup: { lastRun: new Date(Date.now() - 3.5 * 360000) .toISOString(), status: 'success', error: null },
   subscriptionAudit: { lastRun: new Date(Date.now() - 5 * 3600000).toISOString(), status: 'success', error: null },
   dailySeoScan: { lastRun: new Date(Date.now() - 6 * 3600000).toISOString(), status: 'success', error: null },
   memoryCompaction: { lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), status: 'success', error: null },
@@ -213,23 +212,6 @@ export function initCronJobs() {
       cronTracker.databaseHeartbeat = { lastRun: new Date().toISOString(), status: 'success', error: null };
     } catch (err: any) {
       cronTracker.databaseHeartbeat = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
-    }
-  });
-
-  cron.schedule('0 */6 * * *', async () => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Cron] 🧹 Running background micro-cleanup for expired tokens and resets...');
-    }
-    cronTracker.expiredTokensCleanup = { lastRun: new Date().toISOString(), status: 'running', error: null };
-    try {
-      if (pool) {
-        await pool.query("DELETE FROM token_blacklist WHERE expires_at < CURRENT_TIMESTAMP");
-        await pool.query("DELETE FROM password_resets WHERE expires_at < CURRENT_TIMESTAMP");
-      }
-      cronTracker.expiredTokensCleanup = { lastRun: new Date().toISOString(), status: 'success', error: null };
-    } catch (err: any) {
-      console.error('[Cron] Micro-cleanup failed:', err.message);
-      cronTracker.expiredTokensCleanup = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
     }
   });
 

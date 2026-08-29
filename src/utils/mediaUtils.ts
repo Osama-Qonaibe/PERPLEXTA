@@ -1,8 +1,3 @@
-/**
- * Media Utilities & Video Processor for Perplexta Ads Platform
- * Handles video URL parsing, embed conversion, aspect ratio calculation, and video thumbnail extraction.
- */
-
 import { getAssetUrl, BUILD_VERSION } from './assetManager';
 
 export interface VideoInfo {
@@ -11,9 +6,6 @@ export interface VideoInfo {
   directUrl?: string;
 }
 
-/**
- * Parses any video URL (YouTube, Vimeo, TikTok, direct mp4/webm/mov/mkv/avi dataURL)
- */
 export function parseVideoUrl(url: string): VideoInfo {
   if (!url || typeof url !== 'string') {
     return { type: 'unknown' };
@@ -59,9 +51,6 @@ export function parseVideoUrl(url: string): VideoInfo {
   };
 }
 
-/**
- * Gets Tailwind aspect ratio class based on ad format or aspect ratio string
- */
 export function getAspectRatioClass(aspectRatio?: string, adFormat?: string): string {
   if (aspectRatio === '9:16' || adFormat === 'reel' || adFormat === 'story') {
     return 'aspect-[9/16]';
@@ -78,13 +67,10 @@ export function getAspectRatioClass(aspectRatio?: string, adFormat?: string): st
   if (aspectRatio === '21:9' || adFormat === 'banner' || adFormat === 'header_banner') {
     return 'aspect-[21/9]';
   }
-  return 'aspect-video'; // default fallback
+  return 'aspect-video';
 }
 
-/**
- * Gets recommended dimensions description for given ad format / aspect ratio
- */
-export function getRecommendedDimensions(adFormat?: string, isRtl: boolean = true): string {
+export function getRecommendedDimensions(adFormat?: string, isRtl = true): string {
   switch (adFormat) {
     case 'reel':
     case 'story':
@@ -116,11 +102,8 @@ export function getRecommendedDimensions(adFormat?: string, isRtl: boolean = tru
   }
 }
 
-/**
- * Extract a JPEG frame thumbnail from a video file or DataURL
- */
 export async function extractVideoThumbnail(videoSource: File | string, seekTimeSeconds = 1.0): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const video = document.createElement('video');
     video.crossOrigin = 'anonymous';
     video.muted = true;
@@ -135,7 +118,7 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
     }
 
     video.addEventListener('loadedmetadata', () => {
-      video.currentTime = Math.min(seekTimeSeconds, video.duration / 2 || 0.5);
+      video.currentTime = Math.min(seekTimeSeconds, (video.duration ? video.duration / 2 : 0.5));
     });
 
     video.addEventListener('seeked', () => {
@@ -152,14 +135,14 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
           resolve(dataUrl);
           return;
         }
-      } catch (err) {
-        // Canvas thumbnail capture failed silent handling
+      } catch {
+        // Fallthrough
       }
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       resolve('');
     });
 
-    video.addEventListener('error', (e) => {
+    video.addEventListener('error', () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       resolve('');
     });
@@ -168,9 +151,6 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
   });
 }
 
-/**
- * Normalizes any image or video URL (handling relative filenames, uploads, http, blob, data, double slashes, comma-separated lists)
- */
 export function getMediaUrl(url?: string | null): string {
   if (!url || typeof url !== 'string') return '';
   let clean = url.trim();
@@ -184,9 +164,7 @@ export function getMediaUrl(url?: string | null): string {
     clean.startsWith('blob:') ||
     clean.startsWith('data:')
   ) {
-    // If it's a data URL, do NOT split by comma, as base64 strings contain commas.
     if (clean.startsWith('data:')) return clean;
-    
     if (clean.includes(',')) {
       clean = clean.split(',')[0].trim();
     }
@@ -197,26 +175,41 @@ export function getMediaUrl(url?: string | null): string {
     clean = clean.split(',')[0].trim();
   }
 
+  // Strip query parameters to avoid duplicate stacking (?v=...&t=...&t=...)
+  const [cleanPathOnly] = clean.split('?');
+
   let resolved = '';
-  const uploadsMatch = clean.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
+  const uploadsMatch = cleanPathOnly.match(/(?:https?:\/\/[^\/]+)?\/?(?:uploads\/)+(.+)$/i);
   if (uploadsMatch && uploadsMatch[1]) {
     resolved = `/uploads/${uploadsMatch[1].replace(/^\/+/, '')}`;
-  } else if (clean.startsWith('uploads/')) {
-    resolved = `/${clean}`;
-  } else if (clean.startsWith('/')) {
-    resolved = clean;
+  } else if (cleanPathOnly.startsWith('uploads/')) {
+    resolved = `/${cleanPathOnly}`;
+  } else if (cleanPathOnly.startsWith('/')) {
+    resolved = cleanPathOnly;
   } else {
-    resolved = `/uploads/${clean}`;
+    resolved = `/uploads/${cleanPathOnly}`;
   }
 
   let finalUrl = getAssetUrl(resolved);
   if (finalUrl.includes('/uploads/')) {
-    const sep = finalUrl.includes('?') ? '&' : '?';
     if (!finalUrl.includes('t=')) {
+      const sep = finalUrl.includes('?') ? '&' : '?';
       finalUrl = `${finalUrl}${sep}t=${BUILD_VERSION}`;
     }
   }
   return finalUrl;
+}
+
+export function getMediaFallback(type: 'image' | 'video' | 'avatar' = 'image'): string {
+  switch (type) {
+    case 'avatar':
+      return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+    case 'video':
+      return 'https://assets.mixkit.co/videos/preview/mixkit-woman-running-on-the-beach-at-sunset-40008-large.mp4';
+    case 'image':
+    default:
+      return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
+  }
 }
 
 export interface CompressOptions {
@@ -235,11 +228,6 @@ export interface CompressResult {
   compressedSize: number;
 }
 
-/**
- * Automatically resizes and compresses image files from the user's device before upload.
- * Optimizes high-res images down to display-compatible dimensions (e.g. 600x600 for sidebar)
- * preserving crisp quality while dramatically reducing bandwidth and storage footprint.
- */
 export async function compressAndResizeImage(
   file: File,
   options: CompressOptions = {}
@@ -337,5 +325,3 @@ export async function compressAndResizeImage(
     reader.readAsDataURL(file);
   });
 }
-
-

@@ -406,6 +406,11 @@ export async function updateUserProfile(userId: string | number, data: any) {
     values.push(avatar);
   }
 
+  if (data.avatar_asset_id !== undefined) {
+    updates.push(`avatar_asset_id = $${idx++}`);
+    values.push(data.avatar_asset_id);
+  }
+
   if (language !== undefined) {
     if (typeof language !== 'string') throw new Error('Language must be a string');
     const cleanLang = language.trim().toLowerCase();

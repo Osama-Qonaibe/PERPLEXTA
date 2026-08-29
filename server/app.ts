@@ -15,10 +15,23 @@ import { paymentMiddlewareFromConfig } from '@x402/express';
 import wellKnownRouter from './routes/well-known.js';
 
 import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getPoolMetrics } from './db/index.js';
+import QueryStream from 'pg-query-stream';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
 import { getCachedRouteSeo, getCachedAllActiveRouteSeo, getCachedRouteSeoMetadata } from './db/queries.js';
 
 const app = express();
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    if (req.path.startsWith('/api/')) {
+      const duration = Date.now() - start;
+      const logPrefix = duration > 1000 ? '[SLOW API]' : '[API Logger]';
+      console.log(`${logPrefix} ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`);
+    }
+  });
+  next();
+});
 
 app.use(compression({
   level: 6,
@@ -433,23 +446,46 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
   }
 }
 
-app.get('/uploads/:filename', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Mount uploads as static first for fast direct hits
+app.use('/uploads', express.static(uploadsPath, {
+  maxAge: '30d',
+  etag: true,
+  fallthrough: true,
+  setHeaders: (res, path) => {
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+}));
+
+app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
-    const rawFilename = req.params.filename || '';
+    const rawFilename = (req.params.filename || req.params[0] || '').toString();
     const cleanRaw = rawFilename.replace(/^(\/)?(uploads\/)+/i, '');
-    const filename = path.basename(cleanRaw.split('?')[0]);
-    const filePath = path.join(uploadsPath, filename);
+    const cleanPathOnly = cleanRaw.split('?')[0];
+    const filename = path.basename(cleanPathOnly);
+    
+    // Check primary uploads directory, then nested, then public/uploads
+    let candidatePaths = [
+      path.join(uploadsPath, cleanPathOnly),
+      path.join(uploadsPath, filename),
+      path.join(process.cwd(), 'public', 'uploads', filename),
+      path.join(process.cwd(), 'public', 'app-assets', filename),
+      path.join(process.cwd(), 'public', filename),
+    ];
 
+    let resolvedPath = candidatePaths[0];
+    let foundFile = false;
 
-    let resolvedPath = path.resolve(filePath);
-    console.log(`[Uploads] Request: ${filename}. Path: ${resolvedPath}. Exists: ${fs.existsSync(resolvedPath)}`);
-    if (!resolvedPath.startsWith(path.resolve(uploadsPath))) {
-      console.warn(`[Uploads] Path traversal attempt blocked: ${filename}`);
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      return res.status(403).json({ error: 'Access denied: Path traversal attempt blocked.' });
+    for (const cp of candidatePaths) {
+      const resolved = path.resolve(cp);
+      if (fs.existsSync(resolved)) {
+        resolvedPath = resolved;
+        foundFile = true;
+        break;
+      }
     }
 
-    if (!fs.existsSync(resolvedPath)) {
+    if (!foundFile) {
       const ext = path.extname(filename);
       const nameWithoutExt = path.basename(filename, ext);
       const cleanBaseName = nameWithoutExt.replace(/(_opt|_optimized)+$/i, '');
@@ -464,24 +500,26 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         path.join(uploadsPath, `${cleanBaseName}.svg`),
         path.join(uploadsPath, `${nameWithoutExt}.png`),
         path.join(uploadsPath, `${nameWithoutExt}.jpg`),
+        path.join(process.cwd(), 'public', 'app-assets', 'icon.png'),
+        path.join(process.cwd(), 'public', 'app-assets', 'og-image.png')
       ]));
 
-      let foundFallback = false;
       for (const cand of candidates) {
         if (fs.existsSync(cand)) {
           resolvedPath = cand;
-          foundFallback = true;
+          foundFile = true;
           break;
         }
       }
 
-      if (!foundFallback) {
-        // Check if there is a default platform asset fallback for image/logo requests
+      if (!foundFile) {
+        // If it's an image or logo request, send the default app icon fallback rather than breaking the UI
         const defaultAppIcon = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
-        const isImageReq = /\.(webp|png|jpg|jpeg|gif|svg)$/i.test(filename) || filename.includes('_opt') || filename.includes('logo');
+        const isImageReq = /\.(webp|png|jpg|jpeg|gif|svg|ico)$/i.test(filename) || filename.includes('_opt') || filename.includes('logo') || filename.includes('avatar') || filename.includes('thumb');
         
         if (isImageReq && fs.existsSync(defaultAppIcon)) {
           resolvedPath = defaultAppIcon;
+          foundFile = true;
         } else {
           console.warn(`[Uploads] File not found: ${filename}`);
           res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -492,10 +530,13 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
 
     const actualExt = path.extname(resolvedPath).toLowerCase();
     const mimeType = mediaMimeTypes[actualExt] || 'application/octet-stream';
+    const isVideoOrAudio = ['.mp4', '.webm', '.mp3', '.wav', '.mov', '.ogg'].includes(actualExt);
+    const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav', '.mov', '.ogg'].includes(actualExt);
 
     const serveFile = async (pathToSend: string) => {
       const stat = fs.statSync(pathToSend);
       const mtime = stat.mtime.toUTCString();
+      const fileSize = stat.size;
 
       let fileVersion = 1;
       try {
@@ -510,15 +551,15 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         // ignore
       }
 
-      const etag = `"${stat.size}-${stat.mtimeMs}-v${fileVersion}"`;
+      const etag = `"${fileSize}-${stat.mtimeMs}-v${fileVersion}"`;
 
       res.setHeader('Content-Type', mimeType);
       res.setHeader('Last-Modified', mtime);
       res.setHeader('ETag', etag);
+      res.setHeader('Accept-Ranges', 'bytes');
 
-      const isMedia = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.mp4', '.webm', '.mp3', '.wav'].includes(actualExt);
       if (isMedia) {
-        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } else {
         res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
       }
@@ -530,6 +571,32 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
         return res.status(304).end();
       }
 
+      // Handle HTTP Range Requests for video/audio streaming (206 Partial Content)
+      const range = req.headers.range;
+      if (range && isVideoOrAudio) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize || end >= fileSize || start > end) {
+          res.status(416).setHeader('Content-Range', `bytes */${fileSize}`);
+          return res.end();
+        }
+
+        const chunksize = end - start + 1;
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+        res.setHeader('Content-Length', chunksize);
+
+        const fileStream = fs.createReadStream(pathToSend, { start, end });
+        fileStream.on('error', (err) => {
+          console.error(`[Uploads] Stream range error for ${pathToSend}:`, err);
+          if (!res.headersSent) res.status(500).json({ error: 'Streaming range error' });
+        });
+        return fileStream.pipe(res);
+      }
+
+      res.setHeader('Content-Length', fileSize);
       const readStream = fs.createReadStream(pathToSend);
       readStream.on('error', (err) => {
         console.error(`[Uploads] Streaming error for ${pathToSend}:`, err);
@@ -538,7 +605,7 @@ app.get('/uploads/:filename', async (req: express.Request, res: express.Response
       return readStream.pipe(res);
     };
 
-    if (mediaMimeTypes[actualExt]) {
+    if (mediaMimeTypes[actualExt] || isMedia) {
       return await serveFile(resolvedPath);
     }
 
@@ -894,6 +961,8 @@ Sitemap: ${baseUrl}/sitemap.xml
 });
 
 app.get('/sitemap.xml', async (req, res) => {
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  
   try {
     const baseUrl = getBaseUrl(req);
     const staticRoutes = [
@@ -908,64 +977,97 @@ app.get('/sitemap.xml', async (req, res) => {
       { url: '/about', changefreq: 'monthly', priority: '0.5' },
     ];
 
-    let dynamicUrls: any[] = [];
+    res.write(`<?xml version="1.0" encoding="UTF-8"?>\n`);
+    res.write(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`);
+
+    for (const item of staticRoutes) {
+      res.write(`  <url>\n`);
+      res.write(`    <loc>${baseUrl}${item.url}</loc>\n`);
+      res.write(`    <changefreq>${item.changefreq || 'weekly'}</changefreq>\n`);
+      res.write(`    <priority>${item.priority || '0.5'}</priority>\n`);
+      res.write(`  </url>\n`);
+    }
+
     if (pool) {
+      const streamToResponse = async (clientPool: any, queryText: string, queryParams: any[], formatRow: (row: any) => string) => {
+        let client;
+        try {
+          client = await clientPool.connect();
+          const query = new QueryStream(queryText, queryParams);
+          const stream = client.query(query);
+          
+          await new Promise<void>((resolve, reject) => {
+            stream.on('data', (row: any) => {
+              res.write(formatRow(row));
+            });
+            stream.on('end', resolve);
+            stream.on('error', reject);
+          });
+        } finally {
+          if (client) client.release();
+        }
+      };
+
       try {
-        const blogRes = await getExternalPool().query('SELECT slug, updated_at FROM blog_articles ORDER BY id DESC LIMIT 100');
-        blogRes.rows.forEach((b: any) => {
-          dynamicUrls.push({
-            url: `/blog/${b.slug}`,
-            lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : new Date().toISOString(),
-            changefreq: 'weekly',
-            priority: '0.8'
-          });
-        });
+        const formatImageNode = (img: string | null | undefined, baseUrl: string) => {
+          if (!img) return '';
+          const url = img.startsWith('http') ? img : `${baseUrl}${img.startsWith('/') ? '' : '/'}${img}`;
+          return `    <image:image>\n      <image:loc>${url}</image:loc>\n    </image:image>\n`;
+        };
 
-        const marketRes = await pool.query('SELECT id, updated_at FROM marketplace_items ORDER BY id DESC LIMIT 100');
-        marketRes.rows.forEach((m: any) => {
-          dynamicUrls.push({
-            url: `/marketplace/${m.id}`,
-            lastmod: m.updated_at ? new Date(m.updated_at).toISOString() : new Date().toISOString(),
-            changefreq: 'weekly',
-            priority: '0.8'
-          });
-        });
+        const getSitemapMetrics = (updatedAt: Date | string | null | undefined) => {
+          if (!updatedAt) return { changefreq: 'weekly', priority: '0.5' };
+          const dt = typeof updatedAt === 'string' ? new Date(updatedAt) : updatedAt;
+          const diffDays = (Date.now() - dt.getTime()) / (1000 * 60 * 60 * 24);
+          
+          if (diffDays <= 1) return { changefreq: 'hourly', priority: '1.0' };
+          if (diffDays <= 7) return { changefreq: 'daily', priority: '0.9' };
+          if (diffDays <= 30) return { changefreq: 'weekly', priority: '0.7' };
+          return { changefreq: 'monthly', priority: '0.5' };
+        };
 
-        const bulletinRes = await pool.query('SELECT id, updated_at FROM bulletin_ads WHERE status = $1 ORDER BY id DESC LIMIT 100', ['active']);
-        bulletinRes.rows.forEach((b: any) => {
-          dynamicUrls.push({
-            url: `/bulletin/${b.id}`,
-            lastmod: b.updated_at ? new Date(b.updated_at).toISOString() : new Date().toISOString(),
-            changefreq: 'daily',
-            priority: '0.8'
-          });
-        });
+        await streamToResponse(
+          getExternalPool(),
+          'SELECT slug, updated_at, image_url FROM blog_articles ORDER BY id DESC',
+          [],
+          (row) => {
+            const metrics = getSitemapMetrics(row.updated_at);
+            return `  <url>\n    <loc>${baseUrl}/blog/${row.slug}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
+          }
+        );
+
+        await streamToResponse(
+          pool,
+          'SELECT id, updated_at, image_url FROM marketplace_items ORDER BY id DESC',
+          [],
+          (row) => {
+            const metrics = getSitemapMetrics(row.updated_at);
+            return `  <url>\n    <loc>${baseUrl}/marketplace/${row.id}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
+          }
+        );
+
+        await streamToResponse(
+          pool,
+          'SELECT id, updated_at, image_url FROM bulletin_ads WHERE status = $1 ORDER BY id DESC',
+          ['active'],
+          (row) => {
+            const metrics = getSitemapMetrics(row.updated_at);
+            return `  <url>\n    <loc>${baseUrl}/bulletin/${row.id}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
+          }
+        );
       } catch (dbErr) {
         console.error('[Sitemap] Database dynamic urls fetch error:', dbErr);
       }
     }
 
-    const allUrls = [...staticRoutes, ...dynamicUrls];
-
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-    for (const item of allUrls) {
-      xml += `  <url>\n`;
-      xml += `    <loc>${baseUrl}${item.url}</loc>\n`;
-      if (item.lastmod) {
-        xml += `    <lastmod>${item.lastmod}</lastmod>\n`;
-      }
-      xml += `    <changefreq>${item.changefreq || 'weekly'}</changefreq>\n`;
-      xml += `    <priority>${item.priority || '0.5'}</priority>\n`;
-      xml += `  </url>\n`;
-    }
-    xml += `</urlset>`;
-
-    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.send(xml);
+    res.end(`</urlset>`);
   } catch (err) {
     console.error('[Sitemap] Error generating sitemap:', err);
-    res.status(500).send('Error generating sitemap');
+    if (!res.headersSent) {
+      res.status(500).send('Error generating sitemap');
+    } else {
+      res.end(`</urlset>`);
+    }
   }
 });
 
@@ -1145,6 +1247,8 @@ async function injectSEOTags(
       : `Category: ${categoryParam} - ${defaultSiteName}`;
   }
 
+  let extraJsonLd: any = null;
+
   if (queryParam) {
     if (normalizedPath.startsWith('/blog')) {
       try {
@@ -1268,7 +1372,7 @@ async function injectSEOTags(
     if (slug) {
       try {
         const blogRes = await getExternalPool().query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar FROM blog_articles WHERE slug = $1',
+          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar, created_at, updated_at, author_id FROM blog_articles WHERE slug = $1',
           [slug]
         );
         if (blogRes.rows.length > 0) {
@@ -1297,6 +1401,19 @@ async function injectSEOTags(
           if (targetImg) {
             imageUrl = validateImageUrl(targetImg);
           }
+
+          extraJsonLd = {
+            "@type": "Article",
+            "headline": currentTitle,
+            "description": currentDesc,
+            "image": imageUrl ? [imageUrl] : undefined,
+            "datePublished": article.created_at ? new Date(article.created_at).toISOString() : undefined,
+            "dateModified": article.updated_at ? new Date(article.updated_at).toISOString() : undefined,
+            "author": {
+              "@type": "Person",
+              "name": currentSiteName
+            }
+          };
         }
       } catch (err) {
         console.error('[SEO] Failed to fetch blog article details:', err);
@@ -1308,7 +1425,7 @@ async function injectSEOTags(
     if (itemParam) {
       try {
         const marketRes = await pool.query(
-          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar FROM marketplace_items WHERE id = $1 OR slug = $2',
+          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar, price, created_at, updated_at FROM marketplace_items WHERE id = $1 OR slug = $2',
           [isNaN(itemId) ? -1 : itemId, itemParam]
         );
         if (marketRes.rows.length > 0) {
@@ -1337,9 +1454,58 @@ async function injectSEOTags(
           if (targetImg) {
             imageUrl = validateImageUrl(targetImg);
           }
+
+          extraJsonLd = {
+            "@type": "Product",
+            "name": currentTitle,
+            "description": currentDesc,
+            "image": imageUrl ? [imageUrl] : undefined,
+            "offers": {
+              "@type": "Offer",
+              "price": item.price || 0,
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            }
+          };
         }
       } catch (err) {
         console.error('[SEO] Failed to fetch marketplace item details:', err);
+      }
+    }
+  } else if (normalizedPath.startsWith('/bulletin/')) {
+    const adId = normalizedPath.split('/bulletin/')[1];
+    if (adId) {
+      try {
+        const adRes = await pool.query(
+          'SELECT title, description, image_url, author_name, created_at, updated_at FROM bulletin_ads WHERE id = $1',
+          [parseInt(adId, 10) || -1]
+        );
+        if (adRes.rows.length > 0) {
+          const ad = adRes.rows[0];
+          currentTitle = ad.title || currentTitle;
+          let cleanContent = (ad.description || '').replace(/[#*`_\[\]()]/g, '');
+          currentDesc = cleanContent.slice(0, 160).trim();
+          if (cleanContent.length > 160) currentDesc += '...';
+          
+          if (ad.image_url) {
+            imageUrl = validateImageUrl(ad.image_url);
+          }
+
+          extraJsonLd = {
+            "@type": "Article",
+            "headline": currentTitle,
+            "description": currentDesc,
+            "image": imageUrl ? [imageUrl] : undefined,
+            "datePublished": ad.created_at ? new Date(ad.created_at).toISOString() : undefined,
+            "dateModified": ad.updated_at ? new Date(ad.updated_at).toISOString() : undefined,
+            "author": {
+              "@type": "Person",
+              "name": ad.author_name || currentSiteName
+            }
+          };
+        }
+      } catch (err) {
+        console.error('[SEO] Failed to fetch bulletin ad details:', err);
       }
     }
   } else {
@@ -1483,7 +1649,7 @@ async function injectSEOTags(
       };
     }
 
-    const structuredData = {
+    const structuredData: any = {
       "@context": "https://schema.org",
       "@graph": [
         { "@type": "Organization", "@id": `${baseUrl}/#organization`, "name": currentSiteName, "url": baseUrl, "logo": faviconUrl, "description": currentDesc, "image": imageUrl },
@@ -1491,6 +1657,10 @@ async function injectSEOTags(
         { "@type": "BreadcrumbList", "@id": `${baseUrl}${normalizedPath}/#breadcrumb`, "itemListElement": breadcrumbItems }
       ]
     };
+
+    if (extraJsonLd) {
+      structuredData["@graph"].push(extraJsonLd);
+    }
 
     metaBlock += `\n    <script type="application/ld+json">\n${JSON.stringify(structuredData, null, 2).replace(/<\/script/gi, '<\\/script')}\n    </script>`;
   } else {

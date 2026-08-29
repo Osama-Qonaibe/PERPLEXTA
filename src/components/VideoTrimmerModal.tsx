@@ -44,11 +44,9 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(videoDuration);
 
-  // Trimmer handles (in seconds)
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(videoDuration || 10);
 
-  // Format & Ratio selection & Filter selection
   const [adFormat, setAdFormat] = useState<'post' | 'reel' | 'story' | 'video' | 'sidebar'>('post');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:5'>('1:1');
   const [selectedFilter, setSelectedFilter] = useState<string>('normal');
@@ -61,14 +59,12 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
     }
   }, [videoDuration]);
 
-  // Sync video time updates & enforce trim loop
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
-      // Loop playback within trim range
       if (video.currentTime >= endTime) {
         video.currentTime = startTime;
         if (!isPlaying) {

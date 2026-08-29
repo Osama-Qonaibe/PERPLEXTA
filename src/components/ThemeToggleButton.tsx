@@ -80,7 +80,6 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
     );
   }
 
-  // Single Icon Button Mode
   const iconSize = size === 'sm' ? 16 : size === 'lg' ? 20 : 18;
   const buttonDimensions = size === 'sm' ? 'w-8 h-8' : size === 'lg' ? 'w-11 h-11' : 'w-10 h-10';
 

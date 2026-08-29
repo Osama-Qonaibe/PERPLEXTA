@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Eye, Volume2, VolumeX, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Eye, Volume2, VolumeX, Trash2, AlertTriangle, Loader2, ZoomIn, ZoomOut, Pause } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { BulletinAvatar } from './BulletinAvatar';
 import { toast } from 'sonner';
 import { useAppContext } from '../context/AppContext';
 
@@ -51,17 +52,31 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   const { theme, token } = useAppContext();
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressIntervalRef = useRef<any>(null);
+
+  // Zoom / Pinch gesture states with automatic pause
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomTranslate, setZoomTranslate] = useState({ x: 0, y: 0 });
+  const touchDistanceRef = useRef<number | null>(null);
+  const touchCenterRef = useRef<{ x: number; y: number } | null>(null);
   
   const currentStory = stories[currentIndex];
+  const isZoomed = zoomScale > 1.05;
   
-  // Default duration for images is 5s
   const STORY_DURATION_MS = 5000;
+
+  const resetZoom = () => {
+    setZoomScale(1);
+    setZoomTranslate({ x: 0, y: 0 });
+    touchDistanceRef.current = null;
+    touchCenterRef.current = null;
+  };
 
   useEffect(() => {
     if (isOpen && currentStory) {
       setCurrentIndex(initialStoryIndex);
       setProgress(0);
       setIsPaused(false);
+      resetZoom();
     }
   }, [isOpen, initialStoryIndex]);
 
@@ -72,7 +87,9 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
       onStoryViewed(currentStory.id);
     }
 
-    if (isPaused) {
+    const shouldPause = isPaused || isZoomed;
+
+    if (shouldPause) {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       if (videoRef.current) videoRef.current.pause();
       return;
@@ -106,12 +123,11 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [currentIndex, isPaused, isOpen, currentStory]);
+  }, [currentIndex, isPaused, isZoomed, isOpen, currentStory]);
 
   useEffect(() => {
     if (!isOpen || stories.length === 0) return;
 
-    // Preload the first story of the next 3 unique users
     const preloadedUsers = new Set();
     const preloadLimit = 3;
     let foundUsers = 0;
@@ -126,13 +142,11 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         preloadedUsers.add(userKey);
         foundUsers++;
 
-        // Preload image
         if (story.image_url) {
           const img = new Image();
           img.src = getMediaUrl(story.image_url);
         }
 
-        // Preload video (if applicable)
         if (story.video_url) {
           const video = document.createElement('video');
           video.src = getMediaUrl(story.video_url);
@@ -145,6 +159,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   }, [currentIndex, stories, isOpen]);
 
   const handleNext = () => {
+    resetZoom();
     if (currentIndex < stories.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setProgress(0);
@@ -154,6 +169,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   };
 
   const handlePrev = () => {
+    resetZoom();
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
       setProgress(0);
@@ -162,7 +178,65 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
     }
   };
 
+  // Pinch touch gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      touchDistanceRef.current = distance;
+      touchCenterRef.current = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2
+      };
+      setIsPaused(true);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchDistanceRef.current !== null) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+      const scaleFactor = distance / touchDistanceRef.current;
+      const newScale = Math.min(Math.max(zoomScale * scaleFactor, 1), 3.5);
+      
+      setZoomScale(newScale);
+      touchDistanceRef.current = distance;
+      setIsPaused(true);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchDistanceRef.current = null;
+    touchCenterRef.current = null;
+    if (zoomScale < 1.1) {
+      resetZoom();
+      setIsPaused(false);
+    }
+  };
+
+  // Wheel zoom handler for desktop
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    if (e.ctrlKey || Math.abs(e.deltaY) > 20) {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.2 : -0.2;
+      setZoomScale((prev) => {
+        const next = Math.min(Math.max(prev + delta, 1), 3.5);
+        if (next <= 1.05) {
+          setZoomTranslate({ x: 0, y: 0 });
+          return 1;
+        }
+        return next;
+      });
+    }
+  };
+
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isZoomed) {
+      resetZoom();
+      return;
+    }
     if ("vibrate" in navigator) navigator.vibrate(50);
     const { clientX } = e;
     const { innerWidth } = window;
@@ -174,14 +248,19 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   };
 
   const handlePointerDown = () => {
-    setIsPaused(true);
+    if (!isZoomed) {
+      setIsPaused(true);
+    }
   };
 
   const handlePointerUp = () => {
-    setIsPaused(false);
+    if (!isZoomed) {
+      setIsPaused(false);
+    }
   };
 
   const handleDragEnd = (e: any, info: any) => {
+    if (isZoomed) return;
     const threshold = 50;
     if (info.offset.x < -threshold) {
       handleNext();
@@ -204,7 +283,6 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         toast.success(isRtl ? 'تم حذف القصة بنجاح' : 'Story deleted successfully');
         if (onStoryDeleted) onStoryDeleted(currentStory.id);
         
-        // If there are more stories, go to next, otherwise close
         if (stories.length > 1) {
           handleNext();
         } else {
@@ -240,7 +318,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           {/* Progress Bars (Persistent) */}
           <div className="absolute top-4 inset-x-0 z-50 flex items-center gap-1.5 px-4 pointer-events-none">
             {stories.map((story, idx) => (
-              <div key={`progress-${story.id}`} className="h-1 bg-white/20 rounded-full overflow-hidden flex-1 backdrop-blur-sm">
+              <div key={`story-progress-${story.id || 'story'}-${idx}`} className="h-1 bg-white/20 rounded-full overflow-hidden flex-1 backdrop-blur-sm">
                 <div 
                   className="h-full bg-white transition-all duration-[20ms] ease-linear"
                   style={{ 
@@ -253,19 +331,23 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
 
           <AnimatePresence mode="popLayout" custom={currentIndex}>
             <motion.div
-              key={currentStory.id}
+              key={`active-story-${currentStory.id || 'current'}-${currentIndex}`}
               initial={{ x: 300, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -300, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="absolute inset-0 w-full h-full"
+              className="absolute inset-0 w-full h-full touch-none overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onWheel={handleWheelZoom}
             >
               <motion.div 
-                drag="x"
+                drag={isZoomed ? false : "x"}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.1}
                 onDragEnd={handleDragEnd}
-                className="relative w-full h-full flex items-center justify-center select-none cursor-grab active:cursor-grabbing"
+                className="relative w-full h-full flex items-center justify-center select-none cursor-grab active:cursor-grabbing overflow-hidden"
                 onPointerDown={handlePointerDown}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
@@ -275,24 +357,73 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                   }
                 }}
               >
-                {currentStory.video_url ? (
-                  <video
-                    ref={videoRef}
-                    src={getMediaUrl(currentStory.video_url)}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    autoPlay
-                    muted={isMuted}
-                    onEnded={handleNext}
-                    onLoadedMetadata={() => setProgress(0)}
-                  />
-                ) : (
-                  <img
-                    src={getMediaUrl(currentStory.image_url)}
-                    alt="Story"
-                    className="w-full h-full object-cover"
-                  />
-                )}
+                {/* Media Container with Zoom Scale & Transform */}
+                <div
+                  className="w-full h-full will-change-transform origin-center transition-transform duration-100 ease-out"
+                  style={{
+                    transform: `scale(${zoomScale}) translate(${zoomTranslate.x}px, ${zoomTranslate.y}px)`,
+                  }}
+                >
+                  {currentStory.video_url ? (
+                    <video
+                      ref={videoRef}
+                      src={getMediaUrl(currentStory.video_url)}
+                      className="w-full h-full object-cover"
+                      playsInline
+                      autoPlay
+                      muted={isMuted}
+                      onEnded={handleNext}
+                      onLoadedMetadata={() => setProgress(0)}
+                      onError={(e) => {
+                        console.warn('[StoryViewer] Video load error, falling back to image');
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={getMediaUrl(currentStory.image_url)}
+                      alt="Story"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (!target.src.includes('unsplash')) {
+                          target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80';
+                        }
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Zoom Active Floating Overlay Indicator */}
+                <AnimatePresence>
+                  {isZoomed && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute top-20 z-40 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-purple-500/40 text-white flex items-center gap-2 shadow-2xl pointer-events-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resetZoom();
+                      }}
+                    >
+                      <Pause size={13} className="text-purple-400 fill-purple-400" />
+                      <span className="text-[11px] font-black text-purple-200">
+                        {isRtl ? `موقوف مؤقتاً للتكبير (${zoomScale.toFixed(1)}x)` : `Paused (Zoomed ${zoomScale.toFixed(1)}x)`}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          resetZoom();
+                        }}
+                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                        title={isRtl ? 'إعادة ضبط' : 'Reset'}
+                      >
+                        <X size={12} />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </motion.div>
           </AnimatePresence>
@@ -301,13 +432,11 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           <div className="absolute top-10 inset-x-0 z-50 px-4 pointer-events-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-0.5 rounded-full bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-md">
-                  <img 
-                    src={getMediaUrl(authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80')} 
-                    alt="Avatar" 
-                    className="w-9 h-9 rounded-full border-2 border-black object-cover" 
-                  />
-                </div>
+                <BulletinAvatar
+                  src={authorAvatar}
+                  alt={authorName}
+                  size="sm"
+                />
                 <div className="flex flex-col">
                   <span className="text-white text-sm font-bold drop-shadow-md leading-tight">
                     {authorName}

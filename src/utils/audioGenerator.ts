@@ -16,7 +16,7 @@ const NOTE_FREQS: Record<string, number> = {
   'C5': 523.25, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99, 'A5': 880.00, 'B5': 987.77
 };
 
-export async function generateProceduralTrack(genre: string, vocalType: string, durationNumber: number): Promise<Blob> {
+export async function generateProceduralAudio(genre: string, vocalType: string, durationNumber: number): Promise<{ buffer: AudioBuffer; blob: Blob }> {
   const sampleRate = 44100;
   // Ensure duration resides in safe territory (min 15s, max 90s)
   const duration = Math.max(15, Math.min(durationNumber || 30, 90));
@@ -521,9 +521,14 @@ export async function generateProceduralTrack(genre: string, vocalType: string, 
   // Set up rendering callback
   const renderedBuffer = await offlineCtx.startRendering();
   
-  // Format to correct Wav blob in millliseconds
+  // Format to correct Wav blob in milliseconds
   const wavBlob = bufferToWav(renderedBuffer);
-  return wavBlob;
+  return { buffer: renderedBuffer, blob: wavBlob };
+}
+
+export async function generateProceduralTrack(genre: string, vocalType: string, durationNumber: number): Promise<Blob> {
+  const result = await generateProceduralAudio(genre, vocalType, durationNumber);
+  return result.blob;
 }
 
 /**

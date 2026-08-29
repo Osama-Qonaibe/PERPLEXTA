@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import {
   Play,
   Pause,
@@ -11,7 +11,8 @@ import {
   Film,
   RotateCcw
 } from 'lucide-react';
-import { parseVideoUrl, getAspectRatioClass } from '../utils/mediaUtils';
+import { parseVideoUrl, getAspectRatioClass, getMediaUrl } from '../utils/mediaUtils';
+import { notifyMediaPlaying, stopAllMedia } from '../utils/mediaCoordinator';
 
 export interface MediaFormatPlayerProps {
   url: string;
@@ -26,6 +27,7 @@ export interface MediaFormatPlayerProps {
   isRtl?: boolean;
   showControls?: boolean;
   allowFitToggle?: boolean;
+  onOpenReels?: () => void;
   onEnded?: () => void;
 }
 
@@ -42,8 +44,11 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
   isRtl = true,
   showControls = true,
   allowFitToggle = true,
+  onOpenReels,
   onEnded,
 }) => {
+  const reactId = useId();
+  const playerId = useRef(`media_player_${reactId.replace(/:/g, '_')}`).current;
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -58,14 +63,48 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
 
   const videoInfo = parseVideoUrl(url);
 
-  // Sync aspectRatio prop if provided
+  // Synchronize with global media coordinator to prevent double-audio clashing
+  useEffect(() => {
+    const handleStopMedia = (e: Event) => {
+      const customEvent = e as CustomEvent<{ exceptMediaId?: string }>;
+      if (customEvent.detail?.exceptMediaId !== playerId) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setIsPlaying(false);
+      }
+    };
+
+    const handleMediaPlaying = (e: Event) => {
+      const customEvent = e as CustomEvent<{ mediaId: string }>;
+      if (customEvent.detail?.mediaId !== playerId) {
+        if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+        }
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('perplexta:stop_all_media', handleStopMedia);
+    window.addEventListener('perplexta:media_playing', handleMediaPlaying);
+
+    return () => {
+      window.removeEventListener('perplexta:stop_all_media', handleStopMedia);
+      window.removeEventListener('perplexta:media_playing', handleMediaPlaying);
+      if (videoRef.current) {
+        try {
+          videoRef.current.pause();
+        } catch (_) {}
+      }
+    };
+  }, [playerId]);
+
   useEffect(() => {
     if (aspectRatio !== 'auto') {
       setActiveRatio(aspectRatio);
     }
   }, [aspectRatio]);
 
-  // Video time updates
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -88,6 +127,32 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
     };
   }, [onEnded]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = videoRef.current;
+          if (!video) return;
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.25) {
+            if (!video.paused) {
+              video.pause();
+            }
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: [0, 0.25, 0.5] }
+    );
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const togglePlay = () => {
     const video = videoRef.current;
     if (!video) return;
@@ -96,6 +161,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       video.pause();
       setIsPlaying(false);
     } else {
+      notifyMediaPlaying(playerId);
       video.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
@@ -140,7 +206,6 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
     ? getAspectRatioClass(activeRatio, adFormat)
     : getAspectRatioClass(undefined, adFormat);
 
-  // Render YouTube / Vimeo / TikTok Embeds
   if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo' || videoInfo.type === 'tiktok') {
     return (
       <div
@@ -163,7 +228,9 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
     );
   }
 
-  // Render HTML5 Direct Video Player
+  const resolvedVideoSrc = getMediaUrl(url);
+  const resolvedPosterSrc = posterUrl ? getMediaUrl(posterUrl) : undefined;
+
   return (
     <div
       ref={containerRef}
@@ -175,7 +242,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       {fitMode === 'contain' && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40 blur-xl scale-110">
           <video
-            src={url}
+            src={resolvedVideoSrc}
             muted
             className="w-full h-full object-cover"
           />
@@ -185,8 +252,9 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
       {/* Main HTML5 Video Element */}
       <video
         ref={videoRef}
-        src={url}
-        poster={posterUrl}
+        data-media-id={playerId}
+        src={resolvedVideoSrc}
+        poster={resolvedPosterSrc}
         playsInline
         muted={isMuted}
         autoPlay={autoPlay}
@@ -293,11 +361,21 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
                 {fitMode === 'cover' ? (isRtl ? 'قص ملائم' : 'Fill & Crop') : (isRtl ? 'عرض كامل' : 'Fit Container')}
               </span>
               <button
-                onClick={toggleFullscreen}
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.pause();
+                    videoRef.current.muted = true;
+                  }
+                  if (onOpenReels) {
+                    onOpenReels();
+                  } else {
+                    toggleFullscreen();
+                  }
+                }}
                 className="p-1 rounded hover:bg-white/20 text-white transition-colors"
-                title={isRtl ? 'ملء الشاشة' : 'Fullscreen'}
+                title={isRtl ? 'عرض ريلز بملء الشاشة' : 'Open Reels Fullscreen'}
               >
-                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                <Maximize2 size={16} />
               </button>
             </div>
           </div>

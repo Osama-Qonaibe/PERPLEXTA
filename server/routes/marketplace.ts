@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/index.js';
+import { io } from '../config/socket.js';
 import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
 import { deductFromWallet, adjustWalletBalance, refundToWallet, getEconomySettings } from '../services/wallet.js';
 import { getStripe } from '../services/payments.js';
@@ -375,6 +376,10 @@ router.patch('/items/:id', authenticateToken, async (req: any, res) => {
       id
     ]);
 
+    if (io && result.rows.length > 0) {
+      io.emit('marketplace_update', { itemId: id, updates: result.rows[0] });
+    }
+
     res.json({ success: true, item: result.rows[0] });
   } catch (error: any) {
     console.error('Failed to update item:', error);
@@ -405,6 +410,10 @@ router.patch('/admin/items/:id/status', authenticateToken, authenticateAdmin, as
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (io) {
+      io.emit('marketplace_update', { itemId: id, updates: result.rows[0] });
     }
 
     res.json({ success: true, item: result.rows[0] });

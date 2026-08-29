@@ -16,7 +16,7 @@ import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, r
 import { syncAllContentSeoMetadata, auditContentSeoItems, syncSingleContentSeoItem, getSmartSeoSuggestion, applySmartSeoSuggestion } from '../services/seoSync.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
-import { optimizeUploadedImage } from '../services/mediaOptimizationService.js';
+import { optimizeUploadedImage, findOrphanedMediaAssets } from '../services/mediaOptimizationService.js';
 import { adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
@@ -3341,6 +3341,8 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       }
     }
 
+    const orphanedMediaAssets = await findOrphanedMediaAssets();
+
     if (dryRun) {
       return res.json({
         success: true,
@@ -3351,6 +3353,9 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
             misalignedChatCount: misalignedChatFilesRes.rows.length,
             totalImpacted: orphanedFilesRes.rows.length + misalignedChatFilesRes.rows.length
           },
+          mediaAssets: {
+            orphanedCount: orphanedMediaAssets.length
+          },
           depositRequests: {
             orphanedCount: orphanedDepositRequests.length
           }
@@ -3358,11 +3363,11 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
         details: {
           orphanedUserFiles: orphanedFilesRes.rows,
           misalignedChatFiles: misalignedChatFilesRes.rows,
+          orphanedMediaAssets: orphanedMediaAssets,
           orphanedDepositRequests: orphanedDepositRequests
         }
       });
     }
-
 
     let physicalFilesDeleted = 0;
     const deletedUserFileIds: number[] = [];
@@ -3392,6 +3397,20 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       }
     }
 
+    let orphanedMediaDeletedCount = 0;
+    if (orphanedMediaAssets.length > 0) {
+      const mediaIds = orphanedMediaAssets.map((m: any) => m.id);
+      await pool.query('DELETE FROM media_assets WHERE id = ANY($1::uuid[])', [mediaIds]);
+      for (const m of orphanedMediaAssets) {
+        if (m.stored_path) {
+          const absPath = path.join(process.cwd(), m.stored_path);
+          await fs.unlink(absPath).catch(() => {});
+          physicalFilesDeleted++;
+        }
+        orphanedMediaDeletedCount++;
+      }
+    }
+
     let chatReferencesAlignedCount = 0;
     if (misalignedChatFilesRes.rows.length > 0) {
       const idsToAlign = misalignedChatFilesRes.rows.map((row: any) => row.id);
@@ -3418,6 +3437,7 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
       {
         dryRun: false,
         userFilesPrunedCount: deletedUserFileIds.length,
+        mediaAssetsPrunedCount: orphanedMediaDeletedCount,
         physicalFilesPurgedCount: physicalFilesDeleted,
         userFilesChatFixedCount: chatReferencesAlignedCount,
         depositRequestsPrunedCount: prunedDepositRequestsCount
@@ -3435,6 +3455,9 @@ router.post("/maintenance/cleanup", authenticateAdmin, async (req, res) => {
           prunedCount: deletedUserFileIds.length,
           physicalFilesPurged: physicalFilesDeleted,
           chatReferencesAligned: chatReferencesAlignedCount
+        },
+        mediaAssets: {
+          prunedCount: orphanedMediaDeletedCount
         },
         depositRequests: {
           prunedCount: prunedDepositRequestsCount

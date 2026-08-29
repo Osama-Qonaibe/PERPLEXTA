@@ -382,4 +382,183 @@ router.get('/articles/:id/user-rating', authenticateToken, async (req: any, res)
   }
 });
 
+export async function ensureBlogSeedData() {
+  try {
+    const extTarget = getExternalPool();
+    await extTarget.query(`
+      CREATE TABLE IF NOT EXISTS blog_articles (
+        id SERIAL PRIMARY KEY,
+        author_id INTEGER NOT NULL,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        title_en VARCHAR(255) NOT NULL,
+        title_ar VARCHAR(255) NOT NULL,
+        content_en TEXT NOT NULL,
+        content_ar TEXT NOT NULL,
+        image_url TEXT,
+        category_en VARCHAR(100) NOT NULL,
+        category_ar VARCHAR(100) NOT NULL,
+        views INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await extTarget.query(`
+      CREATE TABLE IF NOT EXISTS blog_comments (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await extTarget.query(`
+      CREATE TABLE IF NOT EXISTS blog_ratings (
+        id SERIAL PRIMARY KEY,
+        article_id INTEGER NOT NULL REFERENCES blog_articles(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (article_id, user_id)
+      );
+    `);
+
+    const countRes = await extTarget.query('SELECT COUNT(*)::int as count FROM blog_articles');
+    if (countRes.rows[0].count === 0) {
+      let authorId = 1;
+      try {
+        const userRes = await corePool.query("SELECT id FROM users ORDER BY (role = 'admin') DESC, id ASC LIMIT 1");
+        if (userRes.rows.length > 0) {
+          authorId = userRes.rows[0].id;
+        }
+      } catch (err) {
+        console.warn('[Blog Seed] Could not retrieve user, defaulting author_id to 1');
+      }
+
+      const articles = [
+        {
+          slug: 'ai-technical-analysis-2026-breakthrough',
+          title_en: 'AI-Powered Technical Analysis: How Machine Learning Transforms Market Structure',
+          title_ar: 'التحليل الفني المعزز بالذكاء الاصطناعي: كيف يُعيد التعلم الآلي تشكيل قراءة النماذج السعرية',
+          category_en: 'Technical Analysis',
+          category_ar: 'التحليل الفني',
+          image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+          views: 1420,
+          content_en: `# AI-Powered Technical Analysis: A Quantitative Paradigm
+
+Technical analysis is experiencing a monumental evolution. By combining deep neural networks with real-time liquidity cluster detection, analysts can now identify institutional order blocks, Fair Value Gaps (FVG), and high-probability breakout zones with millisecond precision.
+
+### Key Technological Pillars:
+1. **Algorithmic Liquidity Mapping**: Real-time identification of buy-side and sell-side liquidity pools.
+2. **Multi-Timeframe Confluence**: Synchronous evaluation across tick, 5-minute, and daily aggregations.
+3. **Adaptive Volatility Bounds**: Dynamic ATR and Bollinger normalization calibrated for macroeconomic releases.
+
+*Perplexta Analysis Engine leverages dual-system neural checkpoints to ensure zero-hallucination signal verification.*`,
+          content_ar: `# التحليل الفني المعزز بالذكاء الاصطناعي: نقلة نوعية كمية
+
+يمر التحليل الفني بنقلة تاريخية في دقة التنبؤ وقراءة الأسواق. عبر دمج الشبكات العصبية العميقة مع خوارزميات رصد كتل السيولة (Order Blocks) والفجوات السعرية العادلة (FVG)، بات بمقدور المحللين والمتداولين رصد مناطق التجميع والتصريف المؤسسية بدقة متناهية.
+
+### الركائز التكنولوجية الأساسية:
+1. **الرصد الآلي لمناطق السيولة**: تعقب تجمعات أوامر الشراء والبيع الكبرى على مختلف الأطر الزمنية.
+2. **التوافق المتعدد للأطر الزمنية**: مواءمة لحظية بين الفواصل الصغيرة (5 دقائق) والأطر اليومية الكبرى.
+3. **نطاقات التذبذب المتكيفة**: معايرة ديناميكية لمؤشرات ATR والبولنجر لتجاوز الضوضاء السعرية اللحظية.
+
+*يوفر محرك Perplexta تحليلاً كمياً صارماً يعتمد على خوارزميات مطابقة الأنماط وتأكيد أحجام التداول الحقيقية.*`
+        },
+        {
+          slug: 'quantitative-trading-systems-resilience',
+          title_en: 'Building Resilient Quantitative Trading Systems with Dual-Model Architectures',
+          title_ar: 'بناء استراتيجيات التداول الكمي عالية المرونة باستخدام بنية النماذج المزدوجة',
+          category_en: 'Quantitative Trading',
+          category_ar: 'التداول الكمي',
+          image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+          views: 980,
+          content_en: `# Zero-Downtime Financial Engineering
+
+Modern quantitative execution demands failover mechanics that transition seamlessly when latency spikes or provider rate limits are encountered.
+
+### The Perplexta Dual Architecture:
+- **Silent Failover Orchestration**: Instant fallback across distributed inference endpoints with in-memory key stores.
+- **Strict Risk Budgets**: Real-time position sizing based on portfolio variance and Kelly criterion parameters.
+- **Append-Only Financial Ledger**: Immutable transactional records guaranteeing cryptographic auditability.`,
+          content_ar: `# الهندسة المالية فائقة المرونة والاستقرار
+
+يتطلب التنفيذ الكمي الحديث محركات مخاطر فائقة المتانة قادرة على التبديل الصامت (Silent Failover) والتنفيذ اللحظي في أجزاء من الألف من الثانية دون أي انقطاع أثناء جلسات التذبذب العالي.
+
+### البنية الهندسية لمنصة Perplexta:
+- **التوجيه الذكي والتبديل الصامت**: انتقال فوري بين نماذج الذكاء الاصطناعي والمزودين عند وصول حدود الاستهلاك.
+- **إدارة المخاطر الصارمة**: حساب الحجم الأمثل للصفقات بناءً على تباين المحفظة ومعادلة كيلي.
+- **سجل المعاملات غير القابل للتعديل**: توثيق فوري لكافة العمليات والتحليلات ضمن بيئة مشفرة ومحمية.`
+        },
+        {
+          slug: 'enterprise-security-and-zero-trust-vaults',
+          title_en: 'Zero-Trust Architecture & AES-256 Encryption in Financial Intelligence Systems',
+          title_ar: 'هندسة انعدام الثقة (Zero-Trust) والتشفير العسكري في منصات الاستخبارات المالية',
+          category_en: 'Security & Infrastructure',
+          category_ar: 'الأمان والبنية التحتية',
+          image_url: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80',
+          views: 840,
+          content_en: `# Institutional Security Standards
+
+Protecting proprietary trading strategies, private API credentials, and financial transactions requires multi-layered defense-in-depth:
+- **In-Memory AES-256 Secret Decryption**: Keys are decrypted at runtime in milliseconds without filesystem exposure.
+- **Strict Database Segregation**: Operational metadata is fully isolated from the financial ledger vault.
+- **Multi-Factor Verification**: Cryptographic signatures validate every sensitive administrative action.`,
+          content_ar: `# المعايير الأمنية المؤسسية لحماية البيانات
+
+الأمان الرقمي ليس مجرد ميزة إضافية، بل هو الركيزة الجوهرية لمنصات التحليل المؤسسية.
+- **التشفير الفوري AES-256 في الذاكرة**: قراءة المفاتيح السرية في 0.001ms دون تخزينها كنصوص مكشوفة.
+- **العزل التام لقواعد البيانات**: فصل قاعدة البيانات التشغيلية عن قاعدة البيانات المالية وسجل الحسابات (Ledger).
+- **التحقق متعدد المراحل**: توثيق رقمي صارم لكافة العمليات الإدارية الحساسة وتغييرات النظام.`
+        },
+        {
+          slug: 'nlp-sentiment-alpha-financial-markets',
+          title_en: 'Deciphering Market Sentiment: Real-Time NLP for Macro News & Social Alpha',
+          title_ar: 'فك شفرة المشاعر السوقية: معالجة اللغات الطبيعية الحية لتحليل الأخبار الاقتصادية',
+          category_en: 'Artificial Intelligence',
+          category_ar: 'الذكاء الاصطناعي',
+          image_url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+          views: 1120,
+          content_en: `# Macro Intelligence & Natural Language Processing
+
+How large language models transform breaking central bank statements, macroeconomic releases, and earnings calls into quantified market bias.
+
+- **Entity & Metric Extraction**: Isolating CPI, Interest Rate guidance, and labor statistics from unstructured transcripts.
+- **Context-Aware Sentiment Scoring**: Differentiating between hawkish nuance and dovish market pauses.
+- **Correlation Mapping**: Assessing cross-asset impact across FX, Commodities, and Equities.`,
+          content_ar: `# معالجة اللغات الطبيعية لتحليل المشاعر والبيانات الاقتصادية
+
+كيف تحول تقنيات الذكاء الاصطناعي ومعالجة اللغات الطبيعية (NLP) المتقدمة بيانات البنوك المركزية ومؤشرات التضخم إلى إشارات احتمالية دقيقة لدعم القرار الاستثماري.
+
+- **استخراج المؤشرات الحيوية**: استخلاص بيانات الفائدة، ومعدلات التضخم (CPI) وسوق العمل آلياً وفور صدورها.
+- **تحديد نبرة الخطاب النقدي**: التمييز الدقيق بين التشدد والتيسير النقدي في تصريحات صناع القرار.
+- **رسم خريطة الارتباطات**: قياس التأثير المتبادل بين العملات، السلع، ومؤشرات الأسهم العالمية.`
+        }
+      ];
+
+      for (const a of articles) {
+        const insRes = await extTarget.query(`
+          INSERT INTO blog_articles (author_id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, views)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING id
+        `, [authorId, a.slug, a.title_en, a.title_ar, a.content_en, a.content_ar, a.image_url, a.category_en, a.category_ar, a.views]);
+
+        const artId = insRes.rows[0].id;
+        // Add sample ratings
+        await extTarget.query(`
+          INSERT INTO blog_ratings (article_id, user_id, rating)
+          VALUES ($1, $2, 5)
+          ON CONFLICT DO NOTHING
+        `, [artId, authorId]).catch(() => {});
+      }
+
+      console.log(`[Blog Seed] Successfully seeded ${articles.length} rich articles into blog_articles.`);
+    }
+  } catch (err: any) {
+    console.error('[Blog Seed] Failed to ensure blog seed data:', err.message);
+  }
+}
+
 export default router;

@@ -98,14 +98,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [dbRouteSeo, setDbRouteSeo] = useState<any[]>([]);
 
-  useEffect(() => {
-    const handleVersionMismatch = () => {
-      console.log('PWA version mismatch detected. Triggering forced reload...');
-      window.location.reload();
-    };
-    window.addEventListener('pwa-version-mismatch', handleVersionMismatch);
-    return () => window.removeEventListener('pwa-version-mismatch', handleVersionMismatch);
-  }, []);
+
 
   useEffect(() => {
     fetch('/api/seo-routes')

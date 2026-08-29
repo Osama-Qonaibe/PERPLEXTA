@@ -19,6 +19,7 @@ import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { ensureAdsSeedData } from './routes/ads.js';
 import { ensureBulletinSeedData } from './routes/bulletin.js';
+import { ensureBlogSeedData } from './routes/blog.js';
 import { initCronJobs } from './jobs/cron.js';
 import { validateRequiredSecrets } from './utils/validateSecrets.js';
 import { initUploadsMonitor } from './services/uploadsMonitorService.js';
@@ -48,6 +49,7 @@ async function initDatabase(): Promise<boolean> {
       await refreshCachedAppName();
       await ensureAdsSeedData();
       await ensureBulletinSeedData();
+      await ensureBlogSeedData();
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -81,10 +83,6 @@ async function startServer() {
     const httpServer = createServer(app);
     const ioInstance = initSocket(httpServer);
 
-    httpServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT} [INITIALIZING...]`);
-    });
-
     const shutdown = (signal: string) => {
       console.log(`[Server] ${signal} received — shutting down gracefully...`);
       httpServer.close(() => {
@@ -96,16 +94,28 @@ async function startServer() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT',  () => shutdown('SIGINT'));
 
-    const dbReady = await initDatabase();
-    if (dbReady) {
-      setIo(ioInstance);
-      initCronJobs();
-      initUploadsMonitor();
-      console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
-    } else {
-      initUploadsMonitor();
-      console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');
-    }
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Server] 🚀 Perplexta Engine active on port ${PORT} [READY]`);
+    });
+
+    // Run database initialization and secondary services asynchronously
+    // so port 3000 is available immediately for health checks and Vite traffic
+    initDatabase()
+      .then((dbReady) => {
+        if (dbReady) {
+          setIo(ioInstance);
+          initCronJobs();
+          console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
+        } else {
+          console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');
+        }
+      })
+      .catch((err) => {
+        console.error('[Server] Non-fatal error during background database init:', err);
+      })
+      .finally(() => {
+        initUploadsMonitor();
+      });
   } catch (err) {
     console.error('[Server] FATAL: Unexpected Application Failure:', err);
     process.exit(1);

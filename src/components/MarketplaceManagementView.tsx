@@ -125,7 +125,6 @@ interface ParentCategory {
   id: string;
   nAr: string;
   nEn: string;
-  ic: string;
   co: string;
 }
 
@@ -134,31 +133,30 @@ interface ChildCategory {
   parent: string;
   nAr: string;
   nEn: string;
-  ic: string;
   co: string;
 }
 
 const parents: ParentCategory[] = [
-  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', ic: 'code', co: '#334155' },
-  { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', ic: 'trading-bots', co: '#f59e0b' },
-  { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', ic: 'templates', co: '#ec4899' },
-  { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', ic: 'startup-box', co: '#8b5cf6' },
-  { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', ic: 'ebooks', co: '#14b8a6' },
-  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', ic: 'free', co: '#334155' }
+  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', co: '#334155' },
+  { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', co: '#f59e0b' },
+  { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', co: '#ec4899' },
+  { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', co: '#8b5cf6' },
+  { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', co: '#14b8a6' },
+  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', co: '#334155' }
 ];
 
 const children: ChildCategory[] = [
-  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', ic: 'saas', co: '#334155' },
-  { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', ic: 'mobile', co: '#06b6d4' },
-  { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', ic: 'plugins', co: '#6366f1' },
-  { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', ic: 'ai-agents', co: '#f43f5e' },
-  { id: 'trading-bots', parent: 'fintech', nAr: 'بوتات التداول', nEn: 'Trading Bots', ic: 'trading-bots', co: '#f59e0b' },
-  { id: 'indicators', parent: 'fintech', nAr: 'مؤشرات فنية', nEn: 'Technical Indicators', ic: 'indicators', co: '#eab308' },
-  { id: 'templates', parent: 'ui', nAr: 'قوالب ومواقع', nEn: 'Templates & Sites', ic: 'templates', co: '#ec4899' },
-  { id: 'figma', parent: 'ui', nAr: 'ملفات Figma', nEn: 'Figma Files', ic: 'figma', co: '#a855f7' },
-  { id: 'startup-box', parent: 'bundles', nAr: 'Startup-in-a-Box', nEn: 'Startup-in-a-Box', ic: 'startup-box', co: '#8b5cf6' },
-  { id: 'marketing-kits', parent: 'bundles', nAr: 'أكياس تسويقية', nEn: 'Marketing Kits', ic: 'marketing-kits', co: '#f97316' },
-  { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', ic: 'game-bundles', co: '#ef4444' }
+  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', co: '#334155' },
+  { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', co: '#06b6d4' },
+  { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', co: '#6366f1' },
+  { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', co: '#f43f5e' },
+  { id: 'trading-bots', parent: 'fintech', nAr: 'بوتات التداول', nEn: 'Trading Bots', co: '#f59e0b' },
+  { id: 'indicators', parent: 'fintech', nAr: 'مؤشرات فنية', nEn: 'Technical Indicators', co: '#eab308' },
+  { id: 'templates', parent: 'ui', nAr: 'قوالب ومواقع', nEn: 'Templates & Sites', co: '#ec4899' },
+  { id: 'figma', parent: 'ui', nAr: 'ملفات Figma', nEn: 'Figma Files', co: '#a855f7' },
+  { id: 'startup-box', parent: 'bundles', nAr: 'Startup-in-a-Box', nEn: 'Startup-in-a-Box', co: '#8b5cf6' },
+  { id: 'marketing-kits', parent: 'bundles', nAr: 'أكياس تسويقية', nEn: 'Marketing Kits', co: '#f97316' },
+  { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', co: '#ef4444' }
 ];
 
 export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: string }> = ({ theme, t, dir }) => {
@@ -169,7 +167,6 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
   const [statusFilter, setStatusFilter] = useState('All');
   const [actioningId, setActioningId] = useState<number | null>(null);
 
-  // Reusable confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: { ar: string; en: string };
@@ -199,7 +196,6 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
     });
   };
 
-  // Editing logic states
   const [editingItem, setEditingItem] = useState<MarketplaceItem | null>(null);
   const [editTitleAr, setEditTitleAr] = useState('');
   const [editTitleEn, setEditTitleEn] = useState('');
@@ -327,7 +323,6 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
     setEditPrice(item.price ? item.price.toString() : '');
     setEditDiscount('0');
     
-    // Find child category
     const matchingChild = children.find(c => c.nEn === item.category_en || c.nAr === item.category_ar);
     setEditCategorySelect(matchingChild ? matchingChild.id : 'saas');
     

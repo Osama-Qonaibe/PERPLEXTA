@@ -9,7 +9,6 @@ export const AdminDiagnosticTool: React.FC = () => {
   const runDiagnostic = () => {
     setIsChecking(true);
     setCheckCompleted(false);
-    // Simulate API call
     setTimeout(() => {
       setMissingFiles(['/src/assets/logo.png', '/src/utils/config.ts']);
       setIsChecking(false);

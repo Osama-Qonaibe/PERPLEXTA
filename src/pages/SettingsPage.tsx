@@ -345,7 +345,7 @@ export const SettingsPage: React.FC = () => {
 
         <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-6 md:p-12`}>
           <div className="max-w-5xl mx-auto w-full">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               <motion.div
                 key={activeTab}
                 initial="initial"

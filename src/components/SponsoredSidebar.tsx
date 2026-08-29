@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { ExternalLink, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -43,8 +43,6 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
           if (data.success && Array.isArray(data.ads)) {
             if (isMounted) {
               setAds(data.ads);
-
-              // Record impression for each loaded ad
               data.ads.forEach((ad: Advertisement) => {
                 fetch(`/api/ads/${ad.id}/impression`, { method: 'POST' }).catch(() => {});
               });
@@ -55,7 +53,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
         if (isMounted) {
           setAds([]);
         }
-      } catch (err: any) {
+      } catch {
         if (retryCount < 2) {
           setTimeout(() => {
             if (isMounted) fetchAds(retryCount + 1);
@@ -79,14 +77,13 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
     };
   }, []);
 
-  // Rotate ads every 30 seconds dynamically (older ads replaced by newer ones in rotation)
   useEffect(() => {
     const activeAds = ads.filter((ad) => !hiddenAdIds.includes(ad.id));
     if (activeAds.length <= 3) return;
 
     const timer = setInterval(() => {
       setRotationIndex((prev) => (prev + 1) % activeAds.length);
-    }, 30000); // 30 seconds rotation
+    }, 30000);
 
     return () => clearInterval(timer);
   }, [ads, hiddenAdIds]);
@@ -107,13 +104,12 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
     setHiddenAdIds((prev) => [...prev, adId]);
   };
 
-  const visibleAds = React.useMemo(() => {
+  const visibleAds = useMemo(() => {
     const activeAds = ads.filter((ad) => !hiddenAdIds.includes(ad.id));
     if (activeAds.length <= 3) return activeAds;
 
-    const sliceCount = 3;
     const result = [];
-    for (let i = 0; i < sliceCount; i++) {
+    for (let i = 0; i < 3; i++) {
       const idx = (rotationIndex + i) % activeAds.length;
       result.push(activeAds[idx]);
     }
@@ -127,9 +123,7 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
   const isRtl = language === 'ar';
 
   return (
-    <div
-      className={`hidden xl:flex flex-col h-full w-72 p-4 pt-16 space-y-4 shrink-0 overflow-y-auto scrollbar-none transition-theme ${className}`}
-    >
+    <div className={`hidden xl:flex flex-col h-full w-72 p-4 pt-16 space-y-4 shrink-0 overflow-y-auto scrollbar-none transition-theme ${className}`}>
       <div className="flex items-center justify-between px-1 mb-1">
         <span className="text-[11px] font-extrabold tracking-wider text-gray-400 uppercase">
           {isRtl ? 'إعلانات ممولة مقترحة' : 'Sponsored Ads'}
@@ -154,7 +148,6 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
               onClick={(e) => handleAdClick(ad, e)}
               className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-accent/40 transition-theme flex flex-col gap-2.5"
             >
-              {/* Dismiss X button */}
               <button
                 onClick={(e) => handleDismissAd(ad.id, e)}
                 title={isRtl ? 'إخفاء الإعلان' : 'Hide Ad'}
@@ -163,7 +156,6 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
                 <X size={12} />
               </button>
 
-              {/* Ad Image Container */}
               <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200/40 dark:border-gray-800/40">
                 <ProgressiveImage
                   src={getMediaUrl(ad.image_url)}
@@ -177,7 +169,6 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
                 )}
               </div>
 
-              {/* Ad Details */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-accent transition-colors">

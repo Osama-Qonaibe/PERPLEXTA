@@ -13,16 +13,13 @@ const router = express.Router();
 router.post("/avatar", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
-    const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname);
-    
-    const optimizedPath = path.join(process.cwd(), optResult.fileUrl.replace(/^\//, ''));
-    const fileBuffer = await fs.readFile(optimizedPath);
-    const avatarUrl = `data:image/${optResult.format || 'webp'};base64,${fileBuffer.toString('base64')}`;
-    
-    // Cleanup local files
-    await fs.unlink(req.file.path).catch(() => {});
-    await fs.unlink(optimizedPath).catch(() => {});
-    const updated = await updateUserProfile(req.user.id, { avatar: avatarUrl });
+    const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname, 'avatar', true, { userId: req.user.id });
+    const avatarUrl = normalizeMediaUrl(optResult.fileUrl);
+
+    const updated = await updateUserProfile(req.user.id, { 
+      avatar: avatarUrl,
+      avatar_asset_id: optResult.assetId || null 
+    });
     res.json({ success: true, url: avatarUrl, user: updated });
   } catch (error: any) {
     console.error('[AvatarUpload] Failed to process avatar:', error);

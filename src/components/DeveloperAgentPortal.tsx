@@ -28,31 +28,25 @@ export const DeveloperAgentPortal: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form State
   const [clientName, setClientName] = useState('');
   const [identityType, setIdentityType] = useState('agent');
   const [userAgent, setUserAgent] = useState('');
   const [redirectUris, setRedirectUris] = useState('');
 
-  // Generated Credentials State
   const [generatedCredentials, setGeneratedCredentials] = useState<{
     client_id: string;
     client_secret: string;
     client_name: string;
   } | null>(null);
 
-  // Active Code Language Tab
   const [codeLanguage, setCodeLanguage] = useState<'python' | 'node' | 'curl'>('python');
 
   const showToast = (msg: string) => {
-    // Falls back to browser native or simple console log, alerts can be simulated smoothly or using a toast
-    // But since the parent Page has toast, we can use simple states or native UI if needed. We'll use a local toast.
     setLocalToast(msg);
     setTimeout(() => setLocalToast(null), 3000);
   };
   const [localToast, setLocalToast] = useState<string | null>(null);
 
-  // WebMCP States
   const [mcpMode, setMcpMode] = useState<'server' | 'federation'>('server');
   const [mcpDiscovery, setMcpDiscovery] = useState<any>(null);
   const [mcpTools, setMcpTools] = useState<any[]>([]);
@@ -177,7 +171,6 @@ export const DeveloperAgentPortal: React.FC = () => {
     setExternalMcpStatus('idle');
     addMcpLog(language === 'ar' ? `جاري بدء مصافحة WebMCP الفيدرالية مع الخادم: ${externalMcpUrl}...` : `Initiating federated WebMCP handshake with server: ${externalMcpUrl}...`);
     try {
-      // Simulate/Trigger outward connection and fetch capabilities
       await new Promise(resolve => setTimeout(resolve, 1500));
       setExternalMcpStatus('connected');
       addMcpLog(language === 'ar' ? `✓ تمت مصافحة WebMCP وتوافق البروتوكول (2024-11-05)! الخادم متصل وجاهز للاستفسار.` : `✓ WebMCP Connection & handshake complete (v2024-11-05) Server active & federated.`);
@@ -296,7 +289,6 @@ export const DeveloperAgentPortal: React.FC = () => {
     return window.location.origin;
   };
 
-  // Integration Code Snippets generator
   const getCodeSnippet = () => {
     const host = getActiveHost();
     const activeClientId = generatedCredentials?.client_id || 'agent_client_your_id';
@@ -889,7 +881,6 @@ authenticateAgent();`;
                 </div>
               </div>
             ) : (
-              // External Federation mode workspace
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-1.5">

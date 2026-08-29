@@ -15,6 +15,7 @@ import { useAppContext } from '../context/AppContext';
 import { toast } from 'sonner';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { safeStorageGet } from '../utils/safeStorage';
+import { BulletinAvatar } from './BulletinAvatar';
 
 export interface AdDirectMessage {
   id: number;
@@ -67,7 +68,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
-  // Quick preset questions (Advertiser custom or defaults)
   const customQuickQuestions = ad.quick_questions;
   const quickQuestions = (Array.isArray(customQuickQuestions) && customQuickQuestions.length > 0 && customQuickQuestions.some(Boolean))
     ? customQuickQuestions.filter(Boolean)
@@ -85,7 +85,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
             'I would like to buy this item now!'
           ]);
 
-  // Fetch initial messages
   useEffect(() => {
     if (!token || !ad.id) return;
 
@@ -123,15 +122,12 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     };
   }, [ad.id, token, isRtl]);
 
-  // Real-time Socket Event Subscribers
   useEffect(() => {
     if (!socket || !user?.id) return;
 
-    // Listen for incoming direct messages for this ad
     const handleIncomingMessage = (newMsg: AdDirectMessage) => {
       if (newMsg.ad_id === ad.id) {
         setMessages((prev) => {
-          // Avoid duplicate messages
           if (prev.some((m) => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
@@ -139,7 +135,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
       }
     };
 
-    // Listen for typing indicator
     const handleRecipientTyping = (data: { ad_id: number; sender_id: number; is_typing: boolean }) => {
       if (data.ad_id === ad.id && data.sender_id !== user.id) {
         setRecipientTyping(data.is_typing);
@@ -155,12 +150,10 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     };
   }, [socket, ad.id, user?.id]);
 
-  // Scroll on message updates
   useEffect(() => {
     scrollToBottom(true);
   }, [messages, recipientTyping]);
 
-  // Typing event trigger
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputMessage(val);
@@ -179,7 +172,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     }
   };
 
-  // Image upload handling
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -219,7 +211,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     }
   };
 
-  // Send Message Handler
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || inputMessage).trim();
     if ((!content && !attachedImage) || sending || !token) return;
@@ -229,7 +220,6 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
     setInputMessage('');
     setAttachedImage(null);
 
-    // Stop typing indicator
     if (socket && otherParticipant?.id) {
       socket.emit('ad_typing', { ad_id: ad.id, recipient_id: otherParticipant.id, is_typing: false });
       setIsTyping(false);
@@ -273,20 +263,12 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
       {/* Encryption & Participant Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:from-[#1a1a1e] dark:via-[#222228] dark:to-[#1a1a1e] border-b border-gray-200 dark:border-gray-800/80 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            {otherParticipant?.avatar ? (
-              <img
-                src={otherParticipant.avatar}
-                alt={otherParticipant.name}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-accent-500/30"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-accent/10 dark:bg-accent/20 text-accent flex items-center justify-center font-bold text-sm ring-2 ring-accent-500/30">
-                <User size={18} />
-              </div>
-            )}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent rounded-full ring-2 ring-white dark:ring-[#1a1a1e] animate-pulse" />
-          </div>
+          <BulletinAvatar
+            src={otherParticipant?.avatar}
+            alt={otherParticipant?.name || 'User'}
+            size="md"
+            isOnline={true}
+          />
 
           <div>
             <div className="flex items-center gap-1.5">

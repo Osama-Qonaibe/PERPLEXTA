@@ -19,6 +19,7 @@ import {
   ThumbsUp
 } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { AdThumbnailRenderer } from '../utils/imageProcessor';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -59,8 +60,7 @@ export const UserAdAnalyticsView: React.FC = () => {
       } else {
         toast.error(isRtl ? 'فشل تحميل تحليلات الإعلانات' : 'Failed to load ad analytics');
       }
-    } catch (e) {
-      console.error('[UserAdAnalyticsView] Error fetching data:', e);
+    } catch {
       toast.error(isRtl ? 'خطأ في الاتصال بالسيرفر' : 'Server connection error');
     } finally {
       setIsLoading(false);
@@ -96,7 +96,6 @@ export const UserAdAnalyticsView: React.FC = () => {
   }
 
   const { summary, timeSeries, demographics, audienceType, locations, insights, ads } = data;
-
   const COLORS = ['#334155', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'];
 
   return (
@@ -130,7 +129,6 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-blue-500">
@@ -201,9 +199,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Charts Row 1: Time Series Trend & Geographic Location Reach */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Time-Series Area Chart (2 cols) */}
         <div className="lg:col-span-2 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)]">
             <div>
@@ -266,7 +262,6 @@ export const UserAdAnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Geographic Distribution Bar Chart */}
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -294,7 +289,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                   }}
                 />
                 <Bar dataKey="percentage" name={isRtl ? 'نسبة الجمهور (%)' : 'Audience Share (%)'} radius={[0, 4, 4, 0]}>
-                  {locations.map((entry: any, index: number) => (
+                  {locations.map((_entry: any, index: number) => (
                     <Cell key={`cell-loc-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
@@ -304,9 +299,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 2: Demographics (Age & Gender) & Audience Device Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Age Groups Bar Chart */}
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -339,7 +332,6 @@ export const UserAdAnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Gender Distribution Pie Chart */}
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -382,7 +374,6 @@ export const UserAdAnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Devices & Audience Type Breakdown */}
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -430,7 +421,6 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: AI Growth Insights & Actionable Recommendations */}
       <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4">
         <div className="pb-3 border-b border-[var(--border-main)]">
           <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -460,7 +450,6 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 4: Individual Ad Performance Breakdown Table */}
       <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4">
         <div className="pb-3 border-b border-[var(--border-main)] flex items-center justify-between">
           <div>
@@ -497,10 +486,12 @@ export const UserAdAnalyticsView: React.FC = () => {
                   <tr key={ad.id} className="hover:bg-[var(--bg-base)]/50 transition-colors">
                     <td className="p-3">
                       <div className="flex items-center gap-3">
-                        <img
+                        <AdThumbnailRenderer
                           src={getMediaUrl(ad.image_url)}
                           alt={ad.title}
-                          className="w-12 h-12 rounded object-cover border border-[var(--border-main)] shrink-0"
+                          width={48}
+                          height={48}
+                          className="rounded-lg border border-[var(--border-main)]"
                         />
                         <div>
                           <div className="font-extrabold text-[var(--text-primary)] text-xs line-clamp-1">{ad.title}</div>

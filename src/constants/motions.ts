@@ -140,14 +140,14 @@ export const SCALE_FADE: Variants = {
  * نفس FADE ولكن مع إبقاء x,y ثابتة لتجنب حركة غير مرغوب فيها
  */
 export const PAGE_TRANSITION: Variants = {
-  initial: { opacity: 0 },
+  initial: { opacity: 0.97 },
   animate: { 
     opacity: 1,
-    transition: UNIFIED_TRANSITION
+    transition: { duration: 0.08, ease: 'easeOut' }
   },
   exit: { 
-    opacity: 0,
-    transition: UNIFIED_TRANSITION
+    opacity: 1,
+    transition: { duration: 0.05 }
   },
 };
 

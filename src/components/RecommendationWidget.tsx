@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { BulletinAvatar } from './BulletinAvatar';
 import { RecommendationPreferencesModal } from './RecommendationPreferencesModal';
 
 interface RecommendationItem {
@@ -117,7 +118,6 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
         })
       });
     } catch (err) {
-      // Non-blocking track
     }
   };
 
@@ -141,7 +141,6 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
           })
         });
       } catch (err) {
-        // Ignore background error
       }
     }
   };
@@ -166,12 +165,10 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
 
   const [rotationOffset, setRotationOffset] = useState<number>(0);
 
-  // Filter items based on active tab and dismissed items
   const filteredItems = items
     .filter(i => !dismissedKeys.has(i.recommendation_id))
     .filter(i => (filterType && filterType !== 'all') ? i.item_type === filterType : (activeCategory === 'all' ? true : i.item_type === activeCategory));
 
-  // Rotate ads every 30 seconds for sidebar bulletin view (3 ads rotating professionally)
   useEffect(() => {
     if (!isBulletinOnly && variant !== 'compact') return;
     if (filteredItems.length <= 3) return;
@@ -374,32 +371,12 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   className="group relative p-2.5 sm:p-3 rounded-xl bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] border border-[var(--border-main)] hover:border-[var(--border-accent)] transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs overflow-hidden"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {mediaUrl ? (
-                      <img
-                        src={mediaUrl}
-                        alt={titleText}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item);
-                        }}
-                        title={language === 'ar' ? 'عرض تفاصيل التوصية' : 'View recommendation details'}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-theme"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item);
-                        }}
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 cursor-pointer hover:bg-accent/20 transition-theme"
-                      >
-                        <Megaphone size={18} />
-                      </div>
-                    )}
+                    <BulletinAvatar
+                      src={mediaUrl}
+                      alt={titleText}
+                      size="md"
+                      onClick={() => handleItemClick(item)}
+                    />
 
                     <div className="min-w-0 flex-1">
                       <h4 
@@ -501,32 +478,12 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    {mediaUrl ? (
-                      <img
-                        src={mediaUrl}
-                        alt={titleText}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item);
-                        }}
-                        title={language === 'ar' ? 'عرض تفاصيل التوصية' : 'View details'}
-                        className="w-12 h-12 rounded-xl object-cover border border-[var(--border)] shrink-0 bg-black/10 cursor-pointer hover:opacity-90 hover:scale-105 transition-theme"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleItemClick(item);
-                        }}
-                        className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 cursor-pointer hover:bg-accent/20 transition-theme"
-                      >
-                        {getTypeIcon(item.item_type)}
-                      </div>
-                    )}
+                    <BulletinAvatar
+                      src={mediaUrl}
+                      alt={titleText}
+                      size="md"
+                      onClick={() => handleItemClick(item)}
+                    />
 
                     <div className="min-w-0 flex-1">
                       <h4 

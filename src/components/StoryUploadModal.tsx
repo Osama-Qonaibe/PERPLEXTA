@@ -76,7 +76,6 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
       return;
     }
 
-    // Limit file size to 50MB for stories
     const MAX_SIZE = 50 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       toast.error(isRtl ? 'حجم الملف كبير جداً (الأقصى 50 ميجابايت)' : 'File size too large (Max 50MB)');
@@ -118,8 +117,6 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
         clearTimeout(timeout);
         console.warn('Browser video preview failed, but allowing upload for server processing:', e);
         
-        // Even if browser can't preview it, we allow upload if it's a known video extension
-        // The server-side FFmpeg will handle the conversion
         setIsVideo(true);
         setVideoDuration(0); // Unknown duration
         setSelectedFile(file);

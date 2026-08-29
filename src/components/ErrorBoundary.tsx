@@ -32,7 +32,6 @@ function reportToServer(name: string, error: Error, errorInfo: ErrorInfo): void 
       }),
     }).catch(() => { /* server unreachable — ignore */ });
   } catch {
-    // never let the reporter itself crash
   }
 }
 

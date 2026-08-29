@@ -5,6 +5,7 @@ import { CheckCircle2, Sparkles, ExternalLink, ArrowRight, ArrowLeft, X, LayoutD
 import { useAppContext } from '../context/AppContext';
 import { usePwaContext } from '../context/PwaContext';
 import { resolveImageUrl } from '../utils/imageResolver';
+import { NotificationIconRenderer } from '../utils/imageProcessor';
 
 export const PwaInstallSuccessService: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
@@ -27,7 +28,6 @@ export const PwaInstallSuccessService: React.FC = () => {
     const isStandaloneMode = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
     const alreadyCelebrated = localStorage.getItem('perplexta_install_celebrated') === 'true';
 
-    // If already in standalone and already celebrated, do nothing
     if (isStandaloneMode && alreadyCelebrated) {
       return;
     }
@@ -49,7 +49,6 @@ export const PwaInstallSuccessService: React.FC = () => {
     };
   }, []);
 
-  // Countdown timer for automatic redirect to dashboard
   useEffect(() => {
     if (!showModal || autoRedirectPaused) return;
 
@@ -88,24 +87,24 @@ export const PwaInstallSuccessService: React.FC = () => {
   return (
     <AnimatePresence>
       {showModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 bg-black/60 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.94, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl relative overflow-hidden ${
+            exit={{ opacity: 0, scale: 0.94, y: 15 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+            className={`w-full max-w-xs sm:max-w-sm rounded-2xl border p-4 sm:p-5 shadow-2xl relative overflow-hidden ${
               isDark
-                ? 'bg-[#121214] border-accent/30 text-white shadow-[0_0_50px_rgba(156,163,175,0.15)]'
-                : 'bg-white border-accent/30 text-gray-900 shadow-[0_0_50px_rgba(156,163,175,0.2)]'
+                ? 'bg-[#121214] border-accent/30 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8)]'
+                : 'bg-white border-accent/30 text-gray-900 shadow-[0_10px_30px_rgba(156,163,175,0.2)]'
             }`}
           >
             {/* Top decorative glow bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gray-500/10 via-teal-400 to-gray-500/5" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gray-500/10 via-teal-400 to-gray-500/5" />
 
             {/* Countdown progress bar */}
             {!autoRedirectPaused && (
-              <div className="absolute top-1 left-0 right-0 h-0.5 bg-gray-200/20 overflow-hidden">
+              <div className="absolute top-0.5 left-0 right-0 h-0.5 bg-gray-200/20 overflow-hidden">
                 <motion.div
                   initial={{ width: '100%' }}
                   animate={{ width: `${(countdown / 5) * 100}%` }}
@@ -119,54 +118,55 @@ export const PwaInstallSuccessService: React.FC = () => {
             <button
               type="button"
               onClick={handleClose}
-              className={`absolute top-4 ltr:right-4 rtl:left-4 p-1.5 rounded-xl transition-colors ${
+              className={`absolute top-3 ltr:right-3 rtl:left-3 p-1 rounded-lg transition-colors ${
                 isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <X size={18} />
+              <X size={15} />
             </button>
 
             {/* Header Content */}
-            <div className="flex flex-col items-center text-center mt-2">
-              <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center shadow-[0_0_20px_rgba(156,163,175,0.2)]">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={siteName} className="w-10 h-10 object-contain" />
-                  ) : (
-                    <CheckCircle2 className="w-9 h-9 text-accent " />
-                  )}
+            <div className="flex flex-col items-center text-center mt-1">
+              <div className="relative mb-2.5">
+                <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center p-1.5 shadow-sm overflow-hidden">
+                  <NotificationIconRenderer
+                    src={logoUrl}
+                    alt={siteName}
+                    size={36}
+                    fallbackIcon={<CheckCircle2 className="w-6 h-6 text-accent" />}
+                  />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-black shadow-md">
-                  <Sparkles size={13} className="fill-current" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-accent flex items-center justify-center text-black shadow-sm">
+                  <Sparkles size={9} className="fill-current" />
                 </div>
               </div>
 
-              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-accent/15 text-accent border border-accent/30 mb-2">
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30 mb-1.5">
                 {isAr ? 'تم التثبيت بنجاح 🎉' : 'App Installed 🎉'}
               </span>
 
-              <h3 className="text-xl font-black tracking-tight mb-2">
+              <h3 className="text-sm font-extrabold tracking-tight mb-1">
                 {isAr ? `مرحباً بك في ${siteName}` : `Welcome to ${siteName}`}
               </h3>
 
-              <p className="text-xs text-gray-400 leading-relaxed max-w-xs mb-6">
+              <p className="text-[11px] text-gray-400 leading-relaxed max-w-xs mb-3.5">
                 {isAr
-                  ? 'تم تثبيت التطبيق بنجاح على شاشتك الرئيسية! يمكنك الآن الانتقال للوحة التحكم أو فتح التطبيق مباشرة.'
-                  : 'The application was successfully installed on your device. You can now open the app or go directly to the dashboard.'}
+                  ? 'تم تثبيت التطبيق بنجاح على جهازك! يمكنك الآن استخدامه مباشرة.'
+                  : 'The application was installed successfully. Ready for instant use.'}
               </p>
 
               {/* Countdown badge if auto-redirect is running */}
               {!autoRedirectPaused && (
-                <div className="text-[11px] text-accent/90 font-medium bg-accent/10 border border-accent/20 px-3 py-1 rounded-lg mb-5 flex items-center gap-2">
+                <div className="text-[10px] text-accent/90 font-medium bg-accent/10 border border-accent/20 px-2.5 py-0.5 rounded-lg mb-3 flex items-center gap-1.5">
                   <span>
                     {isAr
-                      ? `التوجيه التلقائي للوحة التحكم خلال ${countdown} ثوانٍ...`
-                      : `Redirecting to dashboard in ${countdown}s...`}
+                      ? `التوجيه للوحة التحكم خلال ${countdown}ث...`
+                      : `Redirecting in ${countdown}s...`}
                   </span>
                   <button
                     type="button"
                     onClick={() => setAutoRedirectPaused(true)}
-                    className="underline text-[10px] text-gray-400 hover:text-white"
+                    className="underline text-[9.5px] text-gray-400 hover:text-white"
                   >
                     {isAr ? 'إلغاء' : 'Cancel'}
                   </button>
@@ -174,27 +174,27 @@ export const PwaInstallSuccessService: React.FC = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="w-full flex flex-col gap-2.5">
+              <div className="w-full flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={handleGoToDashboard}
-                  className="w-full py-3 px-4 rounded-xl bg-accent hover:bg-accent text-black font-extrabold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(156,163,175,0.4)] cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl bg-accent hover:opacity-90 active:scale-95 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
                 >
-                  <LayoutDashboard size={16} />
+                  <LayoutDashboard size={14} />
                   <span>{isAr ? 'الانتقال إلى لوحة التحكم' : 'Go to Dashboard'}</span>
-                  {isAr ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
+                  {isAr ? <ArrowLeft size={12} /> : <ArrowRight size={12} />}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleOpenStandalone}
-                  className={`w-full py-3 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
                     isDark
                       ? 'bg-gray-800/80 border-gray-700/80 text-gray-200 hover:bg-gray-700'
                       : 'bg-gray-100 border-gray-200 text-gray-800 hover:bg-gray-200'
                   }`}
                 >
-                  <ExternalLink size={15} />
+                  <ExternalLink size={13} />
                   <span>{isAr ? 'فتح التطبيق المستقل' : 'Open Standalone App'}</span>
                 </button>
               </div>

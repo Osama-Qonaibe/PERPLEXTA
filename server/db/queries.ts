@@ -96,6 +96,7 @@ export class DataLoader<K, V> {
  */
 export const userLoader = new DataLoader<number | string, any>(async (ids) => {
   if (ids.length === 0) return [];
+  if (!pool) return ids.map(() => null);
   const uniqueIds = Array.from(new Set(ids)).map(id => typeof id === 'number' ? id : parseInt(id, 10));
   
   try {
@@ -110,8 +111,8 @@ export const userLoader = new DataLoader<number | string, any>(async (ids) => {
       return userMap.get(idNum) || null;
     });
   } catch (err: any) {
-    console.error('[DataLoader] Failed to batch load users:', err.message);
-    return ids.map(() => err);
+    console.warn('[DataLoader] Failed to batch load users:', err.message);
+    return ids.map(() => null);
   }
 }, { ttl: 15000 }); // 15-second cache for user metadata
 
@@ -120,8 +121,9 @@ export const userLoader = new DataLoader<number | string, any>(async (ids) => {
  */
 export const walletLoader = new DataLoader<number | string, any>(async (userIds) => {
   if (userIds.length === 0) return [];
-  const uniqueIds = Array.from(new Set(userIds)).map(id => typeof id === 'number' ? id : parseInt(id, 10));
   const target = ledgerPool || pool;
+  if (!target) return userIds.map(() => null);
+  const uniqueIds = Array.from(new Set(userIds)).map(id => typeof id === 'number' ? id : parseInt(id, 10));
 
   try {
     const res = await target.query(
@@ -135,8 +137,8 @@ export const walletLoader = new DataLoader<number | string, any>(async (userIds)
       return walletMap.get(idNum) || null;
     });
   } catch (err: any) {
-    console.error('[DataLoader] Failed to batch load wallets:', err.message);
-    return userIds.map(() => err);
+    console.warn('[DataLoader] Failed to batch load wallets:', err.message);
+    return userIds.map(() => null);
   }
 }, { ttl: 5000 }); // 5-second cache for rapid point/balance changes
 
@@ -145,6 +147,7 @@ export const walletLoader = new DataLoader<number | string, any>(async (userIds)
  */
 export const subscriptionLoader = new DataLoader<number | string, any>(async (userIds) => {
   if (userIds.length === 0) return [];
+  if (!pool) return userIds.map(() => null);
   const uniqueIds = Array.from(new Set(userIds)).map(id => typeof id === 'number' ? id : parseInt(id, 10));
 
   try {
@@ -159,8 +162,8 @@ export const subscriptionLoader = new DataLoader<number | string, any>(async (us
       return subMap.get(idNum) || null;
     });
   } catch (err: any) {
-    console.error('[DataLoader] Failed to batch load subscriptions:', err.message);
-    return userIds.map(() => err);
+    console.warn('[DataLoader] Failed to batch load subscriptions:', err.message);
+    return userIds.map(() => null);
   }
 }, { ttl: 20000 }); // 20-second cache for subscription status
 
@@ -196,29 +199,53 @@ export async function getCachedSystemSettings(): Promise<any> {
     return cached.data;
   }
 
-  const result = await pool.query(`
-    SELECT 
-      id,
-      site_name_en, site_name_ar, site_description_en, site_description_ar,
-      seo_description_en, seo_description_ar, keywords_en, keywords_ar,
-      google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
-      stripe_status, stripe_last_verified_at, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, stripe_live_mode,
-      paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
-      blocked_paths, seo_site_name_en, seo_site_name_ar,
-      font_loading_config, font_config_ar, font_config_en
-    FROM system_settings 
-    ORDER BY id ASC
-    LIMIT 1
-  `);
+  const defaultSettings: any = {
+    site_name_en: 'Perplexta',
+    site_name_ar: 'بيربلكستا',
+    site_description_en: 'Next-Generation AI Intelligence Platform',
+    site_description_ar: 'منصة الذكاء الاصطناعي الفائقة',
+    seo_description_en: 'Advanced AI Tools and Neural Models',
+    seo_description_ar: 'أدوات الذكاء الاصطناعي والنماذج العصبية المتقدمة',
+    keywords_en: 'AI, Machine Learning, Deep Research',
+    keywords_ar: 'ذكاء اصطناعي, بحث عميق, أدوات ذكية',
+    google_analytics_id: '',
+    google_site_verification: '',
+    logo_url: null,
+    logo_light_url: null,
+    favicon_url: null,
+    seo_image_url: null,
+    stripe_status: 'inactive',
+    stripe_last_verified_at: null,
+    stripe_publishable_key: '',
+    stripe_secret_key: '',
+    stripe_webhook_secret: '',
+    stripe_live_mode: false,
+    paypal_status: 'inactive',
+    paypal_last_verified_at: null,
+    paypal_client_id: '',
+    paypal_client_secret: '',
+    paypal_mode: 'sandbox',
+    image_prompt_pref_threshold: 0.7,
+    blocked_paths: '',
+    seo_site_name_en: 'Perplexta',
+    seo_site_name_ar: 'بيربلكستا',
+    font_loading_config: JSON.stringify({
+      ar: { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
+      en: { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
+      dynamicLoading: true
+    }),
+    font_config_ar: JSON.stringify({ fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' }),
+    font_config_en: JSON.stringify({ fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' })
+  };
 
-  let settings = result.rows[0];
-  if (!settings) {
-    await pool.query(`
-      INSERT INTO system_settings (site_name_en, site_name_ar, logo_url, logo_light_url, favicon_url)
-      VALUES ('Premium AI', 'منصة النخبة', null, null, null)
-    `);
-    const secondTry = await pool.query(`
+  if (!pool) {
+    return defaultSettings;
+  }
+
+  try {
+    const result = await pool.query(`
       SELECT 
+        id,
         site_name_en, site_name_ar, site_description_en, site_description_ar,
         seo_description_en, seo_description_ar, keywords_en, keywords_ar,
         google_analytics_id, google_site_verification, logo_url, logo_light_url, favicon_url, seo_image_url,
@@ -226,43 +253,52 @@ export async function getCachedSystemSettings(): Promise<any> {
         paypal_status, paypal_last_verified_at, paypal_client_id, paypal_client_secret, paypal_mode, image_prompt_pref_threshold,
         blocked_paths, seo_site_name_en, seo_site_name_ar,
         font_loading_config, font_config_ar, font_config_en
-      FROM system_settings LIMIT 1
+      FROM system_settings 
+      ORDER BY id ASC
+      LIMIT 1
     `);
-    settings = secondTry.rows[0];
-  }
 
-  if (!settings.font_loading_config) {
-    settings.font_loading_config = JSON.stringify({
-      ar: { fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' },
-      en: { fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' },
-      dynamicLoading: true
-    });
-  }
-  if (!settings.font_config_ar) {
-    settings.font_config_ar = JSON.stringify({ fontFamily: 'Tajawal', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap' });
-  }
-  if (!settings.font_config_en) {
-    settings.font_config_en = JSON.stringify({ fontFamily: 'Space Grotesk', enabled: true, url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap' });
-  }
+    let settings = result.rows[0];
+    if (!settings) {
+      await pool.query(`
+        INSERT INTO system_settings (site_name_en, site_name_ar, logo_url, logo_light_url, favicon_url)
+        VALUES ('Perplexta', 'بيربلكستا', null, null, null)
+      `).catch(() => {});
+      settings = defaultSettings;
+    }
 
-  if (settings.stripe_publishable_key) {
-    settings.stripe_publishable_key = safeDecrypt(settings.stripe_publishable_key, '');
-  }
-  if (settings.stripe_secret_key) {
-    settings.stripe_secret_key = safeDecrypt(settings.stripe_secret_key, '');
-  }
-  if (settings.stripe_webhook_secret) {
-    settings.stripe_webhook_secret = safeDecrypt(settings.stripe_webhook_secret, '');
-  }
-  if (settings.paypal_client_id) {
-    settings.paypal_client_id = safeDecrypt(settings.paypal_client_id, '');
-  }
-  if (settings.paypal_client_secret) {
-    settings.paypal_client_secret = safeDecrypt(settings.paypal_client_secret, '');
-  }
+    if (!settings.font_loading_config) {
+      settings.font_loading_config = defaultSettings.font_loading_config;
+    }
+    if (!settings.font_config_ar) {
+      settings.font_config_ar = defaultSettings.font_config_ar;
+    }
+    if (!settings.font_config_en) {
+      settings.font_config_en = defaultSettings.font_config_en;
+    }
 
-  systemSettingsCache.set('global', { data: settings, timestamp: now });
-  return settings;
+    if (settings.stripe_publishable_key) {
+      settings.stripe_publishable_key = safeDecrypt(settings.stripe_publishable_key, '');
+    }
+    if (settings.stripe_secret_key) {
+      settings.stripe_secret_key = safeDecrypt(settings.stripe_secret_key, '');
+    }
+    if (settings.stripe_webhook_secret) {
+      settings.stripe_webhook_secret = safeDecrypt(settings.stripe_webhook_secret, '');
+    }
+    if (settings.paypal_client_id) {
+      settings.paypal_client_id = safeDecrypt(settings.paypal_client_id, '');
+    }
+    if (settings.paypal_client_secret) {
+      settings.paypal_client_secret = safeDecrypt(settings.paypal_client_secret, '');
+    }
+
+    systemSettingsCache.set('global', { data: settings, timestamp: now });
+    return settings;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedSystemSettings query failed, returning defaults:', err.message);
+    return defaultSettings;
+  }
 }
 
 export function invalidateSystemSettingsCache() {
@@ -277,41 +313,52 @@ export async function getCachedEconomySettings(): Promise<any> {
     return cached.data;
   }
 
-  const target = ledgerPool || pool;
-  const res = await target.query('SELECT * FROM economy_settings LIMIT 1');
+  const defaultSettings: any = {
+    points_per_dollar:               1000,
+    min_payout_usd:                  10,
+    min_deposit_usd:                 5,
+    referral_bonus_percent:          10,
+    welcome_bonus_points:            600,
+    referral_bonus_points:           1000,
+    conversion_rate:                 0.001,
+    min_withdrawal_cents:            1000,
+    referral_activation_min_deposit: 10,
+    crypto_address:  '',
+    bank_name:       '',
+    bank_recipient:  '',
+    bank_iban:       '',
+    bank_swift:      '',
+    paypal_email:    '',
+  };
 
-  let settings: any;
-  if (res.rows.length > 0) {
-    settings = { ...res.rows[0] };
-  } else {
-    settings = {
-      points_per_dollar:               1000,
-      min_payout_usd:                  10,
-      min_deposit_usd:                 5,
-      referral_bonus_percent:          10,
-      welcome_bonus_points:            600,
-      referral_bonus_points:           1000,
-      conversion_rate:                 0.001,
-      min_withdrawal_cents:            1000,
-      referral_activation_min_deposit: 10,
-      crypto_address:  '',
-      bank_name:       '',
-      bank_recipient:  '',
-      bank_iban:       '',
-      bank_swift:      '',
-      paypal_email:    '',
-    };
+  const target = ledgerPool || pool;
+  if (!target) {
+    return defaultSettings;
   }
 
-  settings.crypto_address  = safeDecrypt(settings.crypto_address,  '');
-  settings.bank_name       = safeDecrypt(settings.bank_name,       '');
-  settings.bank_recipient  = safeDecrypt(settings.bank_recipient,  '');
-  settings.bank_iban       = safeDecrypt(settings.bank_iban,       '');
-  settings.bank_swift      = safeDecrypt(settings.bank_swift,      '');
-  settings.paypal_email    = safeDecrypt(settings.paypal_email,    '');
+  try {
+    const res = await target.query('SELECT * FROM economy_settings LIMIT 1');
 
-  economySettingsCache.set('global', { data: settings, timestamp: now });
-  return settings;
+    let settings: any;
+    if (res.rows.length > 0) {
+      settings = { ...res.rows[0] };
+    } else {
+      settings = defaultSettings;
+    }
+
+    settings.crypto_address  = safeDecrypt(settings.crypto_address,  '');
+    settings.bank_name       = safeDecrypt(settings.bank_name,       '');
+    settings.bank_recipient  = safeDecrypt(settings.bank_recipient,  '');
+    settings.bank_iban       = safeDecrypt(settings.bank_iban,       '');
+    settings.bank_swift      = safeDecrypt(settings.bank_swift,      '');
+    settings.paypal_email    = safeDecrypt(settings.paypal_email,    '');
+
+    economySettingsCache.set('global', { data: settings, timestamp: now });
+    return settings;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedEconomySettings query failed, returning defaults:', err.message);
+    return defaultSettings;
+  }
 }
 
 export function invalidateEconomySettingsCache() {
@@ -326,11 +373,17 @@ export async function getCachedOrchestratorConfig(toolId: string): Promise<any> 
     return cached.data;
   }
 
-  const res = await pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolId]);
-  const config = res.rows[0] || null;
+  if (!pool) return null;
+  try {
+    const res = await pool.query('SELECT * FROM tool_orchestrator WHERE tool_id = $1 AND is_active = true', [toolId]);
+    const config = res.rows[0] || null;
 
-  orchestratorConfigCache.set(toolId, { data: config, timestamp: now });
-  return config;
+    orchestratorConfigCache.set(toolId, { data: config, timestamp: now });
+    return config;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedOrchestratorConfig failed:', err.message);
+    return null;
+  }
 }
 
 export function invalidateOrchestratorConfigCache(toolId?: string) {
@@ -349,11 +402,17 @@ export async function getCachedActivePlans(): Promise<any[]> {
     return cached.data;
   }
 
-  const res = await pool.query('SELECT * FROM plans ORDER BY price_monthly ASC');
-  const plans = res.rows;
+  if (!pool) return [];
+  try {
+    const res = await pool.query('SELECT * FROM plans ORDER BY price_monthly ASC');
+    const plans = res.rows;
 
-  activePlansCache.set('global', { data: plans, timestamp: now });
-  return plans;
+    activePlansCache.set('global', { data: plans, timestamp: now });
+    return plans;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedActivePlans failed:', err.message);
+    return [];
+  }
 }
 
 export function invalidatePlansCache() {
@@ -368,21 +427,27 @@ export async function getCachedApiKeysVault(): Promise<any[]> {
     return cached.data;
   }
 
-  const res = await pool.query('SELECT * FROM api_keys_vault WHERE is_active = true');
-  const keys = res.rows.map((row: any) => {
-    const dec = { ...row };
-    if (dec.encrypted_key) {
-      try {
-        dec.decrypted_key = decrypt(dec.encrypted_key);
-      } catch (e) {
-        dec.decrypted_key = dec.encrypted_key;
+  if (!pool) return [];
+  try {
+    const res = await pool.query('SELECT * FROM api_keys_vault WHERE is_active = true');
+    const keys = res.rows.map((row: any) => {
+      const dec = { ...row };
+      if (dec.encrypted_key) {
+        try {
+          dec.decrypted_key = decrypt(dec.encrypted_key);
+        } catch (e) {
+          dec.decrypted_key = dec.encrypted_key;
+        }
       }
-    }
-    return dec;
-  });
+      return dec;
+    });
 
-  apiKeysVaultCache.set('global', { data: keys, timestamp: now });
-  return keys;
+    apiKeysVaultCache.set('global', { data: keys, timestamp: now });
+    return keys;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedApiKeysVault failed:', err.message);
+    return [];
+  }
 }
 
 export function invalidateApiKeysVaultCache() {
@@ -401,13 +466,19 @@ export async function getCachedRouteSeo(route: string): Promise<any> {
     return cached.data;
   }
 
-  const result = await pool.query(
-    'SELECT * FROM route_seo_settings WHERE route = $1 AND is_active = true LIMIT 1',
-    [route]
-  );
-  const data = result.rows[0] || null;
-  routeSeoCache.set(route, { data, timestamp: now });
-  return data;
+  if (!pool) return null;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM route_seo_settings WHERE route = $1 AND is_active = true LIMIT 1',
+      [route]
+    );
+    const data = result.rows[0] || null;
+    routeSeoCache.set(route, { data, timestamp: now });
+    return data;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedRouteSeo failed:', err.message);
+    return null;
+  }
 }
 
 /** Get cached SEO metadata for a specific route */
@@ -418,13 +489,19 @@ export async function getCachedRouteSeoMetadata(routePath: string): Promise<any>
     return cached.data;
   }
 
-  const result = await pool.query(
-    'SELECT * FROM route_seo_metadata WHERE route_path = $1 LIMIT 1',
-    [routePath]
-  );
-  const data = result.rows[0] || null;
-  routeSeoMetadataCache.set(routePath, { data, timestamp: now });
-  return data;
+  if (!pool) return null;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM route_seo_metadata WHERE route_path = $1 LIMIT 1',
+      [routePath]
+    );
+    const data = result.rows[0] || null;
+    routeSeoMetadataCache.set(routePath, { data, timestamp: now });
+    return data;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedRouteSeoMetadata failed:', err.message);
+    return null;
+  }
 }
 
 /** Get cached list of all active route SEO settings */
@@ -435,10 +512,16 @@ export async function getCachedAllActiveRouteSeo(): Promise<any[]> {
     return cached.data;
   }
 
-  const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
-  const data = result.rows;
-  routeSeoCache.set('all_active', { data, timestamp: now });
-  return data;
+  if (!pool) return [];
+  try {
+    const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
+    const data = result.rows;
+    routeSeoCache.set('all_active', { data, timestamp: now });
+    return data;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedAllActiveRouteSeo failed:', err.message);
+    return [];
+  }
 }
 
 /** Invalidate entire route SEO cache */

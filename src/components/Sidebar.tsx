@@ -1,5 +1,5 @@
 import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Gift, CreditCard, LayoutDashboard, Plus, User, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Wallet, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, LayoutGrid } from 'lucide-react';
@@ -165,43 +165,72 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  const fetchChats = async () => {
+  const inFlightFetchRef = useRef<Promise<void> | null>(null);
+  const retryTimeoutRef = useRef<any>(null);
+
+  const fetchChats = useCallback(async (retryCount = 0) => {
     if (!token || token === 'null') {
       setIsChatsLoading(false);
       return;
     }
-    try {
-      const res = await fetch('/api/chats', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      if (res.ok) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const data = await res.json();
-          setRecentChats(data);
-        } else {
-          const text = await res.text();
-          console.error(`Received non-JSON response for chats (200 OK):`, text.substring(0, 200));
-        }
-      } else if (res.status === 401) {
-      } else {
-        const text = await res.text();
-        console.error(`Failed to fetch chats: ${res.status} ${res.statusText}`, text.substring(0, 100));
-      }
-    } catch (e) {
-      if (e instanceof Error && e.message.includes('Failed to fetch')) {
-        console.debug('Transient network error fetching chats (likely server initializing)');
-      } else {
-        console.error('Network error fetching chats:', e);
-      }
-    } finally {
-      setIsChatsLoading(false);
+
+    if (inFlightFetchRef.current) {
+      return inFlightFetchRef.current;
     }
-  };
+
+    const fetchPromise = (async () => {
+      try {
+        const res = await fetch('/api/chats', {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+
+        if (res.ok) {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              setRecentChats(data);
+              try {
+                safeStorageSet('perplexta_recent_chats', JSON.stringify(data));
+              } catch {}
+            }
+          }
+        } else if (res.status === 429) {
+          // Rate limit reached - schedule a backoff retry without noisy console error
+          if (retryCount < 3) {
+            const backoffMs = Math.min(1500 * Math.pow(2, retryCount), 6000) + Math.random() * 400;
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = setTimeout(() => {
+              fetchChats(retryCount + 1);
+            }, backoffMs);
+          }
+        } else if (res.status === 401) {
+          // Token expired or invalid
+        } else {
+          const text = await res.text().catch(() => '');
+          if (res.status !== 503 && res.status !== 502) {
+            console.debug(`[Chats] HTTP ${res.status}:`, text.substring(0, 100));
+          }
+        }
+      } catch (e) {
+        if (e instanceof Error && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+          console.debug('Transient network error fetching chats (likely server initializing)');
+        } else {
+          console.debug('Network notice fetching chats:', e);
+        }
+      } finally {
+        setIsChatsLoading(false);
+        inFlightFetchRef.current = null;
+      }
+    })();
+
+    inFlightFetchRef.current = fetchPromise;
+    return fetchPromise;
+  }, [token]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -239,7 +268,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     let debounceTimer: any = null;
     const debouncedFetch = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => fetchChats(), 300);
+      debounceTimer = setTimeout(() => fetchChats(), 400);
     };
     window.addEventListener('chat-created', debouncedFetch);
     window.addEventListener('chat-updated', debouncedFetch);
@@ -247,8 +276,9 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       window.removeEventListener('chat-created', debouncedFetch);
       window.removeEventListener('chat-updated', debouncedFetch);
       if (debounceTimer) clearTimeout(debounceTimer);
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
     };
-  }, [token]);
+  }, [fetchChats]);
 
   useEffect(() => {
     return () => {};
@@ -269,7 +299,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       path: '/discover'
     });
     
-    // Moved from Header for cleaner UI (Facebook style)
   }
 
   if (user) {

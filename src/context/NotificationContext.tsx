@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertOctagon, AlertTriangle, Info, X, Sparkles } from 'lucide-react';
+import { NotificationIconRenderer, useStandardizedNotificationIcon } from '../utils/imageProcessor';
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
@@ -17,6 +18,8 @@ export interface NotificationOptions {
   duration?: number;
   action?: NotificationAction;
   id?: string;
+  image?: string;
+  icon?: React.ReactNode;
 }
 
 export interface NotificationItem {
@@ -27,6 +30,8 @@ export interface NotificationItem {
   duration: number;
   action?: NotificationAction;
   createdAt: number;
+  image?: string;
+  icon?: React.ReactNode;
 }
 
 interface NotificationContextType {
@@ -45,6 +50,10 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 // Global Bridge Handlers for direct toast calls across the workspace
 let globalShowNotification: ((options: NotificationOptions) => string) | null = null;
 let globalDismissNotification: ((id: string) => void) | null = null;
+
+// Track recent notifications to prevent duplicate toasts
+const recentNotificationsCache = new Map<string, number>();
+const DEDUP_WINDOW_MS = 1800;
 
 export const toast = {
   success: (message: string, titleOrOpts?: string | Partial<NotificationOptions>) => {
@@ -93,7 +102,26 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   const showNotification = useCallback((options: NotificationOptions): string => {
-    const id = options.id || `toast-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = Date.now();
+    const dedupKey = `${options.id || ''}:${options.type || 'info'}:${options.message}`;
+
+    // Check duplicate within window
+    const lastSeen = recentNotificationsCache.get(dedupKey);
+    if (lastSeen && now - lastSeen < DEDUP_WINDOW_MS) {
+      return options.id || '';
+    }
+    recentNotificationsCache.set(dedupKey, now);
+
+    // Clean up old dedup entries
+    if (recentNotificationsCache.size > 50) {
+      for (const [k, v] of recentNotificationsCache.entries()) {
+        if (now - v > DEDUP_WINDOW_MS * 2) {
+          recentNotificationsCache.delete(k);
+        }
+      }
+    }
+
+    const id = options.id || `toast-${now}-${Math.random().toString(36).substring(2, 7)}`;
     const newItem: NotificationItem = {
       id,
       message: options.message,
@@ -101,12 +129,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       type: options.type || 'info',
       duration: options.duration ?? 4500,
       action: options.action,
-      createdAt: Date.now(),
+      createdAt: now,
+      image: options.image,
+      icon: options.icon,
     };
 
     setNotifications((prev) => {
-      // Keep queue at max 5 visible toasts to avoid clutter
-      const filtered = prev.filter((item) => item.id !== id);
+      // Keep queue at max 5 visible toasts to avoid clutter and eliminate any existing duplicate id
+      const filtered = prev.filter((item) => item.id !== id && item.message !== options.message);
       return [...filtered.slice(-4), newItem];
     });
 
@@ -260,7 +290,18 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
       <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-0' : 'left-0'} w-1 ${themeConfig.barBg}`} />
 
       <div className="flex items-start gap-3 pl-1 pr-1">
-        <div className="mt-0.5">{themeConfig.icon}</div>
+        <div className="mt-0.5 flex-shrink-0">
+          {item.image ? (
+            <NotificationIconRenderer 
+              src={item.image} 
+              size={24} 
+              className="rounded-lg border border-[var(--border-main)]"
+              fallbackIcon={item.icon || themeConfig.icon} 
+            />
+          ) : (
+            item.icon || themeConfig.icon
+          )}
+        </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-0.5">
@@ -337,3 +378,4 @@ const NotificationContainer: React.FC<{
     document.body
   );
 };
+

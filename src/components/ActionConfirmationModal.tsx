@@ -61,7 +61,6 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
     }
   };
 
-  // Color configurations based on variants
   const colorConfigs = {
     danger: {
       accent: 'text-[var(--fg-danger)]',

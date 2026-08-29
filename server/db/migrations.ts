@@ -73,6 +73,7 @@ export const TABLE_POOL_REGISTRY: Record<string, 'core' | 'ledger' | 'external' 
   google_tool_connections: 'core',
   db_connections_registry: 'core',
   migration_history: 'core',
+  media_assets: 'core',
 
   // Ledger Database
   wallets: 'ledger',
@@ -449,6 +450,10 @@ export async function runSystemMaintenance() {
       {
         name: 'user_usage',
         query: "DELETE FROM user_usage WHERE usage_date < CURRENT_DATE - INTERVAL '90 days'"
+      },
+      {
+        name: 'user_activity_logs',
+        query: "DELETE FROM user_activity_logs WHERE created_at < NOW() AT TIME ZONE 'UTC' - INTERVAL '30 days'"
       }
     ];
 
@@ -635,7 +640,7 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
         'bulletin_reports', 'bulletin_pages', 'bulletin_page_followers', 'bulletin_page_inquiries', 
         'bulletin_ad_likes', 'bulletin_ad_comments', 'bulletin_ad_messages', 'route_seo_settings', 
         'asset_metadata', 'user_recommendation_interactions', 'user_recommendation_preferences', 
-        'recommendation_feedback', 'gift_catalog', 'google_tool_connections'
+        'recommendation_feedback', 'gift_catalog', 'google_tool_connections', 'media_assets'
       ];
       
       const ledgerTables = [
@@ -2277,6 +2282,120 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
       `);
     });
 
+    await runVersioned('v83_media_assets_table_and_constraints', 'Creating media_assets table, context constraints, and foreign key columns for users, blog_articles, and marketplace_items', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS media_assets (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          stored_path TEXT NOT NULL UNIQUE,
+          original_filename TEXT NOT NULL,
+          context TEXT NOT NULL DEFAULT 'general',
+          format TEXT NOT NULL DEFAULT 'webp',
+          width INT NOT NULL DEFAULT 0,
+          height INT NOT NULL DEFAULT 0,
+          size_bytes INT NOT NULL DEFAULT 0,
+          sha256_hash TEXT NOT NULL UNIQUE,
+          is_public BOOLEAN DEFAULT FALSE,
+          user_id INTEGER,
+          blog_article_id INTEGER,
+          marketplace_item_id INTEGER,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Ensure constraint for context values
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'chk_media_assets_context'
+          ) THEN
+            ALTER TABLE media_assets 
+            ADD CONSTRAINT chk_media_assets_context 
+            CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general'));
+          END IF;
+        END $$;
+      `);
+
+      // Ensure columns exist on media_assets if table already existed previously
+      await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS user_id INTEGER`);
+      await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS blog_article_id INTEGER`);
+      await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS marketplace_item_id INTEGER`);
+      await tx.query(`ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`);
+
+      // Add foreign key columns on users and marketplace_items
+      await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_asset_id UUID`);
+      await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS image_asset_id UUID`);
+
+      // Ensure foreign key constraints on Core DB
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_avatar_asset_id') THEN
+            ALTER TABLE users
+            ADD CONSTRAINT fk_users_avatar_asset_id
+            FOREIGN KEY (avatar_asset_id)
+            REFERENCES media_assets(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `);
+
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_marketplace_items_image_asset_id') THEN
+            ALTER TABLE marketplace_items
+            ADD CONSTRAINT fk_marketplace_items_image_asset_id
+            FOREIGN KEY (image_asset_id)
+            REFERENCES media_assets(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `);
+
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_media_assets_user_id') THEN
+            ALTER TABLE media_assets
+            ADD CONSTRAINT fk_media_assets_user_id
+            FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `);
+
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_media_assets_marketplace_item_id') THEN
+            ALTER TABLE media_assets
+            ADD CONSTRAINT fk_media_assets_marketplace_item_id
+            FOREIGN KEY (marketplace_item_id)
+            REFERENCES marketplace_items(id)
+            ON DELETE SET NULL;
+          END IF;
+        END $$;
+      `);
+
+      // Add reference column on blog_articles (External DB pool - cross-pool references tracked at application level)
+      const extTarget = externalClient || tx;
+      await extTarget.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS image_asset_id UUID`);
+
+      // Performance indexes
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_context ON media_assets(context)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_hash ON media_assets(sha256_hash)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_stored_path ON media_assets(stored_path)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_user_id ON media_assets(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_media_assets_marketplace_item_id ON media_assets(marketplace_item_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_users_avatar_asset_id ON users(avatar_asset_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_image_asset_id ON marketplace_items(image_asset_id)`);
+      await extTarget.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_image_asset_id ON blog_articles(image_asset_id)`);
+    });
+
     console.log('[Migrations] All versioned migrations completed successfully.');
 
     if (migrationMetrics.total > 0) {
@@ -2313,12 +2432,12 @@ export async function runDatabaseMigrations(type: 'scratch' | 'additive' = 'addi
   }
 }
 
-export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: QueryClient, customLedgerPool?: QueryClient) {
-  if (!pool) return;
+export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPool?: QueryClient, customLedgerPool?: QueryClient, customExternalPool?: QueryClient, customSecurityPool?: QueryClient) {
+  if (!pool && !customPool) return;
   const targetPool = customPool || pool;
   const targetLedgerPool = customLedgerPool || (ledgerPool === pool ? targetPool : (ledgerPool || targetPool));
-  const targetSecurityPool = securityPool === pool ? targetPool : (securityPool || targetPool);
-  const targetExternalPool = externalPool === pool ? targetPool : (externalPool || targetPool);
+  const targetSecurityPool = customSecurityPool || (securityPool === pool ? targetPool : (securityPool || targetPool));
+  const targetExternalPool = customExternalPool || (externalPool === pool ? targetPool : (externalPool || targetPool));
 
   interface SchemaTable {
     name: string;
@@ -2327,6 +2446,27 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
   }
 
   const schema: SchemaTable[] = [
+    {
+      name: 'media_assets',
+      query: `CREATE TABLE IF NOT EXISTS media_assets (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        stored_path TEXT NOT NULL UNIQUE,
+        original_filename TEXT NOT NULL,
+        context TEXT NOT NULL DEFAULT 'general' CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general')),
+        format TEXT NOT NULL DEFAULT 'webp',
+        width INT NOT NULL DEFAULT 0,
+        height INT NOT NULL DEFAULT 0,
+        size_bytes INT NOT NULL DEFAULT 0,
+        sha256_hash TEXT NOT NULL UNIQUE,
+        is_public BOOLEAN DEFAULT FALSE,
+        user_id INTEGER,
+        blog_article_id INTEGER,
+        marketplace_item_id INTEGER,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+    },
     {
       name: 'users',
       query: `CREATE TABLE IF NOT EXISTS users (
@@ -2351,6 +2491,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         provider VARCHAR(50) DEFAULT 'local',
         avatar TEXT,
+        avatar_asset_id UUID,
         referral_code VARCHAR(6),
         email_notifications BOOLEAN DEFAULT true
       )`
@@ -2367,6 +2508,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         content_en TEXT NOT NULL,
         content_ar TEXT NOT NULL,
         image_url TEXT,
+        image_asset_id UUID,
         category_en VARCHAR(100) NOT NULL,
         category_ar VARCHAR(100) NOT NULL,
         views INTEGER DEFAULT 0,
@@ -3020,6 +3162,7 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
         category_en VARCHAR(100) NOT NULL,
         category_ar VARCHAR(100) NOT NULL,
         image_url TEXT,
+        image_asset_id UUID,
         status VARCHAR(20) DEFAULT 'approved',
         views INTEGER DEFAULT 0,
         contact_link TEXT,
@@ -3608,7 +3751,31 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_chat_id ON video_resources(chat_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_video_resources_user_id ON video_resources(user_id)` },
     { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS registered_agents_pkey ON registered_agents(id)` },
-    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS registered_agents_client_id_key ON registered_agents(client_id)` }
+    { pool: targetSecurityPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS registered_agents_client_id_key ON registered_agents(client_id)` },
+    { pool: targetPool, query: `CREATE UNIQUE INDEX IF NOT EXISTS media_assets_pkey ON media_assets(id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_media_assets_context ON media_assets(context)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_media_assets_hash ON media_assets(sha256_hash)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_media_assets_stored_path ON media_assets(stored_path)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_media_assets_user_id ON media_assets(user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_media_assets_marketplace_item_id ON media_assets(marketplace_item_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_users_avatar_asset_id ON users(avatar_asset_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_items_image_asset_id ON marketplace_items(image_asset_id)` },
+    { pool: externalPool || targetPool, query: `CREATE INDEX IF NOT EXISTS idx_blog_articles_image_asset_id ON blog_articles(image_asset_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_user_id ON bulletin_ads(user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_page_id ON bulletin_ads(page_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_status ON bulletin_ads(status)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_ad_format ON bulletin_ads(ad_format)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_created_at ON bulletin_ads(created_at DESC)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_pages_user_id ON bulletin_pages(user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_pages_category ON bulletin_pages(category)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ad_comments_ad_id ON bulletin_ad_comments(ad_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ad_likes_ad_user ON bulletin_ad_likes(ad_id, user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_followers_page_user ON bulletin_page_followers(page_id, user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_page ON bulletin_page_inquiries(page_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_user ON bulletin_page_inquiries(user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_saved_ads_user_ad ON bulletin_saved_ads(user_id, ad_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(buyer_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_item ON marketplace_reviews(item_id)` }
   ];
 
   for (const idx of indexes) {
@@ -3627,7 +3794,11 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { table: 'users', constraint: 'users_referred_by_fkey', column: 'referred_by', ref: 'users', onDelete: 'SET NULL' },
     { table: 'blog_articles', constraint: 'fk_blog_articles_author_id', column: 'author_id', ref: 'users' },
     { table: 'blog_comments', constraint: 'fk_blog_comments_user_id', column: 'user_id', ref: 'users' },
-    { table: 'blog_comments', constraint: 'fk_blog_comments_article_id', column: 'article_id', ref: 'blog_articles' }
+    { table: 'blog_comments', constraint: 'fk_blog_comments_article_id', column: 'article_id', ref: 'blog_articles' },
+    { table: 'media_assets', constraint: 'fk_media_assets_user_id', column: 'user_id', ref: 'users', onDelete: 'SET NULL' },
+    { table: 'media_assets', constraint: 'fk_media_assets_marketplace_item_id', column: 'marketplace_item_id', ref: 'marketplace_items', onDelete: 'SET NULL' },
+    { table: 'users', constraint: 'fk_users_avatar_asset_id', column: 'avatar_asset_id', ref: 'media_assets', onDelete: 'SET NULL' },
+    { table: 'marketplace_items', constraint: 'fk_marketplace_items_image_asset_id', column: 'image_asset_id', ref: 'media_assets', onDelete: 'SET NULL' }
   ];
 
   for (const rel of relations) {

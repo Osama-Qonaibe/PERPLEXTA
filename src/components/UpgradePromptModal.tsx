@@ -71,13 +71,10 @@ export const UpgradePromptModal: React.FC = () => {
 
   const { toolId, limit, currentUsage, period } = upgradePromptState;
 
-  // 1. Sort Plans by price to accurately construct the tier order
   const sortedPlans = [...plans].sort((a, b) => a.monthlyPrice - b.monthlyPrice);
 
-  // 2. Identify the user's current plan info
   const currentPlan = plans.find(p => p.id === user?.subscription?.plan_id) || sortedPlans[0];
 
-  // Helper function to extract numerical limits
   const getPlanLimitForTool = (plan: any, tId: string) => {
     if (!plan || !plan.limits) return 0;
     const l = plan.limits[tId];
@@ -105,14 +102,12 @@ export const UpgradePromptModal: React.FC = () => {
 
   const currentPlanLimitNum = getPlanLimitForTool(currentPlan, toolId);
 
-  // 3. Find the lowest higher plan which increases the limits for this specific tool
   let nextRequiredPlan = sortedPlans.find(p => {
     if (p.monthlyPrice <= (currentPlan?.monthlyPrice || 0)) return false;
     const lNum = getPlanLimitForTool(p, toolId);
     return lNum > currentPlanLimitNum;
   });
 
-  // Fallback to highest tier if no next plan has a higher limit or user is on the highest plan
   if (!nextRequiredPlan) {
     nextRequiredPlan = sortedPlans[sortedPlans.length - 1] || currentPlan;
   }
@@ -131,7 +126,6 @@ export const UpgradePromptModal: React.FC = () => {
 
   const activePriceFormatted = billingCycle === 'annual' ? currentPlan?.annualPrice : currentPlan?.monthlyPrice;
 
-  // Handle immediate local state checkout via Wallet Balance
   const handleUpgradeWithBalance = async () => {
     if (!nextRequiredPlan) return;
     setLoadingType('balance');
@@ -155,7 +149,6 @@ export const UpgradePromptModal: React.FC = () => {
     }
   };
 
-  // Handle immediate outward checkout via Stripe
   const handleUpgradeWithStripe = async () => {
     if (!nextRequiredPlan) return;
     setLoadingType('stripe');

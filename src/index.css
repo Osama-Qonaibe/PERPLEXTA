@@ -38,6 +38,29 @@
   --ms-duration: var(--theme-transition-duration);
   --ms-easing: var(--theme-transition-easing);
 
+  /* Spacing Scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Component Sizing Scale */
+  --size-xs: 20px;
+  --size-sm: 24px;
+  --size-md: 32px;
+  --size-lg: 48px;
+
+  /* Elevation & Shadow Scale (Light Mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+
+  /* Z-Index Hierarchy */
+  --z-dropdown: 100;
+  --z-modal: 200;
+  --z-tooltip: 300;
+
   /* ==========================================================================
      LAYER 2: FUNCTIONAL TOKENS (Light Mode)
      ========================================================================== */
@@ -146,9 +169,14 @@
   --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
 
   --fg-default: #f0f6fc;
-  --fg-muted: #9198a1;
-  --fg-disabled: #656d76;
+  --fg-muted: #a8b0ba;
+  --fg-disabled: #768390;
   --fg-on-emphasis: #ffffff;
+
+  /* Elevation & Shadow Scale (Dark Mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.65);
 
   --fg-accent: #94a3b8;
   --bg-accent-emphasis: #64748b;
@@ -215,9 +243,14 @@
     --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
 
     --fg-default: #f0f6fc;
-    --fg-muted: #9198a1;
-    --fg-disabled: #656d76;
+    --fg-muted: #a8b0ba;
+    --fg-disabled: #768390;
     --fg-on-emphasis: #ffffff;
+
+    /* Elevation & Shadow Scale (Dark Mode) */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.65);
 
     --fg-accent: #94a3b8;
     --bg-accent-emphasis: #64748b;
@@ -315,94 +348,11 @@
 }
 
 @layer components {
-  .btn-primary {
-    background-color: var(--bg-accent-emphasis);
-    color: var(--fg-on-emphasis);
-    border: 1px solid transparent;
-    transition: background-color 120ms var(--ms-easing);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-  }
-  .btn-primary:hover {
-    background-color: color-mix(in srgb, var(--bg-accent-emphasis) 85%, black);
-  }
-  .btn-primary:active {
-    background-color: color-mix(in srgb, var(--bg-accent-emphasis) 70%, black);
-  }
-
-  .btn-default {
-    background-color: var(--bg-muted);
-    color: var(--fg-default);
-    border: 1px solid var(--border-default);
-    transition: background-color 120ms var(--ms-easing);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-  }
-  .btn-default:hover {
-    background-color: var(--bg-overlay);
-  }
-
-  .btn-secondary {
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-    border: 1px solid var(--border-main);
-    transition: background-color 120ms var(--ms-easing);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-  }
-  .btn-secondary:hover {
-    background-color: var(--bg-hover);
-  }
-
-  .btn-danger {
-    background-color: var(--bg-muted);
-    color: var(--fg-danger);
-    border: 1px solid var(--border-default);
-    transition: all 120ms var(--ms-easing);
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-  }
-  .btn-danger:hover {
-    background-color: var(--bg-danger-emphasis);
-    color: var(--fg-on-emphasis);
-    border-color: transparent;
-  }
-
-  .btn-invisible, .btn-ghost {
-    background-color: transparent;
-    color: var(--fg-default);
-    border: 1px solid transparent;
-    transition: background-color 120ms var(--ms-easing);
-    border-radius: var(--radius-sm);
-  }
-  .btn-invisible:hover, .btn-ghost:hover {
-    background-color: var(--bg-hover);
-  }
 }
 
 @layer utilities {
   .dark .bg-accent { color: #ffffff !important; }
   .dark .bg-accent.text-white { color: #ffffff !important; }
-
-  /* Standardized Monochrome Text Hover Utilities */
-  .text-hover-primary {
-    color: var(--text-muted);
-    transition: color var(--theme-transition-duration, 180ms) var(--theme-transition-easing, cubic-bezier(0.22, 1, 0.36, 1));
-  }
-  .text-hover-primary:hover {
-    color: var(--text-primary);
-  }
-
-  .text-hover-contrast {
-    color: var(--text-secondary);
-    transition: color var(--theme-transition-duration, 180ms) var(--theme-transition-easing, cubic-bezier(0.22, 1, 0.36, 1));
-  }
-  .text-hover-contrast:hover {
-    color: #000000;
-  }
-  .dark .text-hover-contrast:hover {
-    color: #FFFFFF;
-  }
 }
 
 .transition-theme,
@@ -412,38 +362,11 @@
 [class*="transition-theme"],
 [data-framer-component],
 [class*="motion-"],
-.ad-dashboard-card,
-.ad-card,
 .ads-management-container {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow;
   transition-duration: var(--theme-transition-duration);
   transition-timing-function: var(--theme-transition-easing);
   will-change: background-color, border-color, color;
-}
-
-.btn-icon-perplexta {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  transition: background-color var(--theme-transition-duration) var(--ms-easing), color var(--theme-transition-duration) var(--ms-easing);
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.btn-icon-perplexta:hover {
-  background-color: var(--bg-hover);
-  color: var(--accent-primary);
-}
-
-.separator-v {
-  width: 1px;
-  height: 20px;
-  background-color: var(--border-perplexta);
 }
 
 html, body, #root {
@@ -543,26 +466,6 @@ iframe {
   object-fit: cover;
 }
 
-.card-stable,
-.perplexta-card-stable,
-.ad-dashboard-card-stable {
-  min-height: 120px;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-}
-
-/* Consistent Whitespace Grid Spacing */
-.layout-grid-balanced {
-  display: grid;
-  gap: 1.25rem;
-}
-
-@media (min-width: 1024px) {
-  .layout-grid-balanced {
-    gap: 1.5rem;
-  }
-}
-
 /* 5. Typography Hierarchy: Strictly Maximum TWO Font Types (Space Grotesk/Tajawal + JetBrains Mono) */
 body {
   font-family: var(--font-sans);
@@ -572,7 +475,7 @@ code, pre, kbd, samp, .font-mono {
   font-family: var(--font-mono) !important;
 }
 
-h1, .h1-title {
+h1 {
   font-family: var(--font-sans);
   font-weight: 700 !important;
   font-size: clamp(1.65rem, 1.4rem + 0.8vw, 2.25rem) !important;
@@ -581,7 +484,7 @@ h1, .h1-title {
   color: var(--text-primary);
 }
 
-h2, .h2-title {
+h2 {
   font-family: var(--font-sans);
   font-weight: 700 !important;
   font-size: clamp(1.3rem, 1.15rem + 0.5vw, 1.65rem) !important;
@@ -590,7 +493,7 @@ h2, .h2-title {
   color: var(--text-primary);
 }
 
-h3, .h3-title {
+h3 {
   font-family: var(--font-sans);
   font-weight: 600 !important;
   font-size: clamp(1.1rem, 1rem + 0.2vw, 1.3rem) !important;
@@ -598,7 +501,7 @@ h3, .h3-title {
   color: var(--text-primary);
 }
 
-h4, .h4-title {
+h4 {
   font-family: var(--font-sans);
   font-weight: 600 !important;
   font-size: 0.95rem !important;
@@ -606,7 +509,7 @@ h4, .h4-title {
   color: var(--text-primary);
 }
 
-p, .body-text {
+p {
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: clamp(0.85rem, 0.825rem + 0.1vw, 0.95rem);
@@ -814,8 +717,7 @@ html:not(.dark) button.bg-black,
 html:not(.dark) button.bg-gray-900,
 html:not(.dark) button.bg-\[\#0f0f11\],
 html:not(.dark) a.bg-black,
-html:not(.dark) a.bg-gray-900,
-html:not(.dark) .btn-black {
+html:not(.dark) a.bg-gray-900 {
   background-color: #ffffff !important;
   color: #000000 !important;
   border: 1px solid #d1d5db !important;
@@ -826,23 +728,45 @@ html:not(.dark) button.bg-gray-900 svg,
 html:not(.dark) a.bg-black svg {
   color: #000000 !important;
 }
-/* Admin Dashboard Mobile-First Overrides & Layout Logic */
-@media (max-width: 768px) {
-  /* Enforce vertical stacking for admin dashboard cards on small screens */
-  .admin-dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr !important;
-    gap: 1rem;
-  }
-  
-  /* Refine banner/avatar overlap to prevent clipping on mobile/tablets */
-  .profile-banner-container {
-    padding-bottom: 3rem !important; /* Make room for the avatar to overlap */
-  }
-  
-  .profile-avatar-overlap {
-    position: relative;
-    margin-top: -3rem !important; /* Pull up avatar to overlap the banner */
-    z-index: 10;
-  }
+
+/* ==========================================================================
+   REELS VISUAL EFFECTS & ANIMATIONS
+   ========================================================================== */
+@keyframes kenBurnsEffect {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.15) translate(-2%, -2%); }
+  100% { transform: scale(1.05) translate(2%, 1%); }
+}
+
+@keyframes beatPulseEffect {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.035); }
+  50% { transform: scale(1.01); }
+  75% { transform: scale(1.045); }
+}
+
+@keyframes neonFlickerEffect {
+  0%, 100% { filter: hue-rotate(280deg) saturate(160%) contrast(120%) drop-shadow(0 0 10px rgba(168,85,247,0.4)); }
+  50% { filter: hue-rotate(300deg) saturate(190%) contrast(130%) drop-shadow(0 0 18px rgba(236,72,153,0.6)); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(16,185,129,0.3)); }
+  50% { transform: scale(1.02); filter: drop-shadow(0 0 16px rgba(16,185,129,0.65)); }
+}
+
+.animate-ken-burns {
+  animation: kenBurnsEffect 14s ease-in-out infinite alternate;
+}
+
+.animate-beat-pulse {
+  animation: beatPulseEffect 0.85s ease-in-out infinite;
+}
+
+.animate-neon-flicker {
+  animation: neonFlickerEffect 3s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s ease-in-out infinite;
 }

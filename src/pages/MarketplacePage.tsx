@@ -4,15 +4,15 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ContentContainer } from '../components/ContentContainer';
 import {
-  Grid, Building2, Smartphone, Puzzle, Brain, TrendingUp, BarChart2, Layout,
-  Rocket, Megaphone, Gamepad2, BookOpen, RefreshCw, Code, Package, Eye, Play,
+  Grid, TrendingUp, SlidersHorizontal, Eye, Play,
   Plus, X, Upload, Check, ExternalLink, ArrowLeft, ArrowRight, Wallet, CreditCard,
-  ChevronDown, SlidersHorizontal, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart,
-  Edit, ShieldAlert
+  ChevronDown, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart,
+  Edit, ShieldAlert, BookOpen, Smartphone, Rocket, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { RecommendationWidget } from '../components/RecommendationWidget';
 import { getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
+import { IconMapper, getCategoryIcon } from '../utils/icons';
 
 interface MarketplaceItem {
   id: number;
@@ -53,7 +53,6 @@ interface ParentCategory {
   id: string;
   nAr: string;
   nEn: string;
-  ic: string;
   co: string;
 }
 
@@ -62,79 +61,36 @@ interface ChildCategory {
   parent: string;
   nAr: string;
   nEn: string;
-  ic: string;
   co: string;
 }
 
 const parents: ParentCategory[] = [
-  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', ic: 'code', co: '#334155' },
-  { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', ic: 'trading-bots', co: '#f59e0b' },
-  { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', ic: 'templates', co: '#ec4899' },
-  { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', ic: 'startup-box', co: '#8b5cf6' },
-  { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', ic: 'ebooks', co: '#14b8a6' },
-  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', ic: 'free', co: '#334155' }
+  { id: 'code', nAr: 'الأكواد والبرمجيات', nEn: 'SaaS & Development', co: '#334155' },
+  { id: 'fintech', nAr: 'إستراتيجيات التداول', nEn: 'Algo Trading', co: '#f59e0b' },
+  { id: 'ui', nAr: 'الواجهات والتطوير', nEn: 'UI & Design', co: '#ec4899' },
+  { id: 'bundles', nAr: 'الحزم الكاملة', nEn: 'Tech Bundles', co: '#8b5cf6' },
+  { id: 'digital', nAr: 'المنتجات الرقمية', nEn: 'Digital Goods', co: '#14b8a6' },
+  { id: 'free', nAr: 'المنتجات المجانية والمفتوحة', nEn: 'Free & Open Source', co: '#334155' }
 ];
 
 const children: ChildCategory[] = [
-  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', ic: 'saas', co: '#334155' },
-  { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', ic: 'mobile', co: '#06b6d4' },
-  { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', ic: 'plugins', co: '#6366f1' },
-  { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', ic: 'ai-agents', co: '#f43f5e' },
-  { id: 'trading-bots', parent: 'fintech', nAr: 'بوتات التداول', nEn: 'Trading Bots', ic: 'trading-bots', co: '#f59e0b' },
-  { id: 'indicators', parent: 'fintech', nAr: 'مؤشرات فنية', nEn: 'Technical Indicators', ic: 'indicators', co: '#eab308' },
-  { id: 'templates', parent: 'ui', nAr: 'قوالب ومواقع', nEn: 'Templates & Sites', ic: 'templates', co: '#ec4899' },
-  { id: 'figma', parent: 'ui', nAr: 'ملفات Figma', nEn: 'Figma Files', ic: 'figma', co: '#a855f7' },
-  { id: 'startup-box', parent: 'bundles', nAr: 'Startup-in-a-Box', nEn: 'Startup-in-a-Box', ic: 'startup-box', co: '#8b5cf6' },
-  { id: 'marketing-kits', parent: 'bundles', nAr: 'أكياس تسويقية', nEn: 'Marketing Kits', ic: 'marketing-kits', co: '#f97316' },
-  { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', ic: 'game-bundles', co: '#ef4444' },
-  { id: 'ebooks', parent: 'digital', nAr: 'كتب وأدلة رقمية', nEn: 'E-books & Guides', ic: 'ebooks', co: '#14b8a6' },
-  { id: 'plr', parent: 'digital', nAr: 'منتجات إعادة البيع PLR', nEn: 'PLR/MRR Products', ic: 'plr', co: '#f97316' },
-  { id: 'free-scripts', parent: 'free', nAr: 'أكواد مجانية جاهزة', nEn: 'Free Ready Code', ic: 'code', co: '#334155' },
-  { id: 'free-templates', parent: 'free', nAr: 'قوالب مجانية', nEn: 'Free Templates', ic: 'templates', co: '#ec4899' },
-  { id: 'open-source', parent: 'free', nAr: 'أنظمة مفتوحة المصدر', nEn: 'Open Source Systems', ic: 'saas', co: '#334155' }
+  { id: 'saas', parent: 'code', nAr: 'أنظمة SaaS', nEn: 'SaaS Systems', co: '#334155' },
+  { id: 'mobile', parent: 'code', nAr: 'تطبيقات الجوال', nEn: 'Mobile Apps', co: '#06b6d4' },
+  { id: 'plugins', parent: 'code', nAr: 'إضافات الأنظمة', nEn: 'System Plugins', co: '#6366f1' },
+  { id: 'ai-agents', parent: 'code', nAr: 'AI & أتمتة', nEn: 'AI & Automation', co: '#f43f5e' },
+  { id: 'trading-bots', parent: 'fintech', nAr: 'بوتات التداول', nEn: 'Trading Bots', co: '#f59e0b' },
+  { id: 'indicators', parent: 'fintech', nAr: 'مؤشرات فنية', nEn: 'Technical Indicators', co: '#eab308' },
+  { id: 'templates', parent: 'ui', nAr: 'قوالب ومواقع', nEn: 'Templates & Sites', co: '#ec4899' },
+  { id: 'figma', parent: 'ui', nAr: 'ملفات Figma', nEn: 'Figma Files', co: '#a855f7' },
+  { id: 'startup-box', parent: 'bundles', nAr: 'Startup-in-a-Box', nEn: 'Startup-in-a-Box', co: '#8b5cf6' },
+  { id: 'marketing-kits', parent: 'bundles', nAr: 'أكياس تسويقية', nEn: 'Marketing Kits', co: '#f97316' },
+  { id: 'game-bundles', parent: 'bundles', nAr: 'حزم ألعاب', nEn: 'Game Bundles', co: '#ef4444' },
+  { id: 'ebooks', parent: 'digital', nAr: 'كتب وأدلة رقمية', nEn: 'E-books & Guides', co: '#14b8a6' },
+  { id: 'plr', parent: 'digital', nAr: 'منتجات إعادة البيع PLR', nEn: 'PLR/MRR Products', co: '#f97316' },
+  { id: 'free-scripts', parent: 'free', nAr: 'أكواد مجانية جاهزة', nEn: 'Free Ready Code', co: '#334155' },
+  { id: 'free-templates', parent: 'free', nAr: 'قوالب مجانية', nEn: 'Free Templates', co: '#ec4899' },
+  { id: 'open-source', parent: 'free', nAr: 'أنظمة مفتوحة المصدر', nEn: 'Open Source Systems', co: '#334155' }
 ];
-
-const getCategoryIcon = (id: string, className?: string) => {
-  switch (id) {
-    case 'saas':
-      return <Building2 className={className} />;
-    case 'mobile':
-      return <Smartphone className={className} />;
-    case 'plugins':
-      return <Puzzle className={className} />;
-    case 'ai-agents':
-      return <Brain className={className} />;
-    case 'trading-bots':
-      return <TrendingUp className={className} />;
-    case 'indicators':
-      return <BarChart2 className={className} />;
-    case 'templates':
-      return <Layout className={className} />;
-    case 'figma':
-      return <SlidersHorizontal className={className} />;
-    case 'startup-box':
-      return <Rocket className={className} />;
-    case 'marketing-kits':
-      return <Megaphone className={className} />;
-    case 'game-bundles':
-      return <Gamepad2 className={className} />;
-    case 'ebooks':
-      return <BookOpen className={className} />;
-    case 'plr':
-      return <RefreshCw className={className} />;
-    case 'free':
-    case 'free-scripts':
-    case 'free-templates':
-    case 'open-source':
-      return <Gift className={className} />;
-    case 'code':
-      return <Code className={className} />;
-    case 'bundles':
-      return <Package className={className} />;
-    default:
-      return <Grid className={className} />;
-  }
-};
 
 const getHighlightDetails = (tag: string, className?: string) => {
   const norm = tag.toLowerCase().trim();
