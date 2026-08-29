@@ -160,7 +160,7 @@ export async function ensureColumnsBulk(
       let part = `ADD COLUMN "${col}" ${config.type}`;
       if (config.default !== undefined && config.default !== null) {
         const defaultStr = String(config.default).trim();
-        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}]+$/i.test(defaultStr)) {
+        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}\$]+$/i.test(defaultStr)) {
           throw new Error(`Invalid default value expression: ${defaultStr}`);
         }
         part += ` DEFAULT ${defaultStr}`;
