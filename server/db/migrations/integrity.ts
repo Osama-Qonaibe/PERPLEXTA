@@ -400,10 +400,11 @@ export async function verifySchemaIntegrity() {
         }
       },
       referrals: {
-        columns: ['id', 'referrer_id', 'referred_id', 'status', 'reward_amount', 'commission_earned', 'created_at'],
+        columns: ['id', 'referrer_id', 'referred_id', 'status', 'bonus_points', 'reward_amount', 'commission_earned', 'created_at'],
         repairCols: {
           referrer_id: { type: 'INTEGER' },
           referred_id: { type: 'INTEGER' },
+          bonus_points: { type: 'DECIMAL(10,2)', default: 0.00 },
           reward_amount: { type: 'DECIMAL(10,2)', default: 0.00 },
           commission_earned: { type: 'DECIMAL(10,2)', default: 0.00 },
           status: { type: 'VARCHAR(50)', default: "'pending'" },
@@ -411,11 +412,15 @@ export async function verifySchemaIntegrity() {
         }
       },
       referral_tree: {
-        columns: ['id', 'ancestor_id', 'descendant_id', 'depth', 'created_at'],
+        columns: ['id', 'ancestor_id', 'descendant_id', 'depth', 'referrer_id', 'referred_id', 'level', 'status', 'created_at'],
         repairCols: {
           ancestor_id: { type: 'INTEGER' },
           descendant_id: { type: 'INTEGER' },
           depth: { type: 'INTEGER', default: 1 },
+          referrer_id: { type: 'INTEGER' },
+          referred_id: { type: 'INTEGER' },
+          level: { type: 'INTEGER', default: 1 },
+          status: { type: 'VARCHAR(20)', default: "'active'" },
           created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },

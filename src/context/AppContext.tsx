@@ -1885,9 +1885,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleAuthSuccess = (userData: any) => {
     if (isSyncingAuth.current) return;
-    if (localStorage.getItem('app_oauth_syncing') === 'true') return;
     isSyncingAuth.current = true;
-    localStorage.setItem('app_oauth_syncing', 'true');
 
     const { token: newToken, refreshToken: newRefreshToken, lang: authLang, ...info } = userData;
     localStorage.setItem('app_token', newToken);
@@ -1927,7 +1925,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTimeout(() => {
       isSyncingAuth.current = false;
-      localStorage.removeItem('app_oauth_syncing');
       if (isSamePage) {
         triggerAuthSuccessToast('login');
       } else {
@@ -2313,20 +2310,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithGoogle = async () => {
     try {
-      const ref = localStorage.getItem('app_ref');
+      const currentPath = window.location.pathname + window.location.search;
+      const ref = localStorage.getItem('app_ref') || (currentPath !== '/' ? currentPath : '/chat');
       const lang = localStorage.getItem('language') || 'en';
       const currentTheme = theme || 'dark';
 
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      localStorage.setItem('app_ref', ref);
 
-      const mode = (isMobileDevice || isStandalone) ? 'redirect' : 'popup';
-
-      localStorage.removeItem('app_oauth_syncing');
-
+      const mode = 'redirect';
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
-      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${ref}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=${mode}&remember=${rememberMe}&authSessionId=${authSessionId}`);
 
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
@@ -2334,76 +2328,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await res.text();
-
         throw new Error('Invalid server response');
       }
 
       const data = await res.json();
 
-      if (mode === 'redirect') {
+      if (data?.url) {
         window.location.href = data.url;
-        return;
       }
-
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
-
-      let checkCount = 0;
-      const pollInterval = setInterval(async () => {
-        checkCount++;
-        if (checkCount > 300) { 
-          clearInterval(pollInterval);
-          return;
-        }
-
-        try {
-          const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
-          if (pollRes.ok) {
-            const pollData = await pollRes.json();
-            if (pollData.status === 'success' && pollData.data) {
-              clearInterval(pollInterval);
-              handleAuthSuccess(pollData.data);
-              if (popup && !popup.closed) {
-                try {
-                  popup.close();
-                } catch (e) {}
-              }
-              return;
-            }
-          }
-        } catch (pollErr) {
-
-        }
-
-        const storedToken = localStorage.getItem('app_token');
-        const userDataJson = localStorage.getItem('app_oauth_user');
-
-        if (storedToken && userDataJson) {
-          clearInterval(pollInterval);
-          try {
-            const userData = JSON.parse(userDataJson);
-            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
-            handleAuthSuccess(processedUser);
-            localStorage.removeItem('app_oauth_user');
-            localStorage.removeItem('app_oauth_trigger');
-            if (popup && !popup.closed) {
-              try {
-                popup.close();
-              } catch (e) {}
-            }
-          } catch (e) {
-
-          }
-        }
-      }, 1000);
-
     } catch (error) {
-
+      console.error('[Google Login Error]:', error);
+      toast.error(dir === 'rtl' ? 'تعذر بدء تسجيل الدخول باستخدام جوجل' : 'Failed to start Google sign-in');
     }
   };
 

@@ -184,7 +184,7 @@ app.use((req: any, res: any, next: any) => {
       directives: cspDirectives
     },
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+    crossOriginOpenerPolicy: false
   })(req, res, next);
 });
 

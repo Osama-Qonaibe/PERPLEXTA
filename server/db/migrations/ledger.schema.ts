@@ -242,15 +242,21 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     referrer_id: { type: 'INTEGER' },
     referred_id: { type: 'INTEGER' },
     status: { type: 'VARCHAR(50)', default: "'pending'" },
+    bonus_points: { type: 'DECIMAL(10,2)', default: 0 },
     reward_amount: { type: 'DECIMAL(10,2)', default: 0 },
     commission_earned: { type: 'DECIMAL(10,2)', default: 0 },
-    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'referral_tree', {
     ancestor_id: { type: 'INTEGER' },
     descendant_id: { type: 'INTEGER' },
-    depth: { type: 'INTEGER' },
+    depth: { type: 'INTEGER', default: 1 },
+    referrer_id: { type: 'INTEGER' },
+    referred_id: { type: 'INTEGER' },
+    level: { type: 'INTEGER', default: 1 },
+    status: { type: 'VARCHAR(20)', default: "'active'" },
     created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
@@ -367,7 +373,8 @@ export const LEDGER_INDEXES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)`,
   `CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_id)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS referral_tree_pkey ON referral_tree(id)`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS referral_tree_ancestor_id_descendant_id_key ON referral_tree(ancestor_id, descendant_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_ref_tree_referrer ON referral_tree(referrer_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_ref_tree_referred ON referral_tree(referred_id)`,
   `CREATE INDEX IF NOT EXISTS idx_ref_tree_ancestor ON referral_tree(ancestor_id)`,
   `CREATE INDEX IF NOT EXISTS idx_ref_tree_descendant ON referral_tree(descendant_id)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS deposit_requests_pkey ON deposit_requests(id)`,
