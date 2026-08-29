@@ -3904,13 +3904,7 @@ export const QuotaExceededCard = ({ data, dir, t, navigate, user, tool }: { data
 
       <div className="flex items-center gap-3 mt-1 relative z-10">
         <button 
-          onClick={() => {
-            if (triggerUpgradePrompt) {
-              triggerUpgradePrompt(tool || 'chat', data.limit, data.current, data.period);
-            } else {
-              navigate('/subscription');
-            }
-          }}
+          onClick={() => navigate('/subscription')}
           className="flex-1 bg-accent hover:bg-accent text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(156,163,175,0.3)] hover:translate-y-[-2px] active:translate-y-0"
         >
           {dir === 'rtl' ? 'ترقية الخطة الآن' : 'Upgrade Plan Now'}

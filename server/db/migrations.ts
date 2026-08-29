@@ -3772,9 +3772,9 @@ export async function initDb(mode: 'scratch' | 'additive' = 'additive', customPo
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_ad_likes_ad_user ON bulletin_ad_likes(ad_id, user_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_followers_page_user ON bulletin_page_followers(page_id, user_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_page ON bulletin_page_inquiries(page_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_user ON bulletin_page_inquiries(user_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_sender ON bulletin_page_inquiries(sender_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_bulletin_saved_ads_user_ad ON bulletin_saved_ads(user_id, ad_id)` },
-    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(buyer_id)` },
+    { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(user_id)` },
     { pool: targetPool, query: `CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_item ON marketplace_reviews(item_id)` }
   ];
 

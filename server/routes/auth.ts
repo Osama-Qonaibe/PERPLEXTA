@@ -749,7 +749,7 @@ router.get("/google/callback", async (req, res) => {
     }
     const allowedOrigin = getBaseUrl(req);
     
-    const pagePayload = JSON.stringify({
+    const pagePayloadRaw = JSON.stringify({
       token: accessToken,
       refreshToken,
       ...userPayload,
@@ -757,6 +757,7 @@ router.get("/google/callback", async (req, res) => {
       ref: targetRef,
       remember: rememberMe
     });
+    const pagePayload = Buffer.from(pagePayloadRaw).toString('base64');
 
     if (storedState.authSessionId) {
       pendingOAuthSessions.set(storedState.authSessionId, {
@@ -923,14 +924,14 @@ router.get("/google/callback", async (req, res) => {
             <button id="closeBtn" class="btn" style="margin-top: 2rem;">${closeBtnText}</button>
           </div>
 
-          <script id="__auth_data__" type="application/json">${pagePayload}</script>
+          <script id="__auth_data__" type="application/base64">${pagePayload}</script>
           <script nonce="${res.locals.nonce}">
             (function() {
               const closeBtn = document.getElementById('closeBtn');
               if (closeBtn) closeBtn.onclick = function() { try { window.close(); } catch(e) {} };
 
               try {
-                const data = JSON.parse(document.getElementById('__auth_data__').textContent);
+                const data = JSON.parse(atob(document.getElementById('__auth_data__').textContent));
                 const allowedOrigin = ${allowedOriginJson};
                 const targetRefRaw = ${targetRefJson};
                 const safeRef = (typeof targetRefRaw === 'string' && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//')) ? targetRefRaw : '/';
@@ -968,7 +969,7 @@ router.get("/google/callback", async (req, res) => {
                     window.close();
                   } else {
                     const separator = safeRef.indexOf('?') !== -1 ? '&' : '?';
-                    window.location.href = window.location.origin + safeRef + separator +
+                    window.location.href = window.location.origin + safeRef + separator + 'oauth=1&' +
                       'token=' + encodeURIComponent(data.token) +
                       (data.refreshToken ? '&refreshToken=' + encodeURIComponent(data.refreshToken) : '') +
                       '&user=' + encodeURIComponent(JSON.stringify(data));
@@ -976,7 +977,8 @@ router.get("/google/callback", async (req, res) => {
                 }, 150);
               } catch (err) {
                 console.error('Auth processing failed', err);
-                window.location.href = '/';
+                document.body.innerHTML += '<div style="color:red; margin-top:20px;">Error: ' + err.message + '</div>';
+                if (typeof isPopup !== "undefined" && !isPopup) { window.location.href = '/?oauth_error=1'; }
               }
             })();
           </script>
