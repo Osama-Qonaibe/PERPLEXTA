@@ -65,7 +65,7 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
 export async function applySecurityColumnEnforcements(targetSecurityPool: QueryClient) {
   // === 4. Security DB Column Enforcement ===
   await ensureColumnsBulk(targetSecurityPool, 'security_alerts', {
-    severity: { type: 'VARCHAR(20)', default: 'medium' },
+    severity: { type: 'VARCHAR(20)', default: "'medium'" },
     event_type: { type: 'VARCHAR(50)' },
     description: { type: 'TEXT' },
     ip_address: { type: 'VARCHAR(45)' },
@@ -95,7 +95,7 @@ export async function applySecurityColumnEnforcements(targetSecurityPool: QueryC
   await ensureColumnsBulk(targetSecurityPool, 'registered_agents', {
     agent_id: { type: 'VARCHAR(100)' },
     name: { type: 'VARCHAR(255)' },
-    status: { type: 'VARCHAR(50)', default: 'active' },
+    status: { type: 'VARCHAR(50)', default: "'active'" },
     permissions: { type: 'JSONB', default: "'[]'" },
     api_endpoint: { type: 'TEXT' },
     public_key: { type: 'TEXT' },

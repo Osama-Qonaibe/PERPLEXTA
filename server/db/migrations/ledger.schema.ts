@@ -212,7 +212,7 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     total_withdrawn: { type: 'DECIMAL(10,2)', default: 0 },
     total_earned_referral: { type: 'DECIMAL(10,2)', default: 0 },
     is_frozen: { type: 'BOOLEAN', default: false },
-    currency: { type: 'VARCHAR(10)', default: 'USD' },
+    currency: { type: 'VARCHAR(10)', default: "'USD'" },
     updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
@@ -232,7 +232,7 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     document_front_url: { type: 'TEXT' },
     document_back_url: { type: 'TEXT' },
     selfie_url: { type: 'TEXT' },
-    status: { type: 'VARCHAR(50)', default: 'pending' },
+    status: { type: 'VARCHAR(50)', default: "'pending'" },
     rejection_reason: { type: 'TEXT' },
     reviewed_by: { type: 'INTEGER' },
     reviewed_at: { type: 'TIMESTAMP' }
@@ -241,7 +241,7 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
   await ensureColumnsBulk(targetLedgerPool, 'withdrawal_requests', {
     payout_method: { type: 'VARCHAR(50)' },
     payout_details: { type: 'JSONB', default: '\'{}\'' },
-    status: { type: 'VARCHAR(50)', default: 'pending' },
+    status: { type: 'VARCHAR(50)', default: "'pending'" },
     rejection_reason: { type: 'TEXT' },
     processed_by: { type: 'INTEGER' },
     processed_at: { type: 'TIMESTAMP' },
@@ -249,7 +249,7 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'economy_settings', {
-    currency_symbol: { type: 'VARCHAR(10)', default: '$' },
+    currency_symbol: { type: 'VARCHAR(10)', default: "'$'" },
     exchange_rate_usd: { type: 'DECIMAL(10,4)', default: 1.0 },
     min_withdrawal: { type: 'DECIMAL(10,2)', default: 50 },
     withdrawal_fee_percent: { type: 'DECIMAL(5,2)', default: 2.5 },
@@ -271,7 +271,7 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     referrer_id: { type: 'INTEGER' },
     referred_id: { type: 'INTEGER' },
     commission_earned: { type: 'DECIMAL(10,2)', default: 0 },
-    status: { type: 'VARCHAR(50)', default: 'active' }
+    status: { type: 'VARCHAR(50)', default: "'active'" }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'deposit_requests', {
