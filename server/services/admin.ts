@@ -2,7 +2,6 @@ import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synch
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
-import { saveLocalDbConfig, readLocalDbConfigs } from '../utils/dbConfigLocal.js';
 import os from 'os';
 
 export const CORE_TABLES = [
@@ -92,44 +91,6 @@ export const SECURITY_TABLES = [
 
 export async function getDatabaseRegistry() {
   const ids = ['core', 'ledger', 'external', 'security'];
-  
-  // Synchronize local configs on disk into the current database's db_connections_registry table
-  try {
-    const localConfigs = readLocalDbConfigs();
-    for (const local of localConfigs) {
-      await pool.query(`
-        INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (id) DO UPDATE SET
-          type = EXCLUDED.type, 
-          host = EXCLUDED.host, 
-          port = EXCLUDED.port, 
-          db_name = EXCLUDED.db_name,
-          username = EXCLUDED.username,
-          password = COALESCE(EXCLUDED.password, db_connections_registry.password),
-          connection_string = EXCLUDED.connection_string,
-          ssl_mode = EXCLUDED.ssl_mode, 
-          pool_size = EXCLUDED.pool_size,
-          is_active = EXCLUDED.is_active, 
-          updated_at = CURRENT_TIMESTAMP
-      `, [
-        local.id,
-        local.type,
-        local.host,
-        local.port,
-        local.db_name,
-        local.username,
-        local.password || null,
-        local.connection_string || null,
-        local.ssl_mode || 'disable',
-        local.pool_size || 10,
-        local.is_active || false
-      ]);
-    }
-  } catch (syncErr: any) {
-    console.warn('[getDatabaseRegistry] Failed to sync local configs to database:', syncErr.message);
-  }
-
   try {
     await pool.query("DELETE FROM db_connections_registry WHERE id NOT IN ('core', 'ledger', 'external', 'security')");
   } catch (err) {
@@ -256,46 +217,30 @@ export async function saveDatabaseConfig(config: any) {
   const pool_size = body.pool_size || body.poolSize;
   const active_state = is_active !== undefined ? is_active : activate;
 
-  // Save config to the local JSON configuration file (Single Source of Truth)
-  try {
-    saveLocalDbConfig(targetId, body, active_state);
-  } catch (localErr: any) {
-    console.error(`[AdminService] Failed to save config to local file:`, localErr.message);
-  }
-
   const encryptedPassword = body.password ? encrypt(body.password) : null;
   const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
-  try {
-    await pool.query(`
-      INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT (id) DO UPDATE SET
-        type = EXCLUDED.type, 
-        host = EXCLUDED.host, 
-        port = EXCLUDED.port, 
-        db_name = EXCLUDED.db_name,
-        username = EXCLUDED.username,
-        password = COALESCE(EXCLUDED.password, db_connections_registry.password),
-        connection_string = EXCLUDED.connection_string,
-        ssl_mode = EXCLUDED.ssl_mode, 
-        pool_size = EXCLUDED.pool_size,
-        is_active = EXCLUDED.is_active, 
-        updated_at = CURRENT_TIMESTAMP
-    `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
-  } catch (dbErr: any) {
-    console.warn(`[AdminService] Notice: could not write to db_connections_registry table: ${dbErr.message}. Local file will be used as fallback.`);
-  }
+  await pool.query(`
+    INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ON CONFLICT (id) DO UPDATE SET
+      type = EXCLUDED.type, 
+      host = EXCLUDED.host, 
+      port = EXCLUDED.port, 
+      db_name = EXCLUDED.db_name,
+      username = EXCLUDED.username,
+      password = COALESCE(EXCLUDED.password, db_connections_registry.password),
+      connection_string = EXCLUDED.connection_string,
+      ssl_mode = EXCLUDED.ssl_mode, 
+      pool_size = EXCLUDED.pool_size,
+      is_active = EXCLUDED.is_active, 
+      updated_at = CURRENT_TIMESTAMP
+  `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
 
   if (active_state) {
     if (targetId === 'core' || targetId === 'ledger' || targetId === 'external' || targetId === 'security') {
       await synchronizePerplextaPoolsFromRegistry();
-      try {
-        await runDatabaseMigrations(targetId, 'additive');
-      } catch (migrationErr: any) {
-        console.error(`[AdminService] Migrations failed during save for ${targetId}:`, migrationErr.message);
-        // We do NOT fail the save operation itself so the admin can still save connection settings!
-      }
+      await runDatabaseMigrations(targetId, 'additive');
     }
   } else {
     await synchronizePerplextaPoolsFromRegistry();

@@ -37,7 +37,6 @@ const originalConnect = Pool.prototype.connect as any;
 };
 
 import { decrypt } from "../utils/crypto.js";
-import { getOverriddenUrlsFromLocal } from "../utils/dbConfigLocal.js";
 
 export let pool: any;
 export let ledgerPool: any;
@@ -449,27 +448,87 @@ export async function initializePerplextaPools(
 
 
 export async function synchronizePerplextaPoolsFromRegistry() {
-  console.log('[DB] Checking for active remote database overrides from local config...');
+  if (!pool) return;
+  console.log('[DB] Checking for active remote database overrides...');
 
   try {
-    const localOverridden = getOverriddenUrlsFromLocal();
-    const envSizes = getPoolSizesFromEnv();
+    await pool.query("UPDATE db_connections_registry SET is_active = false, host = NULL WHERE host = 'base'");
+
+    const result = await pool.query(
+      "SELECT * FROM db_connections_registry WHERE is_active = true AND id IN ('core','ledger','external','security')"
+    );
+
+    if (result.rows.length === 0) {
+      console.log('[DB] No active registry overrides found.');
+      const env = getPoolSizesFromEnv();
+      const defaultCore     = process.env.DATABASE_URL || '';
+      const defaultLedger   = process.env.LEDGER_DATABASE_URL   || defaultCore;
+      const defaultExternal = process.env.EXTERNAL_DATABASE_URL || defaultCore;
+      const defaultSecurity = process.env.SECURITY_DATABASE_URL || defaultCore;
+
+      if (
+        currentCoreUrl     !== defaultCore     ||
+        currentLedgerUrl   !== defaultLedger   ||
+        currentExternalUrl !== defaultExternal ||
+        currentSecurityUrl !== defaultSecurity ||
+        currentCoreMax     !== env.coreMax     ||
+        currentLedgerMax   !== env.ledgerMax   ||
+        currentExternalMax !== env.externalMax ||
+        currentSecurityMax !== env.securityMax
+      ) {
+        console.log('[DB] Reverting pools to environment defaults.');
+        await initializePerplextaPools(defaultCore, defaultLedger, defaultExternal, defaultSecurity,
+          env.coreMax, env.ledgerMax, env.externalMax, env.securityMax);
+      } else {
+        console.log('[DB] Already using environment defaults. No action needed.');
+      }
+      return;
+    }
+
+    const coreReg     = result.rows.find((r: any) => r.id === 'core');
+    const ledgerReg   = result.rows.find((r: any) => r.id === 'ledger');
+    const externalReg = result.rows.find((r: any) => r.id === 'external');
+    const securityReg = result.rows.find((r: any) => r.id === 'security');
+
+    const safeDecrypt = (val: any): string => {
+      if (!val) return '';
+      try {
+        const res = decrypt(typeof val === 'string' ? val : String(val));
+        return typeof res === 'string' ? res : String(res || '');
+      } catch {
+        return typeof val === 'string' ? val : String(val || '');
+      }
+    };
+
+    const getUrlFromReg = (reg: any, fallback: string): string => {
+      if (!reg) return fallback;
+      const type = reg.type || 'local';
+      if (type === 'cloud' && reg.connection_string) {
+        const decrypted = safeDecrypt(reg.connection_string);
+        if (decrypted && decrypted.trim() !== '') return decrypted;
+      }
+      if (reg.host && reg.host !== 'base') {
+        const u = encodeURIComponent(reg.username || '');
+        const rawPass = safeDecrypt(reg.password);
+        const p = rawPass ? encodeURIComponent(rawPass) : '';
+        const port = reg.port || '5432';
+        const connBase = `postgres://${u}${p ? `:${p}` : ''}@${reg.host}:${port}/${reg.db_name}`;
+        return reg.ssl_mode && reg.ssl_mode !== 'disable' ? `${connBase}?sslmode=${reg.ssl_mode}` : connBase;
+      }
+      return fallback;
+    };
 
     const defaultCore     = process.env.DATABASE_URL || '';
     const defaultLedger   = process.env.LEDGER_DATABASE_URL   || defaultCore;
     const defaultExternal = process.env.EXTERNAL_DATABASE_URL || defaultCore;
     const defaultSecurity = process.env.SECURITY_DATABASE_URL || defaultCore;
+    const envSizes        = getPoolSizesFromEnv();
 
-    const coreUrl     = localOverridden.coreUrl     || defaultCore;
-    const ledgerRaw   = localOverridden.ledgerUrl   || defaultLedger;
-    const externalRaw = localOverridden.externalUrl || defaultExternal;
-    const securityRaw = localOverridden.securityUrl || defaultSecurity;
-
-    const coreMax     = Number(localOverridden.coreMax)     || envSizes.coreMax;
-    const ledgerMax   = Number(localOverridden.ledgerMax)   || envSizes.ledgerMax;
-    const externalMax = Number(localOverridden.externalMax) || envSizes.externalMax;
-    const securityMax = Number(localOverridden.securityMax) || envSizes.securityMax;
-
+    const coreUrl     = getUrlFromReg(coreReg,     defaultCore);
+    const ledgerRaw   = getUrlFromReg(ledgerReg,   defaultLedger);
+    const externalRaw = getUrlFromReg(externalReg, defaultExternal);
+    const securityRaw = getUrlFromReg(securityReg, defaultSecurity);
+    
     if (!coreUrl) {
       return;
     }
@@ -495,6 +554,9 @@ export async function synchronizePerplextaPoolsFromRegistry() {
           await p.end().catch(() => {});
         }
         console.warn(`[DB] Registry ${id} DB check failed: ${e.message}. Falling back to Core.`);
+        try {
+          await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = $1", [id]);
+        } catch {}
         return coreUrl;
       }
     };
@@ -502,6 +564,11 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const ledgerUrl   = await testAndResolveUrl('ledger', ledgerRaw, defaultLedger);
     const externalUrl = await testAndResolveUrl('external', externalRaw, defaultExternal);
     const securityUrl = await testAndResolveUrl('security', securityRaw, defaultSecurity);
+
+    const coreMax     = Number(coreReg?.pool_size)     || envSizes.coreMax;
+    const ledgerMax   = Number(ledgerReg?.pool_size)   || envSizes.ledgerMax;
+    const externalMax = Number(externalReg?.pool_size) || envSizes.externalMax;
+    const securityMax = Number(securityReg?.pool_size) || envSizes.securityMax;
 
     if (
       coreUrl     === currentCoreUrl     && ledgerUrl   === currentLedgerUrl   &&
