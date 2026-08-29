@@ -399,6 +399,7 @@ router.get("/google/url", async (req, res) => {
     
     const nonce = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 600000);
+    const redirectUri = getRedirectUri(req);
 
     await pool.query(
       `INSERT INTO oauth_states (state, provider, redirect_url, expires_at) VALUES ($1, $2, $3, $4)`,
@@ -408,7 +409,8 @@ router.get("/google/url", async (req, res) => {
         mode: mode as string || 'popup', 
         remember: remember === 'true',
         theme: theme as string || 'dark',
-        authSessionId: authSessionId as string || null
+        authSessionId: authSessionId as string || null,
+        redirectUri: redirectUri
       }), expiresAt]
     );
 
@@ -419,7 +421,7 @@ router.get("/google/url", async (req, res) => {
 
     const params = new URLSearchParams({
       client_id: clientId || '',
-      redirect_uri: getRedirectUri(req),
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'email profile',
       state: nonce
@@ -496,6 +498,8 @@ router.get("/google/callback", async (req, res) => {
     const storedState = JSON.parse(stateRow.redirect_url);
     await pool.query('DELETE FROM oauth_states WHERE state = $1', [state]);
 
+    const redirectUri = storedState.redirectUri || getRedirectUri(req);
+
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -503,7 +507,7 @@ router.get("/google/callback", async (req, res) => {
         code: code as string,
         client_id: process.env.GOOGLE_CLIENT_ID || '',
         client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-        redirect_uri: getRedirectUri(req),
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code'
       } as any).toString(),
       signal: AbortSignal.timeout(30000)
@@ -511,8 +515,8 @@ router.get("/google/callback", async (req, res) => {
 
     const tokens = await tokenResponse.json() as any;
     if (tokens.error) {
-      console.error('[GoogleAuth] Token Error:', tokens.error);
-      return res.status(400).send('Auth failed');
+      console.error('[GoogleAuth] Token Error Details:', JSON.stringify(tokens));
+      return res.status(400).send(`Auth failed: ${tokens.error} (${tokens.error_description || 'unknown'})`);
     }
 
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
