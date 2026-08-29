@@ -398,15 +398,14 @@ router.post("/databases/save", authenticateAdmin, async (req, res) => {
 
     const result = await saveDatabaseConfig(req.body);
     res.json(result);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 router.post("/databases/test", authenticateAdmin, async (req, res) => {
   try {
     const config = req.body.config || req.body;
-    const type = req.body.type || config.type || 'local';
     let host = config.host;
     let connStr = config.connection_string || config.connectionString;
     const dbId = req.body.id || config.id;
@@ -425,14 +424,8 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
       }
     }
 
-    if (type === 'cloud') {
-      if (!connStr) {
-        return res.status(400).json({ error: 'Connection string is required' });
-      }
-    } else {
-      if (!host) {
-        return res.status(400).json({ error: 'Host is required' });
-      }
+    if (!host && !connStr) {
+      return res.status(400).json({ error: 'Host or connection string is required' });
     }
 
     const result = await testDatabaseConnection(req.body);

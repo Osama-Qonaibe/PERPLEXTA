@@ -502,8 +502,7 @@ export async function synchronizePerplextaPoolsFromRegistry() {
 
     const getUrlFromReg = (reg: any, fallback: string): string => {
       if (!reg) return fallback;
-      const type = reg.type || 'local';
-      if (type === 'cloud' && reg.connection_string) {
+      if (reg.connection_string) {
         const decrypted = safeDecrypt(reg.connection_string);
         if (decrypted && decrypted.trim() !== '') return decrypted;
       }
@@ -555,7 +554,7 @@ export async function synchronizePerplextaPoolsFromRegistry() {
         }
         console.warn(`[DB] Registry ${id} DB check failed: ${e.message}. Falling back to Core.`);
         try {
-          await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = $1", [id]);
+          await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down', connection_string = NULL, host = NULL WHERE id = $1", [id]);
         } catch {}
         return coreUrl;
       }
@@ -655,120 +654,72 @@ export function getPoolMetrics(p: any, name?: string) {
   };
 }
 
-const isReconnecting: Record<string, boolean> = {
-  core: false,
-  ledger: false,
-  external: false,
-  security: false,
-};
-
 export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external' | 'security'): Promise<void> {
-  if (isReconnecting[poolName]) {
-    console.log(`[DB] Reconnection already in progress for pool: ${poolName}. Skipping duplicate request.`);
-    return;
+  console.log(`[DB] Force reconnect requested for pool: ${poolName}`);
+  const envSizes = getPoolSizesFromEnv();
+
+  if (poolLeakHistory[poolName]) {
+    poolLeakHistory[poolName] = [];
   }
-  isReconnecting[poolName] = true;
 
-  try {
-    console.log(`[DB] Force reconnect requested for pool: ${poolName}`);
-    const envSizes = getPoolSizesFromEnv();
-
-    if (poolLeakHistory[poolName]) {
-      poolLeakHistory[poolName] = [];
+  if (poolName === 'core') {
+    const url = currentCoreUrl || process.env.DATABASE_URL;
+    if (!url) throw new Error('Core DB URL not found');
+    if (pool) {
+      await pool.end().catch((e: any) => console.error('[DB] Error ending core pool:', e.message));
     }
-
-    if (poolName === 'core') {
-      const url = currentCoreUrl || process.env.DATABASE_URL;
-      if (!url) throw new Error('Core DB URL not found');
-      
-      const prevPool = pool;
-      const newPool = patchPoolQuery(new Pool({
-        connectionString: url,
-        ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000, url),
-      }));
-      newPool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
-      
-      // Swap immediately BEFORE closing previous to prevent new queries from hitting ended pool
-      pool = newPool;
-
-      if (prevPool) {
-        prevPool.end().catch((e: any) => console.error('[DB] Error ending previous core pool:', e.message));
-      }
-
-      await pool.query('SELECT 1');
-      console.log('[DB] Core pool reconnected successfully.');
-    } else if (poolName === 'ledger') {
-      const url = currentLedgerUrl || process.env.LEDGER_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
-      if (!url) throw new Error('Ledger DB URL not found');
-      
-      const prevLedger = ledgerPool;
-      const isShared = url === (currentCoreUrl || process.env.DATABASE_URL);
-      const newLedgerPool = isShared ? pool : patchPoolQuery(new Pool({
-        connectionString: url,
-        ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000, url),
-      }));
-      
-      if (newLedgerPool !== pool) {
-        newLedgerPool.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
-      }
-
-      ledgerPool = newLedgerPool;
-
-      if (prevLedger && prevLedger !== pool && prevLedger !== ledgerPool) {
-        prevLedger.end().catch((e: any) => console.error('[DB] Error ending ledger pool:', e.message));
-      }
-
-      await ledgerPool.query('SELECT 1');
-      console.log('[DB] Ledger pool reconnected successfully.');
-    } else if (poolName === 'external') {
-      const url = currentExternalUrl || process.env.EXTERNAL_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
-      if (!url) throw new Error('External DB URL not found');
-      
-      const prevExternal = externalPool;
-      const isShared = url === (currentCoreUrl || process.env.DATABASE_URL);
-      const newExternalPool = isShared ? pool : patchPoolQuery(new Pool({
-        connectionString: url,
-        ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000, url),
-      }));
-
-      if (newExternalPool !== pool) {
-        newExternalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
-      }
-
-      externalPool = newExternalPool;
-
-      if (prevExternal && prevExternal !== pool && prevExternal !== externalPool) {
-        prevExternal.end().catch((e: any) => console.error('[DB] Error ending external pool:', e.message));
-      }
-
-      await externalPool.query('SELECT 1');
-      console.log('[DB] External pool reconnected successfully.');
-    } else if (poolName === 'security') {
-      const url = currentSecurityUrl || process.env.SECURITY_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
-      if (!url) throw new Error('Security DB URL not found');
-      
-      const prevSecurity = securityPool;
-      const isShared = url === (currentCoreUrl || process.env.DATABASE_URL);
-      const newSecurityPool = isShared ? pool : patchPoolQuery(new Pool({
-        connectionString: url,
-        ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000, url),
-      }));
-
-      if (newSecurityPool !== pool) {
-        newSecurityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
-      }
-
-      securityPool = newSecurityPool;
-
-      if (prevSecurity && prevSecurity !== pool && prevSecurity !== securityPool) {
-        prevSecurity.end().catch((e: any) => console.error('[DB] Error ending security pool:', e.message));
-      }
-
-      await securityPool.query('SELECT 1');
-      console.log('[DB] Security pool reconnected successfully.');
+    pool = patchPoolQuery(new Pool({
+      connectionString: url,
+      ...getBasePoolConfig(currentCoreMax || envSizes.coreMax, 10000, url),
+    }));
+    pool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
+    await pool.query('SELECT 1');
+    console.log('[DB] Core pool reconnected successfully.');
+  } else if (poolName === 'ledger') {
+    const url = currentLedgerUrl || process.env.LEDGER_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
+    if (!url) throw new Error('Ledger DB URL not found');
+    if (ledgerPool && ledgerPool !== pool) {
+      await ledgerPool.end().catch((e: any) => console.error('[DB] Error ending ledger pool:', e.message));
     }
-  } finally {
-    isReconnecting[poolName] = false;
+    ledgerPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
+      connectionString: url,
+      ...getBasePoolConfig(currentLedgerMax || envSizes.ledgerMax, 5000, url),
+    }));
+    if (ledgerPool !== pool) {
+      ledgerPool.on('error', (e: any) => console.error('[DB] Idle ledger client error:', e?.message || e));
+    }
+    await ledgerPool.query('SELECT 1');
+    console.log('[DB] Ledger pool reconnected successfully.');
+  } else if (poolName === 'external') {
+    const url = currentExternalUrl || process.env.EXTERNAL_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
+    if (!url) throw new Error('External DB URL not found');
+    if (externalPool && externalPool !== pool) {
+      await externalPool.end().catch((e: any) => console.error('[DB] Error ending external pool:', e.message));
+    }
+    externalPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
+      connectionString: url,
+      ...getBasePoolConfig(currentExternalMax || envSizes.externalMax, 5000, url),
+    }));
+    if (externalPool !== pool) {
+      externalPool.on('error', (e: any) => console.error('[DB] Idle external client error:', e?.message || e));
+    }
+    await externalPool.query('SELECT 1');
+    console.log('[DB] External pool reconnected successfully.');
+  } else if (poolName === 'security') {
+    const url = currentSecurityUrl || process.env.SECURITY_DATABASE_URL || currentCoreUrl || process.env.DATABASE_URL;
+    if (!url) throw new Error('Security DB URL not found');
+    if (securityPool && securityPool !== pool) {
+      await securityPool.end().catch((e: any) => console.error('[DB] Error ending security pool:', e.message));
+    }
+    securityPool = url === (currentCoreUrl || process.env.DATABASE_URL) ? pool : patchPoolQuery(new Pool({
+      connectionString: url,
+      ...getBasePoolConfig(currentSecurityMax || envSizes.securityMax, 5000, url),
+    }));
+    if (securityPool !== pool) {
+      securityPool.on('error', (e: any) => console.error('[DB] Idle security client error:', e?.message || e));
+    }
+    await securityPool.query('SELECT 1');
+    console.log('[DB] Security pool reconnected successfully.');
   }
 }
 

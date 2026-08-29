@@ -117,7 +117,7 @@ export async function runVersionedMigrations(
         try {
           await client.query(`
             INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
-            VALUES ($1, 'failed', $2, $3, $4)
+            VALUES ($1, "failed", $2, $3, $4)
           `, [
             name,
             err.message || "Unknown error",

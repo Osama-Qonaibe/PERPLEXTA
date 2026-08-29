@@ -283,22 +283,7 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'item_id', 'rating', 'comment', 'created_at', 'updated_at']
       },
       video_resources: {
-        columns: [
-          'id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration',
-          'aspect_ratio', 'resolution', 'metadata', 'created_at', 'storage_provider', 'video_codec',
-          'audio_codec', 'bitrate_kbps', 'fps', 'has_subtitles', 'is_processed', 'transcode_status', 'error_log'
-        ],
-        repairCols: {
-          storage_provider: { type: 'VARCHAR(50)', default: "'local'" },
-          video_codec: { type: 'VARCHAR(50)' },
-          audio_codec: { type: 'VARCHAR(50)' },
-          bitrate_kbps: { type: 'INTEGER', default: 0 },
-          fps: { type: 'DECIMAL(5,2)', default: 0 },
-          has_subtitles: { type: 'BOOLEAN', default: false },
-          is_processed: { type: 'BOOLEAN', default: false },
-          transcode_status: { type: 'VARCHAR(50)', default: "'pending'" },
-          error_log: { type: 'TEXT' }
-        }
+        columns: ['id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration', 'aspect_ratio', 'resolution', 'metadata', 'created_at']
       },
       referral_invitations: {
         columns: ['id', 'referrer_id', 'email', 'status', 'subject', 'body', 'referred_email', 'invite_code', 'created_at', 'updated_at']
