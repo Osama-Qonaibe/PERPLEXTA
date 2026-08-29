@@ -2320,7 +2320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
-      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=popup&remember=${rememberMe}&authSessionId=${authSessionId}`);
+      const res = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=redirect&remember=${rememberMe}&authSessionId=${authSessionId}`);
 
       if (!res.ok) {
         throw new Error(`Auth URL fetch failed: ${res.status}`);
@@ -2336,69 +2336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error('No auth URL returned');
       }
 
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(data.url, 'Google Login', `width=${width},height=${height},left=${left},top=${top}`);
-
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        const redirectRes = await fetch(`/api/auth/google/url?lang=${lang}&theme=${currentTheme}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}&mode=redirect&remember=${rememberMe}&authSessionId=${authSessionId}`);
-        if (redirectRes.ok) {
-          const redirectData = await redirectRes.json();
-          if (redirectData?.url) {
-            window.location.href = redirectData.url;
-            return;
-          }
-        }
-      }
-
-      let checkCount = 0;
-      const pollInterval = setInterval(async () => {
-        checkCount++;
-        if (checkCount > 300) { 
-          clearInterval(pollInterval);
-          return;
-        }
-
-        try {
-          const pollRes = await fetch(`/api/auth/poll?authSessionId=${authSessionId}`);
-          if (pollRes.ok) {
-            const pollData = await pollRes.json();
-            if (pollData.status === 'success' && pollData.data) {
-              clearInterval(pollInterval);
-              handleAuthSuccess(pollData.data);
-              if (popup && !popup.closed) {
-                try {
-                  popup.close();
-                } catch (e) {}
-              }
-              return;
-            }
-          }
-        } catch (pollErr) {}
-
-        const storedToken = localStorage.getItem('app_token');
-        const userDataJson = localStorage.getItem('app_oauth_user');
-
-        if (storedToken && userDataJson) {
-          clearInterval(pollInterval);
-          try {
-            const userData = JSON.parse(userDataJson);
-            const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
-            handleAuthSuccess(processedUser);
-            localStorage.removeItem('app_oauth_user');
-            localStorage.removeItem('app_oauth_trigger');
-            if (popup && !popup.closed) {
-              try {
-                popup.close();
-              } catch (e) {}
-            }
-          } catch (e) {}
-        }
-      }, 1000);
-
+      window.location.href = data.url;
     } catch (error) {
       console.error('[Google Login Error]:', error);
       toast.error(dir === 'rtl' ? 'تعذر بدء تسجيل الدخول باستخدام جوجل' : 'Failed to start Google sign-in');
