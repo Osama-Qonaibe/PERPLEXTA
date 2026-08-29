@@ -168,28 +168,28 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'plan_id', 'stripe_customer_id', 'stripe_subscription_id', 'status', 'billing_period', 'current_period_end', 'last_period_start', 'updated_at', 'created_at']
       },
       plans: {
-        columns: ['id', 'name_en', 'name_ar', 'monthly_price', 'annual_price', 'discount_percent', 'limits', 'tag_en', 'tag_ar', 'color', 'is_active', 'created_at', 'updated_at']
+        columns: ['id', 'name_en', 'name_ar', 'desc_en', 'desc_ar', 'badge', 'discount', 'is_active', 'is_visible', 'is_popular', 'monthly_price', 'annual_price', 'color', 'features', 'limits', 'plan_type', 'created_at', 'updated_at']
       },
       user_usage: {
-        columns: ['id', 'user_id', 'tool_id', 'usage_date', 'count', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'tool_id', 'usage_count', 'usage_date', 'updated_at']
       },
       notifications: {
         columns: ['id', 'user_id', 'type', 'title_en', 'title_ar', 'message_en', 'message_ar', 'is_read', 'created_at', 'metadata']
       },
       chat_memories: {
-        columns: ['id', 'user_id', 'chat_id', 'memory_key', 'memory_value', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'chat_id', 'fact', 'source', 'category', 'created_at', 'updated_at']
       },
       email_templates: {
         columns: ['id', 'name', 'subject_en', 'subject_ar', 'body_en', 'body_ar', 'created_at', 'updated_at']
       },
       email_settings: {
-        columns: ['id', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'from_email', 'from_name', 'is_active', 'updated_at']
+        columns: ['id', 'mailer_type', 'smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'sender_name', 'sender_email', 'status', 'last_verified_at', 'updated_at']
       },
       message_reports: {
-        columns: ['id', 'message_id', 'user_id', 'reason', 'details', 'status', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'message_id', 'reason', 'status', 'created_at']
       },
       user_shortcuts: {
-        columns: ['id', 'user_id', 'title', 'prompt', 'icon', 'color', 'position', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'title', 'query', 'category', 'created_at']
       },
       user_files: {
         columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'metadata', 'created_at', 'updated_at']
@@ -198,17 +198,18 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high']
       },
       system_logs: {
-        columns: ['id', 'user_id', 'level', 'action', 'details', 'ip_address', 'created_at']
+        columns: ['id', 'user_id', 'action', 'type', 'description', 'details', 'metadata', 'ip_address', 'created_at']
       },
       system_broadcasts: {
-        columns: ['id', 'title_ar', 'title_en', 'content_ar', 'content_en', 'type', 'target_audience', 'is_active', 'expires_at', 'created_at', 'admin_id']
+        columns: ['id', 'admin_id', 'broadcast_type', 'type', 'target_group', 'target_role', 'title_en', 'title_ar', 'content_en', 'content_ar', 'status', 'sent_count', 'created_at']
       },
       oauth_states: {
-        columns: ['id', 'state', 'redirect_uri', 'created_at', 'expires_at']
+        columns: ['id', 'state', 'provider', 'redirect_url', 'expires_at', 'created_at']
       },
       bulletin_ads: {
-        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
+        columns: ['id', 'user_id', 'author_name', 'author_avatar', 'title', 'description', 'image_url', 'whatsapp_number', 'target_url', 'hashtags', 'category', 'price_paid', 'duration_days', 'status', 'rejection_reason', 'likes_count', 'comments_count', 'shares_count', 'clicks_count', 'impressions_count', 'starts_at', 'expires_at', 'page_id', 'location_city', 'phone_number', 'video_url', 'is_boosted', 'boosted_until', 'boost_tier', 'boost_price', 'created_at', 'updated_at', 'ad_format', 'aspect_ratio', 'quick_questions', 'feeling', 'tagged_users', 'is_ai_generated', 'has_whatsapp_button', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url'],
         repairCols: {
+          aspect_ratio: { type: 'VARCHAR(50)', default: "'16:9'" },
           meta_title_en: { type: 'VARCHAR(255)' },
           image_asset_id: { type: 'UUID' },
           meta_title_ar: { type: 'VARCHAR(255)' },
@@ -223,7 +224,7 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'ad_id', 'created_at']
       },
       bulletin_reports: {
-        columns: ['id', 'user_id', 'ad_id', 'reason', 'details', 'status', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'ad_id', 'reason', 'details', 'status', 'created_at']
       },
       bulletin_pages: {
         columns: ['id', 'user_id', 'name', 'slug', 'category', 'city', 'address', 'description', 'avatar_url', 'cover_url', 'whatsapp_number', 'phone_number', 'website_url', 'is_verified', 'followers_count', 'ads_count', 'created_at', 'updated_at']
@@ -232,16 +233,16 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'page_id', 'created_at']
       },
       bulletin_page_inquiries: {
-        columns: ['id', 'page_id', 'sender_id', 'sender_name', 'sender_email', 'sender_phone', 'subject', 'message', 'status', 'created_at', 'updated_at']
+        columns: ['id', 'page_id', 'ad_id', 'sender_id', 'sender_name', 'sender_phone', 'message', 'status', 'created_at']
       },
       bulletin_ad_likes: {
         columns: ['id', 'user_id', 'ad_id', 'created_at']
       },
       bulletin_ad_comments: {
-        columns: ['id', 'user_id', 'ad_id', 'content', 'created_at', 'updated_at']
+        columns: ['id', 'ad_id', 'user_id', 'author_name', 'author_avatar', 'content', 'parent_id', 'created_at']
       },
       bulletin_ad_messages: {
-        columns: ['id', 'ad_id', 'sender_id', 'recipient_id', 'content', 'is_read', 'created_at']
+        columns: ['id', 'ad_id', 'sender_id', 'recipient_id', 'sender_name', 'sender_avatar', 'message', 'media_url', 'is_encrypted', 'encryption_hash', 'status', 'created_at']
       },
       route_seo_settings: {
         columns: ['id', 'route', 'title_ar', 'title_en', 'description_ar', 'description_en', 'keywords_ar', 'keywords_en', 'og_image_url', 'alt_text_ar', 'alt_text_en', 'is_active', 'created_at', 'updated_at']
@@ -282,7 +283,22 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'item_id', 'rating', 'comment', 'created_at', 'updated_at']
       },
       video_resources: {
-        columns: ['id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration', 'aspect_ratio', 'resolution', 'metadata', 'created_at']
+        columns: [
+          'id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration',
+          'aspect_ratio', 'resolution', 'metadata', 'created_at', 'storage_provider', 'video_codec',
+          'audio_codec', 'bitrate_kbps', 'fps', 'has_subtitles', 'is_processed', 'transcode_status', 'error_log'
+        ],
+        repairCols: {
+          storage_provider: { type: 'VARCHAR(50)', default: "'local'" },
+          video_codec: { type: 'VARCHAR(50)' },
+          audio_codec: { type: 'VARCHAR(50)' },
+          bitrate_kbps: { type: 'INTEGER', default: 0 },
+          fps: { type: 'DECIMAL(5,2)', default: 0 },
+          has_subtitles: { type: 'BOOLEAN', default: false },
+          is_processed: { type: 'BOOLEAN', default: false },
+          transcode_status: { type: 'VARCHAR(50)', default: "'pending'" },
+          error_log: { type: 'TEXT' }
+        }
       },
       referral_invitations: {
         columns: ['id', 'referrer_id', 'email', 'status', 'subject', 'body', 'referred_email', 'invite_code', 'created_at', 'updated_at']
@@ -325,10 +341,10 @@ export async function verifySchemaIntegrity() {
         }
       },
       user_recommendation_interactions: {
-        columns: ['id', 'user_id', 'item_type', 'item_id', 'item_key', 'action', 'weight', 'created_at']
+        columns: ['id', 'user_id', 'item_type', 'item_id', 'item_key', 'action_type', 'category', 'weight', 'created_at']
       },
       user_recommendation_preferences: {
-        columns: ['id', 'user_id', 'preferred_categories', 'preferred_tools', 'updated_at']
+        columns: ['user_id', 'preferred_categories', 'preferred_price_range', 'excluded_item_types', 'explicit_interests', 'updated_at']
       },
       recommendation_feedback: {
         columns: ['id', 'user_id', 'item_type', 'item_id', 'item_key', 'feedback_type', 'created_at']
@@ -337,10 +353,10 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'subject', 'category', 'priority', 'status', 'created_at', 'updated_at']
       },
       support_ticket_replies: {
-        columns: ['id', 'ticket_id', 'user_id', 'message', 'is_admin', 'is_internal', 'created_at']
+        columns: ['id', 'ticket_id', 'user_id', 'message', 'is_admin_reply', 'created_at']
       },
       password_resets: {
-        columns: ['id', 'user_id', 'token', 'expires_at', 'created_at']
+        columns: ['id', 'email', 'token', 'expires_at', 'created_at']
       },
       model_cost_audit_logs: {
         columns: ['id', 'user_id', 'tool_id', 'provider', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens', 'cost_usd', 'cost_credits', 'status', 'error_message', 'created_at']
@@ -360,25 +376,64 @@ export async function verifySchemaIntegrity() {
     },
     ledger: {
       wallets: {
-        columns: ['id', 'user_id', 'balance', 'usd_balance', 'points', 'created_at', 'updated_at', 'referral_activated']
+        columns: ['id', 'user_id', 'balance', 'usd_balance', 'points', 'total_deposited', 'total_withdrawn', 'total_earned_referral', 'is_frozen', 'currency', 'referral_activated', 'created_at', 'updated_at'],
+        repairCols: {
+          balance: { type: 'DECIMAL(10,2)', default: 0.00 },
+          usd_balance: { type: 'DECIMAL(10,2)', default: 0.00 },
+          points: { type: 'INTEGER', default: 0 },
+          total_deposited: { type: 'DECIMAL(10,2)', default: 0.00 },
+          total_withdrawn: { type: 'DECIMAL(10,2)', default: 0.00 },
+          total_earned_referral: { type: 'DECIMAL(10,2)', default: 0.00 },
+          is_frozen: { type: 'BOOLEAN', default: false },
+          currency: { type: 'VARCHAR(10)', default: "'USD'" },
+          referral_activated: { type: 'BOOLEAN', default: false },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       ledger_transactions: {
-        columns: ['id', 'wallet_id', 'user_id', 'amount', 'points', 'transaction_type', 'status', 'reference_id', 'metadata', 'ip_address', 'description', 'is_hidden', 'created_at', 'updated_at']
+        columns: ['id', 'wallet_id', 'user_id', 'amount', 'points', 'transaction_type', 'status', 'reference_id', 'metadata', 'ip_address', 'description', 'balance_after', 'is_hidden', 'created_at', 'updated_at'],
+        repairCols: {
+          balance_after: { type: 'DECIMAL(10,2)', default: 0.00 },
+          is_hidden: { type: 'BOOLEAN', default: false }
+        }
       },
       referrals: {
-        columns: ['id', 'referrer_id', 'referred_id', 'status', 'reward_amount', 'created_at', 'updated_at']
+        columns: ['id', 'referrer_id', 'referred_id', 'status', 'reward_amount', 'commission_earned', 'created_at'],
+        repairCols: {
+          reward_amount: { type: 'DECIMAL(10,2)', default: 0.00 },
+          commission_earned: { type: 'DECIMAL(10,2)', default: 0.00 },
+          status: { type: 'VARCHAR(20)', default: "'completed'" }
+        }
       },
       referral_tree: {
-        columns: ['id', 'ancestor_id', 'descendant_id', 'depth', 'created_at']
+        columns: ['id', 'ancestor_id', 'descendant_id', 'depth', 'created_at'],
+        repairCols: {
+          ancestor_id: { type: 'INTEGER' },
+          descendant_id: { type: 'INTEGER' },
+          depth: { type: 'INTEGER' }
+        }
       },
       kyc_requests: {
-        columns: ['id', 'user_id', 'full_name', 'nationality', 'document_type', 'document_number', 'document_front_url', 'document_back_url', 'selfie_url', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'created_at']
+        columns: ['id', 'user_id', 'full_name', 'nationality', 'document_type', 'document_number', 'document_front_url', 'document_back_url', 'selfie_url', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'created_at'],
+        repairCols: {
+          nationality: { type: 'VARCHAR(100)' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       withdrawal_requests: {
-        columns: ['id', 'user_id', 'amount', 'payout_method', 'payout_details', 'status', 'rejection_reason', 'processed_by', 'processed_at', 'transaction_hash', 'created_at']
+        columns: ['id', 'user_id', 'amount', 'payout_method', 'payout_details', 'status', 'rejection_reason', 'processed_by', 'processed_at', 'transaction_hash', 'created_at'],
+        repairCols: {
+          amount: { type: 'DECIMAL(10,2)' }
+        }
       },
       payout_accounts: {
-        columns: ['id', 'user_id', 'payout_method', 'account_identifier', 'details', 'is_default', 'created_at']
+        columns: ['id', 'user_id', 'payout_method', 'account_identifier', 'details', 'is_default', 'created_at'],
+        repairCols: {
+          payout_method: { type: 'VARCHAR(50)' },
+          account_identifier: { type: 'TEXT' },
+          is_default: { type: 'BOOLEAN', default: false },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       economy_settings: {
         columns: ['id', 'welcome_bonus_points', 'referral_bonus_points', 'min_withdrawal_cents', 'points_per_dollar', 'conversion_rate', 'referral_bonus_percent', 'min_payout_usd', 'min_deposit_usd', 'referral_activation_min_deposit', 'crypto_address', 'bank_name', 'bank_recipient', 'bank_iban', 'bank_swift', 'paypal_email', 'updated_at']
@@ -387,7 +442,10 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'code', 'discount_percent', 'discount_amount', 'max_uses', 'used_count', 'expires_at', 'is_active', 'created_at']
       },
       coupon_usages: {
-        columns: ['id', 'coupon_id', 'user_id', 'used_at']
+        columns: ['id', 'coupon_id', 'user_id', 'used_at'],
+        repairCols: {
+          used_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       stripe_events: {
         columns: ['id', 'stripe_event_id', 'type', 'status', 'metadata', 'created_at', 'updated_at']

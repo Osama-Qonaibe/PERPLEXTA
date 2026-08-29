@@ -1,3 +1,6 @@
+import pkg from 'pg';
+const { Pool } = pkg;
+import { decrypt } from '../../utils/crypto.js';
 import { pool, ledgerPool, externalPool, securityPool } from '../index.js';
 import type { DatabasePoolKey, SchemaTable, ForeignKeyRelation, QueryClient, MigrationMetrics } from './types.js';
 import { TABLE_POOL_REGISTRY, hashStringToAdvisoryLockKey } from './types.js';
@@ -74,7 +77,8 @@ export async function initDb(
   targetPoolParam?: any,
   targetLedgerPoolParam?: any,
   targetExternalPoolParam?: any,
-  targetSecurityPoolParam?: any
+  targetSecurityPoolParam?: any,
+  targetId?: string
 ) {
   const targetPool = targetPoolParam || pool;
   const targetLedgerPool = targetLedgerPoolParam || ledgerPool || targetPool;
@@ -87,87 +91,119 @@ export async function initDb(
   }
 
   // 1. Core Schema Tables
-  for (const table of CORE_SCHEMA_TABLES) {
-    try {
-      await targetPool.query(table.query);
-    } catch (tblErr: any) {
-      console.warn(`[initDb Core Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+  if (!targetId || targetId === 'all' || targetId === 'core') {
+    for (const table of CORE_SCHEMA_TABLES) {
+      try {
+        await targetPool.query(table.query);
+      } catch (tblErr: any) {
+        console.warn(`[initDb Core Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+      }
     }
   }
 
   // 2. Ledger Schema Tables
-  for (const table of LEDGER_SCHEMA_TABLES) {
-    try {
-      await targetLedgerPool.query(table.query);
-    } catch (tblErr: any) {
-      console.warn(`[initDb Ledger Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+  if (!targetId || targetId === 'all' || targetId === 'ledger') {
+    for (const table of LEDGER_SCHEMA_TABLES) {
+      try {
+        await targetLedgerPool.query(table.query);
+      } catch (tblErr: any) {
+        console.warn(`[initDb Ledger Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+      }
     }
   }
 
   // 3. External Schema Tables
-  for (const table of EXTERNAL_SCHEMA_TABLES) {
-    try {
-      await targetExternalPool.query(table.query);
-    } catch (tblErr: any) {
-      console.warn(`[initDb External Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+  if (!targetId || targetId === 'all' || targetId === 'external') {
+    for (const table of EXTERNAL_SCHEMA_TABLES) {
+      try {
+        await targetExternalPool.query(table.query);
+      } catch (tblErr: any) {
+        console.warn(`[initDb External Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+      }
     }
   }
 
   // 4. Security Schema Tables
-  for (const table of SECURITY_SCHEMA_TABLES) {
-    try {
-      await targetSecurityPool.query(table.query);
-    } catch (tblErr: any) {
-      console.warn(`[initDb Security Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+  if (!targetId || targetId === 'all' || targetId === 'security') {
+    for (const table of SECURITY_SCHEMA_TABLES) {
+      try {
+        await targetSecurityPool.query(table.query);
+      } catch (tblErr: any) {
+        console.warn(`[initDb Security Table ${table.name}] Notice:`, tblErr?.message || tblErr);
+      }
     }
   }
 
   // 5. Apply Column Enforcements across all pools
-  await applyCoreColumnEnforcements(targetPool);
-  await applyLedgerColumnEnforcements(targetLedgerPool);
-  await applyExternalColumnEnforcements(targetExternalPool);
-  await applySecurityColumnEnforcements(targetSecurityPool);
+  if (!targetId || targetId === 'all' || targetId === 'core') {
+    await applyCoreColumnEnforcements(targetPool);
+  }
+  if (!targetId || targetId === 'all' || targetId === 'ledger') {
+    await applyLedgerColumnEnforcements(targetLedgerPool);
+  }
+  if (!targetId || targetId === 'all' || targetId === 'external') {
+    await applyExternalColumnEnforcements(targetExternalPool);
+  }
+  if (!targetId || targetId === 'all' || targetId === 'security') {
+    await applySecurityColumnEnforcements(targetSecurityPool);
+  }
 
   // 6. Apply Seeds
-  await seedCoreDatabase(targetPool, targetLedgerPool);
-  await seedLedgerDatabase(targetLedgerPool);
+  if (!targetId || targetId === 'all' || targetId === 'core') {
+    await seedCoreDatabase(targetPool, targetLedgerPool);
+  }
+  if (!targetId || targetId === 'all' || targetId === 'ledger') {
+    await seedLedgerDatabase(targetLedgerPool);
+  }
 
   // 7. Apply Indexes across all pools
-  for (const idxQuery of CORE_INDEXES) {
-    try {
-      await targetPool.query(idxQuery);
-    } catch (idxErr: any) {
-      console.warn('[initDb Core Index] Notice:', idxErr?.message || idxErr);
+  if (!targetId || targetId === 'all' || targetId === 'core') {
+    for (const idxQuery of CORE_INDEXES) {
+      try {
+        await targetPool.query(idxQuery);
+      } catch (idxErr: any) {
+        console.warn('[initDb Core Index] Notice:', idxErr?.message || idxErr);
+      }
     }
   }
 
-  for (const idxQuery of LEDGER_INDEXES) {
-    try {
-      await targetLedgerPool.query(idxQuery);
-    } catch (idxErr: any) {
-      console.warn('[initDb Ledger Index] Notice:', idxErr?.message || idxErr);
+  if (!targetId || targetId === 'all' || targetId === 'ledger') {
+    for (const idxQuery of LEDGER_INDEXES) {
+      try {
+        await targetLedgerPool.query(idxQuery);
+      } catch (idxErr: any) {
+        console.warn('[initDb Ledger Index] Notice:', idxErr?.message || idxErr);
+      }
     }
   }
 
-  for (const idxQuery of EXTERNAL_INDEXES) {
-    try {
-      await targetExternalPool.query(idxQuery);
-    } catch (idxErr: any) {
-      console.warn('[initDb External Index] Notice:', idxErr?.message || idxErr);
+  if (!targetId || targetId === 'all' || targetId === 'external') {
+    for (const idxQuery of EXTERNAL_INDEXES) {
+      try {
+        await targetExternalPool.query(idxQuery);
+      } catch (idxErr: any) {
+        console.warn('[initDb External Index] Notice:', idxErr?.message || idxErr);
+      }
     }
   }
 
-  for (const idxQuery of SECURITY_INDEXES) {
-    try {
-      await targetSecurityPool.query(idxQuery);
-    } catch (idxErr: any) {
-      console.warn('[initDb Security Index] Notice:', idxErr?.message || idxErr);
+  if (!targetId || targetId === 'all' || targetId === 'security') {
+    for (const idxQuery of SECURITY_INDEXES) {
+      try {
+        await targetSecurityPool.query(idxQuery);
+      } catch (idxErr: any) {
+        console.warn('[initDb Security Index] Notice:', idxErr?.message || idxErr);
+      }
     }
   }
 
   // 8. Apply Relations
-  await applyCoreRelations(targetPool);
-  await applyLedgerRelations(targetLedgerPool);
+  if (!targetId || targetId === 'all' || targetId === 'core') {
+    await applyCoreRelations(targetPool);
+  }
+  if (!targetId || targetId === 'all' || targetId === 'ledger') {
+    await applyLedgerRelations(targetLedgerPool);
+  }
 }
 
 /**
@@ -191,6 +227,65 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
   let ledgerClient: any = null;
   let externalClient: any = null;
   let securityClient: any = null;
+  
+  let tempPool: any = null;
+  let tempClient: any = null;
+
+  const getPoolFromRegistry = async (id: string): Promise<any> => {
+    try {
+      const res = await pool.query('SELECT * FROM db_connections_registry WHERE id = $1', [id]);
+      if (res.rows.length === 0) return null;
+      const reg = res.rows[0];
+      
+      const safeDecrypt = (val: any): string => {
+        if (!val) return '';
+        try {
+          const decrypted = decrypt(typeof val === 'string' ? val : String(val));
+          return typeof decrypted === 'string' ? decrypted : String(decrypted || '');
+        } catch {
+          return typeof val === 'string' ? val : String(val || '');
+        }
+      };
+
+      const type = reg.type || 'local';
+      if (type === 'cloud' && reg.connection_string) {
+        const decrypted = safeDecrypt(reg.connection_string);
+        if (decrypted && decrypted.trim() !== '') {
+          return new Pool({ connectionString: decrypted, max: 1, connectionTimeoutMillis: 5000 });
+        }
+      }
+
+      if (reg.host && reg.host !== 'base') {
+        const u = encodeURIComponent(reg.username || '');
+        const rawPass = safeDecrypt(reg.password);
+        const p = rawPass ? encodeURIComponent(rawPass) : '';
+        const port = reg.port || '5432';
+        const connBase = `postgres://${u}${p ? `:${p}` : ''}@${reg.host}:${port}/${reg.db_name}`;
+        const connStr = reg.ssl_mode && reg.ssl_mode !== 'disable' ? `${connBase}?sslmode=${reg.ssl_mode}` : connBase;
+        return new Pool({ connectionString: connStr, max: 1, connectionTimeoutMillis: 5000 });
+      }
+    } catch (err: any) {
+      console.warn(`[Migrations] Error getting temp pool from registry for ${id}:`, err.message);
+    }
+    return null;
+  };
+
+  if (targetId && targetId !== 'core' && targetId !== 'all') {
+    const activePool = targetId === 'ledger' ? ledgerPool : targetId === 'external' ? externalPool : targetId === 'security' ? securityPool : null;
+    if (!activePool || activePool === pool) {
+      console.log(`[Migrations] Target DB ${targetId} is inactive or using Core fallback. Attempting to connect directly via registry config...`);
+      tempPool = await getPoolFromRegistry(targetId);
+    }
+  }
+
+  if (tempPool) {
+    try {
+      tempClient = await tempPool.connect();
+      console.log(`[Migrations] Successfully established temporary connection to inactive DB (${targetId}) for migration.`);
+    } catch (err: any) {
+      console.warn(`[Migrations] Temporary connection to inactive DB (${targetId}) failed: ${err.message}.`);
+    }
+  }
 
   const connectToPool = async (p: any, poolName: string) => {
     if (!p || p === pool || isSameDb(pool, p)) return null;
@@ -207,9 +302,9 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
     return activeClient.query(queryStr, params);
   };
 
-  ledgerClient = await connectToPool(ledgerPool, 'Ledger');
-  externalClient = await connectToPool(externalPool, 'External');
-  securityClient = await connectToPool(securityPool, 'Security');
+  ledgerClient = targetId === 'ledger' && tempClient ? tempClient : await connectToPool(ledgerPool, 'Ledger');
+  externalClient = targetId === 'external' && tempClient ? tempClient : await connectToPool(externalPool, 'External');
+  securityClient = targetId === 'security' && tempClient ? tempClient : await connectToPool(securityPool, 'Security');
 
   try {
     // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
@@ -348,7 +443,7 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
         await client.query("DELETE FROM migration_history WHERE migration_name ~* 'security|token_blacklist|audit|agent'").catch(() => {});
       }
 
-      await initDb('scratch', client, ledgerClient, externalClient, securityClient);
+      await initDb('scratch', client, ledgerClient, externalClient, securityClient, targetId);
     }
 
     await client.query(`
@@ -373,7 +468,7 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
     `);
 
     console.log('[Migrations] Running dynamic schema auto-repair...');
-    await initDb('additive', pool, ledgerPool, externalPool, securityPool);
+    await initDb('additive', pool, ledgerPool, externalPool, securityPool, targetId);
 
     // Run all versioned migrations (v1 - v83)
     await runVersionedMigrations(
@@ -414,12 +509,14 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
   } catch (error) {
     const err = error as Error;
     console.error('[CRITICAL] Database Migration failed:', err.message);
-    if (process.env.NODE_ENV === 'production') throw err;
+    throw err;
   } finally {
     await client.query('SELECT pg_advisory_unlock(74635291)').catch(() => {});
     client.release();
-    if (ledgerClient) ledgerClient.release();
-    if (externalClient) externalClient.release();
-    if (securityClient) securityClient.release();
+    if (tempClient) tempClient.release();
+    if (tempPool) await tempPool.end().catch(() => {});
+    if (ledgerClient && ledgerClient !== tempClient) ledgerClient.release();
+    if (externalClient && externalClient !== tempClient) externalClient.release();
+    if (securityClient && securityClient !== tempClient) securityClient.release();
   }
 }

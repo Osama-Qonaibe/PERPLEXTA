@@ -2,6 +2,7 @@ import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synch
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
+import { saveLocalDbConfig, readLocalDbConfigs } from '../utils/dbConfigLocal.js';
 import os from 'os';
 
 export const CORE_TABLES = [
@@ -90,13 +91,154 @@ export const SECURITY_TABLES = [
 ];
 
 export async function getDatabaseRegistry() {
+  const ids = ['core', 'ledger', 'external', 'security'];
+  
+  // Synchronize local configs on disk into the current database's db_connections_registry table
+  try {
+    const localConfigs = readLocalDbConfigs();
+    for (const local of localConfigs) {
+      await pool.query(`
+        INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (id) DO UPDATE SET
+          type = EXCLUDED.type, 
+          host = EXCLUDED.host, 
+          port = EXCLUDED.port, 
+          db_name = EXCLUDED.db_name,
+          username = EXCLUDED.username,
+          password = COALESCE(EXCLUDED.password, db_connections_registry.password),
+          connection_string = EXCLUDED.connection_string,
+          ssl_mode = EXCLUDED.ssl_mode, 
+          pool_size = EXCLUDED.pool_size,
+          is_active = EXCLUDED.is_active, 
+          updated_at = CURRENT_TIMESTAMP
+      `, [
+        local.id,
+        local.type,
+        local.host,
+        local.port,
+        local.db_name,
+        local.username,
+        local.password || null,
+        local.connection_string || null,
+        local.ssl_mode || 'disable',
+        local.pool_size || 10,
+        local.is_active || false
+      ]);
+    }
+  } catch (syncErr: any) {
+    console.warn('[getDatabaseRegistry] Failed to sync local configs to database:', syncErr.message);
+  }
+
   try {
     await pool.query("DELETE FROM db_connections_registry WHERE id NOT IN ('core', 'ledger', 'external', 'security')");
   } catch (err) {
     console.warn(err);
   }
-  const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
-  return result.rows;
+
+  for (const dbId of ids) {
+    try {
+      const check = await pool.query('SELECT 1 FROM db_connections_registry WHERE id = $1', [dbId]);
+      if (check.rows.length === 0) {
+        let defaultUrl = '';
+        if (dbId === 'core') defaultUrl = process.env.DATABASE_URL || '';
+        else if (dbId === 'ledger') defaultUrl = process.env.LEDGER_DATABASE_URL || process.env.DATABASE_URL || '';
+        else if (dbId === 'external') defaultUrl = process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || '';
+        else if (dbId === 'security') defaultUrl = process.env.SECURITY_DATABASE_URL || process.env.DATABASE_URL || '';
+
+        let host = '', port = '5432', db_name = '', username = '';
+        if (defaultUrl) {
+          try {
+            const parsed = new URL(defaultUrl);
+            host = parsed.hostname;
+            port = parsed.port || '5432';
+            db_name = parsed.pathname.replace(/^\//, '');
+            username = parsed.username;
+          } catch {}
+        }
+
+        await pool.query(`
+          INSERT INTO db_connections_registry (id, provider, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `, [
+          dbId,
+          dbId === 'core' ? 'core' : (dbId === 'ledger' ? 'ledger' : (dbId === 'external' ? 'external' : 'security')),
+          'local',
+          host || 'localhost',
+          port || '5432',
+          db_name || `platform_${dbId}`,
+          username || 'postgres',
+          null,
+          defaultUrl ? encrypt(defaultUrl) : null,
+          'disable',
+          10,
+          false,
+          'unknown'
+        ]);
+      }
+    } catch (err) {
+      console.warn(`[getDatabaseRegistry] Seed error for ${dbId}:`, err);
+    }
+  }
+
+  // Perform a live, real-time status check for each connection pool
+  for (const dbId of ids) {
+    let isHealthy = false;
+    try {
+      if (dbId === 'core') {
+        await pool.query('SELECT 1');
+        isHealthy = true;
+      } else if (dbId === 'ledger') {
+        await (ledgerPool || pool).query('SELECT 1');
+        isHealthy = true;
+      } else if (dbId === 'external') {
+        await (externalPool || pool).query('SELECT 1');
+        isHealthy = true;
+      } else if (dbId === 'security') {
+        await (securityPool || pool).query('SELECT 1');
+        isHealthy = true;
+      }
+    } catch (e: any) {
+      console.warn(`[getDatabaseRegistry] Live pool status check failed for ${dbId}:`, e?.message || e);
+    }
+    
+    // Update the registry status with the live pool check result
+    try {
+      await pool.query(
+        "UPDATE db_connections_registry SET status = $1, last_checked_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [isHealthy ? 'healthy' : 'down', dbId]
+      );
+    } catch (err: any) {
+      console.warn(`[getDatabaseRegistry] Failed to update status in registry for ${dbId}:`, err?.message || err);
+    }
+  }
+
+  const result = await pool.query("SELECT id, provider, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active, status, updated_at FROM db_connections_registry WHERE id IN ('core', 'ledger', 'external', 'security') ORDER BY id ASC");
+  
+  return result.rows.map((row: any) => {
+    let decryptedConnStr = '';
+    if (row.connection_string) {
+      try { decryptedConnStr = decrypt(row.connection_string); } catch {}
+    }
+    
+    let decryptedPassword = '';
+    if (row.password) {
+      try { decryptedPassword = decrypt(row.password); } catch {}
+    }
+
+    let localUrl = '';
+    if (row.id === 'core') localUrl = process.env.DATABASE_URL || '';
+    else if (row.id === 'ledger') localUrl = process.env.LEDGER_DATABASE_URL || process.env.DATABASE_URL || '';
+    else if (row.id === 'external') localUrl = process.env.EXTERNAL_DATABASE_URL || process.env.DATABASE_URL || '';
+    else if (row.id === 'security') localUrl = process.env.SECURITY_DATABASE_URL || process.env.DATABASE_URL || '';
+
+    return {
+      ...row,
+      connection_string: decryptedConnStr,
+      password: decryptedPassword,
+      local_connection_string: localUrl
+    };
+  });
 }
 
 export async function saveDatabaseConfig(config: any) {
@@ -114,26 +256,49 @@ export async function saveDatabaseConfig(config: any) {
   const pool_size = body.pool_size || body.poolSize;
   const active_state = is_active !== undefined ? is_active : activate;
 
+  // Save config to the local JSON configuration file (Single Source of Truth)
+  try {
+    saveLocalDbConfig(targetId, body, active_state);
+  } catch (localErr: any) {
+    console.error(`[AdminService] Failed to save config to local file:`, localErr.message);
+  }
+
   const encryptedPassword = body.password ? encrypt(body.password) : null;
   const encryptedConnString = connection_string ? encrypt(connection_string) : null;
 
-  await pool.query(`
-    INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    ON CONFLICT (id) DO UPDATE SET
-      type = EXCLUDED.type, host = EXCLUDED.host, port = EXCLUDED.port, db_name = EXCLUDED.db_name,
-      username = EXCLUDED.username,
-      password = COALESCE(EXCLUDED.password, db_connections_registry.password),
-      connection_string = COALESCE(EXCLUDED.connection_string, db_connections_registry.connection_string),
-      ssl_mode = EXCLUDED.ssl_mode, pool_size = EXCLUDED.pool_size,
-      is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-  `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
+  try {
+    await pool.query(`
+      INSERT INTO db_connections_registry (id, type, host, port, db_name, username, password, connection_string, ssl_mode, pool_size, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        type = EXCLUDED.type, 
+        host = EXCLUDED.host, 
+        port = EXCLUDED.port, 
+        db_name = EXCLUDED.db_name,
+        username = EXCLUDED.username,
+        password = COALESCE(EXCLUDED.password, db_connections_registry.password),
+        connection_string = EXCLUDED.connection_string,
+        ssl_mode = EXCLUDED.ssl_mode, 
+        pool_size = EXCLUDED.pool_size,
+        is_active = EXCLUDED.is_active, 
+        updated_at = CURRENT_TIMESTAMP
+    `, [targetId, type || body.type, body.host, body.port, db_name, body.username, encryptedPassword, encryptedConnString, ssl_mode, pool_size, active_state]);
+  } catch (dbErr: any) {
+    console.warn(`[AdminService] Notice: could not write to db_connections_registry table: ${dbErr.message}. Local file will be used as fallback.`);
+  }
 
   if (active_state) {
     if (targetId === 'core' || targetId === 'ledger' || targetId === 'external' || targetId === 'security') {
       await synchronizePerplextaPoolsFromRegistry();
-      await runDatabaseMigrations('additive', targetId);
+      try {
+        await runDatabaseMigrations(targetId, 'additive');
+      } catch (migrationErr: any) {
+        console.error(`[AdminService] Migrations failed during save for ${targetId}:`, migrationErr.message);
+        // We do NOT fail the save operation itself so the admin can still save connection settings!
+      }
     }
+  } else {
+    await synchronizePerplextaPoolsFromRegistry();
   }
   return { success: true };
 }
@@ -168,12 +333,19 @@ export async function testDatabaseConnection(config: any) {
     }
   }
 
-  let connStr = connection_string || decryptedConnString;
-  if (!connStr && host) {
+  let connStr = '';
+  const type = config.type || body.type || 'local';
+  if (type === 'cloud') {
+    connStr = connection_string || decryptedConnString;
+  } else if (host) {
     const finalPass = password || decryptedPassword;
     const encodedUser = encodeURIComponent(username || '');
     const encodedPass = encodeURIComponent(finalPass || '');
     connStr = `postgres://${encodedUser}:${encodedPass}@${host}:${port}/${db_name}`;
+    const ssl = body.ssl_mode || body.sslMode || 'disable';
+    if (ssl && ssl !== 'disable') {
+      connStr += `?sslmode=${ssl}`;
+    }
   }
 
   if (!connStr) throw new Error('Missing connection settings');
