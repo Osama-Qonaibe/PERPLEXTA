@@ -39,18 +39,14 @@ async function runMediaAssetsMigration() {
     console.log('[Migration: media_assets] ✅ media_assets table ensured.');
 
     // 2. Ensure context value check constraint
-    await pool.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'chk_media_assets_context'
-        ) THEN
-          ALTER TABLE media_assets 
-          ADD CONSTRAINT chk_media_assets_context 
-          CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general'));
-        END IF;
-      END $$;
-    `);
+    const chkExists = await pool.query(`SELECT 1 FROM pg_constraint WHERE conname = 'chk_media_assets_context'`);
+    if (chkExists.rowCount === 0) {
+      await pool.query(`
+        ALTER TABLE media_assets 
+        ADD CONSTRAINT chk_media_assets_context 
+        CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general'))
+      `);
+    }
     console.log('[Migration: media_assets] ✅ Context check constraint (chk_media_assets_context) ensured.');
 
     // 3. Ensure columns in media_assets if table already existed previously
@@ -81,35 +77,27 @@ async function runMediaAssetsMigration() {
     console.log('[Migration: media_assets] ✅ Indexes created.');
 
     // 7. Ensure Foreign Keys (Only within Core DB - No cross-DB FK)
-    await pool.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_avatar_asset_id'
-        ) THEN
-          ALTER TABLE users
-          ADD CONSTRAINT fk_users_avatar_asset_id
-          FOREIGN KEY (avatar_asset_id)
-          REFERENCES media_assets(id)
-          ON DELETE SET NULL;
-        END IF;
-      END $$;
-    `);
+    const fkAvatar = await pool.query(`SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_avatar_asset_id'`);
+    if (fkAvatar.rowCount === 0) {
+      await pool.query(`
+        ALTER TABLE users
+        ADD CONSTRAINT fk_users_avatar_asset_id
+        FOREIGN KEY (avatar_asset_id)
+        REFERENCES media_assets(id)
+        ON DELETE SET NULL
+      `);
+    }
 
-    await pool.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'fk_marketplace_items_image_asset_id'
-        ) THEN
-          ALTER TABLE marketplace_items
-          ADD CONSTRAINT fk_marketplace_items_image_asset_id
-          FOREIGN KEY (image_asset_id)
-          REFERENCES media_assets(id)
-          ON DELETE SET NULL;
-        END IF;
-      END $$;
-    `);
+    const fkMarket = await pool.query(`SELECT 1 FROM pg_constraint WHERE conname = 'fk_marketplace_items_image_asset_id'`);
+    if (fkMarket.rowCount === 0) {
+      await pool.query(`
+        ALTER TABLE marketplace_items
+        ADD CONSTRAINT fk_marketplace_items_image_asset_id
+        FOREIGN KEY (image_asset_id)
+        REFERENCES media_assets(id)
+        ON DELETE SET NULL
+      `);
+    }
 
     console.log('[Migration: media_assets] ✅ Foreign keys ensured.');
     console.log('[Migration: media_assets] 🎉 All media_assets migration steps completed successfully.');

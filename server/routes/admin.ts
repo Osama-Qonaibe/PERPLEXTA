@@ -438,7 +438,7 @@ router.post("/databases/test", authenticateAdmin, async (req, res) => {
 router.post("/databases/migrate", authenticateAdmin, async (req, res) => {
   try {
     const { id, type } = req.body;
-    const result = await runDatabaseMigrations(type || 'additive', id);
+    const result = await runDatabaseMigrations(id || 'all', type || 'additive');
     await auditLog((req as any).user?.id, 'Run Database Migrations', 'system', { id, type });
     res.json({ 
       success: true, 

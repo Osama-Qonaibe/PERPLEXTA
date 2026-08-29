@@ -17,6 +17,7 @@ export const CORE_TABLES = [
   'asset_metadata',
   'system_broadcasts',
   'system_logs',
+  'user_activity_logs',
   'advertisements',
   'users',
   'user_sessions',
@@ -50,7 +51,14 @@ export const CORE_TABLES = [
   'bulletin_ad_messages',
   'user_recommendation_interactions',
   'user_recommendation_preferences',
-  'recommendation_feedback'
+  'recommendation_feedback',
+  'media_assets',
+  'model_cost_audit_logs',
+  'admin_approval_queue',
+  'ad_pricing_audit',
+  'ad_stats',
+  'route_seo_metadata',
+  'db_connections_registry'
 ];
 
 export const LEDGER_TABLES = [
