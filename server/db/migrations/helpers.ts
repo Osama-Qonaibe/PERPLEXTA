@@ -8,13 +8,13 @@ export function isValidIdentifier(name: string): boolean {
 }
 
 export function isValidDataType(type: string): boolean {
-  const baseType = type.split('(')[0].toUpperCase();
+  const baseType = type.split('(')[0].trim().toUpperCase();
   const validTypes = [
-    'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'NUMERIC',
+    'INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'DECIMAL', 'NUMERIC',
     'VARCHAR', 'CHAR', 'TEXT', 'JSONB', 'JSON', 'BOOLEAN',
-    'TIMESTAMP', 'DATE', 'TIME', 'UUID', 'SERIAL', 'BIGSERIAL',
-    'INT[]', 'TEXT[]', 'VARCHAR[]', 'JSONB[]',
-    'NUMERIC', 'REAL', 'DOUBLE PRECISION', 'MONEY'
+    'TIMESTAMP', 'TIMESTAMPTZ', 'TIMESTAMP WITH TIME ZONE', 'DATE', 'TIME', 'UUID', 'SERIAL', 'BIGSERIAL',
+    'INT[]', 'INTEGER[]', 'TEXT[]', 'VARCHAR[]', 'JSONB[]',
+    'REAL', 'DOUBLE PRECISION', 'FLOAT', 'MONEY', 'BYTEA'
   ];
   return validTypes.some(vt => baseType === vt || baseType.startsWith(vt + '('));
 }
@@ -159,8 +159,37 @@ export async function ensureColumnsBulk(
       }
       let part = `ADD COLUMN "${col}" ${config.type}`;
       if (config.default !== undefined && config.default !== null) {
-        const defaultStr = String(config.default).trim();
-        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}\$]+$/i.test(defaultStr)) {
+        let defaultStr = '';
+        if (typeof config.default === 'boolean') {
+          defaultStr = config.default ? 'true' : 'false';
+        } else if (typeof config.default === 'number') {
+          defaultStr = String(config.default);
+        } else if (typeof config.default === 'string') {
+          const trimmed = config.default.trim();
+          const upper = trimmed.toUpperCase();
+          const isSqlKeywordOrExpr = 
+            upper === 'CURRENT_TIMESTAMP' ||
+            upper === 'CURRENT_DATE' ||
+            upper === 'CURRENT_TIME' ||
+            upper === 'TRUE' ||
+            upper === 'FALSE' ||
+            upper === 'NULL' ||
+            upper.startsWith('GEN_RANDOM_UUID()') ||
+            upper.startsWith('NOW()');
+          
+          if (isSqlKeywordOrExpr) {
+            defaultStr = upper;
+          } else if ((trimmed.startsWith("'") && trimmed.endsWith("'")) || (trimmed.startsWith("$$") && trimmed.endsWith("$$"))) {
+            defaultStr = trimmed;
+          } else {
+            const escaped = trimmed.replace(/'/g, "''");
+            defaultStr = `'${escaped}'`;
+          }
+        } else {
+          defaultStr = String(config.default);
+        }
+
+        if (!/^[a-zA-Z0-9_()\-:.',"\s\[\]{}\$\u0600-\u06FF]+$/i.test(defaultStr)) {
           throw new Error(`Invalid default value expression: ${defaultStr}`);
         }
         part += ` DEFAULT ${defaultStr}`;

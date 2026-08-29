@@ -3,6 +3,10 @@ import { ensureColumnsBulk } from "./helpers.js";
 import { decrypt } from "../../utils/crypto.js";
 import { getIo } from "./maintenance.js";
 import { initDb } from "./index.js";
+import { CORE_INDEXES } from "./core.schema.js";
+import { LEDGER_INDEXES } from "./ledger.schema.js";
+import { EXTERNAL_INDEXES } from "./external.schema.js";
+import { SECURITY_INDEXES } from "./security.schema.js";
 
 function safelyDecryptConnectionString(encrypted: string): string {
   try {
@@ -372,22 +376,38 @@ export async function verifySchemaIntegrity() {
           is_frozen: { type: 'BOOLEAN', default: false },
           currency: { type: 'VARCHAR(10)', default: "'USD'" },
           referral_activated: { type: 'BOOLEAN', default: false },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
           updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       ledger_transactions: {
         columns: ['id', 'wallet_id', 'user_id', 'amount', 'points', 'transaction_type', 'status', 'reference_id', 'metadata', 'ip_address', 'description', 'balance_after', 'is_hidden', 'created_at', 'updated_at'],
         repairCols: {
+          transaction_type: { type: 'VARCHAR(50)' },
+          user_id: { type: 'INTEGER' },
+          wallet_id: { type: 'INTEGER' },
+          amount: { type: 'DECIMAL(10,2)', default: 0.00 },
+          points: { type: 'INTEGER', default: 0 },
+          status: { type: 'VARCHAR(50)', default: "'completed'" },
+          reference_id: { type: 'VARCHAR(255)' },
+          metadata: { type: 'JSONB', default: "'{}'" },
+          ip_address: { type: 'VARCHAR(45)' },
+          description: { type: 'TEXT' },
           balance_after: { type: 'DECIMAL(10,2)', default: 0.00 },
-          is_hidden: { type: 'BOOLEAN', default: false }
+          is_hidden: { type: 'BOOLEAN', default: false },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       referrals: {
         columns: ['id', 'referrer_id', 'referred_id', 'status', 'reward_amount', 'commission_earned', 'created_at'],
         repairCols: {
+          referrer_id: { type: 'INTEGER' },
+          referred_id: { type: 'INTEGER' },
           reward_amount: { type: 'DECIMAL(10,2)', default: 0.00 },
           commission_earned: { type: 'DECIMAL(10,2)', default: 0.00 },
-          status: { type: 'VARCHAR(20)', default: "'completed'" }
+          status: { type: 'VARCHAR(50)', default: "'pending'" },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       referral_tree: {
@@ -395,91 +415,245 @@ export async function verifySchemaIntegrity() {
         repairCols: {
           ancestor_id: { type: 'INTEGER' },
           descendant_id: { type: 'INTEGER' },
-          depth: { type: 'INTEGER' }
+          depth: { type: 'INTEGER', default: 1 },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       kyc_requests: {
         columns: ['id', 'user_id', 'full_name', 'nationality', 'document_type', 'document_number', 'document_front_url', 'document_back_url', 'selfie_url', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'created_at'],
         repairCols: {
+          user_id: { type: 'INTEGER' },
+          full_name: { type: 'VARCHAR(255)' },
           nationality: { type: 'VARCHAR(100)' },
+          document_type: { type: 'VARCHAR(50)' },
+          document_number: { type: 'VARCHAR(100)' },
+          document_front_url: { type: 'TEXT' },
+          document_back_url: { type: 'TEXT' },
+          selfie_url: { type: 'TEXT' },
+          status: { type: 'VARCHAR(50)', default: "'pending'" },
+          rejection_reason: { type: 'TEXT' },
+          reviewed_by: { type: 'INTEGER' },
+          reviewed_at: { type: 'TIMESTAMP' },
           created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       withdrawal_requests: {
         columns: ['id', 'user_id', 'amount', 'payout_method', 'payout_details', 'status', 'rejection_reason', 'processed_by', 'processed_at', 'transaction_hash', 'created_at'],
         repairCols: {
-          amount: { type: 'DECIMAL(10,2)' }
+          user_id: { type: 'INTEGER' },
+          amount: { type: 'DECIMAL(10,2)', default: 0.00 },
+          payout_method: { type: 'VARCHAR(50)' },
+          payout_details: { type: 'JSONB', default: "'{}'" },
+          status: { type: 'VARCHAR(50)', default: "'pending'" },
+          rejection_reason: { type: 'TEXT' },
+          processed_by: { type: 'INTEGER' },
+          processed_at: { type: 'TIMESTAMP' },
+          transaction_hash: { type: 'VARCHAR(255)' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       payout_accounts: {
         columns: ['id', 'user_id', 'payout_method', 'account_identifier', 'details', 'is_default', 'created_at'],
         repairCols: {
+          user_id: { type: 'INTEGER' },
           payout_method: { type: 'VARCHAR(50)' },
           account_identifier: { type: 'TEXT' },
+          details: { type: 'JSONB', default: "'{}'" },
           is_default: { type: 'BOOLEAN', default: false },
           created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       economy_settings: {
-        columns: ['id', 'welcome_bonus_points', 'referral_bonus_points', 'min_withdrawal_cents', 'points_per_dollar', 'conversion_rate', 'referral_bonus_percent', 'min_payout_usd', 'min_deposit_usd', 'referral_activation_min_deposit', 'crypto_address', 'bank_name', 'bank_recipient', 'bank_iban', 'bank_swift', 'paypal_email', 'updated_at']
+        columns: ['id', 'welcome_bonus_points', 'referral_bonus_points', 'min_withdrawal_cents', 'points_per_dollar', 'conversion_rate', 'referral_bonus_percent', 'min_payout_usd', 'min_deposit_usd', 'referral_activation_min_deposit', 'crypto_address', 'bank_name', 'bank_recipient', 'bank_iban', 'bank_swift', 'paypal_email', 'currency_symbol', 'exchange_rate_usd', 'min_withdrawal', 'withdrawal_fee_percent', 'referral_commission_percent', 'signup_bonus_credits', 'updated_at'],
+        repairCols: {
+          welcome_bonus_points: { type: 'INTEGER', default: 100 },
+          referral_bonus_points: { type: 'INTEGER', default: 50 },
+          min_withdrawal_cents: { type: 'INTEGER', default: 1000 },
+          points_per_dollar: { type: 'INTEGER', default: 100 },
+          conversion_rate: { type: 'DECIMAL(10,4)', default: 0.01 },
+          referral_bonus_percent: { type: 'DECIMAL(5,2)', default: 10.00 },
+          min_payout_usd: { type: 'DECIMAL(10,2)', default: 10.00 },
+          min_deposit_usd: { type: 'DECIMAL(10,2)', default: 5.00 },
+          referral_activation_min_deposit: { type: 'DECIMAL(10,2)', default: 10.00 },
+          crypto_address: { type: 'VARCHAR(255)' },
+          bank_name: { type: 'VARCHAR(255)' },
+          bank_recipient: { type: 'VARCHAR(255)' },
+          bank_iban: { type: 'VARCHAR(255)' },
+          bank_swift: { type: 'VARCHAR(255)' },
+          paypal_email: { type: 'VARCHAR(255)' },
+          currency_symbol: { type: 'VARCHAR(10)', default: "'$'" },
+          exchange_rate_usd: { type: 'DECIMAL(10,4)', default: 1.0 },
+          min_withdrawal: { type: 'DECIMAL(10,2)', default: 50 },
+          withdrawal_fee_percent: { type: 'DECIMAL(5,2)', default: 2.5 },
+          referral_commission_percent: { type: 'DECIMAL(5,2)', default: 10 },
+          signup_bonus_credits: { type: 'INTEGER', default: 100 },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       coupons: {
-        columns: ['id', 'code', 'discount_percent', 'discount_amount', 'max_uses', 'used_count', 'expires_at', 'is_active', 'created_at']
+        columns: ['id', 'code', 'discount_percent', 'discount_amount', 'max_uses', 'used_count', 'expires_at', 'is_active', 'created_at'],
+        repairCols: {
+          code: { type: 'VARCHAR(50)' },
+          discount_percent: { type: 'DECIMAL(5,2)', default: 0 },
+          discount_amount: { type: 'DECIMAL(10,2)', default: 0 },
+          max_uses: { type: 'INTEGER', default: 0 },
+          used_count: { type: 'INTEGER', default: 0 },
+          expires_at: { type: 'TIMESTAMP' },
+          is_active: { type: 'BOOLEAN', default: true },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       coupon_usages: {
         columns: ['id', 'coupon_id', 'user_id', 'used_at'],
         repairCols: {
+          coupon_id: { type: 'INTEGER' },
+          user_id: { type: 'INTEGER' },
           used_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       stripe_events: {
-        columns: ['id', 'stripe_event_id', 'type', 'status', 'metadata', 'created_at', 'updated_at']
+        columns: ['id', 'stripe_event_id', 'type', 'status', 'metadata', 'created_at', 'updated_at'],
+        repairCols: {
+          stripe_event_id: { type: 'VARCHAR(255)' },
+          type: { type: 'VARCHAR(100)' },
+          status: { type: 'VARCHAR(20)', default: "'processed'" },
+          metadata: { type: 'JSONB', default: "'{}'" },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       deposit_requests: {
-        columns: ['id', 'user_id', 'amount', 'currency', 'method', 'proof_url', 'status', 'rejection_reason', 'admin_id', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'amount', 'currency', 'method', 'proof_url', 'status', 'rejection_reason', 'admin_id', 'created_at', 'updated_at'],
+        repairCols: {
+          user_id: { type: 'INTEGER' },
+          amount: { type: 'DECIMAL(10,2)', default: 0 },
+          currency: { type: 'VARCHAR(10)', default: "'USD'" },
+          method: { type: 'VARCHAR(50)' },
+          proof_url: { type: 'TEXT' },
+          status: { type: 'VARCHAR(20)', default: "'pending'" },
+          rejection_reason: { type: 'TEXT' },
+          admin_id: { type: 'INTEGER' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       }
     },
     external: {
       blog_articles: {
         columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
         repairCols: {
+          author_id: { type: 'INTEGER' },
+          slug: { type: 'VARCHAR(255)' },
+          title_en: { type: 'VARCHAR(255)' },
+          title_ar: { type: 'VARCHAR(255)' },
+          content_en: { type: 'TEXT' },
+          content_ar: { type: 'TEXT' },
+          image_url: { type: 'TEXT' },
+          category_en: { type: 'VARCHAR(100)', default: "'General'" },
+          category_ar: { type: 'VARCHAR(100)', default: "'عام'" },
+          views: { type: 'INTEGER', default: 0 },
           meta_title_en: { type: 'VARCHAR(255)' },
           meta_title_ar: { type: 'VARCHAR(255)' },
           meta_description_en: { type: 'TEXT' },
           meta_description_ar: { type: 'TEXT' },
           keywords_en: { type: 'TEXT' },
           keywords_ar: { type: 'TEXT' },
-          og_image_url: { type: 'TEXT' }
+          og_image_url: { type: 'TEXT' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
       blog_comments: {
-        columns: ['id', 'article_id', 'user_id', 'content', 'created_at', 'updated_at']
+        columns: ['id', 'article_id', 'user_id', 'content', 'created_at', 'updated_at'],
+        repairCols: {
+          article_id: { type: 'INTEGER' },
+          user_id: { type: 'INTEGER' },
+          content: { type: 'TEXT' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       blog_ratings: {
-        columns: ['id', 'article_id', 'user_id', 'rating', 'created_at']
+        columns: ['id', 'article_id', 'user_id', 'rating', 'created_at'],
+        repairCols: {
+          article_id: { type: 'INTEGER' },
+          user_id: { type: 'INTEGER' },
+          rating: { type: 'INTEGER', default: 5 },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       }
     },
     security: {
       token_blacklist: {
-        columns: ['id', 'token', 'expires_at', 'created_at']
+        columns: ['id', 'token', 'expires_at', 'created_at'],
+        repairCols: {
+          token: { type: 'TEXT' },
+          expires_at: { type: 'TIMESTAMP' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       security_alerts: {
-        columns: ['id', 'user_id', 'type', 'severity', 'description', 'metadata', 'is_resolved', 'ip_address', 'created_at', 'updated_at']
+        columns: ['id', 'user_id', 'type', 'severity', 'description', 'metadata', 'is_resolved', 'ip_address', 'created_at', 'updated_at'],
+        repairCols: {
+          user_id: { type: 'INTEGER' },
+          type: { type: 'VARCHAR(100)' },
+          severity: { type: 'VARCHAR(50)', default: "'medium'" },
+          description: { type: 'TEXT' },
+          metadata: { type: 'JSONB', default: "'{}'" },
+          is_resolved: { type: 'BOOLEAN', default: false },
+          ip_address: { type: 'VARCHAR(100)' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       admin_audit_logs: {
-        columns: ['id', 'admin_id', 'admin_email', 'action', 'target_resource', 'details', 'ip_address', 'user_agent', 'created_at']
+        columns: ['id', 'admin_id', 'admin_email', 'action', 'target_resource', 'details', 'ip_address', 'user_agent', 'created_at'],
+        repairCols: {
+          admin_id: { type: 'INTEGER' },
+          admin_email: { type: 'VARCHAR(255)' },
+          action: { type: 'VARCHAR(100)' },
+          target_resource: { type: 'VARCHAR(100)' },
+          details: { type: 'JSONB', default: "'{}'" },
+          ip_address: { type: 'VARCHAR(100)' },
+          user_agent: { type: 'TEXT' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       },
       registered_agents: {
-        columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at']
+        columns: ['id', 'client_id', 'client_secret', 'api_key_hash', 'client_name', 'identity_type', 'credential_type', 'redirect_uris', 'jwks_uri', 'user_agent', 'signature_keys', 'permissions', 'is_active', 'user_id', 'created_at'],
+        repairCols: {
+          client_id: { type: 'VARCHAR(255)' },
+          client_secret: { type: 'VARCHAR(255)' },
+          api_key_hash: { type: 'VARCHAR(255)' },
+          client_name: { type: 'VARCHAR(255)' },
+          identity_type: { type: 'VARCHAR(50)', default: "'agent'" },
+          credential_type: { type: 'VARCHAR(50)', default: "'client_credentials'" },
+          redirect_uris: { type: 'TEXT[]', default: "'{}'" },
+          jwks_uri: { type: 'VARCHAR(500)' },
+          user_agent: { type: 'VARCHAR(500)' },
+          signature_keys: { type: 'JSONB' },
+          permissions: { type: 'JSONB', default: "'[]'" },
+          is_active: { type: 'BOOLEAN', default: true },
+          user_id: { type: 'INTEGER' },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
       }
     }
+  };
+
+  const indexMap: Record<string, string[]> = {
+    core: CORE_INDEXES,
+    ledger: LEDGER_INDEXES,
+    external: EXTERNAL_INDEXES,
+    security: SECURITY_INDEXES
   };
 
   const verifyDbGroup = async (groupName: 'core' | 'ledger' | 'external' | 'security', targetPoolObj: any) => {
     if (!targetPoolObj) return;
     try {
-      const activeTables = await queryColumns(targetPoolObj);
+      let activeTables = await queryColumns(targetPoolObj);
       const expectedTables = expectedSchema[groupName];
+      let repairedSomething = false;
 
       for (const [tableName, spec] of Object.entries(expectedTables)) {
         if (!activeTables[tableName]) {
@@ -489,9 +663,11 @@ export async function verifySchemaIntegrity() {
 
           try {
             console.log(`[Schema Integrity] Attempting table reconstruction for ${tableName}...`);
-            await initDb('additive', pool, ledgerPool);
+            await initDb('additive', pool, ledgerPool, externalPool, securityPool);
             report.repairedTables.push(tableName);
+            repairedSomething = true;
             console.log(`[Schema Integrity] Table ${tableName} reconstructed successfully.`);
+            activeTables = await queryColumns(targetPoolObj);
           } catch (repairErr) {
             console.error(`[Schema Integrity] Reconstruction failed for table ${tableName}:`, repairErr instanceof Error ? repairErr.message : 'Unknown error');
           }
@@ -519,11 +695,24 @@ export async function verifySchemaIntegrity() {
                   [colName]: colConfig
                 });
                 report.repairedColumns.push(`${tableName}.${colName}`);
+                repairedSomething = true;
                 console.log(`[Schema Integrity] Column ${tableName}.${colName} added successfully.`);
               } catch (repairErr) {
                 console.error(`[Schema Integrity] Column repair failed for ${tableName}.${colName}:`, repairErr instanceof Error ? repairErr.message : 'Unknown error');
               }
             }
+          }
+        }
+      }
+
+      // If any table or column was repaired, re-apply the indexes for this group to guarantee no missing indexes
+      if (repairedSomething) {
+        const groupIndexes = indexMap[groupName] || [];
+        for (const idxQuery of groupIndexes) {
+          try {
+            await targetPoolObj.query(idxQuery);
+          } catch {
+            // Safe ignore if index already exists or notice
           }
         }
       }

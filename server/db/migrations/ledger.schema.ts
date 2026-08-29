@@ -208,25 +208,56 @@ export const LEDGER_SCHEMA_TABLES: { name: string; query: string }[] = [
 export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClient) {
   // === 3. Ledger DB Column Enforcement ===
   await ensureColumnsBulk(targetLedgerPool, 'wallets', {
+    user_id: { type: 'INTEGER' },
+    balance: { type: 'DECIMAL(10,2)', default: 0 },
+    pending_balance: { type: 'DECIMAL(10,2)', default: 0 },
+    points: { type: 'INTEGER', default: 0 },
     total_deposited: { type: 'DECIMAL(10,2)', default: 0 },
     total_withdrawn: { type: 'DECIMAL(10,2)', default: 0 },
     total_earned_referral: { type: 'DECIMAL(10,2)', default: 0 },
     is_frozen: { type: 'BOOLEAN', default: false },
     currency: { type: 'VARCHAR(10)', default: "'USD'" },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
     updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'ledger_transactions', {
+    transaction_type: { type: 'VARCHAR(50)' },
     user_id: { type: 'INTEGER' },
-    type: { type: 'VARCHAR(50)' },
+    wallet_id: { type: 'INTEGER' },
     amount: { type: 'DECIMAL(10,2)', default: 0 },
-    balance_after: { type: 'DECIMAL(10,2)', default: 0 },
-    description: { type: 'TEXT' },
+    points: { type: 'INTEGER', default: 0 },
+    status: { type: 'VARCHAR(50)', default: "'completed'" },
     reference_id: { type: 'VARCHAR(255)' },
-    metadata: { type: 'JSONB', default: '\'{}\'' }
+    metadata: { type: 'JSONB', default: "'{}'" },
+    ip_address: { type: 'VARCHAR(45)' },
+    description: { type: 'TEXT' },
+    balance_after: { type: 'DECIMAL(10,2)', default: 0 },
+    is_hidden: { type: 'BOOLEAN', default: false },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetLedgerPool, 'referrals', {
+    referrer_id: { type: 'INTEGER' },
+    referred_id: { type: 'INTEGER' },
+    status: { type: 'VARCHAR(50)', default: "'pending'" },
+    reward_amount: { type: 'DECIMAL(10,2)', default: 0 },
+    commission_earned: { type: 'DECIMAL(10,2)', default: 0 },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetLedgerPool, 'referral_tree', {
+    ancestor_id: { type: 'INTEGER' },
+    descendant_id: { type: 'INTEGER' },
+    depth: { type: 'INTEGER' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'kyc_requests', {
+    user_id: { type: 'INTEGER' },
+    full_name: { type: 'VARCHAR(255)' },
+    nationality: { type: 'VARCHAR(100)' },
     document_type: { type: 'VARCHAR(50)' },
     document_number: { type: 'VARCHAR(100)' },
     document_front_url: { type: 'TEXT' },
@@ -235,26 +266,55 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     status: { type: 'VARCHAR(50)', default: "'pending'" },
     rejection_reason: { type: 'TEXT' },
     reviewed_by: { type: 'INTEGER' },
-    reviewed_at: { type: 'TIMESTAMP' }
+    reviewed_at: { type: 'TIMESTAMP' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'withdrawal_requests', {
+    user_id: { type: 'INTEGER' },
+    amount: { type: 'DECIMAL(10,2)', default: 0 },
     payout_method: { type: 'VARCHAR(50)' },
-    payout_details: { type: 'JSONB', default: '\'{}\'' },
+    payout_details: { type: 'JSONB', default: "'{}'" },
     status: { type: 'VARCHAR(50)', default: "'pending'" },
     rejection_reason: { type: 'TEXT' },
     processed_by: { type: 'INTEGER' },
     processed_at: { type: 'TIMESTAMP' },
-    transaction_hash: { type: 'VARCHAR(255)' }
+    transaction_hash: { type: 'VARCHAR(255)' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetLedgerPool, 'payout_accounts', {
+    user_id: { type: 'INTEGER' },
+    payout_method: { type: 'VARCHAR(50)' },
+    account_identifier: { type: 'TEXT' },
+    details: { type: 'JSONB', default: "'{}'" },
+    is_default: { type: 'BOOLEAN', default: false },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'economy_settings', {
+    welcome_bonus_points: { type: 'INTEGER', default: 100 },
+    referral_bonus_points: { type: 'INTEGER', default: 50 },
+    min_withdrawal_cents: { type: 'INTEGER', default: 1000 },
+    points_per_dollar: { type: 'INTEGER', default: 100 },
+    conversion_rate: { type: 'DECIMAL(10,4)', default: 0.01 },
+    referral_bonus_percent: { type: 'DECIMAL(5,2)', default: 10.00 },
+    min_payout_usd: { type: 'DECIMAL(10,2)', default: 10.00 },
+    min_deposit_usd: { type: 'DECIMAL(10,2)', default: 5.00 },
+    referral_activation_min_deposit: { type: 'DECIMAL(10,2)', default: 10.00 },
+    crypto_address: { type: 'VARCHAR(255)' },
+    bank_name: { type: 'VARCHAR(255)' },
+    bank_recipient: { type: 'VARCHAR(255)' },
+    bank_iban: { type: 'VARCHAR(255)' },
+    bank_swift: { type: 'VARCHAR(255)' },
+    paypal_email: { type: 'VARCHAR(255)' },
     currency_symbol: { type: 'VARCHAR(10)', default: "'$'" },
     exchange_rate_usd: { type: 'DECIMAL(10,4)', default: 1.0 },
     min_withdrawal: { type: 'DECIMAL(10,2)', default: 50 },
     withdrawal_fee_percent: { type: 'DECIMAL(5,2)', default: 2.5 },
     referral_commission_percent: { type: 'DECIMAL(5,2)', default: 10 },
-    signup_bonus_credits: { type: 'INTEGER', default: 100 }
+    signup_bonus_credits: { type: 'INTEGER', default: 100 },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'coupons', {
@@ -264,14 +324,14 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
     max_uses: { type: 'INTEGER', default: 0 },
     used_count: { type: 'INTEGER', default: 0 },
     expires_at: { type: 'TIMESTAMP' },
-    is_active: { type: 'BOOLEAN', default: true }
+    is_active: { type: 'BOOLEAN', default: true },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
-  await ensureColumnsBulk(targetLedgerPool, 'referrals', {
-    referrer_id: { type: 'INTEGER' },
-    referred_id: { type: 'INTEGER' },
-    commission_earned: { type: 'DECIMAL(10,2)', default: 0 },
-    status: { type: 'VARCHAR(50)', default: "'active'" }
+  await ensureColumnsBulk(targetLedgerPool, 'coupon_usages', {
+    coupon_id: { type: 'INTEGER' },
+    user_id: { type: 'INTEGER' },
+    used_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'deposit_requests', {

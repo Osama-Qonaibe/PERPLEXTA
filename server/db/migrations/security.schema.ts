@@ -64,42 +64,50 @@ export const SECURITY_SCHEMA_TABLES: { name: string; query: string }[] = [
 
 export async function applySecurityColumnEnforcements(targetSecurityPool: QueryClient) {
   // === 4. Security DB Column Enforcement ===
-  await ensureColumnsBulk(targetSecurityPool, 'security_alerts', {
-    severity: { type: 'VARCHAR(20)', default: "'medium'" },
-    event_type: { type: 'VARCHAR(50)' },
-    description: { type: 'TEXT' },
-    ip_address: { type: 'VARCHAR(45)' },
-    user_agent: { type: 'TEXT' },
-    metadata: { type: 'JSONB', default: "'{}'" },
-    is_resolved: { type: 'BOOLEAN', default: false },
-    resolved_by: { type: 'INTEGER' },
-    resolved_at: { type: 'TIMESTAMP' }
+  await ensureColumnsBulk(targetSecurityPool, 'token_blacklist', {
+    token: { type: 'TEXT' },
+    expires_at: { type: 'TIMESTAMP' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
-  await ensureColumnsBulk(targetSecurityPool, 'token_blacklist', {
-    token_hash: { type: 'VARCHAR(64)' },
+  await ensureColumnsBulk(targetSecurityPool, 'security_alerts', {
     user_id: { type: 'INTEGER' },
-    reason: { type: 'VARCHAR(100)' },
-    expires_at: { type: 'TIMESTAMP' }
+    type: { type: 'VARCHAR(100)' },
+    severity: { type: 'VARCHAR(50)', default: "'medium'" },
+    description: { type: 'TEXT' },
+    metadata: { type: 'JSONB', default: "'{}'" },
+    is_resolved: { type: 'BOOLEAN', default: false },
+    ip_address: { type: 'VARCHAR(100)' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetSecurityPool, 'admin_audit_logs', {
     admin_id: { type: 'INTEGER' },
+    admin_email: { type: 'VARCHAR(255)' },
     action: { type: 'VARCHAR(100)' },
-    target_entity: { type: 'VARCHAR(50)' },
-    target_id: { type: 'VARCHAR(255)' },
-    ip_address: { type: 'VARCHAR(45)' },
-    details: { type: 'JSONB', default: "'{}'" }
+    target_resource: { type: 'VARCHAR(100)' },
+    details: { type: 'JSONB', default: "'{}'" },
+    ip_address: { type: 'VARCHAR(100)' },
+    user_agent: { type: 'TEXT' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetSecurityPool, 'registered_agents', {
-    agent_id: { type: 'VARCHAR(100)' },
-    name: { type: 'VARCHAR(255)' },
-    status: { type: 'VARCHAR(50)', default: "'active'" },
+    client_id: { type: 'VARCHAR(255)' },
+    client_secret: { type: 'VARCHAR(255)' },
+    api_key_hash: { type: 'VARCHAR(255)' },
+    client_name: { type: 'VARCHAR(255)' },
+    identity_type: { type: 'VARCHAR(50)', default: "'agent'" },
+    credential_type: { type: 'VARCHAR(50)', default: "'client_credentials'" },
+    redirect_uris: { type: 'TEXT[]', default: "'{}'" },
+    jwks_uri: { type: 'VARCHAR(500)' },
+    user_agent: { type: 'VARCHAR(500)' },
+    signature_keys: { type: 'JSONB' },
     permissions: { type: 'JSONB', default: "'[]'" },
-    api_endpoint: { type: 'TEXT' },
-    public_key: { type: 'TEXT' },
-    last_seen_at: { type: 'TIMESTAMP' }
+    is_active: { type: 'BOOLEAN', default: true },
+    user_id: { type: 'INTEGER' },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 }
 
