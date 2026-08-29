@@ -10,16 +10,6 @@ const SUPPORTED_LANGS: SupportedLang[] = ['ar', 'en', 'fr', 'es', 'de'];
  * Respects VITE_APP_URL / APP_URL env vars and X-Forwarded-* headers.
  */
 export const getBaseUrl = (req: Request): string => {
-  const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
-  if (
-    envUrl &&
-    envUrl.startsWith('http') &&
-    !envUrl.includes('localhost') &&
-    !envUrl.includes('127.0.0.1')
-  ) {
-    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
-  }
-
   const xProto = req.get('x-forwarded-proto');
   const xHost  = req.get('x-forwarded-host');
   const host   = req.get('host');
@@ -36,7 +26,22 @@ export const getBaseUrl = (req: Request): string => {
     protocol = 'https';
   }
 
-  const origin = `${protocol}://${finalHost}`;
+  if (finalHost && !finalHost.includes('undefined')) {
+    const origin = `${protocol}://${finalHost}`;
+    return origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  }
+
+  const envUrl = process.env.VITE_APP_URL || process.env.APP_URL;
+  if (
+    envUrl &&
+    envUrl.startsWith('http') &&
+    !envUrl.includes('localhost') &&
+    !envUrl.includes('127.0.0.1')
+  ) {
+    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  }
+
+  const origin = `${protocol}://${finalHost || 'localhost:3000'}`;
   return origin.endsWith('/') ? origin.slice(0, -1) : origin;
 };
 
