@@ -123,6 +123,25 @@ app.use((req, res, next) => {
   if (!isApiOrUploads && !hasStaticExtension) {
     res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp", </.well-known/oauth-authorization-server>; rel="oauth-authorization-server", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource", </auth.md>; rel="service-doc"');
   }
+
+  const blocked = [
+    "/admin",
+    "/admin-agency",
+    "/admin-community",
+    "/admin-system",
+    "/chat",
+    "/settings",
+    "/wallet",
+    "/rewards",
+    "/auth",
+    "/api"
+  ];
+  if (req.path !== '/auth.md' && blocked.some(b => req.path === b || req.path.startsWith(b + '/'))) {
+    if (!res.headersSent) {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    }
+  }
+
   next();
 });
 
@@ -289,8 +308,8 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   };
 };
 
-const SERVER_BOOT_TIME = Date.now().toString(36);
-const SERVER_BUILD_HASH = process.env.BUILD_HASH || `v2.0.0-${SERVER_BOOT_TIME}`;
+const SERVER_BOOT_TIME = 'v1.0.0-release';
+const SERVER_BUILD_HASH = process.env.BUILD_HASH || SERVER_BOOT_TIME;
 
 app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
 app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
@@ -300,7 +319,7 @@ app.get('/version.json', (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.json({
-    version: '2.0.0',
+    version: '1.0.0',
     buildHash: SERVER_BUILD_HASH,
     timestamp: SERVER_BOOT_TIME
   });

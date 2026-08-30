@@ -285,7 +285,11 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Build Hash Cron & Update Notification Logic**: Re-engineered `server/app.ts` to output a stable `SERVER_BUILD_HASH` per server boot/build instead of request-based timestamps. Upgraded `VersionManager` (`versionManager.ts`) with cron-like interval polling and dismissed build-hash storage (`perplexta_dismissed_build_hash`), ensuring update popups appear only when new code is actually deployed to the server.
     - **Hard Reset Task Execution**: Integrated `VersionManager.applyHardReset()` on update action click, flushing SW registrations and web cache storage before triggering a cache-bypassing hard reload.
     - **Persistent Cookie Consent & Hard Reset Scope**: Updated `consentManager.ts` to persist user cookie consent choices in storage and protected `perplexta_cookie_consent_v1` inside `SessionPurge.ts` so consent choices survive standard logouts. Linked cookie consent resetting directly to `applyHardReset()`, guaranteeing the cookie notice re-prompts only after an explicit hard reset or manual browser clear.
-- **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MODULAR ADMIN SEGREGATION ACHIEVED**.
+- **Official Release v1.0.0 Baseline (Completed August 30, 2026):**
+    - **Version Specification**: Officially tagged `v1.0.0` in `package.json`, `metadata.json`, and `server/app.ts` (`/version.json` endpoint).
+    - **Stable Build Hash**: Configured `SERVER_BUILD_HASH` and `v1.0.0-release` as production baseline.
+    - **Security & Privacy Standards**: Enforced `X-Robots-Tag: noindex, nofollow` headers on all private paths and integrated cookie consent management in account preferences.
+- **Status:** **RELEASE v1.0.0 STABLE / PRODUCTION-READY PLATFORM BASELINE ESTABLISHED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
 
