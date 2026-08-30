@@ -142,7 +142,7 @@ export const SharedSnapshotPage: React.FC = () => {
           onClick={() => navigate('/')} 
           className="flex items-center gap-3 cursor-pointer group transition-theme"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-accent/20 flex items-center justify-center shadow-md shadow-none group-hover:border-accent group-hover: transition-theme">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-900 to-black border border-accent/20 flex items-center justify-center shadow-md shadow-none group-hover:border-accent group-hover:bg-accent/5 transition-theme">
             {siteSettings?.logoBase64 ? (
               <img src={resolveImageUrl(siteSettings.logoBase64, 'general')} alt="Logo" className="w-7 h-7 object-cover rounded-sm" />
             ) : (
@@ -161,7 +161,7 @@ export const SharedSnapshotPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/')}
-          className="px-4 py-2 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 text-xs font-semibold flex items-center gap-2 text-[var(--text-muted)] hover:text-accent hover: transition-theme"
+          className="px-4 py-2 rounded-[4px] bg-[var(--bg-overlay)] border border-[var(--border)] hover:border-accent/30 text-xs font-semibold flex items-center gap-2 text-[var(--text-muted)] hover:text-accent hover:bg-[var(--surface-subtle)] transition-theme"
         >
           <ArrowLeft size={14} className={isAr ? 'rotate-180' : ''} />
           {isAr ? 'الذهاب للمنصة' : 'Go to Platform'}

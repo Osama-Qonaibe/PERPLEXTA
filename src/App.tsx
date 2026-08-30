@@ -121,21 +121,22 @@ import { UpgradePromptModal } from "./components/UpgradePromptModal";
 import { resolveImageUrl } from "./utils/imageResolver";
 import { GlobalLoadingOverlay } from "./components/GlobalLoadingOverlay";
 import { InactivityWarningModal } from "./components/InactivityWarningModal";
-import { ServiceUpdateToast } from "./components/ServiceUpdateToast";
-import { PwaInstallBanner } from "./components/PwaInstallBanner";
+import { FloatingNotificationStack } from "./components/FloatingNotificationStack";
 import { PwaInstallSuccessService } from "./components/PwaInstallSuccessService";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthReady } = useAppContext();
+  const { user, isAuthReady, token } = useAppContext();
   if (!isAuthReady) return null;
+  if (!user && token) return null;
   if (!user) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthReady } = useAppContext();
+  const { user, isAuthReady, token } = useAppContext();
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
   if (!isAuthReady) return null;
+  if (!user && token) return null;
   const isAdmin =
     user &&
     (["admin"].includes(user.role || "") ||
@@ -229,7 +230,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     const finalOGImage = resolvedOGImage.startsWith("/")
       ? `${window.location.origin}${resolvedOGImage}`
       : resolvedOGImage;
-    const currentUrl = window.location.href;
+    const canonicalUrl = `${window.location.origin}${location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '')}`;
 
     if (isSensitive) {
       updateMetaTag(
@@ -257,7 +258,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       updateMetaTag("property", "og:title", sensitiveTitle);
       updateMetaTag("property", "og:description", sensitiveDesc);
       updateMetaTag("property", "og:image", finalOGImage);
-      updateMetaTag("property", "og:url", currentUrl);
+      updateMetaTag("property", "og:url", canonicalUrl);
       updateMetaTag("property", "og:site_name", resolvedSiteName);
       updateMetaTag("name", "twitter:title", sensitiveTitle);
       updateMetaTag("name", "twitter:description", sensitiveDesc);
@@ -361,7 +362,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       updateMetaTag("property", "og:title", finalTitle);
       updateMetaTag("property", "og:description", finalDesc);
       updateMetaTag("property", "og:image", routeOGImage);
-      updateMetaTag("property", "og:url", currentUrl);
+      updateMetaTag("property", "og:url", canonicalUrl);
       updateMetaTag("property", "og:site_name", resolvedSiteName);
       updateMetaTag("name", "twitter:title", finalTitle);
       updateMetaTag("name", "twitter:description", finalDesc);
@@ -375,7 +376,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
         canonicalLink.setAttribute("rel", "canonical");
         document.head.appendChild(canonicalLink);
       }
-      canonicalLink.setAttribute("href", currentUrl);
+      canonicalLink.setAttribute("href", canonicalUrl);
     }
   }, [location.pathname, siteSettings, language, dbRouteSeo]);
 
@@ -393,8 +394,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <UpgradePromptModal />
       <InactivityWarningModal />
       <GlobalLoadingOverlay />
-      <ServiceUpdateToast />
-      <PwaInstallBanner />
+      <FloatingNotificationStack />
       <PwaInstallSuccessService />
 
       <motion.div

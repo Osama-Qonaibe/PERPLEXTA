@@ -92,123 +92,104 @@ export const PwaInstallBanner: React.FC = () => {
       <AnimatePresence>
         {isVisible && !showGuideModal && (
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-            className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-[340px] z-[9990] pointer-events-auto ltr:sm:right-5 rtl:sm:left-5 rtl:sm:right-auto"
+            initial={{ y: 20, opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 20, opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full p-3 rounded-xl bg-[var(--surface-card)] border border-[var(--border-main)] shadow-lg backdrop-blur-xl pointer-events-auto"
+            dir={isAr ? 'rtl' : 'ltr'}
           >
-            <div
-              className={`p-2.5 sm:p-3 rounded-2xl border shadow-xl backdrop-blur-xl relative overflow-hidden transition-all ${
-                isDark
-                  ? 'bg-[#121215]/95 border-accent/30 text-white shadow-[0_10px_25px_rgba(0,0,0,0.7)]'
-                  : 'bg-white/95 border-accent/30 text-gray-900 shadow-[0_10px_25px_rgba(156,163,175,0.18)]'
-              }`}
-            >
-              <div className="flex items-start gap-2.5 relative z-10">
-                {/* App Logo */}
-                <div className="relative shrink-0 mt-0.5">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-accent/35 bg-accent/10 flex items-center justify-center p-1 shadow-sm overflow-hidden">
-                    <NotificationIconRenderer
-                      src={logoUrl}
-                      alt={siteName}
-                      size={32}
-                      className="w-full h-full"
-                      fallbackIcon={<Smartphone size={18} className="text-accent" />}
-                    />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent flex items-center justify-center text-black text-[8px] font-black">
-                    {(installState as string) === 'installed' ? (
-                      <Check size={8} className="stroke-[3]" />
-                    ) : (
-                      <Sparkles size={8} className="fill-current" />
-                    )}
-                  </div>
-                </div>
+            <div className="flex items-start gap-2">
+              {/* App Logo */}
+              <div className="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent mt-0.5 relative overflow-hidden">
+                <NotificationIconRenderer
+                  src={logoUrl}
+                  alt={siteName}
+                  size={20}
+                  className="w-full h-full object-contain"
+                  fallbackIcon={<Smartphone size={13} className="text-accent" />}
+                />
+              </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0 pr-5 rtl:pr-0 rtl:pl-5">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h4 className="font-extrabold text-xs tracking-tight truncate max-w-[150px] sm:max-w-[170px] leading-tight">
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 min-w-0 truncate">
+                    <h3 className="text-[11px] font-bold text-[var(--text-primary)] truncate">
                       {siteName}
-                    </h4>
+                    </h3>
                     {(installState as string) === 'installed' ? (
-                      <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-accent/20 border border-accent/40 text-accent uppercase tracking-wider flex items-center gap-0.5">
+                      <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-accent/20 border border-accent/30 text-accent uppercase tracking-wider flex items-center gap-0.5 shrink-0">
                         <CheckCircle2 size={8} />
                         {isAr ? 'مثبّت' : 'Installed'}
                       </span>
                     ) : (
-                      <span className="text-[8.5px] font-extrabold px-1.5 py-0.5 rounded-md bg-accent/15 border border-accent/30 text-accent uppercase tracking-wider">
-                        {isAr ? 'التطبيق الأصلي' : 'Official PWA'}
+                      <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-accent/15 border border-accent/25 text-accent uppercase tracking-wider shrink-0">
+                        {isAr ? 'التطبيق الأصلي' : 'App'}
                       </span>
                     )}
                   </div>
-
-                  <p className="text-[10px] text-gray-400 dark:text-gray-400 mt-0.5 line-clamp-1 leading-normal">
-                    {(installState as string) === 'installed'
-                      ? isAr
-                        ? 'تم تثبيت التطبيق بنجاح! جاهز للاستخدام.'
-                        : 'App installed! Ready for native use.'
-                      : isAr
-                      ? 'ثبّت التطبيق للوصول السريع بدون متصفح.'
-                      : 'Install for instant browser-free access.'}
-                  </p>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-1.5 mt-2">
-                    {(installState as string) === 'installed' ? (
-                      <button
-                        type="button"
-                        onClick={handleAction}
-                        className="flex-1 py-1.5 px-2.5 rounded-lg bg-accent hover:opacity-90 active:scale-95 text-black font-extrabold text-[11px] flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                      >
-                        <ExternalLink size={12} className="stroke-[2.5]" />
-                        <span>{isAr ? 'فتح التطبيق' : 'Open App'}</span>
-                      </button>
-                    ) : installState === 'installing' ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="flex-1 py-1.5 px-2.5 rounded-lg bg-accent/60 text-black font-extrabold text-[11px] flex items-center justify-center gap-1 cursor-wait opacity-80"
-                      >
-                        <Loader2 size={12} className="animate-spin stroke-[2.5]" />
-                        <span>{isAr ? 'جاري التثبيت...' : 'Installing...'}</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleAction}
-                        className="flex-1 py-1.5 px-2.5 rounded-lg bg-accent hover:opacity-90 active:scale-95 text-black font-extrabold text-[11px] flex items-center justify-center gap-1 transition-all shadow-sm cursor-pointer"
-                      >
-                        <Download size={12} className="stroke-[2.5]" />
-                        <span>{isAr ? 'تثبيت الآن' : 'Install'}</span>
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className={`px-2 py-1.5 rounded-lg border text-[10.5px] font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
-                        isDark
-                          ? 'bg-gray-800/80 border-gray-700/80 text-gray-300 hover:bg-gray-700 hover:text-white'
-                          : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {isAr ? 'لاحقاً' : 'Later'}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded transition-colors shrink-0"
+                    title={isAr ? 'إغلاق' : 'Close'}
+                    aria-label="Close"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
 
-                {/* Close Button */}
+                <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                  {(installState as string) === 'installed'
+                    ? isAr
+                      ? 'تم تثبيت التطبيق بنجاح! جاهز للاستخدام.'
+                      : 'App installed! Ready for native use.'
+                    : isAr
+                    ? 'ثبّت التطبيق للوصول السريع بدون متصفح.'
+                    : 'Install for instant browser-free access.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-[var(--border-main)]">
+              {(installState as string) === 'installed' ? (
                 <button
                   type="button"
-                  onClick={handleClose}
-                  className="absolute top-0 ltr:right-0 rtl:left-0 p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-500/10 transition-colors cursor-pointer"
-                  aria-label="Close"
+                  onClick={handleAction}
+                  className="flex-1 py-1 px-2 rounded-md bg-accent text-white font-bold text-[10px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1 whitespace-nowrap shadow-xs cursor-pointer"
                 >
-                  <X size={14} />
+                  <ExternalLink size={11} />
+                  <span>{isAr ? 'فتح التطبيق' : 'Open App'}</span>
                 </button>
-              </div>
+              ) : installState === 'installing' ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex-1 py-1 px-2 rounded-md bg-accent/70 text-white font-bold text-[10px] flex items-center justify-center gap-1 cursor-wait whitespace-nowrap shadow-xs"
+                >
+                  <Loader2 size={11} className="animate-spin" />
+                  <span>{isAr ? 'جاري التثبيت...' : 'Installing...'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAction}
+                  className="flex-1 py-1 px-2 rounded-md bg-accent text-white font-bold text-[10px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1 whitespace-nowrap shadow-xs cursor-pointer"
+                >
+                  <Download size={11} />
+                  <span>{isAr ? 'تثبيت الآن' : 'Install'}</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 py-1 px-1.5 rounded-md bg-[var(--surface-subtle)] text-[var(--text-primary)] border border-[var(--border-main)] font-medium text-[10px] hover:bg-[var(--surface-inset)] transition-colors text-center whitespace-nowrap cursor-pointer"
+              >
+                {isAr ? 'لاحقاً' : 'Later'}
+              </button>
             </div>
           </motion.div>
         )}

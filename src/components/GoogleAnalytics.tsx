@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { applyNonce } from '../utils/csp';
-
+import { getStoredConsent, applyConsentToGtag } from '../utils/consentManager';
 
 /**
  * Global helper to track custom events in Google Analytics.
@@ -25,6 +25,8 @@ export const GoogleAnalytics = () => {
 
   useEffect(() => {
     if (gaId) {
+      const stored = getStoredConsent();
+
       let script1 = document.getElementById('ga-gtag-script') as HTMLScriptElement;
       if (!script1) {
         script1 = document.createElement('script');
@@ -40,6 +42,10 @@ export const GoogleAnalytics = () => {
         script2 = document.createElement('script');
         script2.id = 'ga-init-script';
         applyNonce(script2);
+        
+        const analyticsDefault = stored?.analytics ? 'granted' : 'denied';
+        const marketingDefault = stored?.marketing ? 'granted' : 'denied';
+
         script2.innerHTML = `
           window.dataLayer = window.dataLayer || [];
           function gtag(){window.dataLayer.push(arguments);}
@@ -47,10 +53,12 @@ export const GoogleAnalytics = () => {
 
           // Google Consent Mode v2 (Default Configuration)
           gtag('consent', 'default', {
-            'ad_storage': 'denied',
-            'analytics_storage': 'granted',
-            'ad_user_data': 'denied',
-            'ad_personalization': 'denied',
+            'ad_storage': '${marketingDefault}',
+            'analytics_storage': '${analyticsDefault}',
+            'ad_user_data': '${marketingDefault}',
+            'ad_personalization': '${marketingDefault}',
+            'functionality_storage': 'granted',
+            'security_storage': 'granted',
             'wait_for_update': 500
           });
 
@@ -58,7 +66,21 @@ export const GoogleAnalytics = () => {
           gtag('config', '${gaId}', { 'send_page_view': false });
         `;
         document.head.appendChild(script2);
+      } else if (stored) {
+        applyConsentToGtag(stored);
       }
+
+      const handleConsentUpdate = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail) {
+          applyConsentToGtag(customEvent.detail);
+        }
+      };
+
+      window.addEventListener('cookie-consent-updated', handleConsentUpdate);
+      return () => {
+        window.removeEventListener('cookie-consent-updated', handleConsentUpdate);
+      };
     }
   }, [gaId]);
 
@@ -73,4 +95,5 @@ export const GoogleAnalytics = () => {
 
   return null;
 };
+
 

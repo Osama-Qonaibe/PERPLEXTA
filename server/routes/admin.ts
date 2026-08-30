@@ -42,6 +42,7 @@ import { io } from '../config/socket.js';
 
 const router = express.Router();
 router.use(adminLimiter);
+router.use(authenticateAdmin);
 
 router.use((req, res, next) => {
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {

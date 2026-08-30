@@ -20,6 +20,7 @@ export const SessionPurge = {
 
     const theme = preserveTheme ? localStorage.getItem('perplexta_theme') : null;
     const lang = preserveLanguage ? localStorage.getItem('language') : null;
+    const cookieConsent = localStorage.getItem('perplexta_cookie_consent_v1');
 
     try {
       localStorage.clear();
@@ -33,6 +34,9 @@ export const SessionPurge = {
     }
     if (preserveLanguage && lang) {
       try { localStorage.setItem('language', lang); } catch (e) {}
+    }
+    if (cookieConsent) {
+      try { localStorage.setItem('perplexta_cookie_consent_v1', cookieConsent); } catch (e) {}
     }
 
     // Default defaults for fresh session

@@ -1070,7 +1070,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
             >
               <option value="all">{isRtl ? 'جميع الصلاحيات' : 'All Roles'}</option>
               <option value="user">{isRtl ? 'مستخدم عادي' : 'Standard User'}</option>
-              
+              <option value="support">{isRtl ? 'دعم فني' : 'Support Agent'}</option>
+              <option value="elite">{isRtl ? 'مستخدم نخبة' : 'Elite VIP'}</option>
               <option value="admin">{isRtl ? 'مدير نظام' : 'Admin'}</option>
             </select>
             <ChevronDown size={14} className="absolute ltr:right-2.5 rtl:left-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
@@ -1296,13 +1297,18 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border appearance-none w-full text-center focus:outline-none cursor-pointer transition-all ${
                               user.role === 'admin'
                                 ? 'text-purple-500 border-purple-500/30 bg-purple-500/10'
+                                : user.role === 'support'
+                                ? 'text-sky-500 border-sky-500/30 bg-sky-500/10'
+                                : user.role === 'elite'
+                                ? 'text-amber-500 border-amber-500/30 bg-amber-500/10'
                                 : isDark
                                 ? 'text-gray-400 border-gray-800 bg-[#0f0f11]'
                                 : 'text-gray-600 border-gray-200 bg-gray-50'
                             }`}
                           >
                             <option value="user" className={isDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-black'}>{isRtl ? 'مستخدم' : 'User'}</option>
-                            
+                            <option value="support" className={isDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-black'}>{isRtl ? 'دعم فني' : 'Support'}</option>
+                            <option value="elite" className={isDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-black'}>{isRtl ? 'نخبة' : 'Elite'}</option>
                             <option value="admin" className={isDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-black'}>{isRtl ? 'مدير نظام' : 'Admin'}</option>
                           </select>
                           <ChevronDown size={10} className="absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2 opacity-40 pointer-events-none text-gray-400" />
@@ -1620,7 +1626,11 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
                         selectedUser.role === 'admin'
                           ? 'text-purple-500 bg-purple-500/10 border-purple-500/30'
-                          : 'text-accent bg-accent/10 border-accent/30'
+                          : selectedUser.role === 'support'
+                          ? 'text-sky-500 bg-sky-500/10 border-sky-500/30'
+                          : selectedUser.role === 'elite'
+                          ? 'text-amber-500 bg-amber-500/10 border-amber-500/30'
+                          : 'text-gray-400 bg-gray-500/10 border-gray-500/30'
                       }`}>
                         {selectedUser.role}
                       </span>
@@ -1750,7 +1760,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             }`}
                           >
                             <option value="user">{isRtl ? 'مستخدم' : 'User'}</option>
-                            
+                            <option value="support">{isRtl ? 'دعم فني' : 'Support'}</option>
+                            <option value="elite">{isRtl ? 'نخبة' : 'Elite'}</option>
                             <option value="admin">{isRtl ? 'مدير نظام' : 'Admin'}</option>
                           </select>
                         </div>
@@ -2343,7 +2354,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     }`}
                   >
                     <option value="user">{isRtl ? 'مستخدم عادي' : 'Standard User'}</option>
-                    
+                    <option value="support">{isRtl ? 'دعم فني' : 'Support Agent'}</option>
+                    <option value="elite">{isRtl ? 'مستخدم نخبة' : 'Elite VIP'}</option>
                     <option value="admin">{isRtl ? 'مدير نظام' : 'System Admin'}</option>
                   </select>
                 </div>

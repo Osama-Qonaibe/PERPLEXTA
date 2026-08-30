@@ -289,6 +289,9 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   };
 };
 
+const SERVER_BOOT_TIME = Date.now().toString(36);
+const SERVER_BUILD_HASH = process.env.BUILD_HASH || `v2.0.0-${SERVER_BOOT_TIME}`;
+
 app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
 app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
 app.get('/sw.js', serveStaticResource('sw.js'));
@@ -298,8 +301,8 @@ app.get('/version.json', (req, res) => {
   res.setHeader('Expires', '0');
   res.json({
     version: '2.0.0',
-    buildHash: process.env.BUILD_HASH || 'v2.0.0-perplexta',
-    timestamp: Date.now()
+    buildHash: SERVER_BUILD_HASH,
+    timestamp: SERVER_BOOT_TIME
   });
 });
 
@@ -956,7 +959,15 @@ Allow: /
 Allow: /api/og
 Disallow: /api/
 Disallow: /admin/
+Disallow: /admin-agency/
+Disallow: /admin-community/
+Disallow: /admin-system/
+Disallow: /chat/
+Disallow: /settings/
+Disallow: /wallet/
+Disallow: /rewards/
 Disallow: /auth/
+Disallow: /reset-password/
 
 Sitemap: ${baseUrl}/sitemap.xml
 `;
@@ -1600,7 +1611,7 @@ async function injectSEOTags(
     <meta property="og:image:type" content="${imageType}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="${escUrl}" />
+    <meta property="og:url" content="${escCanonical}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${escSiteName}" />
     <meta name="twitter:card" content="summary_large_image" />

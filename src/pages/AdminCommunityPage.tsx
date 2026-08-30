@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import {
   ShieldCheck,
@@ -435,7 +436,7 @@ export const AdminCommunityPage: React.FC = () => {
         className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none"
         dir={isRtl ? "rtl" : "ltr"}
       >
-        <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-505 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mb-4">
           <ShieldCheck size={36} className="text-rose-500 animate-pulse" />
         </div>
         <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
@@ -446,119 +447,17 @@ export const AdminCommunityPage: React.FC = () => {
             ? "هذه اللوحة مخصصة لإدارة العمليات ومحميّة بالكامل ببروتوكولات التشفير الرقابية."
             : "This secure community administrative console requires verified staff credentials."}
         </p>
-        <a
-          href="/"
+        <Link
+          to="/"
           className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme"
         >
           {isRtl ? "الرئيسية" : "Go Home"}
-        </a>
+        </Link>
       </div>
     );
   }
 
   const dir = isRtl ? "rtl" : "ltr";
-
-  const CommunitySidebar = () => {
-    return (
-      <aside
-        className={`fixed top-[72px] bottom-0 h-[calc(100dvh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
-          dir === "rtl" ? "right-0 border-l" : "left-0 border-r"
-        } translate-x-0 visible transition-colors`}
-        style={{
-          width: isMobile ? "68%" : "240px",
-          maxWidth: isMobile ? "260px" : "none",
-        }}
-      >
-        <div className="p-4 border-b border-[var(--border)]">
-          <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest opacity-80">
-            {isRtl ? "المركز الأمني للعمليات" : "OPERATIONS CONSOLE"}
-          </p>
-        </div>
-        <nav className="flex-1 px-3 space-y-1 pt-[25px] overflow-y-auto custom-scrollbar scroll-smooth">
-          <button
-            onClick={() => setActiveTab("blog")}
-            className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
-              activeTab === "blog"
-                ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
-            }`}
-          >
-            <div
-              className={`transition-theme ${activeTab === "blog" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
-            >
-              <BookOpen size={18} />
-            </div>
-            <span
-              className={`font-medium text-sm transition-colors ${activeTab === "blog" ? "text-accent" : ""}`}
-            >
-              {isRtl ? "المقالات والأخبار" : "Publish Articles"}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("marketplace")}
-            className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
-              activeTab === "marketplace"
-                ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
-            }`}
-          >
-            <div
-              className={`transition-theme ${activeTab === "marketplace" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
-            >
-              <ShoppingBag size={18} />
-            </div>
-            <span
-              className={`font-medium text-sm transition-colors ${activeTab === "marketplace" ? "text-accent" : ""}`}
-            >
-              {isRtl ? "إدارة الماركت بليس" : "Marketplace Admin"}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("ads")}
-            className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
-              activeTab === "ads"
-                ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
-            }`}
-          >
-            <div
-              className={`transition-theme ${activeTab === "ads" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
-            >
-              <Megaphone size={18} />
-            </div>
-            <span
-              className={`font-medium text-sm transition-colors ${activeTab === "ads" ? "text-accent" : ""}`}
-            >
-              {isRtl ? "إدارة الإعلانات" : "Ads Management"}
-            </span>
-          </button>
-        </nav>
-
-        {/* Bottom Navigation Lock */}
-        <div className="p-4 border-t border-[var(--border)] mt-auto transition-colors">
-          <a
-            href="/admin/dashboard"
-            className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-theme border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-accent/30 shadow-sm hover:shadow-md"
-          >
-            <div className="flex items-center gap-3">
-              <div className="text-[var(--text-muted)] group-hover:text-accent transition-theme">
-                <ArrowLeft
-                  size={18}
-                  className={dir === "rtl" ? "rotate-180" : ""}
-                />
-              </div>
-              <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
-                {isRtl ? "المركز الرئيسي" : "Command Center"}
-              </span>
-            </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-accent opacity-0 group-hover:opacity-100 transition-theme"></div>
-          </a>
-        </div>
-      </aside>
-    );
-  };
 
   return (
     <div
@@ -574,7 +473,103 @@ export const AdminCommunityPage: React.FC = () => {
           variants={perplextaPageTransition}
           className="flex h-full w-full overflow-hidden relative z-10"
         >
-          <CommunitySidebar />
+          <aside
+            className={`fixed top-[72px] bottom-0 h-[calc(100dvh-72px)] flex flex-col z-[70] shadow-2xl bg-[var(--bg-base)] border-[var(--border)] ${
+              dir === "rtl" ? "right-0 border-l" : "left-0 border-r"
+            } translate-x-0 visible transition-colors`}
+            style={{
+              width: isMobile ? "68%" : "240px",
+              maxWidth: isMobile ? "260px" : "none",
+            }}
+          >
+            <div className="p-4 border-b border-[var(--border)]">
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest opacity-80">
+                {isRtl ? "المركز الأمني للعمليات" : "OPERATIONS CONSOLE"}
+              </p>
+            </div>
+            <nav className="flex-1 px-3 space-y-1 pt-[25px] overflow-y-auto custom-scrollbar scroll-smooth">
+              <button
+                onClick={() => setActiveTab("blog")}
+                className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
+                  activeTab === "blog"
+                    ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+                }`}
+              >
+                <div
+                  className={`transition-theme ${activeTab === "blog" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
+                >
+                  <BookOpen size={18} />
+                </div>
+                <span
+                  className={`font-medium text-sm transition-colors ${activeTab === "blog" ? "text-accent" : ""}`}
+                >
+                  {isRtl ? "المقالات والأخبار" : "Publish Articles"}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("marketplace")}
+                className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
+                  activeTab === "marketplace"
+                    ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+                }`}
+              >
+                <div
+                  className={`transition-theme ${activeTab === "marketplace" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
+                >
+                  <ShoppingBag size={18} />
+                </div>
+                <span
+                  className={`font-medium text-sm transition-colors ${activeTab === "marketplace" ? "text-accent" : ""}`}
+                >
+                  {isRtl ? "إدارة الماركت بليس" : "Marketplace Admin"}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("ads")}
+                className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)] transition-theme border border-transparent ${
+                  activeTab === "ads"
+                    ? "bg-accent/10 text-accent border-accent/10 shadow-[0_0_15px_rgba(156,163,175,0.05)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+                }`}
+              >
+                <div
+                  className={`transition-theme ${activeTab === "ads" ? "text-accent" : "text-[var(--text-muted)] group-hover:text-accent"}`}
+                >
+                  <Megaphone size={18} />
+                </div>
+                <span
+                  className={`font-medium text-sm transition-colors ${activeTab === "ads" ? "text-accent" : ""}`}
+                >
+                  {isRtl ? "إدارة الإعلانات" : "Ads Management"}
+                </span>
+              </button>
+            </nav>
+
+            {/* Bottom Navigation Lock */}
+            <div className="p-4 border-t border-[var(--border)] mt-auto transition-colors">
+              <Link
+                to="/admin/dashboard"
+                className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius)] transition-theme border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] hover:border-accent/30 shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-[var(--text-muted)] group-hover:text-accent transition-theme">
+                    <ArrowLeft
+                      size={18}
+                      className={dir === "rtl" ? "rotate-180" : ""}
+                    />
+                  </div>
+                  <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
+                    {isRtl ? "المركز الرئيسي" : "Command Center"}
+                  </span>
+                </div>
+                <div className="w-1.5 h-1.5 rounded-full bg-accent opacity-0 group-hover:opacity-100 transition-theme"></div>
+              </Link>
+            </div>
+          </aside>
           <div
             style={{
               marginLeft: isMobile ? 0 : dir === "rtl" ? 0 : 240,

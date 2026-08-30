@@ -1806,7 +1806,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleLanguageChange = async (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang); 
+    localStorage.setItem('language', lang);
+    setUser((prev) => prev ? { ...prev, language: lang } : null);
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1822,6 +1823,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleThemeChange = async (newTheme: Theme) => {
     setThemeContext(newTheme);
+    setUser((prev) => prev ? { ...prev, theme: newTheme } : null);
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -2247,8 +2249,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUser(userProfile);
         setBalance(Number(userProfile.points || 0));
         setBalanceUSD(Number(userProfile.balance || 0));
-        if (userProfile.language) setLanguage(userProfile.language as Language);
-        if (userProfile.theme) setThemeContext(userProfile.theme as Theme);
+        if (userProfile.language) {
+          setLanguage(userProfile.language as Language);
+          localStorage.setItem('language', userProfile.language);
+        }
+        if (userProfile.theme) {
+          setThemeContext(userProfile.theme as Theme);
+        }
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
       } else {
