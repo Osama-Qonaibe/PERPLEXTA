@@ -44,6 +44,16 @@ export const GoogleAnalytics = () => {
           window.dataLayer = window.dataLayer || [];
           function gtag(){window.dataLayer.push(arguments);}
           window.gtag = gtag;
+
+          // Google Consent Mode v2 (Default Configuration)
+          gtag('consent', 'default', {
+            'ad_storage': 'denied',
+            'analytics_storage': 'granted',
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied',
+            'wait_for_update': 500
+          });
+
           gtag('js', new Date());
           gtag('config', '${gaId}', { 'send_page_view': false });
         `;

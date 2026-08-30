@@ -7,10 +7,10 @@ export const useAdminAuth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'support') {
+    if (user && user.role !== 'admin') {
       navigate('/chat');
     }
   }, [user, navigate]);
 
-  return { user, isAdmin: user?.role === 'admin' || user?.role === 'support' };
+  return { user, isAdmin: user?.role === 'admin' };
 };

@@ -3343,32 +3343,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       link.href = resolveImageUrl(siteSettings.faviconBase64, 'general');
     }
-
-    if (siteSettings.googleAnalyticsId) {
-      let gaScript = document.getElementById('ga-script') as HTMLScriptElement;
-      if (!gaScript) {
-        gaScript = document.createElement('script');
-        gaScript.id = 'ga-script';
-        applyNonce(gaScript);
-        gaScript.async = true;
-        document.head.appendChild(gaScript);
-      }
-      gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${siteSettings.googleAnalyticsId}`;
-
-      let gaInlineScript = document.getElementById('ga-inline-script') as HTMLScriptElement;
-      if (!gaInlineScript) {
-        gaInlineScript = document.createElement('script');
-        gaInlineScript.id = 'ga-inline-script';
-        applyNonce(gaInlineScript);
-        document.head.appendChild(gaInlineScript);
-      }
-      gaInlineScript.innerHTML = `
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '${siteSettings.googleAnalyticsId}');
-      `;
-    }
   }, [siteSettings, language]);
 
   return (

@@ -154,7 +154,11 @@ app.use((req: any, res: any, next: any) => {
     "https://*.firebaseapp.com",
     "https://apis.google.com",
     "https://*.google.com",
-    "https://*.gstatic.com"
+    "https://*.gstatic.com",
+    "https://www.google-analytics.com",
+    "https://*.google-analytics.com",
+    "https://www.googleadservices.com",
+    "https://*.doubleclick.net"
   ];
 
   const cspDirectives: any = {
@@ -166,10 +170,10 @@ app.use((req: any, res: any, next: any) => {
     styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "blob:", "https:", "*"],
-    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google"],
+    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google", "https://www.googleadservices.com", "https://*.doubleclick.net"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
     frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"],
-    frameSrc: ["'self'", "https://*.stripe.com", "https://*.google.com", "https://apis.google.com", "https://accounts.google.com"],
+    frameSrc: ["'self'", "https://*.stripe.com", "https://*.google.com", "https://apis.google.com", "https://accounts.google.com", "https://*.doubleclick.net", "https://*.googletagmanager.com"],
     workerSrc: ["'self'", "blob:"],
     childSrc: ["'self'", "blob:"],
     manifestSrc: ["'self'"]
