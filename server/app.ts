@@ -377,8 +377,8 @@ app.use(express.static(publicPath, {
 
 import jwt from 'jsonwebtoken';
 import { getSystemSettings } from './services/system.js';
-import { filePermissionCache, FILE_CACHE_TTL_MS, invalidateFilePermissionCache } from './services/filePermissionCache.js';
-export { filePermissionCache, invalidateFilePermissionCache };
+import { filePermissionCache, fileVersionCache, FILE_CACHE_TTL_MS, invalidateFilePermissionCache, invalidateFileVersionCache } from './services/filePermissionCache.js';
+export { filePermissionCache, fileVersionCache, invalidateFilePermissionCache, invalidateFileVersionCache };
 
 if (!fs.existsSync(uploadsPath)) {
   try {
@@ -390,13 +390,11 @@ if (!fs.existsSync(uploadsPath)) {
 
 try {
   fs.watch(uploadsPath, (eventType, filename) => {
-    if (filename) {
-      invalidateFilePermissionCache(filename.toString());
-    } else {
-      invalidateFilePermissionCache();
-    }
+    const fnStr = filename ? filename.toString() : undefined;
+    invalidateFilePermissionCache(fnStr);
+    invalidateFileVersionCache(fnStr);
   });
-  console.log(`[File System Watcher] Watching '${uploadsPath}' for file additions/deletions to sync permission cache.`);
+  console.log(`[File System Watcher] Watching '${uploadsPath}' for file additions/deletions to sync permission and version caches.`);
 } catch (watchErr) {
   console.error('[File System Watcher] Error setting up fs.watch on uploads directory:', watchErr);
 }
@@ -607,16 +605,27 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
       const fileSize = stat.size;
 
       let fileVersion = 1;
-      try {
-        const fileVerRes = await pool.query(
-          'SELECT file_version FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3 LIMIT 1',
-          [filename, path.basename(pathToSend), `%${filename}%`]
-        );
-        if (fileVerRes.rows.length > 0 && fileVerRes.rows[0].file_version) {
-          fileVersion = fileVerRes.rows[0].file_version;
+      const baseName = path.basename(pathToSend);
+      const now = Date.now();
+      const cachedVer = fileVersionCache.get(baseName);
+      if (cachedVer && now < cachedVer.expiresAt) {
+        fileVersion = cachedVer.version;
+      } else {
+        const isInUploads = pathToSend.startsWith(uploadsPath);
+        if (isInUploads && pool) {
+          try {
+            const fileVerRes = await pool.query(
+              'SELECT file_version FROM user_files WHERE file_url = $1 OR file_url = $2 OR file_url LIKE $3 LIMIT 1',
+              [filename, baseName, `%${filename}%`]
+            );
+            if (fileVerRes.rows.length > 0 && fileVerRes.rows[0].file_version) {
+              fileVersion = fileVerRes.rows[0].file_version;
+            }
+          } catch (e) {
+            // ignore
+          }
         }
-      } catch (e) {
-        // ignore
+        fileVersionCache.set(baseName, { version: fileVersion, expiresAt: now + FILE_CACHE_TTL_MS });
       }
 
       const etag = `"${fileSize}-${stat.mtimeMs}-v${fileVersion}"`;

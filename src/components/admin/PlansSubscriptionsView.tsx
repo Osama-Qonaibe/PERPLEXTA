@@ -339,14 +339,19 @@ export const PlansSubscriptionsView = ({
 
   const updateLimit = (
     field: string,
-    subfield: "daily" | "monthly",
-    value: string,
+    subfield: "daily" | "monthly" | "isHidden",
+    value: string | boolean,
   ) => {
     const newLimits = { ...editingPlan.limits };
     if (typeof newLimits[field] !== "object" || newLimits[field] === null) {
       newLimits[field] = { daily: 0, monthly: 0 };
     }
-    const val = value === "unlimited" ? "unlimited" : parseInt(value) || 0;
+    
+    let val: any = value;
+    if (subfield !== "isHidden") {
+      val = value === "unlimited" ? "unlimited" : parseInt(value as string) || 0;
+    }
+    
     newLimits[field] = { ...newLimits[field], [subfield]: val };
     setEditingPlan({ ...editingPlan, limits: newLimits });
   };
@@ -493,7 +498,7 @@ export const PlansSubscriptionsView = ({
                     <div className="flex-1 space-y-3 mb-6">
                       {plan.features.slice(0, 4).map((feature: any, fIdx: number) => (
                         <div
-                          key={`feat-u-${plan.id}-${feature.id || fIdx}-${fIdx}`}
+                          key={`feat-u-${plan.id}-${fIdx}`}
                           className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
                         >
                           <CheckCircle2
@@ -518,6 +523,7 @@ export const PlansSubscriptionsView = ({
                         <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
                           {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any], lIdx: number) => {
                             if (limitVal === undefined || limitVal === null) return null;
+                            if (typeof limitVal === 'object' && limitVal?.isHidden) return null;
                             const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
                             const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
                             const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
@@ -655,7 +661,7 @@ export const PlansSubscriptionsView = ({
                       <div className="flex-1 space-y-3 mb-6">
                         {plan.features.slice(0, 4).map((feature: any, fIdx: number) => (
                           <div
-                            key={`feat-d-${plan.id}-${feature.id || fIdx}-${fIdx}`}
+                            key={`feat-d-${plan.id}-${fIdx}`}
                             className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
                           >
                             <CheckCircle2
@@ -680,6 +686,7 @@ export const PlansSubscriptionsView = ({
                         <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
                           {Object.entries(plan.limits || {}).map(([key, limitVal]: [string, any], lIdx: number) => {
                             if (limitVal === undefined || limitVal === null) return null;
+                            if (typeof limitVal === 'object' && limitVal?.isHidden) return null;
                             const daily = typeof limitVal === 'object' && limitVal !== null ? limitVal.daily : limitVal;
                             const monthly = typeof limitVal === 'object' && limitVal !== null ? limitVal.monthly : null;
                             const formatLimit = (v: any) => v === "unlimited" ? "∞" : (v || 0);
@@ -984,7 +991,16 @@ export const PlansSubscriptionsView = ({
                               >
                                 {t(key)}
                               </span>
-                              <div className="flex gap-1">
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{dir === 'rtl' ? 'إخفاء الأداة' : 'Hide Tool'}</span>
+                                  <input 
+                                    type="checkbox" 
+                                    className="w-3 h-3 rounded bg-[var(--surface-subtle)] border-[var(--border-main)] checked:bg-accent checked:border-accent"
+                                    checked={editingPlan.limits[key]?.isHidden || false}
+                                    onChange={(e) => updateLimit(key, 'isHidden', e.target.checked)}
+                                  />
+                                </label>
                                 <div
                                   className={`w-1.5 h-1.5 rounded-full ${isUnlimitedDaily || isUnlimitedMonthly ? "bg-accent animate-pulse" : "bg-gray-700"}`}
                                 />
@@ -1248,7 +1264,7 @@ export const PlansSubscriptionsView = ({
                     <div className="space-y-3 max-h-[350px] overflow-y-auto px-1 custom-scrollbar">
                       {editingPlan.features.map((feature: any, index: number) => (
                         <div
-                          key={`edit-plan-feat-${feature.id || index}-${index}`}
+                          key={`edit-plan-feat-${index}`}
                           className={`p-3 rounded-lg border flex flex-col gap-2 relative ${
                             theme === "dark" 
                               ? "bg-[#111113] border-[var(--border-main)]/80" 

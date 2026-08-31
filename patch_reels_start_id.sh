@@ -1,1 +1,0 @@
-sed -i 's/setTimeout(() => scrollToIndex(idx), 50);/setTimeout(() => { const container = containerRef.current; if (container) { const targetItem = container.querySelector(`[data-reel-index="${idx}"]`); if (targetItem) { targetItem.scrollIntoView({ behavior: "auto" }); } } }, 100);/g' src/components/ReelsFeed.tsx

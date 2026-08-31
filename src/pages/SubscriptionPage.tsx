@@ -94,13 +94,7 @@ export const SubscriptionPage: React.FC = () => {
       setRedirectCountdown(5);
       timer = setInterval(() => {
         setRedirectCountdown((prev) => {
-          if (prev === null) return null;
-          if (prev <= 1) {
-            clearInterval(timer);
-            setResultModal(null);
-            navigate('/');
-            return null;
-          }
+          if (prev === null || prev <= 0) return 0;
           return prev - 1;
         });
       }, 1000);
@@ -110,7 +104,14 @@ export const SubscriptionPage: React.FC = () => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [resultModal, navigate]);
+  }, [resultModal]);
+
+  useEffect(() => {
+    if (redirectCountdown === 0) {
+      setResultModal(null);
+      navigate('/');
+    }
+  }, [redirectCountdown, navigate]);
 
   const [activeTab, setActiveTab] = React.useState<'user' | 'developer'>('user');
 
@@ -463,7 +464,7 @@ export const SubscriptionPage: React.FC = () => {
                   {dir === 'rtl' ? 'الميزات' : 'Features'}
                 </p>
                 {plan.features.map((feature: any, idx: number) => (
-                  <div key={feature.id || feature.textEn || feature.textAr || idx} className="flex items-start gap-2.5 md:gap-3">
+                  <div key={`feat-${plan.id}-${idx}`} className="flex items-start gap-2.5 md:gap-3">
                     <CheckCircle2 size={14} className="shrink-0 mt-0.5 md:w-4 md:h-4" style={{ color: plan.color || '#334155' }} />
                     <span className="text-xs md:text-sm text-[var(--text-secondary)] leading-tight">
                       {dir === 'rtl' ? feature.textAr : feature.textEn}
@@ -523,6 +524,9 @@ export const SubscriptionPage: React.FC = () => {
                                 const limitVal = (plan.limits && plan.limits[toolId] !== undefined)
                                   ? plan.limits[toolId]
                                   : { daily: 0, monthly: 0 };
+                                
+                                if (limitVal?.isHidden) return null;
+
                                 const label = t(toolId) || toolId;
                                 const icon = toolIcons[toolId] || <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5" />;
                                 return (

@@ -14,7 +14,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight, Lock } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -4068,7 +4068,7 @@ export const ChatPage: React.FC = () => {
   const { 
     t, theme, dir, user, token, setIsAuthModalOpen, socket, isMobile,
     siteSettings, isAuthReady,
-    refreshUser, balance, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt
+    refreshUser, balance, balanceUSD, economySettings, triggerMemoryNotification, triggerUpgradePrompt, plans
   } = useAppContext();
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
@@ -6246,6 +6246,7 @@ export const ChatPage: React.FC = () => {
 
   const currentModel = models.find(m => m.id === selectedModel) || models[2];
   const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
+  const currentPlan = plans?.find((p: any) => p.id?.toString() === user?.subscription?.plan_id?.toString());
 
   const renderInputArea = () => (
     <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto pb-safe">
@@ -6610,10 +6611,22 @@ export const ChatPage: React.FC = () => {
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool, tIdx) => (
+                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool, tIdx) => {
+                      const limit = currentPlan?.limits?.[tool.id];
+                      const isHidden = limit?.isHidden === true;
+                      const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
+                      const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
+                      const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+
+                      return (
                       <button 
                         key={`adv-tool-${tool.id}-${tIdx}`} 
                         onClick={() => {
+                          if (isLocked) {
+                            triggerUpgradePrompt(tool.id);
+                            setIsAdvancedToolsOpen(false);
+                            return;
+                          }
                           setSelectedTool(tool.id);
                           if (tool.id === 'video') setShowVideoSettings(true);
                           if (tool.id === 'image') setShowImageSettings(true);
@@ -6622,24 +6635,31 @@ export const ChatPage: React.FC = () => {
                           setIsAdvancedToolsOpen(false);
                         }}
                         className={`flex items-center gap-3 px-3 py-2 rounded-sm transition-theme text-[13px] font-bold ${
-                          selectedTool === tool.id && activeDropdown === 'tool'
-                            ? 'bg-accent/10 text-accent dark:text-accent' 
-                            : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          isLocked 
+                            ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                            : selectedTool === tool.id && activeDropdown === 'tool'
+                              ? 'bg-accent/10 text-accent dark:text-accent' 
+                              : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        <span className={selectedTool === tool.id && activeDropdown === 'tool' ? 'text-accent ' : 'text-[var(--text-muted)]'}>
+                        <span className={isLocked ? 'text-[var(--text-muted)] opacity-70' : selectedTool === tool.id && activeDropdown === 'tool' ? 'text-accent ' : 'text-[var(--text-muted)]'}>
                           {tool.icon}
                         </span>
                         <div className="flex items-center justify-between flex-1 min-w-0">
                           <span className="truncate">{tool.label}</span>
-                          {tool.isNew && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-accent text-[8px] font-black text-white ml-2 animate-pulse">
-                              NEW
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {tool.isNew && !isLocked && (
+                              <span className="px-1.5 py-0.5 rounded-md bg-accent text-[8px] font-black text-white animate-pulse">
+                                NEW
+                              </span>
+                            )}
+                            {isLocked && (
+                              <Lock size={12} className="text-gray-400 opacity-60" />
+                            )}
+                          </div>
                         </div>
                       </button>
-                    ))}
+                    )})}
                   </div>
                 </div>
               )}
@@ -6673,31 +6693,53 @@ export const ChatPage: React.FC = () => {
               </button>
               {isModelMenuOpen && (
                 <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-36 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-[100] bg-[var(--surface-card)] border-[var(--border-main)]`}>
-                  {models.map((model, idx) => (
+                  {models.map((model, idx) => {
+                    const toolMapping: Record<string, string> = {
+                      'fast': 'chat_fast',
+                      'pro': 'chat_pro',
+                      'thinking': 'chat_reasoning'
+                    };
+                    const mappedToolId = toolMapping[model.id] || 'chat';
+                    const limit = currentPlan?.limits?.[mappedToolId];
+                    const isHidden = limit?.isHidden === true;
+                    const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
+                    const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
+                    const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+
+                    return (
                     <button 
                       key={`${model.id}-${idx}`}
                       onClick={() => {
+                        if (isLocked) {
+                          triggerUpgradePrompt(mappedToolId);
+                          setIsModelMenuOpen(false);
+                          return;
+                        }
                         setSelectedModel(model.id as any);
-                        const toolMapping: Record<string, string> = {
-                          'fast': 'chat_fast',
-                          'pro': 'chat_pro',
-                          'thinking': 'chat_reasoning'
-                        };
-                        setSelectedTool(toolMapping[model.id] || 'chat');
+                        setSelectedTool(mappedToolId);
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white group`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight ${
+                        isLocked
+                          ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                          : 'hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white group'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`${model.color} group-hover:scale-110 transition-transform`}>{model.icon}</span>
+                        <span className={`${isLocked ? 'text-gray-400 opacity-60' : model.color} ${isLocked ? '' : 'group-hover:scale-110 transition-transform'}`}>{model.icon}</span>
                         <span>{model.label}</span>
                       </div>
-                      {selectedModel === model.id && activeDropdown === 'model' && (
-                        <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isLocked && (
+                          <Lock size={12} className="text-gray-400 opacity-60" />
+                        )}
+                        {!isLocked && selectedModel === model.id && activeDropdown === 'model' && (
+                          <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
+                        )}
+                      </div>
                     </button>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

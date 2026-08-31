@@ -12,7 +12,7 @@ export interface NotificationAction {
 }
 
 export interface NotificationOptions {
-  message: string;
+  message?: string; // Make optional to support description-only toasts
   title?: string;
   type?: NotificationType;
   duration?: number;
@@ -20,6 +20,7 @@ export interface NotificationOptions {
   id?: string;
   image?: string;
   icon?: React.ReactNode;
+  description?: string;
 }
 
 export interface NotificationItem {
@@ -32,6 +33,7 @@ export interface NotificationItem {
   createdAt: number;
   image?: string;
   icon?: React.ReactNode;
+  description?: string;
 }
 
 interface NotificationContextType {
@@ -41,6 +43,7 @@ interface NotificationContextType {
   error: (message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => string;
   warning: (message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => string;
   info: (message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => string;
+  loading: (message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => string;
   dismissNotification: (id: string) => void;
   clearAllNotifications: () => void;
 }
@@ -71,6 +74,10 @@ export const toast = {
   info: (message: string, titleOrOpts?: string | Partial<NotificationOptions>) => {
     const opts = typeof titleOrOpts === 'string' ? { title: titleOrOpts } : titleOrOpts || {};
     return globalShowNotification?.({ message, type: 'info', ...opts }) || '';
+  },
+  loading: (message: string, titleOrOpts?: string | Partial<NotificationOptions>) => {
+    const opts = typeof titleOrOpts === 'string' ? { title: titleOrOpts } : titleOrOpts || {};
+    return globalShowNotification?.({ message, type: 'info', duration: 120000, ...opts }) || '';
   },
   dismiss: (id?: string) => {
     if (id && globalDismissNotification) globalDismissNotification(id);
@@ -124,7 +131,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const id = options.id || `toast-${now}-${Math.random().toString(36).substring(2, 7)}`;
     const newItem: NotificationItem = {
       id,
-      message: options.message,
+      message: options.message || options.description || '',
       title: options.title,
       type: options.type || 'info',
       duration: options.duration ?? 4500,
@@ -132,6 +139,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       createdAt: now,
       image: options.image,
       icon: options.icon,
+      description: options.description,
     };
 
     setNotifications((prev) => {
@@ -168,6 +176,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return showNotification({ message, title, type: 'info', ...options });
   }, [showNotification]);
 
+  const loading = useCallback((message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => {
+    return showNotification({ message, title, type: 'info', duration: 120000, ...options });
+  }, [showNotification]);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -177,6 +189,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         error,
         warning,
         info,
+        loading,
         dismissNotification,
         clearAllNotifications,
       }}
@@ -193,11 +206,12 @@ export const useNotification = (): NotificationContextType => {
     // Safe fallback if called outside provider
     return {
       notifications: [],
-      showNotification: (options) => toast.info(options.message, options),
+      showNotification: (options) => toast.info(options.message || options.description || '', options),
       success: (msg, title, opts) => toast.success(msg, { title, ...opts }),
       error: (msg, title, opts) => toast.error(msg, { title, ...opts }),
       warning: (msg, title, opts) => toast.warning(msg, { title, ...opts }),
       info: (msg, title, opts) => toast.info(msg, { title, ...opts }),
+      loading: (msg, title, opts) => toast.loading(msg, { title, ...opts }),
       dismissNotification: (id) => toast.dismiss(id),
       clearAllNotifications: () => {},
     };
