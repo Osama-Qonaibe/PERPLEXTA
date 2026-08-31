@@ -10,7 +10,11 @@ const pwaConfig: any = {
   registerType: 'autoUpdate',
   includeAssets: ['favicon.ico', 'app-assets/icon.png', 'app-assets/og-image.png'],
   workbox: {
-    navigateFallbackDenylist: [/^\/api\//]
+    navigateFallbackDenylist: [/^\/api\//],
+    skipWaiting: true,
+    clientsClaim: true,
+    cleanupOutdatedCaches: true,
+    maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
   },
   manifest: {
     name: 'Perplexta Intelligence Platform',

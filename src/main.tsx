@@ -5,29 +5,45 @@ import './index.css';
 import { VersionManager } from './utils/versionManager';
 
 // Auto-reload on chunk load errors (PWA stale cache issue)
+const forceHardReload = async () => {
+  if (!sessionStorage.getItem('chunk_reloaded')) {
+    sessionStorage.setItem('chunk_reloaded', 'true');
+    console.error('[PWA] Stale chunk detected, updating Service Worker and forcing reload...');
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.update();
+        }
+      }
+    } catch (e) {
+      console.error('SW update failed', e);
+    }
+    window.location.reload();
+  }
+};
+
 window.addEventListener('unhandledrejection', (event) => {
   if (event.reason && (
       event.reason.message?.includes('Failed to fetch dynamically imported module') ||
       event.reason.message?.includes('error loading dynamically imported module') ||
       event.reason.name === 'ChunkLoadError'
   )) {
-    console.error('[PWA] Stale chunk detected, forcing reload...');
-    if (!sessionStorage.getItem('chunk_reloaded')) {
-      sessionStorage.setItem('chunk_reloaded', 'true');
-      const targetUrl = new URL(window.location.href);
-      targetUrl.searchParams.set('t', Date.now().toString());
-      window.location.href = targetUrl.toString();
-    }
+    event.preventDefault();
+    forceHardReload();
   }
 });
 
-window.addEventListener('vite:preloadError', () => {
-    if (!sessionStorage.getItem('chunk_reloaded')) {
-      sessionStorage.setItem('chunk_reloaded', 'true');
-      const targetUrl = new URL(window.location.href);
-      targetUrl.searchParams.set('t', Date.now().toString());
-      window.location.href = targetUrl.toString();
-    }
+window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    forceHardReload();
+});
+
+// Clear reload flag on successful load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    sessionStorage.removeItem('chunk_reloaded');
+  }, 1000);
 });
 
 // Initialize version auto-checker to prevent stale asset cache issues
