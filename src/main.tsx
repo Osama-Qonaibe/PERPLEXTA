@@ -4,6 +4,32 @@ import App from './App.tsx';
 import './index.css';
 import { VersionManager } from './utils/versionManager';
 
+// Auto-reload on chunk load errors (PWA stale cache issue)
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && (
+      event.reason.message?.includes('Failed to fetch dynamically imported module') ||
+      event.reason.message?.includes('error loading dynamically imported module') ||
+      event.reason.name === 'ChunkLoadError'
+  )) {
+    console.error('[PWA] Stale chunk detected, forcing reload...');
+    if (!sessionStorage.getItem('chunk_reloaded')) {
+      sessionStorage.setItem('chunk_reloaded', 'true');
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('t', Date.now().toString());
+      window.location.href = targetUrl.toString();
+    }
+  }
+});
+
+window.addEventListener('vite:preloadError', () => {
+    if (!sessionStorage.getItem('chunk_reloaded')) {
+      sessionStorage.setItem('chunk_reloaded', 'true');
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('t', Date.now().toString());
+      window.location.href = targetUrl.toString();
+    }
+});
+
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
