@@ -757,7 +757,7 @@ export const ReferralDashboardView = ({
 
                     return (
                       <tr 
-                        key={ref.referrer_id} 
+                        key={`ref-row-${ref.referrer_id || idx}-${idx}`} 
                         className="group hover:bg-gray-50/5 transition-theme text-xs font-medium text-[var(--text-secondary)]"
                       >
                         <td className="py-3 px-3 text-center font-black animate-fade-in">
@@ -909,7 +909,7 @@ export const ReferralDashboardView = ({
             </div>
           ) : (
             <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 select-none custom-scrollbar">
-              {filteredInvitations.map((invite) => {
+              {filteredInvitations.map((invite, invIdx) => {
                 const badgeStyle = 
                   invite.status === "accepted" 
                     ? "bg-accent/10 text-accent border-accent/20" 
@@ -931,7 +931,7 @@ export const ReferralDashboardView = ({
  
                 return (
                   <div 
-                    key={invite.id}
+                    key={`invite-card-${invite.id || invIdx}-${invIdx}`}
                     className={`p-3 rounded-sm bg-gray-50/5 border transition-theme flex flex-col gap-2 animate-fade-in ${
                       selectedIds[invite.id] 
                         ? "border-accent/50 bg-accent/[0.01]" 

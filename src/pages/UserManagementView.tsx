@@ -1033,8 +1033,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
               }`}
             >
               <option value="all">{isRtl ? 'جميع الباقات' : 'All Tiers'}</option>
-              {normalizedPlans.map((p) => (
-                <option key={p.id} value={p.id}>
+              {normalizedPlans.map((p, pIdx) => (
+                <option key={`user-filter-plan-${p.id}-${pIdx}`} value={p.id}>
                   {isRtl ? p.nameAr : p.nameEn}
                 </option>
               ))}
@@ -1070,8 +1070,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
             >
               <option value="all">{isRtl ? 'جميع الصلاحيات' : 'All Roles'}</option>
               <option value="user">{isRtl ? 'مستخدم عادي' : 'Standard User'}</option>
-              <option value="support">{isRtl ? 'دعم فني' : 'Support Agent'}</option>
-              <option value="elite">{isRtl ? 'مستخدم نخبة' : 'Elite VIP'}</option>
+              <option value="support">{isRtl ? 'دعم فني' : 'Support'}</option>
+              <option value="elite">{isRtl ? 'نخبة' : 'Elite'}</option>
               <option value="admin">{isRtl ? 'مدير نظام' : 'Admin'}</option>
             </select>
             <ChevronDown size={14} className="absolute ltr:right-2.5 rtl:left-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
@@ -1233,13 +1233,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                 </tr>
               ) : paginatedUsers.length > 0 ? (
                 <AnimatePresence mode="popLayout" initial={false}>
-                  {paginatedUsers.map((user) => {
+                  {paginatedUsers.map((user, uIdx) => {
                     const plan = getPlanDetails(user.plan_id);
                     const isUserActive = (user.status || user.subscription_status) === 'active';
 
                     return (
                       <motion.tr
-                        key={user.id}
+                        key={`user-row-${user.id || uIdx}-${uIdx}`}
                         layout
                         initial={{ opacity: 0, y: 10, scale: 0.99 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1297,10 +1297,10 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                             className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md border appearance-none w-full text-center focus:outline-none cursor-pointer transition-all ${
                               user.role === 'admin'
                                 ? 'text-purple-500 border-purple-500/30 bg-purple-500/10'
-                                : user.role === 'support'
-                                ? 'text-sky-500 border-sky-500/30 bg-sky-500/10'
                                 : user.role === 'elite'
                                 ? 'text-amber-500 border-amber-500/30 bg-amber-500/10'
+                                : user.role === 'support'
+                                ? 'text-accent border-accent/30 bg-accent/10'
                                 : isDark
                                 ? 'text-gray-400 border-gray-800 bg-[#0f0f11]'
                                 : 'text-gray-600 border-gray-200 bg-gray-50'
@@ -1329,9 +1329,9 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                               borderColor: `${plan.color}35`,
                             }}
                           >
-                            {normalizedPlans.map((p) => (
+                            {normalizedPlans.map((p, pIdx) => (
                               <option
-                                key={p.id}
+                                key={`user-select-plan-${user.id}-${p.id}-${pIdx}`}
                                 value={p.id}
                                 className={isDark ? 'bg-[#0f0f11] text-white' : 'bg-white text-black'}
                               >
@@ -1545,7 +1545,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     const showEllipsis = prevPage && page - prevPage > 1;
 
                     return (
-                      <React.Fragment key={page}>
+                      <React.Fragment key={`user-page-${page}`}>
                         {showEllipsis && <span className="text-gray-500 text-xs px-0.5">...</span>}
                         <button
                           type="button"
@@ -1626,11 +1626,9 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
                         selectedUser.role === 'admin'
                           ? 'text-purple-500 bg-purple-500/10 border-purple-500/30'
-                          : selectedUser.role === 'support'
-                          ? 'text-sky-500 bg-sky-500/10 border-sky-500/30'
                           : selectedUser.role === 'elite'
                           ? 'text-amber-500 bg-amber-500/10 border-amber-500/30'
-                          : 'text-gray-400 bg-gray-500/10 border-gray-500/30'
+                          : 'text-accent bg-accent/10 border-accent/30'
                       }`}>
                         {selectedUser.role}
                       </span>
@@ -2013,7 +2011,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           {userTransactions.map((tx: any, idx: number) => {
                             const isDeposit = tx.type === 'deposit' || tx.type === 'add' || tx.amount > 0;
                             return (
-                              <div key={idx} className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                              <div key={`user-tx-${tx.id || idx}-${idx}`} className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
                                 isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                               }`}>
                                 <div className="flex items-center gap-2.5">
@@ -2122,11 +2120,11 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                       </h4>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {normalizedPlans.map((p) => {
+                        {normalizedPlans.map((p, pIdx) => {
                           const isCurrent = selectedUser.plan_id?.toString() === p.id.toString();
                           return (
                             <div
-                              key={p.id}
+                              key={`user-modal-plan-${p.id}-${pIdx}`}
                               className={`p-4 rounded-xl border flex flex-col justify-between space-y-3 transition-all ${
                                 isCurrent
                                   ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(156,163,175,0.15)]'
@@ -2184,7 +2182,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                                         ? `${formatVal(daily)}D${monthly !== null && monthly !== undefined && monthly !== 0 ? `/${formatVal(monthly)}M` : ''}`
                                         : formatVal(v);
                                       return (
-                                        <span key={k} className="px-2 py-0.5 rounded bg-black/30 border border-gray-800 text-gray-400">
+                                        <span key={`plan-limit-${p.id}-${k}`} className="px-2 py-0.5 rounded bg-black/30 border border-gray-800 text-gray-400">
                                           {k}: {formatted}
                                         </span>
                                       );
@@ -2245,7 +2243,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     ) : activityLogs.length > 0 ? (
                       <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
                         {activityLogs.map((log: any, idx: number) => (
-                          <div key={idx} className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
+                          <div key={`user-log-${log.id || idx}-${idx}`} className={`p-3 rounded-lg border text-xs flex items-center justify-between ${
                             isDark ? 'bg-[#121214] border-gray-800' : 'bg-gray-50 border-gray-200'
                           }`}>
                             <div className="space-y-0.5">
@@ -2354,8 +2352,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                     }`}
                   >
                     <option value="user">{isRtl ? 'مستخدم عادي' : 'Standard User'}</option>
-                    <option value="support">{isRtl ? 'دعم فني' : 'Support Agent'}</option>
-                    <option value="elite">{isRtl ? 'مستخدم نخبة' : 'Elite VIP'}</option>
+                    <option value="support">{isRtl ? 'دعم فني' : 'Support Team'}</option>
+                    <option value="elite">{isRtl ? 'عضو نخبة' : 'Elite Member'}</option>
                     <option value="admin">{isRtl ? 'مدير نظام' : 'System Admin'}</option>
                   </select>
                 </div>

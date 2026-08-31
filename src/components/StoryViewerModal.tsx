@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, Volume2, VolumeX, Trash2, AlertTriangle, Loader2, ZoomIn, ZoomOut, Pause } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { BulletinAvatar } from './BulletinAvatar';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
 
 interface Story {

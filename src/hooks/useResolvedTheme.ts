@@ -16,7 +16,13 @@ export interface UseResolvedThemeReturn {
  * directly from the single source of truth in ThemeContext / AppContext.
  */
 export function useResolvedTheme(): UseResolvedThemeReturn {
-  const themeCtx = useTheme();
+  let themeCtx: ReturnType<typeof useTheme> | null = null;
+  try {
+    themeCtx = useTheme();
+  } catch {
+    // Fallback if rendered outside ThemeEngineProvider
+  }
+
   const appCtx = useAppContext();
 
   const theme: Theme = themeCtx?.theme || appCtx?.theme || 'system';

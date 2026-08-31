@@ -152,7 +152,7 @@ export const Privacy: React.FC = () => {
           <button 
             onClick={() => navigate(-1)}
             id="privacy-back-btn"
-            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-theme bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent"
+            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-theme bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent hover:"
           >
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -188,7 +188,7 @@ export const Privacy: React.FC = () => {
           <div className="space-y-8">
             <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/45 backdrop-blur-sm shadow-sm transition-theme hover:border-accent/20 group">
               <div className="flex items-center gap-3 text-gray-900 dark:text-white mb-4">
-                <Scale className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme" />
+                <Scale className="w-6 h-6 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                 <h2 className="text-xl md:text-2xl font-black">{isAr ? "المبادئ التأسيسية" : "Foundational Principles"}</h2>
               </div>
               <p className="text-sm md:text-base leading-relaxed text-gray-600 dark:text-gray-300 font-medium font-sans">
@@ -205,7 +205,7 @@ export const Privacy: React.FC = () => {
           <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-gray-50/50 dark:bg-gray-900/30 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center p-8 shadow-inner">
             <div className="relative z-10 flex flex-col items-center gap-8 w-full">
               <div className="flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-none transition-theme group animate-pulse">
-                <Lock className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme" />
+                <Lock className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
               </div>
 
               <div className="grid grid-cols-3 gap-3 w-full">
@@ -215,11 +215,11 @@ export const Privacy: React.FC = () => {
                   { icon: Database, label: isAr ? "تشفير كامل" : "Full Encryption" }
                 ].map((item, idx) => (
                   <div 
-                    key={idx}
+                    key={`privacy-pillar-${idx}-${item.label}`}
                     className="p-3 rounded-xl bg-white dark:bg-gray-950 border border-gray-200/50 dark:border-gray-800/50 flex flex-col items-center gap-2 transition-theme hover:border-accent/10 hover:-translate-y-1 group hover:shadow-sm"
                   >
                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center border border-gray-200/40 dark:border-gray-800/40">
-                      <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme" />
+                      <item.icon className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
                     </div>
                     <span className="text-[9px] uppercase font-black tracking-wider text-center leading-tight text-gray-800 dark:text-gray-200">
                       {item.label}
@@ -245,11 +245,11 @@ export const Privacy: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {sections.map((section, i) => (
               <div 
-                key={i} 
+                key={`privacy-sec-${i}-${section.title}`} 
                 className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 hover:bg-gray-50/50 dark:hover:bg-gray-900/40 hover:border-accent/20 transition-theme group shadow-sm"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-accent transition-theme">
+                  <div className="w-12 h-12 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme">
                     <section.icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors duration-300">{section.title}</h3>
@@ -261,7 +261,7 @@ export const Privacy: React.FC = () => {
 
                 <div className="space-y-4 pt-6 border-t border-gray-250/20 dark:border-gray-800/40">
                   {section.subItems.map((sub, sIdx) => (
-                    <div key={sIdx} className="space-y-1">
+                    <div key={`privacy-sub-${i}-${sIdx}-${sub.label}`} className="space-y-1">
                       <h4 className="text-xs font-black uppercase tracking-wider text-accent ">{sub.label}</h4>
                       <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-sans">{sub.desc}</p>
                     </div>

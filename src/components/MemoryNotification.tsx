@@ -25,27 +25,27 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
 
   const config = {
     startup: {
-      desc: dir === 'rtl' ? 'يتم الآن تلخيص الجلسات وحفظ السياق...' : 'Summarizing session context...',
+      desc: dir === 'rtl' ? 'جاري مزامنة الذاكرة...' : 'Syncing memory...',
       color: 'text-accent',
       bg: 'bg-accent/10',
     },
     success: {
-      desc: dir === 'rtl' ? 'تم تحديث الذاكرة بنجاح.' : 'Memory updated successfully.',
+      desc: dir === 'rtl' ? 'تم تحديث الذاكرة.' : 'Memory updated.',
       color: 'text-accent',
       bg: 'bg-accent/10',
     },
     warning: {
-      desc: dir === 'rtl' ? 'تنبيه: سعة الذاكرة شارفت على الانتهاء (45/50).' : 'Warning: Memory capacity almost reached (45/50).',
+      desc: dir === 'rtl' ? 'تنبيه: امتلاء الذاكرة (45/50).' : 'Warning: Memory limit (45/50).',
       color: 'text-amber-500',
       bg: 'bg-amber-500/10',
     },
     cleanup: {
-      desc: dir === 'rtl' ? 'تم دمج السجلات القديمة تلقائياً.' : 'Old records merged automatically.',
+      desc: dir === 'rtl' ? 'تم دمج السجلات القديمة.' : 'Old records merged.',
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
     },
     optimization: {
-      desc: dir === 'rtl' ? 'تم تحسين كفاءة النظام بنجاح.' : 'System efficiency optimized successfully.',
+      desc: dir === 'rtl' ? 'تم تحسين الكفاءة.' : 'Efficiency optimized.',
       color: 'text-violet-500',
       bg: 'bg-violet-500/10',
     }
@@ -56,11 +56,11 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] w-[88%] max-w-[320px] bg-[var(--bg-secondary)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full shadow-2xl py-1.5 px-3 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div className={`w-6 h-6 rounded-full ${current.bg} flex items-center justify-center flex-shrink-0`}>
-          <BrainCircuit className={current.color} size={13} />
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[280px] bg-[var(--bg-secondary)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full shadow-2xl py-1.5 px-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className={`w-5 h-5 rounded-full ${current.bg} flex items-center justify-center flex-shrink-0`}>
+          <BrainCircuit className={current.color} size={12} />
         </div>
-        <p className="text-[9.5px] font-bold text-[var(--text-primary)] leading-none flex-1 truncate">
+        <p className="text-[10px] font-bold text-[var(--text-primary)] leading-none flex-1 truncate">
           {displayDesc}
         </p>
         <button onClick={onClose} className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">

@@ -866,7 +866,7 @@ authenticateAgent();`;
                       </span>
                     ) : (
                       mcpLogs.map((log, index) => (
-                        <div key={index} className="leading-relaxed break-all border-l-2 border-accent/20 pl-2">
+                        <div key={`mcp-log-${index}`} className="leading-relaxed break-all border-l-2 border-accent/20 pl-2">
                           {log}
                         </div>
                       ))

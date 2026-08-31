@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Languages, Monitor, Target, Archive, Cookie } from 'lucide-react';
+import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Languages, Monitor, Target, Archive } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { resolveImageUrl } from '../utils/imageResolver';
@@ -380,30 +380,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
                     {dir === 'rtl' ? 'تعطيل' : 'Disable'}
                   </button>
                </div>
-            </div>
-
-            {/* Cookie Privacy Preferences */}
-            <div className="flex items-center justify-between py-8 border-b border-[var(--border-main)] group">
-               <div className="flex items-center gap-6">
-                  <div className="p-3 rounded-[var(--radius)] bg-[var(--surface-subtle)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-theme">
-                    <Cookie size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">
-                      {dir === 'rtl' ? 'ملفات تعريف الارتباط والخصوصية' : 'Cookie & Privacy Preferences'}
-                    </p>
-                    <p className="font-bold text-base text-[var(--text-primary)]">
-                      {dir === 'rtl' ? 'إدارة الموافقة وتفضيلات التتبع' : 'Manage Consent & Data Preferences'}
-                    </p>
-                  </div>
-               </div>
-               <button 
-                 type="button"
-                 onClick={() => window.dispatchEvent(new CustomEvent('open-cookie-preferences'))}
-                 className="px-4 py-2 rounded-[var(--radius)] text-[10px] font-black uppercase tracking-widest transition-theme bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] cursor-pointer"
-               >
-                 {dir === 'rtl' ? 'إدارة' : 'Manage'}
-               </button>
             </div>
 
             <div className="p-8 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] mt-12">

@@ -107,8 +107,8 @@ export const StoryArchive: React.FC<StoryArchiveProps> = ({ dir, token, showToas
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {archivedStories.map((story) => (
-        <div key={story.id} className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-black group border border-[var(--border-main)]">
+      {archivedStories.map((story, sIdx) => (
+        <div key={`archived-story-${story.id || sIdx}-${sIdx}`} className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-black group border border-[var(--border-main)]">
           {story.video_url ? (
             <video 
               src={getMediaUrl(story.video_url)} 

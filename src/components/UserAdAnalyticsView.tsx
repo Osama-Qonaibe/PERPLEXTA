@@ -35,7 +35,7 @@ import {
   Legend,
   CartesianGrid
 } from 'recharts';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export const UserAdAnalyticsView: React.FC = () => {
   const { language, token } = useAppContext();
@@ -390,7 +390,7 @@ export const UserAdAnalyticsView: React.FC = () => {
               <div className="text-[11px] font-bold text-gray-400 mb-2">{isRtl ? 'توزيع الأجهزة:' : 'Device Breakdown:'}</div>
               <div className="space-y-2">
                 {audienceType.devices.map((dev: any, i: number) => (
-                  <div key={i} className="space-y-1">
+                  <div key={`aud-dev-${i}-${dev.device}`} className="space-y-1">
                     <div className="flex justify-between text-xs font-bold text-[var(--text-primary)]">
                       <span>{dev.device}</span>
                       <span className="text-accent font-mono">{dev.percentage}%</span>
@@ -410,7 +410,7 @@ export const UserAdAnalyticsView: React.FC = () => {
               <div className="text-[11px] font-bold text-gray-400 mb-2">{isRtl ? 'شرائح الاهتمام:' : 'Customer Segments:'}</div>
               <div className="space-y-1.5">
                 {audienceType.buyerSegments.map((seg: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between text-[11px] p-2 rounded bg-[var(--bg-base)]">
+                  <div key={`aud-seg-${idx}-${seg.segment}`} className="flex items-center justify-between text-[11px] p-2 rounded bg-[var(--bg-base)]">
                     <span className="font-bold text-[var(--text-primary)]">{seg.segment}</span>
                     <span className="font-extrabold text-purple-400 font-mono">{seg.percentage}%</span>
                   </div>
@@ -435,7 +435,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {insights.map((item: any, idx: number) => (
             <div
-              key={idx}
+              key={`insight-${idx}-${item.title_en || item.title_ar}`}
               className="p-4 rounded-xl border bg-gradient-to-br from-[var(--bg-base)] to-[var(--bg-secondary)] space-y-2 border-accent/20 shadow-sm"
             >
               <div className="font-extrabold text-xs text-accent flex items-center gap-1.5">

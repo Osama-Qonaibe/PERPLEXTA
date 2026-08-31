@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Scissors, Play, Pause, Check, Clock, RotateCcw, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { getAspectRatioClass } from '../utils/mediaUtils';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export interface VideoTrimmerModalProps {
   isOpen: boolean;

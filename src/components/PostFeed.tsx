@@ -33,7 +33,7 @@ import {
   Clapperboard,
   Camera
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
 import { AdDirectChat } from './AdDirectChat';
 import { AdInsightsTab } from './AdInsightsTab';
@@ -230,7 +230,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
       <div className="grid grid-cols-1 gap-5 w-full touch-pan-y">
         {[1, 2, 3].map((n) => (
           <div
-            key={n}
+            key={`post-skel-${n}`}
             className="rounded-2xl bg-white dark:bg-[#1a1a1c] p-4 border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
           >
             <div className="flex items-center gap-3">
@@ -294,7 +294,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-b border-accent/30 bg-gray-950 p-1 sm:p-2 overflow-hidden"
+                  className="border-b border-accent/30 bg-gray-950 p-2 overflow-hidden"
                 >
                   <AdInsightsTab
                     adId={ad.id}
@@ -308,7 +308,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             </AnimatePresence>
 
             {/* Header: Author / Merchant Page info */}
-            <div className="p-3 sm:p-3.5 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
+            <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
               <div className="flex items-center gap-2.5 min-w-0">
                 <BulletinAvatar
                   src={ad.author_avatar}
@@ -503,7 +503,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             </div>
 
             {/* Content: Title, Text & Hashtags */}
-            <div className="p-3.5 space-y-2 flex-1">
+            <div className="p-4 space-y-3 flex-1">
               <h3 className="text-xs font-black text-gray-900 dark:text-gray-100 leading-snug">
                 <HighlightText text={ad.title} query={searchQuery} />
               </h3>
@@ -613,7 +613,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             )}
 
             {/* Social Engagement Actions Bar */}
-            <div className="p-2 sm:px-3 bg-gray-50/60 dark:bg-[#18181b]/60 flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
+            <div className="p-4 bg-gray-50/60 dark:bg-[#18181b]/60 flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
               {/* Primary Interaction Group (Likes, Comments, Share, Chat, WhatsApp, Call) */}
               <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-wrap">
                 {/* Like Button */}
@@ -848,7 +848,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-t border-gray-200 dark:border-gray-800 p-3 bg-gray-50/90 dark:bg-gray-900/50 space-y-3"
+                  className="border-t border-gray-200 dark:border-gray-800 p-4 bg-gray-50/90 dark:bg-gray-900/50 space-y-3"
                 >
                   <h5 className="text-[11px] font-extrabold text-gray-500 flex items-center gap-1">
                     <MessageSquare size={13} className="text-accent" />
@@ -944,7 +944,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-t border-gray-200 dark:border-gray-800 p-2 sm:p-3 bg-gray-100/80 dark:bg-gray-900/90"
+                  className="border-t border-gray-200 dark:border-gray-800 p-4 bg-gray-100/80 dark:bg-gray-900/90"
                 >
                   <AdDirectChat
                     ad={ad}

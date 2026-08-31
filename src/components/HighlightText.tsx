@@ -72,7 +72,7 @@ export const HighlightText: React.FC<HighlightTextProps> = ({
           if (testRegex.test(part)) {
             return (
               <mark
-                key={i}
+                key={`${idPrefix}-mark-${i}-${part}`}
                 id={`${idPrefix}-match-${i}`}
                 className={highlightClassName}
               >

@@ -1,24 +1,40 @@
 # PERPLEXTA PLATFORM - Design System & Engineering Guidelines
 
-## ⚠️ SUPREME PERPLEXTA DECREE ⚠️
-**ATTENTION: ALL FUTURE DEVELOPERS & AI SYSTEMS**
-This project is governed by immutable architectural principles. Any developer or AI that breaks these foundational rules is performing systemic sabotage.
+## ⚠️ SUPREME PERPLEXTA DECREE ⚠️ (المرسوم السامي الحاكم لـ ببربليكستا)
+**ATTENTION: ALL FUTURE DEVELOPERS, AI SYSTEMS, AND CODING ASSISTANTS**
+This project is governed by immutable architectural principles. Any developer, AI system, or coding assistant that breaks these foundational rules or attempts to rewrite the established codebase is performing systemic sabotage.
 
-### 🚫 STRICT MILITARY COMMAND (امر عسكري صارم) 🚫
-**"BREAKING THE ENGINEERING" (كسر الهندسة) IS A TERMINAL OFFENSE.**
+### 🚫 STRICT MILITARY COMMAND (امر عسكري صارم وصريح) 🚫
+**"BREAKING THE ENGINEERING" (كسر الهندسة والالتفاف على البنية التحتية) IS A TERMINAL OFFENSE.**
 
-1. **Update, Never Override**: Any new development **MUST BE AN UPDATE** and an augmentation, **NEVER A CHANGE OR REWRITE** of the core architecture (Express/Vite, Dual DB, Orchestrator, Constitution, and Socket execution). You are strictly forbidden from altering established foundations. Every line of code added must be an evolution, building *on top* of the existing structure, never *instead* of it.
-2. **Orchestrator Absolutism**: **STRICTLY FORBIDDEN** to hardcode AI providers, model names, or fallback logic. All routing and configuration MUST reside in the database.
-3. **Database Integrity**: The separation between **Core DB** and **Ledger DB** is absolute. Mixing them is a catastrophic breach. Pre-flight auditing of existing schemas *before* any migration is mandatory.
-4. **Zero-Clutter Policy**: The project root must remain pure. **NEVER** add test scripts or vestigial files to the root directory.
+1. **Only Evolve, Never Rewrite (التطوير والبناء فقط، يمنع منعاً باتاً الهدم أو إعادة الكتابة)**:
+   Any new development or modification **MUST BE AN UPDATE** and a targeted augmentation. You are **STRICTLY FORBIDDEN** from changing, overriding, or rewriting the core architectural frameworks (Express/Vite dual-database setup, Dynamic SSL, Database-driven Orchestrator, system maintenance crons, and websocket execution). Every line of code added must be an evolution building *on top* of the existing structure, never *instead* of it.
+   *(يُمنع منعاً باتاً إعادة كتابة الكود الأساسي أو تجاوزه. أي عمل برمجى جديد يجب أن يكون إضافة وبناء وتطوير فوق الهيكل الحالي القائم للبرنامج).*
 
-*Failure to comply with these tenets is a direct violation of project perplexta and will be treated as sabotage. Any developer who attempts to "simplify" by breaking the architectural segregation will be permanently blocked from the system.*
+2. **Absolute Database Segregation (قدسية الفصل التام بين قواعد البيانات)**:
+   The separation between **Core Database** (operational chat files/metadata), **Ledger Database** (append-only financial logs/wallets), and **Security Database** (audit logs/banned IPs) is absolute. Mixing connection pools or performing cross-pool database joins is a catastrophic security breach.
+   *(قدسية الفصل التام بين قاعدة البيانات الأساسية لبيانات التشغيل وقاعدة بيانات الحسابات المالية غير قابلة للمساس).*
+
+3. **Orchestrator Absolutism & Zero-Knowledge Hardcoding (منع الترميز المباشر للموديلات برمجياً)**:
+   It is **STRICTLY PROHIBITED** to hardcode AI model names (e.g., `gemini-1.5-pro`, `gpt-4`, `o1`, `deepseek`) or provider names inside `.ts` or `.tsx` source files. All model mapping, fallback logic, and service routing must be loaded dynamically from the `tool_orchestrator` database registry.
+   *(تمنع كتابة أسماء نماذج الذكاء الاصطناعي برمجياً داخل الكود؛ البنية مرنة وتعتمد بالكامل على توجيهات لوحة التحكم المخزنة في قاعدة البيانات).*
+
+4. **Zero-Clutter Policy (سياسة تصفير الفوضى والجذر البرمجي النقّي)**:
+   The project root directory must remain pristine. Never add experimental files, local test logs, or temporary `.json`/`.temp` files. Clean up unused resources immediately using proper file tools.
+
+*Failure to comply with these tenets is a direct violation of project perplexta and will be treated as sabotage. Any assistant or developer who attempts to "simplify" by breaking the architectural segregation or restructuring existing components will be permanently blocked from the system.*
 
 ## 0. Project Identity & Vision
 **PERPLEXTA** defines the core vision, target audience, and architectural ambition of the platform:
 - **Professional Elite Technical Analysis**
 
 This identity serves as our compass. Every engineering decision—from the "Silent Failover" orchestrator to the zero-latency API key vault—is designed to uphold this "Professional Elite" standard.
+
+## 0.1. Current Architectural Achievements (State of the Union)
+- **Dynamic Local SSL Handshake**: Automated context-aware Postgres SSL management (disables SSL on localhost to prevent handshake errors, while enforcing full secure SSL on cloud platforms like AWS and Neon).
+- **Synchronous Session Lifecycle**: Smooth, instantaneous auth-state updates with zero layout flickering, utilizing synchronous front-end cache flushes and graceful transition animations (1.1s Slow-Motion duration).
+- **File Upload & Ingestion Pipeline**: Full 100MB capacity support with strict multi-layer file size validations and resilient PDF parser integrations.
+- **Audited Wallet Ledger & API Credits**: Append-only transaction logging with instant credit check and 402 Insufficient Balance rejection workflows.
 
 ## 1. Theming & Dark Mode System (Single Source of Truth)
 - **Engine**: Tailwind CSS v4 with unified CSS variables in `src/index.css`.
@@ -265,31 +281,11 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
     - **Segmented Plans & Subscriptions Display**: Optimized the frontend `SubscriptionPage` with a dual-segmented interactive sliding switch separating consumer "Performance Plans" from developer-agent "Developer & Agent Plans".
     - **Reactive Limit Visualization**: Implemented dynamic context-aware limit presentations inside package cards. Selecting Developer plans automatically swaps standard user conversational meters (chats, analysis tools) with programmatic-specific meters (`x402 API Requests`) and Storage quotas.
     - **Bilingual Schema Migration & Seeding**: Added safe migration and auto-seeding blocks for corporate API packages (`Developer Lite` and `Developer Scale`) under the new `plan_type` schema constraint, keeping structural fields updated in user editing panels.
-- **Database Resilience & Dynamic SSL Connectivity (Completed August 19, 2026):**
+- **Database Resilience & Dynamic SSL Connectivity (Completed Today - August 19, 2026):**
     - **Dynamic SSL Handling**: Redesigned `getSslConfig` in `server/db/index.ts` to be fully context-aware. The system now dynamically disables SSL when connecting to a local PostgreSQL instance on `localhost` (resolving the fatal connection error "The server does not support SSL connections"), while automatically preserving high-security SSL configurations for remote databases like Neon/AWS (avoiding "connection is insecure" issues).
     - **Auto-Schema Repair for Activity Logs**: Integrated `user_activity_logs` into the boot-time schema integrity checks (`verifySchemaIntegrity`) in `server/db/migrations.ts`. On startup, the system now automatically audits and repairs any missing columns (e.g. `event_type`, `event_details`, `user_agent`) via a non-destructive schema patching layer.
     - **Validated Clean Boot**: Successfully verified 100% clean, error-free database pool initialization on the production PM2 instance.
-- **Admin Control Dashboards Modularization & Strategic Segregation (Completed August 30, 2026):**
-    - **Architectural Dashboard Splitting**: Successfully decoupled the monolithic admin structure into distinct, highly specialized command surfaces:
-        - **Admin Command Center (`AdminDashboard.tsx`)**: Dedicated to real-time system monitoring, security radar, latency metrics, AI orchestrator, API keys vault, database mesh, and audit trail.
-        - **Admin Agency Hub (`AdminAgencyPage.tsx`)**: Dedicated to Subscription Plans & Pricing management, Developer Quotas, and Referral & Growth network statistics.
-        - **Admin Community Hub (`AdminCommunityPage.tsx`)**: Dedicated to Marketplace items & extensions approval queue, Bulletin & Advertisements management, and Forum & Blog content moderation.
-        - **Admin System & SEO Hub (`AdminSystemPage.tsx`)**: Dedicated to SEO metadata auditing, AI content population, and system-wide protocol maintenance.
-    - **Modular View Extraction**: Refactored high-density panels into clean, reusable modular components (`PlansSubscriptionsView.tsx`, `MarketplaceManagementView.tsx`, `SeoCenterView.tsx`, `AdsManagementView.tsx`, `ReferralDashboardView.tsx`), significantly reducing file size and enhancing maintainability.
-    - **Subscription React & Key Integrity**: Sanitized dynamic item rendering in `PlansSubscriptionsView` with unique key identifiers across user and developer subscription cards, normalizing legacy and bilingual feature strings/objects.
-    - **Root Sanitization & Zero-Clutter Compliance**: Purged all 49 temporary test/migration scripts (`.py` files) and temporary configuration artifacts (`tsconfig.temp.json`) from the project root, strictly upholding the Supreme Decree Rule 10.1.
-    - **Dual DB & Route Verification**: Audited 100% of front-to-back endpoints and verified healthy connections across all isolated database pools (`core`, `ledger`, `external`, `security`).
-- **Preferences Persistence, Refresh Protection & Build Cron Synchronization (Completed August 30, 2026):**
-    - **Synchronous Preferences Persistence**: Updated `AppContext.tsx` so language and theme changes immediately update `user` state and `localStorage` synchronously to ensure consistency upon refetching user profiles.
-    - **Page Reload & Protected Routes Stability**: Refactored route protection guards (`ProtectedRoute`, `AdminRoute`, `useAdminAuth`, `AdminDashboard`) to wait for `isAuthReady` before performing navigation checks during page reloads (refreshes) when an active `token` exists, preventing unrequested redirects to `/chat` or `/`.
-    - **Build Hash Cron & Update Notification Logic**: Re-engineered `server/app.ts` to output a stable `SERVER_BUILD_HASH` per server boot/build instead of request-based timestamps. Upgraded `VersionManager` (`versionManager.ts`) with cron-like interval polling and dismissed build-hash storage (`perplexta_dismissed_build_hash`), ensuring update popups appear only when new code is actually deployed to the server.
-    - **Hard Reset Task Execution**: Integrated `VersionManager.applyHardReset()` on update action click, flushing SW registrations and web cache storage before triggering a cache-bypassing hard reload.
-    - **Persistent Cookie Consent & Hard Reset Scope**: Updated `consentManager.ts` to persist user cookie consent choices in storage and protected `perplexta_cookie_consent_v1` inside `SessionPurge.ts` so consent choices survive standard logouts. Linked cookie consent resetting directly to `applyHardReset()`, guaranteeing the cookie notice re-prompts only after an explicit hard reset or manual browser clear.
-- **Official Release v1.0.0 Baseline (Completed August 30, 2026):**
-    - **Version Specification**: Officially tagged `v1.0.0` in `package.json`, `metadata.json`, and `server/app.ts` (`/version.json` endpoint).
-    - **Stable Build Hash**: Configured `SERVER_BUILD_HASH` and `v1.0.0-release` as production baseline.
-    - **Security & Privacy Standards**: Enforced `X-Robots-Tag: noindex, nofollow` headers on all private paths and integrated cookie consent management in account preferences.
-- **Status:** **RELEASE v1.0.0 STABLE / PRODUCTION-READY PLATFORM BASELINE ESTABLISHED**.
+- **Status:** **STABLE / ARCHITECTURAL SYMMETRY & MAJESTIC CALM ACHIEVED**.
 
 ## 9. Full-Stack Integration Roadmap (Active Phase)
 
@@ -341,13 +337,16 @@ The Admin Panel is engineered as a comprehensive Enterprise Resource Planning (E
 - [x] Live Stream Real-time Optimization: Implemented real-time viewer counter and persistent title display in the live stream interface.
 - [x] Google Chat Integration: Full-stack workspace integration for Google Chat spaces, message viewing, space creation, and secure messaging with mandatory confirmation dialogs.
 
-### 🛠️ Phase 7: Administrative Domain Segregation & Modularization (Active / Milestone Reached)
-- [x] Dedicated Admin Agency Dashboard (`/admin/agency`).
-- [x] Dedicated Admin Community & Marketplace Dashboard (`/admin/community`).
-- [x] Dedicated Admin System & SEO Dashboard (`/admin/system`).
-- [x] Extraction of modular components (`PlansSubscriptionsView`, `MarketplaceManagementView`, `SeoCenterView`, `AdsManagementView`, `ReferralDashboardView`).
-- [x] Zero-Clutter root audit & eradication of vestigial scripts.
-- [ ] Next Milestone: Complete migration and redistribution of remaining sub-sections across admin panels according to functional domain hierarchy and operational priority.
+### 🛠️ Phase 7: Local Infrastructure & Environment Prep (Active Phase)
+- [ ] Local Server Initialization & Database Mesh check.
+- [ ] .env.example refinement for production-ready local builds.
+- [ ] Audit of redundant files and root cleanup (Zero-Clutter Policy).
+
+### 🧹 Phase 8: Strategic Code Audit & Optimization (Completed Today)
+- [x] Systematic cleanup of all code blocks (Removing redundant comments/explanations).
+- [x] Forensic review of every module for logic efficiency.
+- [x] Eradication of legacy test files and structural noise.
+- [x] High-precision synchronization of subscription billing across all layers.
 
 ## 10. Master Developer Protocol (Architectural Integrity)
 🚫 **ATTENTION: ABSOLUTE MANDATE FOR FUTURE DEVELOPERS & AI SYSTEMS** 🚫
@@ -771,17 +770,6 @@ The platform has officially transitioned from "Motion Harmony" to "Majestic Calm
 - **System Stability & Zero-Clutter Integrity**:
     - Compiled successfully via `npm run build`, ensuring production artifacts include the updated Service Worker logic.
     - Achieved without altering the Dual-Database separation or existing Orchestrator mechanics.
-
-### 🛠️ Session Work Completed Today (August 30, 2026 - Analytics & CSP Hardening):
-- **Eradicated Google Analytics Duplication**:
-    - Identified a critical redundancy where Google Analytics scripts were being injected twice (once in `GoogleAnalytics.tsx` and a hardcoded duplicate inside `AppContext.tsx`).
-    - Successfully purged the redundant `useEffect` injection from `AppContext.tsx` (lines ~3345-3370), centralizing all tracking logic into the highly optimized `GoogleAnalytics.tsx` component to prevent double-firing of `page_view` events.
-- **Implemented Google Consent Mode v2**:
-    - Upgraded `GoogleAnalytics.tsx` to strictly comply with Google's 2026 privacy mandates (Consent Mode v2).
-    - Injected `gtag('consent', 'default', {...})` parameters (`ad_storage: denied`, `analytics_storage: granted`, `ad_user_data: denied`, `ad_personalization: denied`) directly before the primary Google Tag initialization.
-- **Hardened Content Security Policy (CSP)**:
-    - Resolved a major `Google Tag Assistant` blockage by allowing `https://www.googleadservices.com` and `https://*.doubleclick.net` in `server/app.ts`.
-    - Added these required domains to `scriptSrc`, `connectSrc`, and `frameSrc` arrays, allowing Analytics and Google Ads conversion pings to fire without triggering XSS/CSP browser violations.
 
 ### ⚠️ IMMUTABLE ARCHITECTURE & EXTENSION-ONLY MANDATE (أمر الالتزام بالاستكمال والتطوير وحظر التعديل أو التخريب) ⚠️
 1. **STRICT ARCHITECTURAL SEAL**: All existing architecture—including Express/Vite full-stack engine, Core & Ledger dual-database separation, Orchestrator routing, Socket execution, and UI design systems—is officially **LOCKED AND SEALED**.

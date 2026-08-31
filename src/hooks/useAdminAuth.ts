@@ -2,32 +2,15 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
-export const useAdminAuth = (allowedRoles: string[] = ['admin']) => {
-  const { user, isAuthReady, token } = useAppContext();
+export const useAdminAuth = () => {
+  const { user } = useAppContext();
   const navigate = useNavigate();
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-
-  const isAuthorized = !!user && (
-    (!!user.role && (user.role === 'admin' || allowedRoles.includes(user.role))) ||
-    (!!adminEmail && user.email === adminEmail)
-  );
 
   useEffect(() => {
-    if (isAuthReady && !token) {
-      return;
-    }
-    if (isAuthReady && user && !isAuthorized) {
+    if (user && user.role !== 'admin' && user.role !== 'support') {
       navigate('/chat');
     }
-  }, [user, isAuthReady, token, isAuthorized, navigate]);
+  }, [user, navigate]);
 
-  return { 
-    user, 
-    isAdmin: isAuthorized,
-    isSupport: user?.role === 'support',
-    isElite: user?.role === 'elite',
-    isAuthorized
-  };
+  return { user, isAdmin: user?.role === 'admin' || user?.role === 'support' };
 };
-
-

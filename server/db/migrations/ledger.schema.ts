@@ -88,6 +88,7 @@ export const LEDGER_SCHEMA_TABLES: { name: string; query: string }[] = [
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
+  amount_cents INTEGER DEFAULT 0,
   payout_method VARCHAR(50) NOT NULL,
   payout_details JSONB NOT NULL,
   status VARCHAR(20) DEFAULT 'pending',
@@ -279,14 +280,18 @@ export async function applyLedgerColumnEnforcements(targetLedgerPool: QueryClien
   await ensureColumnsBulk(targetLedgerPool, 'withdrawal_requests', {
     user_id: { type: 'INTEGER' },
     amount: { type: 'DECIMAL(10,2)', default: 0 },
+    amount_cents: { type: 'INTEGER', default: 0 },
+    method: { type: 'VARCHAR(50)' },
     payout_method: { type: 'VARCHAR(50)' },
+    details: { type: 'TEXT' },
     payout_details: { type: 'JSONB', default: "'{}'" },
     status: { type: 'VARCHAR(50)', default: "'pending'" },
     rejection_reason: { type: 'TEXT' },
     processed_by: { type: 'INTEGER' },
     processed_at: { type: 'TIMESTAMP' },
     transaction_hash: { type: 'VARCHAR(255)' },
-    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetLedgerPool, 'payout_accounts', {

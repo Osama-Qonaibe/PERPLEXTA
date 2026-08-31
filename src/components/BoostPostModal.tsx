@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Globe
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { BulletinAd } from '../../server/db/types';
 import { getMediaUrl } from '../utils/mediaUtils';
 

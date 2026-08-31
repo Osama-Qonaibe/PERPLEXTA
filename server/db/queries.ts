@@ -1,5 +1,6 @@
 import { pool, ledgerPool } from './index.js';
 import { decrypt } from '../utils/crypto.js';
+import NodeCache from 'node-cache';
 
 
 type BatchLoadFn<K, V> = (keys: readonly K[]) => Promise<readonly V[]>;
@@ -454,18 +455,52 @@ export function invalidateApiKeysVaultCache() {
   apiKeysVaultCache.delete('global');
 }
 
-const routeSeoCache = new Map<string, CacheEntry<any>>();
-const routeSeoMetadataCache = new Map<string, CacheEntry<any>>();
-const TTL_ROUTE_SEO = 120000; // 2 minutes
+const seoNodeCache = new NodeCache({ stdTTL: 120, checkperiod: 15 });
+
+// Custom per-route hit/miss metrics tracker
+interface CacheStats {
+  hits: number;
+  misses: number;
+}
+
+const seoRouteStats = new Map<string, CacheStats>();
+
+function trackSeoCache(route: string, type: string, isHit: boolean) {
+  let stats = seoRouteStats.get(route);
+  if (!stats) {
+    stats = { hits: 0, misses: 0 };
+    seoRouteStats.set(route, stats);
+  }
+  if (isHit) {
+    stats.hits++;
+  } else {
+    stats.misses++;
+  }
+
+  const total = stats.hits + stats.misses;
+  const hitRatio = ((stats.hits / total) * 100).toFixed(1);
+
+  // Get node-cache global stats
+  const globalStats = seoNodeCache.getStats();
+  const globalTotal = globalStats.hits + globalStats.misses;
+  const globalHitRatio = globalTotal > 0 ? ((globalStats.hits / globalTotal) * 100).toFixed(1) : '0.0';
+
+  console.log(
+    `\x1b[35m[SEO Cache Metrics]\x1b[0m Route: "\x1b[33m${route}\x1b[0m" | Type: \x1b[36m${type}\x1b[0m | Result: ${isHit ? '\x1b[32mHIT (Memory)\x1b[0m' : '\x1b[31mMISS (DB)\x1b[0m'} | ` +
+    `Route Efficiency: \x1b[32m${hitRatio}%\x1b[0m (Hits: ${stats.hits}, Misses: ${stats.misses}) | ` +
+    `Overall Cache Efficiency: \x1b[36m${globalHitRatio}%\x1b[0m (Total Hits: ${globalStats.hits}, Total Misses: ${globalStats.misses})`
+  );
+}
 
 /** Get cached SEO settings for a specific route */
 export async function getCachedRouteSeo(route: string): Promise<any> {
-  const now = Date.now();
-  const cached = routeSeoCache.get(route);
-  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
-    return cached.data;
+  const cached = seoNodeCache.get<any>(`route:${route}`);
+  if (cached !== undefined) {
+    trackSeoCache(route, 'Settings', true);
+    return cached;
   }
 
+  trackSeoCache(route, 'Settings', false);
   if (!pool) return null;
   try {
     const result = await pool.query(
@@ -473,7 +508,7 @@ export async function getCachedRouteSeo(route: string): Promise<any> {
       [route]
     );
     const data = result.rows[0] || null;
-    routeSeoCache.set(route, { data, timestamp: now });
+    seoNodeCache.set(`route:${route}`, data);
     return data;
   } catch (err: any) {
     console.warn('[Queries] getCachedRouteSeo failed:', err.message);
@@ -483,12 +518,13 @@ export async function getCachedRouteSeo(route: string): Promise<any> {
 
 /** Get cached SEO metadata for a specific route */
 export async function getCachedRouteSeoMetadata(routePath: string): Promise<any> {
-  const now = Date.now();
-  const cached = routeSeoMetadataCache.get(routePath);
-  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
-    return cached.data;
+  const cached = seoNodeCache.get<any>(`meta:${routePath}`);
+  if (cached !== undefined) {
+    trackSeoCache(routePath, 'Metadata', true);
+    return cached;
   }
 
+  trackSeoCache(routePath, 'Metadata', false);
   if (!pool) return null;
   try {
     const result = await pool.query(
@@ -496,7 +532,7 @@ export async function getCachedRouteSeoMetadata(routePath: string): Promise<any>
       [routePath]
     );
     const data = result.rows[0] || null;
-    routeSeoMetadataCache.set(routePath, { data, timestamp: now });
+    seoNodeCache.set(`meta:${routePath}`, data);
     return data;
   } catch (err: any) {
     console.warn('[Queries] getCachedRouteSeoMetadata failed:', err.message);
@@ -506,17 +542,18 @@ export async function getCachedRouteSeoMetadata(routePath: string): Promise<any>
 
 /** Get cached list of all active route SEO settings */
 export async function getCachedAllActiveRouteSeo(): Promise<any[]> {
-  const now = Date.now();
-  const cached = routeSeoCache.get('all_active');
-  if (cached && now - cached.timestamp < TTL_ROUTE_SEO) {
-    return cached.data;
+  const cached = seoNodeCache.get<any[]>('all_active');
+  if (cached !== undefined) {
+    trackSeoCache('all_active', 'AllActiveList', true);
+    return cached;
   }
 
+  trackSeoCache('all_active', 'AllActiveList', false);
   if (!pool) return [];
   try {
     const result = await pool.query('SELECT * FROM route_seo_settings WHERE is_active = true ORDER BY id ASC');
     const data = result.rows;
-    routeSeoCache.set('all_active', { data, timestamp: now });
+    seoNodeCache.set('all_active', data);
     return data;
   } catch (err: any) {
     console.warn('[Queries] getCachedAllActiveRouteSeo failed:', err.message);
@@ -526,5 +563,5 @@ export async function getCachedAllActiveRouteSeo(): Promise<any[]> {
 
 /** Invalidate entire route SEO cache */
 export function invalidateRouteSeoCache() {
-  routeSeoCache.clear();
+  seoNodeCache.flushAll();
 }

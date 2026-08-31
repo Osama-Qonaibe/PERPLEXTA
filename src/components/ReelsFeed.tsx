@@ -35,7 +35,7 @@ import {
   PauseCircle,
   Film
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { BulletinAvatar } from './BulletinAvatar';
@@ -248,6 +248,17 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   const wasPlayingBeforeScrollRef = useRef<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (startId) {
+      const idx = reelsList.findIndex((r) => r.id === startId);
+      if (idx >= 0 && idx !== activeIndex) {
+        setActiveIndex(idx);
+        setTimeout(() => { const container = containerRef.current; if (container) { const targetItem = container.querySelector(`[data-reel-index="${idx}"]`); if (targetItem) { targetItem.scrollIntoView({ behavior: "auto" }); } } }, 100);
+      }
+    }
+  }, [startId, reelsList]);
+
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
   const prevActiveIndexRef = useRef<number>(activeIndex);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -282,6 +293,31 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
       return () => clearTimeout(timer);
     }
   }, [activeIndex, reelsList]);
+
+  // Debounced safe upload trigger to prevent duplicate calls
+  const isUploadOpeningRef = useRef(false);
+  const handleUploadReelClick = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isUploadOpeningRef.current) return;
+    isUploadOpeningRef.current = true;
+    setTimeout(() => {
+      isUploadOpeningRef.current = false;
+    }, 600);
+
+    if (!token) {
+      toast.error(isRtl ? 'يرجى تسجيل الدخول لرفع مقطع ريلز' : 'Please log in to upload reels');
+      return;
+    }
+
+    if (onOpenUploadReels) {
+      onOpenUploadReels();
+    } else if (onUploadReelClick) {
+      onUploadReelClick();
+    }
+  }, [token, isRtl, onOpenUploadReels, onUploadReelClick]);
 
   // Real-time socket listeners for authentic database synchronization
   useEffect(() => {
@@ -899,14 +935,14 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             autoPlay
             loop
             playsInline
-            className="w-full h-full object-cover scale-125 blur-3xl opacity-20 filter saturate-150 brightness-75"
+            className="ambient-video w-full h-full object-cover scale-125 blur-3xl opacity-20 filter saturate-150 brightness-75"
           />
         ) : reelsList[activeIndex]?.image_url ? (
           <img
             key={`ambient-img-${reelsList[activeIndex]?.id}`}
             src={getMediaUrl(reelsList[activeIndex]?.image_url)}
             alt="Ambient"
-            className="w-full h-full object-cover scale-125 blur-3xl opacity-20 filter saturate-150 brightness-75"
+            className="ambient-video w-full h-full object-cover scale-125 blur-3xl opacity-20 filter saturate-150 brightness-75"
           />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-zinc-950/85 to-black/95 backdrop-blur-2xl" />
@@ -919,11 +955,11 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white backdrop-blur-xl transition-all border border-white/15 flex items-center gap-2 shadow-lg active:scale-95 group cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 text-white backdrop-blur-md transition-all flex items-center justify-center active:scale-95 group cursor-pointer"
               title={isRtl ? 'رجوع إلى لوحة الإعلانات' : 'Back to Ads'}
             >
               {isRtl ? <ArrowRight size={16} className="text-purple-400 group-hover:-translate-x-0.5 transition-transform" /> : <ArrowLeft size={16} className="text-purple-400 group-hover:-translate-x-0.5 transition-transform" />}
-              <span className="text-xs font-black tracking-wide">{isRtl ? 'رجوع' : 'Back'}</span>
+              
             </button>
           )}
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/70 backdrop-blur-xl border border-white/10 shadow-md">
@@ -935,13 +971,13 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         </div>
 
         {/* Top Center: Tabs Switcher ("لك" | "المتابَعون") */}
-        <div className="flex items-center gap-1 p-1 rounded-full bg-zinc-900/80 backdrop-blur-xl border border-white/15 shadow-inner">
+        <div className="flex items-center gap-4 drop-shadow-md">
           <button
             onClick={() => setActiveTab('for_you')}
             className={`px-3.5 py-1 text-xs font-extrabold rounded-full transition-all cursor-pointer ${
               activeTab === 'for_you'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white drop-shadow-lg after:content-[" "] after:absolute after:-bottom-1.5 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-1 after:bg-white after:rounded-full'
+                : 'text-white/60 hover:text-white drop-shadow-md'
             }`}
           >
             {isRtl ? 'لك' : 'For You'}
@@ -950,8 +986,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             onClick={() => setActiveTab('following')}
             className={`px-3.5 py-1 text-xs font-extrabold rounded-full transition-all cursor-pointer ${
               activeTab === 'following'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white drop-shadow-lg after:content-[" "] after:absolute after:-bottom-1.5 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-1 after:bg-white after:rounded-full'
+                : 'text-white/60 hover:text-white drop-shadow-md'
             }`}
           >
             {isRtl ? 'المتابَعون' : 'Following'}
@@ -961,20 +997,17 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         {/* Top Right: Upload Reel Button + Mute Button */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              if (onOpenUploadReels) onOpenUploadReels();
-              else if (onUploadReelClick) onUploadReelClick();
-            }}
-            className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-purple-600/25 border border-white/20 transition-all active:scale-95 cursor-pointer"
+            onClick={handleUploadReelClick}
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer"
             title={isRtl ? 'رفع مقطع ريلز جديد' : 'Upload New Reel'}
           >
-            <Plus size={14} className="stroke-[3]" />
-            <span className="text-xs font-black">{isRtl ? 'نشر ريلز' : 'Create Reel'}</span>
+            <Plus size={24} className="drop-shadow-lg" />
+            
           </button>
 
           <button
             onClick={() => setIsMuted((prev) => !prev)}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white backdrop-blur-xl transition-all border border-white/15 flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer"
             title={isMuted ? (isRtl ? 'تشغيل الصوت (M)' : 'Unmute (M)') : (isRtl ? 'كتم الصوت (M)' : 'Mute (M)')}
           >
             {isMuted ? <VolumeX size={17} className="text-red-400" /> : <Volume2 size={17} />}
@@ -1036,10 +1069,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                 : 'Be the first to publish high quality reels or share creative video content directly with the audience.'}
             </p>
             <button
-              onClick={() => {
-                if (onOpenUploadReels) onOpenUploadReels();
-                else if (onUploadReelClick) onUploadReelClick();
-              }}
+              onClick={handleUploadReelClick}
               className="px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm flex items-center gap-2 shadow-xl shadow-purple-600/30 border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
             >
               <Plus size={18} className="stroke-[3]" />
@@ -1085,7 +1115,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                       playsInline
                       preload={Math.abs(index - activeIndex) <= 1 ? 'auto' : 'metadata'}
                       onTimeUpdate={() => handleTimeUpdate(reel.id)}
-                      className="w-full h-full object-cover pointer-events-none select-none"
+                      className="w-full h-full object-contain pointer-events-none select-none"
                     />
                   </div>
 
@@ -1192,10 +1222,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={(e) => handleLikeClick(e, reel.id)}
-                        className={`w-11 h-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all active:scale-75 shadow-lg border ${
+                        className={`w-11 h-11 flex items-center justify-center transition-all active:scale-75 cursor-pointer ${
                           likeData.liked
-                            ? 'bg-red-500/20 text-red-500 border-red-500/50'
-                            : 'bg-black/50 text-white border-white/15 hover:bg-black/70'
+                            ? 'text-red-500 drop-shadow-md'
+                            : 'text-white drop-shadow-md'
                         }`}
                       >
                         <Heart
@@ -1212,7 +1242,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={(e) => openCommentsDrawer(e, reel.id)}
-                        className="w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-75 border border-white/15 shadow-lg"
+                        className="w-11 h-11 flex items-center justify-center transition-all active:scale-75 cursor-pointer text-white drop-shadow-md"
                       >
                         <MessageCircle size={22} />
                       </button>
@@ -1225,10 +1255,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={(e) => handleSaveClick(e, reel.id)}
-                        className={`w-11 h-11 rounded-full backdrop-blur-md flex items-center justify-center transition-all active:scale-75 shadow-lg border ${
+                        className={`w-11 h-11 flex items-center justify-center transition-all active:scale-75 cursor-pointer ${
                           isSaved
-                            ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                            : 'bg-black/50 text-white border-white/15 hover:bg-black/70'
+                            ? 'text-amber-400 drop-shadow-md'
+                            : 'text-white drop-shadow-md'
                         }`}
                       >
                         <Bookmark size={22} className={isSaved ? 'fill-amber-400 text-amber-400' : ''} />
@@ -1242,7 +1272,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         onClick={(e) => openShareSheet(e, reel)}
-                        className="w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-75 border border-white/15 shadow-lg"
+                        className="w-11 h-11 flex items-center justify-center transition-all active:scale-75 cursor-pointer text-white drop-shadow-md"
                       >
                         <Share2 size={22} />
                       </button>
@@ -1258,7 +1288,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                           e.stopPropagation();
                           setMoreMenuReel(reel);
                         }}
-                        className="w-11 h-11 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-75 border border-white/15 shadow-lg"
+                        className="w-11 h-11 flex items-center justify-center transition-all active:scale-75 cursor-pointer text-white drop-shadow-md"
                         title={isRtl ? 'خيارات إضافية' : 'More options'}
                       >
                         <MoreVertical size={20} />
@@ -1379,10 +1409,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                   <div className="flex flex-col items-center gap-1">
                     <button
                       onClick={(e) => handleLikeClick(e, reel.id)}
-                      className={`w-12 h-12 rounded-full backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 shadow-xl border cursor-pointer ${
+                      className={`w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer ${
                         likeData.liked
-                          ? 'bg-red-500/25 text-red-500 border-red-500/50 shadow-red-500/20'
-                          : 'bg-zinc-900/80 text-white border-white/15 hover:bg-zinc-800'
+                          ? 'text-red-500 drop-shadow-md'
+                          : 'text-white drop-shadow-md hover:scale-110'
                       }`}
                       title={likeData.liked ? (isRtl ? 'إلغاء الإعجاب' : 'Unlike') : (isRtl ? 'إعجاب' : 'Like')}
                     >
@@ -1410,7 +1440,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                       className={`w-12 h-12 rounded-full backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 border shadow-xl cursor-pointer ${
                         commentsOpen && activeCommentReelId === reel.id
                           ? 'bg-purple-600 text-white border-purple-400 shadow-purple-500/30'
-                          : 'bg-zinc-900/80 hover:bg-zinc-800 text-white border-white/15'
+                          : 'text-white drop-shadow-md'
                       }`}
                       title={isRtl ? 'التعليقات' : 'Comments'}
                     >
@@ -1425,10 +1455,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                   <div className="flex flex-col items-center gap-1">
                     <button
                       onClick={(e) => handleSaveClick(e, reel.id)}
-                      className={`w-12 h-12 rounded-full backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 shadow-xl border cursor-pointer ${
+                      className={`w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer ${
                         isSaved
-                          ? 'bg-amber-500/25 text-amber-400 border-amber-500/50 shadow-amber-500/20'
-                          : 'bg-zinc-900/80 text-white border-white/15 hover:bg-zinc-800'
+                          ? 'text-amber-400 drop-shadow-md'
+                          : 'text-white drop-shadow-md hover:scale-110'
                       }`}
                       title={isSaved ? (isRtl ? 'إزالة من المحفوظات' : 'Saved') : (isRtl ? 'حفظ' : 'Save')}
                     >
@@ -1443,7 +1473,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                   <div className="flex flex-col items-center gap-1">
                     <button
                       onClick={(e) => openShareSheet(e, reel)}
-                      className="w-12 h-12 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 border border-white/15 shadow-xl cursor-pointer"
+                      className="w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer text-white drop-shadow-md"
                       title={isRtl ? 'مشاركة' : 'Share'}
                     >
                       <Share2 size={22} />
@@ -1460,7 +1490,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                         e.stopPropagation();
                         setMoreMenuReel(reel);
                       }}
-                      className="w-12 h-12 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 border border-white/15 shadow-xl cursor-pointer"
+                      className="w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer text-white drop-shadow-md"
                       title={isRtl ? 'المزيد من الخيارات' : 'More options'}
                     >
                       <MoreVertical size={22} />

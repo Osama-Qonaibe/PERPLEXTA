@@ -123,25 +123,6 @@ app.use((req, res, next) => {
   if (!isApiOrUploads && !hasStaticExtension) {
     res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp", </.well-known/oauth-authorization-server>; rel="oauth-authorization-server", </.well-known/oauth-protected-resource>; rel="oauth-protected-resource", </auth.md>; rel="service-doc"');
   }
-
-  const blocked = [
-    "/admin",
-    "/admin-agency",
-    "/admin-community",
-    "/admin-system",
-    "/chat",
-    "/settings",
-    "/wallet",
-    "/rewards",
-    "/auth",
-    "/api"
-  ];
-  if (req.path !== '/auth.md' && blocked.some(b => req.path === b || req.path.startsWith(b + '/'))) {
-    if (!res.headersSent) {
-      res.setHeader("X-Robots-Tag", "noindex, nofollow");
-    }
-  }
-
   next();
 });
 
@@ -162,37 +143,101 @@ app.use((req, res, next) => {
 
 app.use((req: any, res: any, next: any) => {
   const isDev = process.env.NODE_ENV !== 'production';
+  const nonce = res.locals.nonce || '';
   
+  // 1. Explicitly separate GTM (Google Tag Manager) script directives
+  const gtmScriptSources = [
+    "https://www.googletagmanager.com",
+    "https://*.googletagmanager.com"
+  ];
+
+  // 2. Explicitly separate GA (Google Analytics) script directives
+  const gaScriptSources = [
+    "https://*.google-analytics.com",
+    "https://analytics.google.com",
+    "https://*.analytics.google.com"
+  ];
+
+  // 3. Define other trusted script sources
+  const otherScriptSources = [
+    "https://apis.google.com",
+    "https://*.google.com",
+    "https://*.gstatic.com",
+    "https://*.googleapis.com",
+    "https://*.stripe.com",
+    "https://*.firebaseapp.com",
+    "https://*.doubleclick.net",
+    "https://*.googleadservices.com",
+    "https://www.youtube.com",
+    "https://s.ytimg.com"
+  ];
+
+  // 4. Construct CSP script-src directives using modern 'strict-dynamic' for secure nested loads,
+  // while keeping 'unsafe-inline' and host sources as solid fallbacks for backward compatibility.
   const scriptSrcDirectives = [
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-    "https://www.googletagmanager.com",
-    "https://*.stripe.com",
-    "https://*.googleapis.com",
-    "https://*.firebaseapp.com",
-    "https://apis.google.com",
-    "https://*.google.com",
-    "https://*.gstatic.com",
-    "https://www.google-analytics.com",
-    "https://*.google-analytics.com",
-    "https://www.googleadservices.com",
-    "https://*.doubleclick.net"
+    ...(!isDev && nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
+    ...gtmScriptSources,
+    ...gaScriptSources,
+    ...otherScriptSources
+  ];
+
+  const scriptSrcElemDirectives = [
+    "'self'",
+    "'unsafe-inline'",
+    ...(!isDev && nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
+    ...gtmScriptSources,
+    ...gaScriptSources,
+    ...otherScriptSources
   ];
 
   const cspDirectives: any = {
     defaultSrc: ["'self'"],
     scriptSrc: scriptSrcDirectives,
-    scriptSrcElem: scriptSrcDirectives,
+    scriptSrcElem: scriptSrcElemDirectives,
     scriptSrcAttr: ["'self'", "'unsafe-inline'"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-    styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://*.googleapis.com", "https://accounts.google.com"],
+    styleSrcElem: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://*.googleapis.com", "https://accounts.google.com"],
     styleSrcAttr: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:", "blob:", "https:", "*"],
-    connectSrc: ["'self'", "wss:", "ws:", "https://*.googleapis.com", "https://*.firebaseapp.com", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "https://*.google-analytics.com", "https://analytics.google.com", "https://www.google.com", "https://*.google.com", "https://apis.google.com", "https://*.googletagmanager.com", "https://*.run.app", "https://*.aistudio.google", "https://www.googleadservices.com", "https://*.doubleclick.net"],
+    connectSrc: [
+      "'self'", 
+      "wss:", 
+      "ws:", 
+      "https://*.googleapis.com", 
+      "https://*.firebaseapp.com", 
+      "https://api.stripe.com", 
+      "https://checkout.stripe.com", 
+      "https://maps.googleapis.com", 
+      "https://*.google-analytics.com", 
+      "https://analytics.google.com", 
+      "https://*.analytics.google.com", 
+      "https://www.google.com", 
+      "https://*.google.com", 
+      "https://apis.google.com", 
+      "https://*.googletagmanager.com", 
+      "https://*.doubleclick.net", 
+      "https://*.googleadservices.com", 
+      "https://stats.g.doubleclick.net", 
+      "https://*.g.doubleclick.net", 
+      "https://*.run.app", 
+      "https://*.aistudio.google"
+    ],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
     frameAncestors: ["'self'", "https://*.google.com", "https://ai.studio", "https://*.run.app", "https://*.aistudio.google"],
-    frameSrc: ["'self'", "https://*.stripe.com", "https://*.google.com", "https://apis.google.com", "https://accounts.google.com", "https://*.doubleclick.net", "https://*.googletagmanager.com"],
+    frameSrc: [
+      "'self'", 
+      "https://*.stripe.com", 
+      "https://*.google.com", 
+      "https://apis.google.com", 
+      "https://accounts.google.com", 
+      "https://www.youtube.com", 
+      "https://www.youtube-nocookie.com", 
+      "https://*.youtube.com", 
+      "https://*.doubleclick.net"
+    ],
     workerSrc: ["'self'", "blob:"],
     childSrc: ["'self'", "blob:"],
     manifestSrc: ["'self'"]
@@ -308,9 +353,6 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   };
 };
 
-const SERVER_BOOT_TIME = 'v1.0.0-release';
-const SERVER_BUILD_HASH = process.env.BUILD_HASH || SERVER_BOOT_TIME;
-
 app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
 app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
 app.get('/sw.js', serveStaticResource('sw.js'));
@@ -319,9 +361,9 @@ app.get('/version.json', (req, res) => {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.json({
-    version: '1.0.0',
-    buildHash: SERVER_BUILD_HASH,
-    timestamp: SERVER_BOOT_TIME
+    version: '2.0.0',
+    buildHash: process.env.BUILD_HASH || 'v2.0.0-perplexta',
+    timestamp: Date.now()
   });
 });
 
@@ -978,15 +1020,7 @@ Allow: /
 Allow: /api/og
 Disallow: /api/
 Disallow: /admin/
-Disallow: /admin-agency/
-Disallow: /admin-community/
-Disallow: /admin-system/
-Disallow: /chat/
-Disallow: /settings/
-Disallow: /wallet/
-Disallow: /rewards/
 Disallow: /auth/
-Disallow: /reset-password/
 
 Sitemap: ${baseUrl}/sitemap.xml
 `;
@@ -1630,7 +1664,7 @@ async function injectSEOTags(
     <meta property="og:image:type" content="${imageType}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:url" content="${escCanonical}" />
+    <meta property="og:url" content="${escUrl}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${escSiteName}" />
     <meta name="twitter:card" content="summary_large_image" />

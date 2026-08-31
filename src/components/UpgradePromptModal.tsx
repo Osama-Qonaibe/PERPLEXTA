@@ -8,7 +8,7 @@ import {
   Sparkles, ShieldCheck, Wallet, 
   Lock, Check, Coins, ExternalLink
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 const toolNameMap: Record<string, { en: string, ar: string }> = {
   chat: { en: 'Sovereign AI Chat', ar: 'محادثة الذكاء الاصطناعي السيادية' },

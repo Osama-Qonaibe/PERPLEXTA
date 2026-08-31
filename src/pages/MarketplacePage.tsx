@@ -9,7 +9,7 @@ import {
   ChevronDown, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart,
   Edit, ShieldAlert, BookOpen, Smartphone, Rocket, RefreshCw
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { RecommendationWidget } from '../components/RecommendationWidget';
 import { getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { IconMapper, getCategoryIcon } from '../utils/icons';
@@ -1639,12 +1639,12 @@ export const MarketplacePage: React.FC = () => {
                 >
                   {t.allCategories}
                 </button>
-                {parents.map(p => {
+                {parents.map((p, pIdx) => {
                   const chList = children.filter(c => c.parent === p.id);
                   const isParentActive = selectedCategory === p.id || chList.some(c => c.id === selectedCategory);
                   return (
                     <button
-                      key={p.id}
+                      key={`mkt-parent-btn-${p.id}-${pIdx}`}
                       onClick={() => fCat(p.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                         isParentActive
@@ -1727,14 +1727,14 @@ export const MarketplacePage: React.FC = () => {
                     <span>{t.allCategories}</span>
                   </div>
 
-                  {parents.map(p => {
+                  {parents.map((p, pIdx) => {
                     const isParentSelected = selectedCategory === p.id;
                     const isOpen = openParents[p.id];
                     const categoryChildrenList = children.filter(c => c.parent === p.id);
                     const hasActiveChild = categoryChildrenList.some(c => c.id === selectedCategory);
 
                     return (
-                      <div key={p.id} className="space-y-0.5">
+                      <div key={`mkt-parent-accordion-${p.id}-${pIdx}`} className="space-y-0.5">
                         <div
                           onClick={() => {
                             fCat(p.id);
@@ -1765,11 +1765,11 @@ export const MarketplacePage: React.FC = () => {
                               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               className="pl-4 space-y-0.5 mt-0.5 overflow-hidden"
                             >
-                              {categoryChildrenList.map(c => {
+                              {categoryChildrenList.map((c, cIdx) => {
                                 const isChildSelected = selectedCategory === c.id;
                                 return (
                                   <div
-                                    key={c.id}
+                                    key={`mkt-child-accordion-${c.id}-${cIdx}`}
                                     onClick={() => fCat(c.id)}
                                     className={`rounded px-2.5 py-1 text-[9px] font-bold cursor-pointer transition-colors duration-200 ${
                                       isChildSelected
@@ -1802,9 +1802,9 @@ export const MarketplacePage: React.FC = () => {
                     { label: '$0 – $100', val: '0-100' },
                     { label: '$100 – $500', val: '100-500' },
                     { label: '$500+', val: '500+' }
-                  ].map(pItem => (
+                  ].map((pItem, pIdx) => (
                     <label
-                      key={pItem.val}
+                      key={`mkt-price-item-${pItem.val}-${pIdx}`}
                       className={`flex items-center gap-2 text-[10px] font-bold cursor-pointer transition-colors ${
                         selectedPriceRange === pItem.val
                           ? 'text-[var(--text-primary)]'
@@ -1840,7 +1840,7 @@ export const MarketplacePage: React.FC = () => {
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div key={i} className={`rounded-xl border flex flex-col h-[390px] animate-pulse ${
+                    <div key={`mkt-skel-${i}`} className={`rounded-xl border flex flex-col h-[390px] animate-pulse ${
                       isThemeDark ? 'bg-[#090a0c]/80 border-white/5' : 'bg-white border-gray-150'
                     }`}>
                       {/* Image Block Skeleton */}
@@ -1884,7 +1884,7 @@ export const MarketplacePage: React.FC = () => {
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
                 >
                   <AnimatePresence mode="wait">
-                    {filteredItems.map(item => {
+                    {filteredItems.map((item, itemIdx) => {
                       const hList = getProductHighlights(item);
                       const isTrending = hList.includes('trending');
                       const isFeatured = hList.includes('featured');
@@ -1893,7 +1893,7 @@ export const MarketplacePage: React.FC = () => {
 
                       return (
                         <motion.div
-                          key={item.id}
+                          key={`mkt-prod-${item.id || itemIdx}-${itemIdx}`}
                           variants={{
                             hidden: { opacity: 0, y: 15 },
                             visible: { opacity: 1, y: 0 }
@@ -1965,12 +1965,12 @@ export const MarketplacePage: React.FC = () => {
                                 </span>
                                 {/* Badge under price with exceptional premium visual shadow values */}
                                 <div className="flex flex-wrap gap-1 mt-1 select-none">
-                                  {getProductHighlights(item).map((tag) => {
+                                  {getProductHighlights(item).map((tag, tIdx) => {
                                     const details = getHighlightDetails(tag);
                                     if (!details) return null;
                                     return (
                                       <span
-                                        key={tag}
+                                        key={`highlight-${item.id}-${tag}-${tIdx}`}
                                         className={`px-1.5 py-0.5 rounded-[4px] border text-[8.5px] font-black flex items-center gap-0.5 transition-theme transform hover:scale-105 shrink-0 ${details.colorClass}`}
                                       >
                                         {details.icon}
@@ -2077,14 +2077,14 @@ export const MarketplacePage: React.FC = () => {
                     <span>{t.allCategories}</span>
                   </div>
 
-                  {parents.map(p => {
+                  {parents.map((p, pIdx) => {
                     const isParentSelected = selectedCategory === p.id;
                     const accordionOpen = openParents[p.id];
                     const categoryChildrenList = children.filter(c => c.parent === p.id);
                     const hasActiveChild = categoryChildrenList.some(c => c.id === selectedCategory);
 
                     return (
-                      <div key={p.id} className="space-y-1">
+                      <div key={`mkt-mobile-parent-${p.id}-${pIdx}`} className="space-y-1">
                         <div
                           onClick={() => {
                             fCat(p.id);
@@ -2115,11 +2115,11 @@ export const MarketplacePage: React.FC = () => {
                               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               className="pl-4 mt-0.5 space-y-0.5 border-l border-white/5 overflow-hidden"
                             >
-                              {categoryChildrenList.map(c => {
+                              {categoryChildrenList.map((c, cIdx) => {
                                 const isChildSelected = selectedCategory === c.id;
                                 return (
                                   <div
-                                    key={c.id}
+                                    key={`mkt-mobile-child-${c.id}-${cIdx}`}
                                     onClick={() => {
                                       fCat(c.id);
                                       setIsMobileMenuOpen(false);
@@ -2150,9 +2150,9 @@ export const MarketplacePage: React.FC = () => {
                     { label: '$0 – $100', val: '0-100' },
                     { label: '$100 – $500', val: '100-500' },
                     { label: '$500+', val: '500+' }
-                  ].map(pItem => (
+                  ].map((pItem, pIdx) => (
                     <label
-                      key={pItem.val}
+                      key={`mkt-mobile-price-${pItem.val}-${pIdx}`}
                       className={`flex items-center gap-2.5 text-[10px] font-bold cursor-pointer transition-colors ${
                         selectedPriceRange === pItem.val ? 'text-[var(--text-primary)] font-black' : 'text-gray-400'
                       }`}
@@ -2429,7 +2429,7 @@ export const MarketplacePage: React.FC = () => {
                         
                         return (
                           <div
-                            key={idx}
+                            key={`preview-thumb-${idx}-${asset.type}`}
                             onClick={() => {
                               setLightboxIndex(idx);
                               setIsLightboxOpen(true);
@@ -2860,7 +2860,7 @@ export const MarketplacePage: React.FC = () => {
                 
                 return (
                   <div
-                    key={idx}
+                    key={`lightbox-thumb-${idx}-${asset.type}`}
                     onClick={() => {
                       setLightboxIndex(idx);
                       setLightboxScale(1);
@@ -2998,10 +2998,10 @@ export const MarketplacePage: React.FC = () => {
                           isThemeDark ? 'bg-black/40 border-white/5 focus:border-[var(--border-accent)]' : 'bg-white border-gray-250 focus:border-[var(--border-accent)]'
                         }`}
                       >
-                        {parents.map(p => (
-                          <optgroup key={p.id} label={language === 'ar' ? p.nAr : p.nEn}>
-                            {children.filter(c => c.parent === p.id).map(c => (
-                              <option key={c.id} value={c.id}>
+                        {parents.map((p, pIdx) => (
+                          <optgroup key={`mkt-optgrp-${p.id}-${pIdx}`} label={language === 'ar' ? p.nAr : p.nEn}>
+                            {children.filter(c => c.parent === p.id).map((c, cIdx) => (
+                              <option key={`mkt-opt-${c.id}-${cIdx}`} value={c.id}>
                                 {language === 'ar' ? c.nAr : c.nEn}
                               </option>
                             ))}
@@ -3172,7 +3172,7 @@ export const MarketplacePage: React.FC = () => {
                       {itemImages.length > 0 && (
                         <div className="grid grid-cols-3 gap-2 p-2 rounded-lg border border-[var(--border-main)] bg-[var(--bg-hover)] max-h-[140px] overflow-y-auto mb-1.5 animate-fade-in">
                           {itemImages.map((img, idx) => (
-                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-gray-200/50 dark:border-white/10 group shadow-sm shrink-0">
+                            <div key={`mkt-form-img-${idx}-${img.slice(-10)}`} className="relative aspect-square rounded-md overflow-hidden border border-gray-200/50 dark:border-white/10 group shadow-sm shrink-0">
                               <img src={getMediaUrl(img)} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                               <span className="absolute bottom-0.5 right-1 bg-black/60 text-white text-[7px] font-bold px-0.5 rounded leading-none">
                                 #{idx + 1}
@@ -3406,9 +3406,9 @@ export const MarketplacePage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  cart.map((item) => (
+                  cart.map((item, itemIdx) => (
                     <div
-                      key={item.id}
+                      key={`cart-item-${item.id || itemIdx}-${itemIdx}`}
                       className={`p-3 rounded-lg border flex items-start gap-3 transition-colors ${
                         isThemeDark ? 'bg-black/40 border-white/5' : 'bg-gray-50 border-gray-150'
                       }`}

@@ -228,38 +228,9 @@ export const authenticateAdmin = (req: Request, res: Response, next: NextFunctio
   authenticateToken(req, res, () => {
     const userPayload = (req as any).user;
     if (!userPayload || userPayload.role !== 'admin') {
-      res.status(403).json({ error: 'Admin access required', message: 'Forbidden: Insufficient administrative privileges' });
+      res.status(403).json({ error: 'Admin access required' });
       return;
     }
     next();
   });
-};
-
-export const requireAdmin = authenticateAdmin;
-
-export const authenticateSupportOrAdmin = (req: Request, res: Response, next: NextFunction) => {
-  authenticateToken(req, res, () => {
-    const userPayload = (req as any).user;
-    if (!userPayload || (userPayload.role !== 'admin' && userPayload.role !== 'support')) {
-      res.status(403).json({ error: 'Support or Admin access required', message: 'Forbidden: Insufficient privileges' });
-      return;
-    }
-    next();
-  });
-};
-
-export const requireRoles = (...allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    authenticateToken(req, res, () => {
-      const userPayload = (req as any).user;
-      if (!userPayload || (!allowedRoles.includes(userPayload.role) && userPayload.role !== 'admin')) {
-        res.status(403).json({ 
-          error: 'Access denied', 
-          message: `Forbidden: Required one of roles [${allowedRoles.join(', ')}]` 
-        });
-        return;
-      }
-      next();
-    });
-  };
 };

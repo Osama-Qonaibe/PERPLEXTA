@@ -376,7 +376,8 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
   overflow-anchor: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -395,6 +396,13 @@ html, body, #root {
 main,
 .main-viewport-scroll {
   scrollbar-gutter: stable;
+}
+
+@media (max-width: 1024px) {
+  .main-viewport-scroll {
+    scrollbar-gutter: stable !important;
+    overflow-y: auto;
+  }
 }
 
 /* 2. Micro-Interactions: Gentle Fade-In (Duration <= 200ms), No Zooming/Jumping on Hover */
@@ -769,4 +777,30 @@ html:not(.dark) a.bg-black svg {
 
 .animate-pulse-subtle {
   animation: pulseSubtle 2.5s ease-in-out infinite;
+}
+
+/* Safe Area Insets Utilities for iOS/Android */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS Auto-Zoom Fix */
+@media screen and (max-width: 768px) {
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="search"], input[type="tel"], input[type="url"], textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Tactile & Selection Defaults */
+button, a {
+  user-select: none;
 }

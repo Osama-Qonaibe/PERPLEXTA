@@ -153,9 +153,9 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
 
         {/* Category Filter - Fixed Elite Horizontal Scroll */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
-          {categories.map(cat => (
+          {categories.map((cat, cIdx) => (
             <button
-              key={cat.id}
+              key={`mem-cat-btn-${cat.id}-${cIdx}`}
               onClick={() => setFilterCategory(cat.id)}
               className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-theme border ${
                 filterCategory === cat.id
@@ -260,8 +260,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                 onChange={(e) => setNewCategory(e.target.value)}
                 className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-accent text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
               >
-                {categories.filter(c => c.id !== 'all').map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.label}</option>
+                {categories.filter(c => c.id !== 'all').map((cat, cIdx) => (
+                  <option key={`mem-new-cat-${cat.id}-${cIdx}`} value={cat.id}>{cat.label}</option>
                 ))}
               </select>
             </div>
@@ -310,9 +310,9 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredMemories.map((memory) => (
+          {filteredMemories.map((memory, mIdx) => (
             <div 
-              key={memory.id} 
+              key={`mem-item-${memory.id || mIdx}-${mIdx}`} 
               className={`group p-6 rounded-[var(--radius)] border transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/30 hover:bg-[var(--bg-secondary)]/80 hover:shadow-xl hover:shadow-none`}
             >
               {editingId === memory.id ? (
@@ -324,8 +324,8 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                         onChange={(e) => setEditCategory(e.target.value)}
                         className={`w-full p-2.5 rounded-[var(--radius)] border focus:outline-none focus:border-accent text-[16px] md:text-sm transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]`}
                       >
-                        {categories.filter(c => c.id !== 'all').map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.label}</option>
+                        {categories.filter(c => c.id !== 'all').map((cat, cIdx) => (
+                          <option key={`mem-edit-cat-${cat.id}-${cIdx}`} value={cat.id}>{cat.label}</option>
                         ))}
                       </select>
                     </div>

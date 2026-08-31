@@ -53,7 +53,7 @@ import {
   Legend,
   CartesianGrid
 } from 'recharts';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { CustomVideoPlayer } from '../components/CustomVideoPlayer';
 import { extractVideoThumbnail, getRecommendedDimensions, compressAndResizeImage } from '../utils/mediaUtils';
@@ -1335,7 +1335,7 @@ export const AdsManagementView: React.FC<{
 
                   <div className="space-y-2 pt-2 border-t border-[var(--border-main)] text-xs">
                     {analyticsData.placementData.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center">
+                      <div key={`placement-item-${idx}-${item.name}`} className="flex justify-between items-center">
                         <span className="text-[var(--text-muted)] font-medium">{item.name}</span>
                         <span className="font-extrabold text-accent">${item.revenue}</span>
                       </div>
@@ -1372,7 +1372,7 @@ export const AdsManagementView: React.FC<{
                     </thead>
                     <tbody className="divide-y divide-[var(--border-main)]">
                       {analyticsData.advertisers.map((adv: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-[var(--bg-base)]/50 transition-colors">
+                        <tr key={`adv-rank-${idx}-${adv.sponsor_name || adv.user_email}`} className="hover:bg-[var(--bg-base)]/50 transition-colors">
                           <td className="p-3">
                             <div className="font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                               <span className="w-5 h-5 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] shrink-0 font-mono">
@@ -1564,7 +1564,7 @@ export const AdsManagementView: React.FC<{
                     {/* Header Hours */}
                     <div className="flex gap-1 ml-16 mb-2">
                       {Array.from({ length: 24 }).map((_, h) => (
-                        <div key={h} className="flex-1 text-center text-[9px] font-black text-[var(--text-muted)] opacity-60">
+                        <div key={`heat-hour-header-${h}`} className="flex-1 text-center text-[9px] font-black text-[var(--text-muted)] opacity-60">
                           {h.toString().padStart(2, '0')}
                         </div>
                       ))}
@@ -1572,7 +1572,7 @@ export const AdsManagementView: React.FC<{
 
                     {/* Heatmap Rows */}
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIdx) => (
-                      <div key={day} className="flex items-center gap-1">
+                      <div key={`heat-day-row-${day}-${dIdx}`} className="flex items-center gap-1">
                         <div className="w-16 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-tighter">
                           {isRtl ? [
                             'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'
@@ -1600,7 +1600,7 @@ export const AdsManagementView: React.FC<{
 
                             return (
                               <div 
-                                key={hour}
+                                key={`heat-cell-${day}-${hour}`}
                                 title={`${day} ${hour}:00 - CR: ${cr.toFixed(2)}%`}
                                 className={`flex-1 h-8 rounded-sm border border-[var(--border-main)]/50 transition-theme cursor-help group relative ${bgColor} ${opacity} ${glow} hover:scale-110 hover:z-10 hover:border-accent`}
                               >
@@ -1725,11 +1725,11 @@ export const AdsManagementView: React.FC<{
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-main)]">
-                      {approvalRequests.map((req) => (
+                      {approvalRequests.map((req, rIdx) => (
                         <motion.tr 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          key={req.id} 
+                          key={`ad-req-${req.id || rIdx}-${rIdx}`} 
                           className={`group transition-theme border-l-4 ${
                             selectedRequests.includes(req.id) ? 'bg-accent/5 border-accent' : 'hover:bg-[var(--bg-base)]/80 border-transparent'
                           } ${
@@ -1887,11 +1887,11 @@ export const AdsManagementView: React.FC<{
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-main)]">
-                    {auditLogs.map((log) => (
+                    {auditLogs.map((log, lIdx) => (
                       <motion.tr 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        key={log.id} 
+                        key={`ad-audit-log-${log.id || lIdx}-${lIdx}`} 
                         className="hover:bg-[var(--bg-base)]/50 transition-colors group"
                       >
                         <td className="p-3 font-mono text-[var(--text-muted)] opacity-50">
@@ -2245,8 +2245,8 @@ export const AdsManagementView: React.FC<{
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {giftCatalog.map((gift) => (
-                  <div key={gift.id} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-theme hover:border-accent/30">
+                {giftCatalog.map((gift, gIdx) => (
+                  <div key={`ad-gift-${gift.id || gIdx}-${gIdx}`} className="p-4 bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl flex flex-col gap-3 group relative overflow-hidden transition-theme hover:border-accent/30">
                     <div className="flex items-center justify-between">
                       <span className="text-3xl">{gift.icon}</span>
                       <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${gift.is_active ? 'bg-accent/10 text-accent' : 'bg-red-500/10 text-red-500'}`}>
@@ -2475,8 +2475,8 @@ export const AdsManagementView: React.FC<{
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-main)]">
-                  {bulletinAds.map((ad) => (
-                    <tr key={ad.id} className="hover:bg-[var(--bg-base)]/50 transition-colors">
+                  {bulletinAds.map((ad, bIdx) => (
+                    <tr key={`bulletin-ad-row-${ad.id || bIdx}-${bIdx}`} className="hover:bg-[var(--bg-base)]/50 transition-colors">
                       <td className="p-3 text-center">
                         <input
                           type="checkbox"
@@ -2765,8 +2765,8 @@ export const AdsManagementView: React.FC<{
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-main)]">
-                    {filteredAds.map((ad) => (
-                      <tr key={ad.id} className="hover:bg-[var(--bg-base)]/50 transition-colors">
+                    {filteredAds.map((ad, aIdx) => (
+                      <tr key={`filtered-ad-row-${ad.id || aIdx}-${aIdx}`} className="hover:bg-[var(--bg-base)]/50 transition-colors">
                         <td className="p-3 text-center">
                           <input
                             type="checkbox"
@@ -3456,7 +3456,7 @@ export const AdsManagementView: React.FC<{
 
                         {/* Skeleton Context */}
                         {[1, 2].map(i => (
-                          <div key={i} className="bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 space-y-2 opacity-30">
+                          <div key={`ad-sim-skel-${i}`} className="bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 space-y-2 opacity-30">
                             <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/4"></div>
                             <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded w-full"></div>
                             <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>

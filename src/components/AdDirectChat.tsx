@@ -12,7 +12,7 @@ import {
   User
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { safeStorageGet } from '../utils/safeStorage';
 import { BulletinAvatar } from './BulletinAvatar';
@@ -339,7 +339,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
               <div className="flex flex-wrap gap-1.5">
                 {quickQuestions.map((q, idx) => (
                   <button
-                    key={idx}
+                    key={`quick-prompt-empty-${idx}-${q}`}
                     onClick={() => handleSendMessage(q)}
                     className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#1c1c20] hover:bg-accent hover:text-white dark:hover:bg-accent text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 transition-theme text-start shadow-xs"
                   >
@@ -350,11 +350,11 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
             </div>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, mIdx) => {
             const isMe = msg.sender_id === user?.id;
             return (
               <div
-                key={msg.id}
+                key={`msg-${msg.id || mIdx}-${mIdx}`}
                 className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}
               >
                 <div
@@ -426,7 +426,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
         <div className="px-3 py-1.5 bg-white dark:bg-[#18181c] border-t border-gray-100 dark:border-gray-800/60 overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs shrink-0">
           {quickQuestions.slice(0, 3).map((q, idx) => (
             <button
-              key={idx}
+              key={`quick-prompt-bar-${idx}-${q}`}
               onClick={() => handleSendMessage(q)}
               className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-accent/10 hover:text-accent dark:hover:bg-accent/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
             >

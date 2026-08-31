@@ -362,16 +362,14 @@ const NotificationContainer: React.FC<{
 
   return createPortal(
     <div
-      className={`fixed z-[999999] pointer-events-none flex flex-col gap-2.5 p-4 max-w-full sm:max-w-none ${
-        isRtl ? 'bottom-4 left-4 sm:bottom-6 sm:left-6' : 'bottom-4 right-4 sm:bottom-6 sm:right-6'
-      }`}
+      className="fixed top-2.5 left-1/2 -translate-x-1/2 z-[999999] pointer-events-none flex flex-col gap-2.5 p-2 max-w-full sm:max-w-md w-full items-center"
       style={{
         direction: isRtl ? 'rtl' : 'ltr',
       }}
     >
       <AnimatePresence mode="sync">
-        {notifications.map((item) => (
-          <ToastCard key={item.id} item={item} onDismiss={onDismiss} isRtl={isRtl} />
+        {notifications.map((item, nIdx) => (
+          <ToastCard key={`toast-${item.id || nIdx}-${nIdx}`} item={item} onDismiss={onDismiss} isRtl={isRtl} />
         ))}
       </AnimatePresence>
     </div>,

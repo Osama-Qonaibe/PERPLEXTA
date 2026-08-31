@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
-import { toast } from 'sonner';
+import { toast } from './NotificationContext';
 import { API_BASE_URL, SOCKET_URL } from '../constants';
 import { applyNonce } from '../utils/csp';
 import { performSilentTokenRefresh } from '../lib/axios';
@@ -11,6 +11,7 @@ import { Theme, useTheme } from '../context/ThemeContext';
 import { ThemeSync } from '../utils/ThemeSync';
 import { applyLanguageFont, FontLoadingConfig, FontLanguageConfig } from '../utils/fontLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
+import { trackLoginEvent, trackSignUpEvent } from '../utils/analytics';
 
 type Language = 'ar' | 'en';
 
@@ -1799,15 +1800,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUpgradePromptState(prev => ({ ...prev, isOpen: false }));
   };
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
-    return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
+    try {
+      return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
+    } catch (e) {
+      return false;
+    }
   });
 
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
   const handleLanguageChange = async (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem('language', lang);
-    setUser((prev) => prev ? { ...prev, language: lang } : null);
+    localStorage.setItem('language', lang); 
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1823,7 +1827,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleThemeChange = async (newTheme: Theme) => {
     setThemeContext(newTheme);
-    setUser((prev) => prev ? { ...prev, theme: newTheme } : null);
     if (token) {
       try {
         await fetch('/api/user/profile', {
@@ -1879,9 +1882,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const triggerAuthSuccessToast = (type: 'login' | 'signup') => {
     const isAr = (localStorage.getItem('language') || language) === 'ar';
     if (type === 'login') {
-      toast.success(isAr ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success' });
+      toast.success(isAr ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success', duration: 1000 });
     } else {
-      toast.success(isAr ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success' });
+      toast.success(isAr ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success', duration: 1000 });
     }
   };
 
@@ -1899,6 +1902,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(info);
     localStorage.setItem('last_active_tool', 'chat');
     setIsAuthModalOpen(false); 
+
+    try {
+      trackLoginEvent(info.id || info._id || 'unknown', info.role || 'user', 'google');
+    } catch (e) {
+      console.error('[Analytics Error]:', e);
+    }
 
     if (authLang && (authLang === 'ar' || authLang === 'en')) {
       setLanguage(authLang as any);
@@ -2249,12 +2258,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUser(userProfile);
         setBalance(Number(userProfile.points || 0));
         setBalanceUSD(Number(userProfile.balance || 0));
-        if (userProfile.language) {
-          setLanguage(userProfile.language as Language);
-          localStorage.setItem('language', userProfile.language);
-        }
+        if (userProfile.language) setLanguage(userProfile.language as Language);
         if (userProfile.theme) {
-          setThemeContext(userProfile.theme as Theme);
+          const localTheme = localStorage.getItem('perplexta_theme');
+          if (!localTheme) {
+            setThemeContext(userProfile.theme as Theme);
+          }
         }
         if (data.economy) setEconomySettings(data.economy);
         completeBoot();
@@ -2288,7 +2297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (loggedOutToast === '1') {
       localStorage.removeItem('app_logged_out_toast');
       setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!', { id: 'logout-success' });
+        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!', { id: 'logout-success', duration: 1000 });
       }, 100);
     }
   }, [language]);
@@ -2437,6 +2446,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           triggerAuthSuccessToast('login');
           logUserActivity('LOGIN_SUCCESS', { email });
 
+          try {
+            trackLoginEvent(data.user.id || data.user._id || 'unknown', data.user.role || 'user', 'email');
+          } catch (e) {
+            console.error('[Analytics Error]:', e);
+          }
+
           return { success: true };
         } else {
           return { success: false, error: data.error };
@@ -2479,6 +2494,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           navigate('/chat');
           triggerAuthSuccessToast('signup');
           logUserActivity('SIGNUP_SUCCESS', { email });
+
+          try {
+            trackSignUpEvent(data.user.id || data.user._id || 'unknown', 'email');
+          } catch (e) {
+            console.error('[Analytics Error]:', e);
+          }
 
           return { success: true };
         } else {
@@ -2630,7 +2651,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, token, language, logout]);
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
-    const saved = localStorage.getItem('site_settings');
+    let saved = null;
+    try {
+      saved = localStorage.getItem('site_settings');
+    } catch (e) {}
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -3241,6 +3265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               discount: p.discount || 0,
               isActive: p.is_active ?? true,
               isVisible: p.is_visible ?? true,
+              hideTools: p.hide_tools ?? false,
               monthlyPrice: parseFloat(p.monthly_price || 0),
               annualPrice: parseFloat(p.annual_price || 0),
               color: p.color || '#334155',

@@ -1,118 +1,138 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RefreshCw, Sparkles, X } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { resolveImageUrl } from '../utils/imageResolver';
-import { NotificationIconRenderer } from '../utils/imageProcessor';
-import { VersionManager } from '../utils/versionManager';
+import { toast } from '../context/NotificationContext';
 
 export const ServiceUpdateToast: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [targetHash, setTargetHash] = useState<string | null>(null);
-  const { siteSettings, language, theme } = useAppContext();
+  const { language } = useAppContext();
   const isAr = language === 'ar';
-  const isDark = theme === 'dark';
-
-  const rawLogo = siteSettings?.logoBase64 || siteSettings?.logoLightBase64;
-  const logoUrl = rawLogo ? resolveImageUrl(rawLogo) : null;
-  const siteName = siteSettings?.siteName || 'Perplexta AI';
 
   useEffect(() => {
-    const onUpdateFound = (e: Event) => {
-      const customEvent = e as CustomEvent<{ serverHash?: string }>;
-      const hash = customEvent.detail?.serverHash;
-      if (hash) {
-        setTargetHash(hash);
+    // Check if user recently dismissed or updated within the last 30 minutes
+    const lastDismissed = localStorage.getItem('perplexta_update_dismissed');
+    const updateApplied = localStorage.getItem('perplexta_update_applied');
+    const now = Date.now();
+    
+    if (lastDismissed && now - parseInt(lastDismissed, 10) < 30 * 60 * 1000) {
+      return; // Do not show if dismissed recently
+    }
+
+    const onUpdateFound = () => {
+      // If already applied in this session/version, skip
+      if (updateApplied && now - parseInt(updateApplied, 10) < 60 * 60 * 1000) {
+        return;
       }
       setVisible(true);
     };
 
-    const onSwUpdated = () => {
-      // Service worker updated -> verify version hash with VersionManager
-      VersionManager.checkVersion();
-    };
-
     window.addEventListener('pwa-version-mismatch', onUpdateFound);
-    window.addEventListener('service-worker-updated', onSwUpdated);
+    window.addEventListener('service-worker-updated', onUpdateFound);
+    
     return () => {
       window.removeEventListener('pwa-version-mismatch', onUpdateFound);
-      window.removeEventListener('service-worker-updated', onSwUpdated);
+      window.removeEventListener('service-worker-updated', onUpdateFound);
     };
   }, []);
 
   const close = () => {
-    if (targetHash) {
-      VersionManager.dismissVersion(targetHash);
-    }
+    localStorage.setItem('perplexta_update_dismissed', Date.now().toString());
     setVisible(false);
   };
 
   const handleUpdate = async () => {
     setIsUpdating(true);
-    setTimeout(async () => {
-      await VersionManager.applyHardReset(targetHash || undefined);
-    }, 150);
+    
+    // Save session state to prevent repetitive update prompts
+    localStorage.setItem('perplexta_update_applied', Date.now().toString());
+    sessionStorage.setItem('perplexta_session_synced', 'true');
+
+    toast.success(
+      isAr ? 'جاري جلب التحديثات الجديدة وتثبيت الجلسة...' : 'Fetching new updates & synchronizing session...',
+      isAr ? 'تحديث النظام' : 'System Update'
+    );
+
+    try {
+      // Clear service worker caches if supported to fetch fresh build
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.update();
+        }
+      }
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+    } catch (e) {
+      console.error('Update sync error:', e);
+    }
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 600);
   };
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: 20, opacity: 0, scale: 0.96 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: 20, opacity: 0, scale: 0.96 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full p-3 rounded-xl bg-[var(--surface-card)] border border-[var(--border-main)] shadow-lg backdrop-blur-xl pointer-events-auto"
-          dir={isAr ? 'rtl' : 'ltr'}
+          id="service-update-toast"
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.96 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          className="w-full pointer-events-auto p-2.5 sm:p-3 rounded-[var(--radius)] bg-[var(--surface-card)] border border-[var(--border-main)] shadow-xl transition-all"
         >
           <div className="flex items-start gap-2">
-            {/* Update Icon */}
-            <div className="w-6 h-6 rounded-md bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 text-accent mt-0.5">
-              <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
+            <div className="p-1 rounded-md bg-accent/10 text-accent shrink-0 flex items-center justify-center mt-0.5">
+              <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
             </div>
-
-            {/* Content Text */}
+            
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-1">
-                <h3 className="text-[11px] font-bold text-[var(--text-primary)] truncate">
-                  {isAr ? 'تحديث متاح للمنصة' : 'Update Available'}
-                </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)]">
+                  {isAr ? 'يتوفر تحديث جديد للنظام' : 'New System Update Available'}
+                </h4>
                 <button
+                  id="service-update-close-btn"
                   type="button"
                   onClick={close}
-                  className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded transition-colors shrink-0"
-                  title={isAr ? 'إغلاق' : 'Close'}
-                  aria-label="Close"
+                  aria-label={isAr ? 'إغلاق' : 'Close'}
+                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0.5 rounded shrink-0"
                 >
-                  <X size={12} />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+
+              <p className="mt-1 text-[10px] sm:text-[10.5px] text-[var(--text-secondary)] leading-relaxed">
                 {isAr
-                  ? 'نسخة جديدة جاهزة للاستخدام الآن.'
-                  : 'A new version is ready to use.'}
+                  ? 'تم تجهيز نسخة محسّنة. اضغط تحديث لجلب أحدث التحديثات وحفظ الجلسة تلقائياً.'
+                  : 'An optimized build is ready. Click update to fetch latest changes and persist your session.'}
               </p>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-[var(--border-main)]">
+          <div className="mt-2.5 pt-2 border-t border-[var(--border-main)] flex items-center justify-end gap-1.5">
             <button
+              id="service-update-dismiss-btn"
+              type="button"
+              onClick={close}
+              className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium rounded-[var(--radius)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)] transition-all"
+            >
+              {isAr ? 'لاحقاً' : 'Later'}
+            </button>
+            <button
+              id="service-update-action-btn"
               type="button"
               onClick={handleUpdate}
               disabled={isUpdating}
-              className="flex-1 py-1 px-2 rounded-md bg-accent text-white font-bold text-[10px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1 whitespace-nowrap shadow-xs cursor-pointer disabled:opacity-75"
+              className="px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-[var(--radius)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-75"
             >
-              <RefreshCw className={`w-2.5 h-2.5 ${isUpdating ? 'animate-spin' : ''}`} />
-              <span>{isAr ? 'تحديث الآن' : 'Update Now'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={close}
-              className="flex-1 py-1 px-1.5 rounded-md bg-[var(--surface-subtle)] text-[var(--text-primary)] border border-[var(--border-main)] font-medium text-[10px] hover:bg-[var(--surface-inset)] transition-colors text-center whitespace-nowrap cursor-pointer"
-            >
-              {isAr ? 'لاحقاً' : 'Later'}
+              <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
+              <span>{isAr ? 'تحديث الآن وجلب النسخة' : 'Update & Refresh'}</span>
             </button>
           </div>
         </motion.div>
@@ -120,3 +140,5 @@ export const ServiceUpdateToast: React.FC = () => {
     </AnimatePresence>
   );
 };
+
+

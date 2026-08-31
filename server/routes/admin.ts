@@ -42,7 +42,6 @@ import { io } from '../config/socket.js';
 
 const router = express.Router();
 router.use(adminLimiter);
-router.use(authenticateAdmin);
 
 router.use((req, res, next) => {
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
@@ -509,12 +508,12 @@ router.get("/plans", authenticateAdmin, async (req, res) => {
 
 router.post("/plans", authenticateAdmin, async (req, res) => {
   try {
-    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user' } = req.body;
+    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user', hide_tools = false } = req.body;
     if (!name_en) return res.status(400).json({ error: 'name_en is required' });
     await pool.query(`
-      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type]);
+      INSERT INTO plans (name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type, hide_tools)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type, hide_tools]);
     invalidatePlansCache();
     await auditLog((req as any).user?.id, 'Create Plan', 'system', { name_en });
     res.json({ success: true });
@@ -527,14 +526,14 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
 router.put("/plans/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user' } = req.body;
+    const { name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, features, limits, plan_type = 'user', hide_tools = false } = req.body;
     await pool.query(`
       UPDATE plans SET 
         name_en = $1, name_ar = $2, desc_en = $3, desc_ar = $4, badge = $5, 
         discount = $6, is_active = $7, is_visible = $8, monthly_price = $9, annual_price = $10, 
-        color = $11, features = $12, limits = $13, plan_type = $14, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $15
-    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type, id]);
+        color = $11, features = $12, limits = $13, plan_type = $14, hide_tools = $15, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $16
+    `, [name_en, name_ar, desc_en, desc_ar, badge, discount, is_active, is_visible, monthly_price, annual_price, color, JSON.stringify(features), JSON.stringify(limits), plan_type, hide_tools, id]);
     invalidatePlansCache();
     await auditLog((req as any).user?.id, 'Update Plan', 'system', { id, name_en });
     res.json({ success: true });
@@ -951,7 +950,7 @@ router.post("/orchestrator/routes", authenticateAdmin, async (req, res) => {
           fallback_2_provider || '', fallback_2_model || '',
           fallback_3_provider || '', fallback_3_model || '',
           is_active !== undefined ? is_active : true, 
-          cost_per_usage || 10,
+          cost_per_usage !== undefined && cost_per_usage !== null ? cost_per_usage : 10,
           cost_per_1k_input_tokens !== undefined ? cost_per_1k_input_tokens : 5,
           cost_per_1k_output_tokens !== undefined ? cost_per_1k_output_tokens : 15
         ]);

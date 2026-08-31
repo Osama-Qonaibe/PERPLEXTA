@@ -6,7 +6,7 @@ import {
   Calendar, Award, 
   Eye, Play
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { getMediaUrl } from '../utils/mediaUtils';
 
 interface PurchasedItem {

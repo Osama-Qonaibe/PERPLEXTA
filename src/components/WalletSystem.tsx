@@ -11,7 +11,7 @@ import {
   Lock, Send, Info, Paperclip, Trash2, Sparkles
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 interface Transaction {
   id: number;
@@ -751,11 +751,11 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             { id: 'expenses', label: dir === 'rtl' ? 'سجل المشتريات والغاز' : 'Operations expenses' },
             { id: 'deposit', label: dir === 'rtl' ? 'قسم الإيداع' : 'Deposit Area', hideOnDesktop: true },
             { id: 'withdraw', label: dir === 'rtl' ? 'طلب سحب' : 'Disbursement Request', hideOnDesktop: true }
-          ].map((tab) => {
+          ].map((tab, tIdx) => {
             const active = activeTab === tab.id;
             return (
               <button
-                key={tab.id}
+                key={`wallet-tab-${tab.id}-${tIdx}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-6 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-theme relative shrink-0 overflow-hidden ${
                   active 
@@ -840,10 +840,10 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                     {dir === 'rtl' ? 'حدد أو ابحث عن قيمة الإيداع المرغوبة:' : 'Select pre-set deposit amount:'}
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    {['50', '150', '250', '500', '1000'].map((val) => (
+                    {['50', '150', '250', '500', '1000'].map((val, vIdx) => (
                       <button
                         type="button"
-                        key={val}
+                        key={`deposit-preset-${val}-${vIdx}`}
                         onClick={() => selectPredefinedAmount(val)}
                         className={`py-4 rounded-[var(--radius)] border text-xs font-black transition-theme flex flex-col items-center justify-center gap-1 ${
                           depositAmount === val
@@ -893,10 +893,10 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       { id: 'crypto', name: dir === 'rtl' ? 'USDT (TRC20)' : 'USDT Crypto', icon: <Smartphone size={18} />, active: true },
                       { id: 'bank', name: dir === 'rtl' ? 'تحويل بنكي' : 'Bank IBAN wire', icon: <Building size={18} />, active: true },
                       { id: 'paypal', name: dir === 'rtl' ? 'بايبال ويب' : 'PayPal Secure', icon: <Globe size={18} />, active: isPaypalActive }
-                    ].map((m) => (
+                    ].map((m, mIdx) => (
                       <button
                         type="button"
-                        key={m.id}
+                        key={`deposit-route-${m.id}-${mIdx}`}
                         onClick={() => setDepositMethod(m.id as any)}
                         className={`p-5 rounded-[var(--radius)] border text-left rtl:text-right flex items-center gap-4 transition-theme relative overflow-hidden group ${
                           depositMethod === m.id
@@ -1654,7 +1654,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                       {dir === 'rtl' ? 'طلبات الإيداع قيد المراجعة والتحقق المالي بالمستندات:' : 'Manual verification queue logs & pending requests:'}
                     </p>
                     <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
-                      {manualDeposits.map((dep) => {
+                      {manualDeposits.map((dep, dIdx) => {
                         let refId = '';
                         try {
                           const parsed = JSON.parse(dep.proof_url);
@@ -1663,7 +1663,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           refId = dep.proof_url || 'N/A';
                         }
                         return (
-                          <div key={dep.id} className="p-4 rounded-[var(--radius)] border border-dashed border-[var(--border)] bg-[var(--bg-base)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div key={`manual-dep-${dep.id || dIdx}-${dIdx}`} className="p-4 rounded-[var(--radius)] border border-dashed border-[var(--border)] bg-[var(--bg-base)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex flex-col gap-1">
                               <p className="text-[11px] font-black text-[var(--text-primary)] leading-tight flex items-center gap-2">
                                 <span>{dir === 'rtl' ? 'طلب شحن يدوي' : 'Manual Deposit Claim'}</span>
@@ -1734,8 +1734,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                           </td>
                         </tr>
                       ) : (
-                        transactions.map(tx => (
-                          <tr key={tx.id} className="hover:bg-[var(--bg-overlay)] transition-colors group">
+                        transactions.map((tx, txIdx) => (
+                          <tr key={`wallet-tx-${tx.id || txIdx}-${txIdx}`} className="hover:bg-[var(--bg-overlay)] transition-colors group">
                              <td className="px-8 py-7">
                                 <code className="text-[11px] font-black text-accent opacity-80 bg-accent/5 px-2 py-1 rounded-[var(--radius)]">TRX-{tx.id.toString(36).toUpperCase().padEnd(8, '0')}</code>
                              </td>

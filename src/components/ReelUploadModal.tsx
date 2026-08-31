@@ -31,7 +31,7 @@ import {
   Wand2,
   Loader2
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { getMediaUrl, extractVideoThumbnail } from '../utils/mediaUtils';
 import { notifyMediaPlaying, stopAllMedia } from '../utils/mediaCoordinator';
 import {
@@ -137,6 +137,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
   const customCoverInputRef = useRef<HTMLInputElement>(null);
   const customAudioInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wasOpenRef = useRef<boolean>(false);
 
   // Helper to get active video element reliably
   const getActiveVideoElement = (): HTMLVideoElement | null => {
@@ -224,6 +225,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
   // Clean up resources on modal close or synchronize with media coordinator
   useEffect(() => {
     if (isOpen) {
+      wasOpenRef.current = true;
       stopAllMedia('reel_upload_preview');
     }
 
@@ -256,7 +258,9 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
     window.addEventListener('perplexta:stop_all_media', handleStopMedia);
     window.addEventListener('perplexta:media_playing', handleMediaPlaying);
 
-    if (!isOpen) {
+    if (!isOpen && wasOpenRef.current) {
+      wasOpenRef.current = false;
+
       if (mediaPreviewUrl && mediaPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(mediaPreviewUrl);
       }
@@ -289,7 +293,6 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
       setIsUploading(false);
       setUploadProgress(0);
       setActiveTab('media_cover');
-      stopAllMedia();
     }
 
     return () => {
@@ -722,7 +725,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 {videoFrames.map((frameUrl, idx) => (
                   <div
-                    key={idx}
+                    key={`video-frame-${idx}`}
                     onClick={() => {
                       setCapturedCoverDataUrl(frameUrl);
                       toast.success(isRtl ? `تم اختيار الإطار #${idx + 1} كغلاف` : `Frame #${idx + 1} selected as cover`);
@@ -825,11 +828,11 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
 
       {/* Effects Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5 max-h-[280px] overflow-y-auto pr-1">
-        {REEL_VISUAL_EFFECTS.map((eff) => {
+        {REEL_VISUAL_EFFECTS.map((eff, effIdx) => {
           const isSelected = selectedEffectId === eff.id;
           return (
             <div
-              key={eff.id}
+              key={`eff-${eff.id || effIdx}-${effIdx}`}
               onClick={() => {
                 setSelectedEffectId(eff.id);
                 toast.info(isRtl ? `تم تطبيق تأثير: ${eff.nameAr}` : `Applied: ${eff.nameEn}`);
@@ -903,13 +906,13 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
 
       {/* Tracks List */}
       <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-        {ROYALTY_FREE_TRACKS.map((track) => {
+        {ROYALTY_FREE_TRACKS.map((track, trkIdx) => {
           const isSelected = selectedTrack?.id === track.id;
           const isPlayingThis = playingAudioId === track.id;
 
           return (
             <div
-              key={track.id}
+              key={`track-${track.id || trkIdx}-${trkIdx}`}
               className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                 isSelected
                   ? 'bg-zinc-800/90 border-zinc-600 ring-1 ring-zinc-500/40 shadow-md'
@@ -1056,9 +1059,9 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
         />
         {/* 1-click popular hashtag chips */}
         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-          {POPULAR_HASHTAGS.map((tag) => (
+          {POPULAR_HASHTAGS.map((tag, tagIdx) => (
             <button
-              key={tag}
+              key={`pop-tag-${tag}-${tagIdx}`}
               type="button"
               onClick={() => addHashtag(tag)}
               className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-[10px] font-mono text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 transition-all active:scale-95"
@@ -1117,8 +1120,10 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
   );
 
   // Submit and Publish Reel
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFormSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (isUploading) return;
     if (!selectedFile) {
       toast.error(isRtl ? 'يرجى اختيار مقطع فيديو أو صورة أولاً' : 'Please select a media file first');
       return;

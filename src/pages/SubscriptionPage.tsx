@@ -3,12 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
+import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, ChevronDown, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { ContentContainer } from '../components/ContentContainer';
 import { ALL_TOOLS } from '../constants';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
+import { trackPremiumSubscriptionEvent } from '../utils/analytics';
 
 const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
@@ -21,6 +22,11 @@ export const SubscriptionPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [isVerifying, setIsVerifying] = React.useState(false);
+  const [expandedPlans, setExpandedPlans] = React.useState<Record<string, boolean>>({});
+
+  const togglePlanExpand = (id: string) => {
+    setExpandedPlans(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -45,6 +51,21 @@ export const SubscriptionPage: React.FC = () => {
           const matchingPlan = plans.find(p => p.id.toString() === activePlanId.toString());
           if (matchingPlan) {
             setSelectedPlanForModal(matchingPlan);
+            try {
+              const price = billingCycle === 'annual' 
+                ? (matchingPlan.annualPrice || matchingPlan.monthlyPrice * 12) 
+                : (matchingPlan.monthlyPrice || 0);
+              trackPremiumSubscriptionEvent(
+                updatedUser?.id?.toString() || user?.id?.toString() || 'unknown',
+                matchingPlan.id.toString(),
+                matchingPlan.nameEn || matchingPlan.name || 'Premium Plan',
+                Number(price),
+                'USD',
+                billingCycle
+              );
+            } catch (e) {
+              console.error('[Analytics Error]:', e);
+            }
           }
         }
         setResultModal('success');
@@ -202,6 +223,21 @@ export const SubscriptionPage: React.FC = () => {
       setConfirmingPlan(null);
       await refreshUser();
       setResultModal('success');
+      try {
+        const price = billingCycle === 'annual' 
+          ? (confirmingPlan.annualPrice || confirmingPlan.monthlyPrice * 12) 
+          : (confirmingPlan.monthlyPrice || 0);
+        trackPremiumSubscriptionEvent(
+          user?.id?.toString() || 'unknown',
+          confirmingPlan.id.toString(),
+          confirmingPlan.nameEn || confirmingPlan.name || 'Premium Plan',
+          Number(price),
+          'USD',
+          billingCycle
+        );
+      } catch (e) {
+        console.error('[Analytics Error]:', e);
+      }
     } else {
       alert(res.error || 'Error');
     }
@@ -210,34 +246,16 @@ export const SubscriptionPage: React.FC = () => {
 
   const LimitItem = ({ icon, label, value, color }: { icon: React.ReactNode, label: string, value: any, color: string }) => {
     let daily = null;
-    let monthly = null;
     if (typeof value === 'object' && value !== null) {
       daily = value.daily;
-      monthly = value.monthly;
     } else {
       daily = value;
     }
     const formatLimit = (v: any) => v === 'unlimited' ? '∞' : (v || 0);
     return (
-      <div className="flex flex-col gap-1 p-2.5 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-theme hover:border-accent/30 group">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="transition-transform group-hover:scale-110" style={{ color: color }}>{icon}</div>
-          <span className="text-[10px] font-black uppercase tracking-tighter text-[var(--text-muted)] truncate">{label}</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          {daily !== null && (
-            <div className="flex flex-col">
-              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase leading-none mb-0.5">{t('daily')}</span>
-              <span className="text-xs font-black text-[var(--text-primary)] leading-none">{formatLimit(daily)}</span>
-            </div>
-          )}
-          {monthly !== null && monthly !== 0 && (
-            <div className="flex flex-col items-end">
-              <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase leading-none mb-0.5">{t('monthly')}</span>
-              <span className="text-xs font-black text-accent leading-none">{formatLimit(monthly)}</span>
-            </div>
-          )}
-        </div>
+      <div title={label} className="flex flex-col items-center justify-center p-1.5 md:p-2 rounded-[var(--radius)] border bg-[var(--bg-primary)] border-[var(--border-main)] transition-theme hover:border-accent/30 hover:bg-[var(--surface-subtle)] group">
+        <div className="transition-transform group-hover:scale-110 mb-1" style={{ color: color }}>{icon}</div>
+        <span className="text-[10px] md:text-[11px] font-black text-[var(--text-primary)] leading-none">{formatLimit(daily)}</span>
       </div>
     );
   };
@@ -377,11 +395,11 @@ export const SubscriptionPage: React.FC = () => {
           </div>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-          {displayedPlans.map((plan) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 items-start">
+          {displayedPlans.map((plan, planIdx) => (
             <div 
-              key={plan.id} 
-              className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col h-full transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
+              key={`sub-plan-${plan.id || planIdx}-${planIdx}`} 
+              className={`relative rounded-[var(--radius)] border p-5 md:p-8 flex flex-col transition-theme bg-[var(--bg-secondary)] border-[var(--border-main)] group ${
                 isActivePlan(plan.id) 
                   ? 'ring-2 ring-accent-500/50 shadow-[0_0_30px_rgba(156,163,175,0.15)]' 
                   : 'hover:border-accent/30'
@@ -453,57 +471,78 @@ export const SubscriptionPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
-                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] mb-3 flex justify-between items-center px-1">
-                  <span>{dir === 'rtl' ? 'تخصيص الحصص والموارد السيادية' : 'Sovereign Resource Quotas'}</span>
-                </p>
-                <div className="max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                  <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-                    {(() => {
-                      const toolIcons: Record<string, React.ReactNode> = {
-                        chat: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
-                        chat_fast: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
-                        chat_pro: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
-                        chat_reasoning: <Cpu size={12} className="md:w-3.5 md:h-3.5" />,
-                        perplexta_analysis: <Search size={12} className="md:w-3.5 md:h-3.5" />,
-                        legal_analysis: <Scale size={12} className="md:w-3.5 md:h-3.5" />,
-                        notebook: <FileText size={12} className="md:w-3.5 md:h-3.5" />,
-                        image: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
-                        video: <Tv size={12} className="md:w-3.5 md:h-3.5" />,
-                        stt: <Mic size={12} className="md:w-3.5 md:h-3.5" />,
-                        tts: <Volume2 size={12} className="md:w-3.5 md:h-3.5" />,
-                        learning: <GraduationCap size={12} className="md:w-3.5 md:h-3.5" />,
-                        code: <Code2 size={12} className="md:w-3.5 md:h-3.5" />,
-                        canvas: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
-                        sovereign_memory: <Server size={12} className="md:w-3.5 md:h-3.5" />,
-                        sovereign_search: <Search size={12} className="md:w-3.5 md:h-3.5" />,
-                        x402_api: <Key size={12} className="md:w-3.5 md:h-3.5" />,
-                        storage_mb: <Cloud size={12} className="md:w-3.5 md:h-3.5" />,
-                        marketplace_listings: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
-                      };
-
-                      return ALL_TOOLS.map((toolId) => {
-                        const limitVal = (plan.limits && plan.limits[toolId] !== undefined)
-                          ? plan.limits[toolId]
-                          : { daily: 0, monthly: 0 };
-
-                        const label = t(toolId) || toolId;
-                        const icon = toolIcons[toolId] || <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5" />;
-
-                        return (
-                          <LimitItem
-                            key={toolId}
-                            icon={icon}
-                            label={label}
-                            value={limitVal}
-                            color={plan.color || '#334155'}
-                          />
-                        );
-                      });
-                    })()}
+              {!plan.hideTools && (
+                <div className="mt-auto pt-4 md:pt-6 border-t border-[var(--border-main)] dark:border-[var(--border-main)]">
+                  <div className="flex justify-between items-center px-1 mb-3">
+                    <p className="text-[10px] md:text-[11px] font-black uppercase tracking-wider text-[var(--text-muted)] m-0">
+                      {dir === 'rtl' ? 'الأدوات' : 'Tools'}
+                    </p>
+                    <button 
+                      onClick={() => togglePlanExpand(plan.id.toString())}
+                      className="text-[10px] md:text-[11px] font-bold flex items-center gap-1 transition-opacity hover:opacity-80"
+                      style={{ color: plan.color || 'var(--color-accent)' }}
+                    >
+                      {expandedPlans[plan.id.toString()] ? (dir === 'rtl' ? 'إخفاء' : 'Hide') : (dir === 'rtl' ? 'تفاصيل' : 'Details')}
+                      <ChevronDown size={12} className={`transition-transform ${expandedPlans[plan.id.toString()] ? 'rotate-180' : ''}`} />
+                    </button>
                   </div>
+                  
+                  <AnimatePresence>
+                    {expandedPlans[plan.id.toString()] && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="max-h-[220px] overflow-y-auto pr-1 custom-scrollbar pb-1 pt-1">
+                          <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 md:gap-2">
+                            {(() => {
+                              const toolIcons: Record<string, React.ReactNode> = {
+                                chat: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
+                                chat_fast: <MessageSquare size={12} className="md:w-3.5 md:h-3.5" />,
+                                chat_pro: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
+                                chat_reasoning: <Cpu size={12} className="md:w-3.5 md:h-3.5" />,
+                                perplexta_analysis: <Search size={12} className="md:w-3.5 md:h-3.5" />,
+                                legal_analysis: <Scale size={12} className="md:w-3.5 md:h-3.5" />,
+                                notebook: <FileText size={12} className="md:w-3.5 md:h-3.5" />,
+                                image: <Sparkles size={12} className="md:w-3.5 md:h-3.5" />,
+                                video: <Tv size={12} className="md:w-3.5 md:h-3.5" />,
+                                stt: <Mic size={12} className="md:w-3.5 md:h-3.5" />,
+                                tts: <Volume2 size={12} className="md:w-3.5 md:h-3.5" />,
+                                learning: <GraduationCap size={12} className="md:w-3.5 md:h-3.5" />,
+                                code: <Code2 size={12} className="md:w-3.5 md:h-3.5" />,
+                                canvas: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
+                                sovereign_memory: <Server size={12} className="md:w-3.5 md:h-3.5" />,
+                                sovereign_search: <Search size={12} className="md:w-3.5 md:h-3.5" />,
+                                x402_api: <Key size={12} className="md:w-3.5 md:h-3.5" />,
+                                storage_mb: <Cloud size={12} className="md:w-3.5 md:h-3.5" />,
+                                marketplace_listings: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
+                              };
+                              return ALL_TOOLS.map((toolId) => {
+                                const limitVal = (plan.limits && plan.limits[toolId] !== undefined)
+                                  ? plan.limits[toolId]
+                                  : { daily: 0, monthly: 0 };
+                                const label = t(toolId) || toolId;
+                                const icon = toolIcons[toolId] || <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5" />;
+                                return (
+                                  <LimitItem
+                                    key={`sub-tool-${plan.id}-${toolId}`}
+                                    icon={icon}
+                                    label={label}
+                                    value={limitVal}
+                                    color={plan.color || '#334155'}
+                                  />
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>

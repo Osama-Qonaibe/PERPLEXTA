@@ -12,7 +12,7 @@ import {
   Send,
   User
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export interface StoryUploadModalProps {
   isOpen: boolean;

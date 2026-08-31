@@ -191,16 +191,16 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       
       <div className="w-full flex justify-between items-center h-full">
         <div className="flex items-center h-full">
-          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[220px]' : 'w-auto ps-8 sm:ps-4 md:ps-6'}`}>
+          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'min-w-[220px]' : 'w-auto px-4 sm:px-4 md:ps-6'}`}>
               <NavLink 
                 to="/chat" 
                 onClick={handleNewChat} 
                 className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
               >
-                <div className={`${isMobileView ? 'w-10' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
+                <div className={`${isMobileView ? 'w-9' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
                   {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
                     <motion.div 
-                      className={`w-10 h-10 rounded-sm overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
+                      className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} rounded-[10px] overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
                       animate={isStreaming ? {
                         scale: [1, 1.03, 1],
                         borderColor: ["var(--border-main)", "rgba(156,163,175,0.4)", "var(--border-main)"]
@@ -225,7 +225,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     </motion.div>
                   ) : (
                     <motion.div
-                      className="w-10 h-10 flex items-center justify-center relative z-10 transition-theme"
+                      className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center relative z-10 transition-theme`}
                       animate={isStreaming ? {
                         scale: [1, 1.05, 1]
                       } : {}}
@@ -235,7 +235,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         ease: "easeInOut"
                       } : {}}
                     >
-                      <DefaultLogo className="w-10 h-10 group-hover:scale-105 relative z-10 transition-theme" iconClassName="w-6 h-6" />
+                      <DefaultLogo className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} group-hover:scale-105 relative z-10 transition-theme`} iconClassName={isMobileView ? "w-5 h-5" : "w-6 h-6"} />
                     </motion.div>
                   )}
                 </div>
@@ -250,7 +250,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                     ) : (
                       String(t('appName') || "Perplexta").split("").map((char, index) => (
                         <span 
-                          key={index}
+                          key={`app-name-char-${char}-${index}`}
                           className="text-[17px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-gray-900 dark:group-hover:text-white transition-theme"
                         >
                           {char === " " ? "\u00A0" : char}
@@ -264,10 +264,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               {shouldShowMenuButton && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
-                  className="flex items-center justify-center w-10 h-10 bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0"
+                  className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0 hover:bg-[var(--bg-secondary)]"
                   title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
                 >
-                  <Menu size={18} className="text-gray-400 group-hover:text-accent transition-theme" />
+                  <Menu size={16} className="text-[var(--text-primary)] group-hover:text-accent transition-theme" />
                 </button>
               )}
           </div>
@@ -349,10 +349,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
             </AnimatePresence>
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-8 sm:px-4 md:px-6 shrink-0 h-full">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-4 sm:px-4 md:px-6 shrink-0 h-full">
             <NavLink
               to="/bulletin"
-              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
+              className={`flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
                 isBulletinActive 
                   ? 'bg-accent/[0.04] border-accent/30 text-accent' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
@@ -360,7 +360,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               title={language === 'ar' ? 'لوحة الإعلانات التفاعلية' : 'Interactive Bulletin Board'}
             >
               <Megaphone 
-                size={15} 
+                size={16} 
                 className={`transition-theme ${
                   isBulletinActive 
                     ? 'text-accent ' 
@@ -376,7 +376,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
             <NavLink
               to="/Studio"
-              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[4px] border transition-theme active:scale-95 group shrink-0 ${
+              className={`hidden md:flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black px-1.5 sm:px-2 md:px-3 h-10 rounded-[10px] border transition-theme active:scale-95 group shrink-0 ${
                 location.pathname === '/Studio' 
                   ? 'bg-accent/[0.04] border-accent/30 text-accent' 
                   : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
@@ -384,7 +384,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               title={language === 'ar' ? 'استوديو بيربليكستا للمطورين' : 'Perplexta Developer Studio'}
             >
               <Cpu 
-                size={15} 
+                size={16} 
                 className={`transition-theme ${
                   location.pathname === '/Studio' 
                     ? 'text-accent ' 
@@ -402,7 +402,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.15 }}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-[4px] bg-amber-500/10 border border-amber-500/20 shrink-0 select-none font-sans"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-[10px] bg-amber-500/10 border border-amber-500/20 shrink-0 select-none font-sans"
                 title={language === 'ar' ? 'أنت تعمل دون اتصال بالإنترنت' : 'You are working offline'}
               >
                 <span className="relative flex h-2 w-2">
@@ -419,9 +419,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
            <button 
                 onClick={toggleLanguage}
-                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[4px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+                className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
-            <Languages size={15} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
+            <Languages size={16} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
             <span className="hidden sm:inline text-[13px] text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-theme">{language === 'ar' ? 'English' : 'عربي'}</span>
           </button>
 
@@ -491,9 +491,9 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   
                   <div className="flex-1 overflow-y-auto py-1 custom-scrollbar">
                     {notifications.length > 0 ? (
-                      notifications.map((notif) => (
+                      notifications.map((notif, nIdx) => (
                         <div
-                          key={notif.id}
+                          key={`notif-${notif.id || nIdx}-${nIdx}`}
                           onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
                           className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-theme border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
                             !notif.is_read ? 'bg-accent/[0.03] border-r-2 border-r-accent-500' : ''

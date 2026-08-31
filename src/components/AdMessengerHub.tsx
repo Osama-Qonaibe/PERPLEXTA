@@ -17,7 +17,7 @@ import {
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { BulletinAvatar } from './BulletinAvatar';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export interface MessengerThread {
   id: number;
@@ -254,11 +254,11 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               <p className="text-xs font-bold">{isRtl ? 'لا توجد محادثات مطابقة' : 'No conversations found'}</p>
             </div>
           ) : (
-            filteredInquiries.map((inq) => {
+            filteredInquiries.map((inq, inqIdx) => {
               const isSelected = selectedThread?.id === inq.id;
               return (
                 <div
-                  key={inq.id}
+                  key={`inq-${inq.id || inqIdx}-${inqIdx}`}
                   onClick={() => setSelectedThread(inq)}
                   className={`p-3.5 flex items-start gap-3 cursor-pointer transition-theme relative ${
                     isSelected
@@ -361,10 +361,10 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                   </p>
                 </div>
               ) : (
-                messages.map((msg) => {
+                messages.map((msg, mIdx) => {
                   const isMe = msg.sender_id === user?.id;
                   return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}>
+                    <div key={`hub-msg-${msg.id || mIdx}-${mIdx}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}>
                       <div
                         className={`max-w-[80%] sm:max-w-[70%] px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-xs relative ${
                           isMe
@@ -417,7 +417,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
             <div className="px-3 py-2 bg-white dark:bg-[#18181c] border-t border-gray-100 dark:border-gray-800/60 overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
               {quickPrompts.map((q, idx) => (
                 <button
-                  key={idx}
+                  key={`messenger-quick-prompt-${idx}-${q}`}
                   onClick={() => handleSendMessage(q)}
                   className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-accent hover:text-white dark:hover:bg-accent text-gray-700 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200 dark:border-gray-700"
                 >

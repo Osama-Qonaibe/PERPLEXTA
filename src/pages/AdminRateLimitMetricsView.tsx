@@ -111,7 +111,7 @@ export const AdminRateLimitMetricsView = ({
               </div>
               <div className="flex flex-wrap gap-2">
                 {criticalThreats.map((ip, i) => (
-                  <span key={i} className="px-3 py-1 rounded-lg bg-red-500 text-white text-[10px] font-black shadow-lg shadow-red-500/20">
+                  <span key={`crit-threat-${ip.ip_address}-${i}`} className="px-3 py-1 rounded-lg bg-red-500 text-white text-[10px] font-black shadow-lg shadow-red-500/20">
                     {ip.ip_address} ({ip.count})
                   </span>
                 ))}
@@ -287,7 +287,7 @@ export const AdminRateLimitMetricsView = ({
               const isHot = data.hotIps.some(h => h.ip_address === ip.ip_address && parseInt(h.count, 10) >= threshold);
               return (
                 <div 
-                  key={idx} 
+                  key={`top-ip-${ip.ip_address}-${idx}`} 
                   className={`flex items-center justify-between p-3 rounded-md bg-[var(--bg-primary)] border transition-theme ${
                     isHot ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse" : "border-[var(--border-main)]"
                   }`}
@@ -340,7 +340,7 @@ export const AdminRateLimitMetricsView = ({
               </thead>
               <tbody className="divide-y divide-[var(--border-main)]">
                 {data?.recent.map((block, idx) => (
-                  <tr key={idx} className="group hover:bg-[var(--bg-primary)]/50 transition-theme">
+                  <tr key={`recent-block-${block.id || idx}-${block.ip_address}-${idx}`} className="group hover:bg-[var(--bg-primary)]/50 transition-theme">
                     <td className="py-3 px-2 text-[10px] text-[var(--text-muted)]">
                       {new Date(block.created_at).toLocaleTimeString()}
                     </td>

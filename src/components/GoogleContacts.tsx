@@ -11,7 +11,7 @@ import {
   UserCheck, LogOut, Mail, Phone, MapPin, Cake, 
   Briefcase, FileText, AlertCircle, RefreshCw, UserCheck2, ShieldCheck
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { HighlightText } from './HighlightText';
 
 interface GoogleContactsProps {

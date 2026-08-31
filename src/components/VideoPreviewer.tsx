@@ -285,7 +285,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
             {generatedThumbnails.length > 0 ? (
               generatedThumbnails.map((thumb, idx) => (
                 <button
-                  key={idx}
+                  key={`thumb-btn-${idx}`}
                   type="button"
                   onClick={() => {
                     setSelectedThumb(thumb);
@@ -309,7 +309,7 @@ export const VideoPreviewer: React.FC<VideoPreviewerProps> = ({
             ) : (
               Array.from({ length: 4 }).map((_, idx) => (
                 <div
-                  key={idx}
+                  key={`thumb-skel-${idx}`}
                   className="rounded-xl bg-gray-900 border border-gray-800 aspect-video animate-pulse flex items-center justify-center text-gray-600 text-[10px]"
                 >
                   ...

@@ -132,14 +132,14 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
       </div>
 
       <AnimatePresence mode="popLayout">
-        {visibleAds.map((ad) => {
+        {visibleAds.map((ad, adIdx) => {
           const title = isRtl ? ad.title_ar : ad.title_en;
           const description = isRtl ? ad.description_ar : ad.description_en;
           const badge = isRtl ? (ad.badge_text_ar || 'مُموَّل') : (ad.badge_text_en || 'Sponsored');
 
           return (
             <motion.div
-              key={ad.id}
+              key={`sponsored-ad-${ad.id || adIdx}-${adIdx}`}
               layout
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}

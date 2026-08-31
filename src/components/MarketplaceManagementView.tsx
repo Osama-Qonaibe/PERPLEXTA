@@ -5,7 +5,7 @@ import {
   Edit, Award, Share2, Upload, Flame, Star, Sparkles, Gift, Scale, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 import { HighlightText } from './HighlightText';
 import { resolveImageUrl } from '../utils/imageResolver';

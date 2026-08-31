@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ContentContainer } from '../components/ContentContainer';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { useRenderMetrics } from '../hooks/useRenderMetrics';
 import { getMediaUrl } from '../utils/mediaUtils';
 
@@ -504,12 +504,12 @@ export const BlogPage: React.FC = () => {
                   
                   {/* Desktop Categories List */}
                   <div className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
-                    {categories.map((cat) => {
+                    {categories.map((cat, catIdx) => {
                       const isSelected = selectedCategory === cat.id;
                       const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <button
-                          key={cat.id}
+                          key={`blog-cat-desk-${cat.id}-${catIdx}`}
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                             isSelected
@@ -545,12 +545,12 @@ export const BlogPage: React.FC = () => {
                       </button>
 
                       <div className="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
-                        {categories.slice(mobileCategoryPage * 2, mobileCategoryPage * 2 + 2).map((cat) => {
+                        {categories.slice(mobileCategoryPage * 2, mobileCategoryPage * 2 + 2).map((cat, catIdx) => {
                           const isSelected = selectedCategory === cat.id;
                           const iconCol = categoryColors[cat.id] || '#334155';
                           return (
                             <button
-                              key={cat.id}
+                              key={`blog-cat-mob-${cat.id}-${catIdx}`}
                               type="button"
                               onClick={() => setSelectedCategory(cat.id)}
                               className={`px-1.5 py-1 rounded-[4px] text-[10px] font-black whitespace-nowrap truncate cursor-pointer transition-theme border text-center flex items-center justify-center gap-1 min-w-0 ${
@@ -586,9 +586,9 @@ export const BlogPage: React.FC = () => {
 
                     {/* Micro indicator dots */}
                     <div className="flex items-center justify-center gap-1">
-                      {[0, 1, 2, 3].map((page) => (
+                      {[0, 1, 2, 3].map((page, pIdx) => (
                         <div
-                          key={page}
+                          key={`blog-dot-${page}-${pIdx}`}
                           className={`h-1 rounded-full transition-theme ${
                             mobileCategoryPage === page
                               ? 'w-3.5 bg-accent shadow-[0_0_8px_rgba(156,163,175,0.65)]'
@@ -631,12 +631,12 @@ export const BlogPage: React.FC = () => {
                   </div>
                   
                   <div className="space-y-0.5">
-                    {categories.map((cat) => {
+                    {categories.map((cat, catIdx) => {
                       const isSelected = selectedCategory === cat.id;
                       const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <div
-                          key={cat.id}
+                          key={`blog-aside-cat-${cat.id}-${catIdx}`}
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`flex items-center justify-between rounded px-2.5 py-1.5 text-[10px] font-black cursor-pointer transition-colors ${
                             isSelected
@@ -663,9 +663,9 @@ export const BlogPage: React.FC = () => {
                         { labelAr: 'الأحدث أولاً', labelEn: 'Latest Reports', val: 'latest' },
                         { labelAr: 'الأكثر قراءة', labelEn: 'Most Popular', val: 'popular' },
                         { labelAr: 'الأعلى تقييماً', labelEn: 'Highly Rated', val: 'highest-rated' }
-                      ].map((item) => (
+                      ].map((item, itemIdx) => (
                         <label
-                          key={item.val}
+                          key={`blog-aside-sort-${item.val}-${itemIdx}`}
                           className={`flex items-center gap-2 text-[10px] font-bold cursor-pointer transition-colors ${
                             sortBy === item.val
                               ? 'text-accent'
@@ -693,7 +693,7 @@ export const BlogPage: React.FC = () => {
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className={`rounded-xl border animate-pulse flex flex-col h-[390px] ${
+                      <div key={`blog-skel-${i}`} className={`rounded-xl border animate-pulse flex flex-col h-[390px] ${
                         isThemeDark ? 'bg-[#090a0c] border-white/5' : 'bg-white border-gray-150'
                       }`}>
                         <div className="h-40 bg-gray-200/10 dark:bg-gray-800/10" />
@@ -729,10 +729,10 @@ export const BlogPage: React.FC = () => {
                     {/* Desktop Premium Grid View */}
                     <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                       <AnimatePresence mode="wait">
-                        {sortedArticles.map((article) => {
+                        {sortedArticles.map((article, artIdx) => {
                           return (
                             <motion.article
-                              key={article.id}
+                              key={`blog-art-desk-${article.id || artIdx}-${artIdx}`}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
@@ -831,7 +831,7 @@ export const BlogPage: React.FC = () => {
                           if (isFeatured) {
                             return (
                               <motion.div
-                                key={`mob-featured-${article.id}`}
+                                key={`mob-featured-${article.id || index}-${index}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 className={`rounded-xl overflow-hidden border flex flex-col cursor-pointer active:scale-[0.98] transition-theme ${
@@ -871,7 +871,7 @@ export const BlogPage: React.FC = () => {
 
                           return (
                             <motion.div
-                              key={`mob-list-row-${article.id}`}
+                              key={`mob-list-row-${article.id || index}-${index}`}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               className={`p-3.5 rounded-xl border flex gap-3.5 cursor-pointer active:scale-[0.98] transition-theme ${
@@ -1042,11 +1042,11 @@ export const BlogPage: React.FC = () => {
                   {/* Compact Rating block with active interactivity & Emerald Glow stars */}
                   <div className="pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-1.5">
                     <div className="flex items-center gap-1 select-none">
-                      {[1, 2, 3, 4, 5].map((starVal) => {
+                      {[1, 2, 3, 4, 5].map((starVal, sIdx) => {
                         const isActive = starVal <= (ratingHover || userRating);
                         return (
                           <button
-                            key={starVal}
+                            key={`blog-desk-star-${starVal}-${sIdx}`}
                             type="button"
                             disabled={!token || isRatingSubmitting}
                             onMouseEnter={() => token && setRatingHover(starVal)}
@@ -1095,9 +1095,9 @@ export const BlogPage: React.FC = () => {
                     
                     return (
                       <div className="space-y-2 max-h-[190px] overflow-y-auto scrollbar-none select-none font-sans">
-                        {finalRelated.map(item => (
+                        {finalRelated.map((item, relIdx) => (
                           <div
-                            key={item.id}
+                            key={`blog-rel-item-${item.id || relIdx}-${relIdx}`}
                             onClick={() => navigate(`/blog/${item.slug}`)}
                             className="flex items-center gap-2 cursor-pointer group/related p-1 rounded hover:bg-accent/5 transition-theme"
                           >
@@ -1178,11 +1178,11 @@ export const BlogPage: React.FC = () => {
                     <div className="text-slate-800 dark:text-zinc-200 font-sans tracking-wide leading-relaxed space-y-4 select-text text-justify overflow-hidden font-medium text-xs sm:text-sm">
                       {(isRtl ? selectedArticle.content_ar : selectedArticle.content_en).split('\n').map((paragraph, idx) => (
                         paragraph.trim() ? (
-                          <p key={idx} className="whitespace-pre-wrap leading-7 text-[13px] sm:text-[14px]">
+                          <p key={`blog-p-${idx}-${paragraph.slice(0, 10)}`} className="whitespace-pre-wrap leading-7 text-[13px] sm:text-[14px]">
                             {paragraph}
                           </p>
                         ) : (
-                          <div key={idx} className="h-3" />
+                          <div key={`blog-p-gap-${idx}`} className="h-3" />
                         )
                       ))}
                     </div>
@@ -1239,7 +1239,7 @@ export const BlogPage: React.FC = () => {
                     {commentsLoading ? (
                       <div className="space-y-3.5 animate-pulse">
                         {[1, 2].map(i => (
-                          <div key={i} className="flex gap-3 p-3 border-b border-slate-100 dark:border-white/5">
+                          <div key={`blog-comment-skel-${i}`} className="flex gap-3 p-3 border-b border-slate-100 dark:border-white/5">
                             <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800" />
                             <div className="flex-1 space-y-1.5">
                               <div className="h-3.5 bg-slate-200 dark:bg-zinc-800 rounded w-1/4" />
@@ -1252,7 +1252,7 @@ export const BlogPage: React.FC = () => {
                       <div className="space-y-3.5 max-h-[350px] overflow-y-auto custom-scrollbar pr-1.5">
                         {comments.map((comment, index) => (
                           <motion.div
-                            key={comment.id}
+                            key={`blog-comment-${comment.id || index}-${index}`}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03 }}
@@ -1413,9 +1413,9 @@ export const BlogPage: React.FC = () => {
               <div className="p-5 font-sans leading-relaxed space-y-4 select-text">
                 <article className="text-[14px] leading-8 font-normal text-justify text-[var(--text-primary)]">
                   {(isRtl ? selectedArticle.content_ar : selectedArticle.content_en).split('\n').map((paragraph, index) => {
-                    if (!paragraph.trim()) return <div key={index} className="h-3" />;
+                    if (!paragraph.trim()) return <div key={`blog-mob-p-gap-${index}`} className="h-3" />;
                     return (
-                      <p key={index} className="mb-4">
+                      <p key={`blog-mob-p-${index}-${paragraph.slice(0, 10)}`} className="mb-4">
                         {paragraph}
                       </p>
                     );
@@ -1429,11 +1429,11 @@ export const BlogPage: React.FC = () => {
               }`}>
                 <h4 className="text-[10.5px] font-black font-sans uppercase text-gray-400 tracking-wider mb-2">{isRtl ? 'ما هو تقييمك لهذا التقرير؟' : 'Your Rating Indicator'}</h4>
                 <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5].map((starVal) => {
+                  {[1, 2, 3, 4, 5].map((starVal, sIdx) => {
                     const isActive = starVal <= (ratingHover || userRating);
                     return (
                       <button
-                        key={starVal}
+                        key={`blog-mob-star-${starVal}-${sIdx}`}
                         type="button"
                         disabled={!token || isRatingSubmitting}
                         onMouseEnter={() => token && setRatingHover(starVal)}
@@ -1507,8 +1507,8 @@ export const BlogPage: React.FC = () => {
                       <div className="text-center text-[10px] text-gray-500 py-4 font-mono">Loading discussions...</div>
                     ) : comments.length > 0 ? (
                       <div className="space-y-3.5 max-h-[250px] overflow-y-auto pr-1">
-                        {comments.map((comment) => (
-                          <div key={comment.id} className="p-3 bg-slate-500/5 rounded-lg border border-slate-100/5 relative text-[11px] leading-relaxed">
+                        {comments.map((comment, cIdx) => (
+                          <div key={`blog-mob-comment-${comment.id || cIdx}-${cIdx}`} className="p-3 bg-slate-500/5 rounded-lg border border-slate-100/5 relative text-[11px] leading-relaxed">
                             <div className="flex items-center justify-between mb-1">
                               <span className="font-black text-slate-900 dark:text-white text-[10px] branch-sans leading-none">{comment.author_name}</span>
                               <span className="text-[8px] text-gray-500">{new Date(comment.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}</span>
@@ -1720,12 +1720,12 @@ export const BlogPage: React.FC = () => {
                       </span>
                     </button>
 
-                    {categories.map((cat) => {
+                    {categories.map((cat, catIdx) => {
                       const isSelected = selectedCategory === cat.id;
                       const iconCol = categoryColors[cat.id] || '#334155';
                       return (
                         <div
-                          key={cat.id}
+                          key={`blog-drawer-cat-${cat.id}-${catIdx}`}
                           onClick={() => {
                             setSelectedCategory(cat.id);
                             setIsMobileSidebarOpen(false);
@@ -1755,9 +1755,9 @@ export const BlogPage: React.FC = () => {
                       { labelAr: 'الأحدث أولاً', labelEn: 'Latest Reports', val: 'latest' },
                       { labelAr: 'الأكثر قراءة', labelEn: 'Most Popular', val: 'popular' },
                       { labelAr: 'الأعلى تقييماً', labelEn: 'Highly Rated', val: 'highest-rated' }
-                    ].map((item) => (
+                    ].map((item, itIdx) => (
                       <label
-                        key={item.val}
+                        key={`blog-drawer-sort-${item.val}-${itIdx}`}
                         className={`flex items-center gap-2.5 text-[11px] font-bold cursor-pointer transition-colors ${
                           sortBy === item.val
                             ? 'text-accent'

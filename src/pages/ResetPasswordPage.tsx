@@ -4,7 +4,7 @@ import { Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2 } fro
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();

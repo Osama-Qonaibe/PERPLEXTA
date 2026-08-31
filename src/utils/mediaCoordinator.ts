@@ -20,7 +20,7 @@ export function stopAllMedia(exceptMediaId?: string): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   try {
-    const allMedia = document.querySelectorAll<HTMLMediaElement>('video, audio');
+    const allMedia = document.querySelectorAll<HTMLMediaElement>('video:not(.ambient-video), audio');
     allMedia.forEach((element) => {
       const elId = element.dataset.mediaId || element.id;
       if (exceptMediaId && elId === exceptMediaId) {

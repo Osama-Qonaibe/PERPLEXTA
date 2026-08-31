@@ -143,7 +143,7 @@ export const RecommendationsPage: React.FC = () => {
                   </span>
                   {userSummary.top_inferred_categories.map((cat: string, idx: number) => (
                     <span
-                      key={idx}
+                      key={`rec-cat-${cat}-${idx}`}
                       className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md capitalize"
                     >
                       {cat}

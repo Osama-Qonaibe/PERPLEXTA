@@ -6,7 +6,7 @@ import {
   MessageSquare, Send, Plus, Users, Hash, RefreshCw, 
   LogIn, LogOut, CheckCircle2, AlertCircle, ShieldCheck, Loader2 
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 
 const chatProvider = new GoogleAuthProvider();

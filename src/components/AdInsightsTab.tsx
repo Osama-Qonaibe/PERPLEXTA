@@ -362,7 +362,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
 
           <div className="space-y-1.5">
             {data.locations.map((loc, idx) => (
-              <div key={idx} className="space-y-0.5">
+              <div key={`loc-insight-${idx}-${loc.city || loc.cityEn}`} className="space-y-0.5">
                 <div className="flex justify-between text-gray-300 font-medium text-[9.5px]">
                   <span>{isRtl ? loc.city : loc.cityEn}</span>
                   <span className="font-bold text-accent">{loc.percentage}% ({loc.count})</span>
@@ -390,7 +390,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
 
           <div className="space-y-2 pt-1">
             {data.devices.map((dev, idx) => (
-              <div key={idx} className="flex items-center justify-between p-1.5 rounded-lg bg-gray-900/80 border border-gray-800">
+              <div key={`dev-insight-${idx}-${dev.device}`} className="flex items-center justify-between p-1.5 rounded-lg bg-gray-900/80 border border-gray-800">
                 <span className="text-gray-300 font-medium">{dev.device}</span>
                 <span className="font-extrabold text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
                   {dev.percentage}%
@@ -415,7 +415,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
         <div className="space-y-1.5 pt-1">
           {data.recommendations.map((rec, idx) => (
             <div
-              key={idx}
+              key={`rec-insight-${idx}-${rec.title_en || rec.title_ar}`}
               className="p-2.5 rounded-xl bg-gradient-to-r from-gray-500/10 via-gray-900 to-gray-950 border border-accent/30 flex items-start justify-between gap-2"
             >
               <div className="space-y-0.5 text-start">

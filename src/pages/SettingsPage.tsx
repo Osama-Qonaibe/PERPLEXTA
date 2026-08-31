@@ -281,9 +281,9 @@ export const SettingsPage: React.FC = () => {
 
         {/* Sidebar Tabs - Scrollable Area */}
         <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-1.5 font-inter">
-          {tabs.map(tab => (
+          {tabs.map((tab, tabIdx) => (
             <button
-              key={tab.id}
+              key={`settings-tab-${tab.id}-${tabIdx}`}
               onClick={() => handleTabChange(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-theme group relative overflow-hidden ${
                 activeTab === tab.id 

@@ -16,7 +16,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       <div className={`space-y-1.5 px-3 py-2 w-full ${className}`}>
         {[...Array(count)].map((_, i) => (
           <div 
-            key={i} 
+            key={`skel-history-${i}`} 
             className="flex items-center gap-3 w-full h-11 px-3 rounded-[4px] bg-[var(--bg-hover)]/40 border border-transparent animate-shimmer"
           >
             <div className="w-4 h-4 rounded-[4px] bg-[var(--border-subtle)] shrink-0" />
@@ -38,7 +38,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-32 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-4 space-y-3 animate-shimmer">
+            <div key={`skel-card-${i}`} className="h-32 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] p-4 space-y-3 animate-shimmer">
               <div className="w-8 h-8 rounded bg-[var(--border-subtle)]" />
               <div className="h-3 bg-[var(--border-subtle)] rounded w-1/2" />
               <div className="h-2 bg-[var(--border-subtle)] rounded w-3/4" />

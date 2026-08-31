@@ -12,7 +12,7 @@ import {
   Bar 
 } from 'recharts';
 import { Activity, Clock, Cpu, RefreshCw, Server, Users, Zap } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 interface RenderMetricItem {
   id: string;

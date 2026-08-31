@@ -11,7 +11,7 @@ import { useAppContext } from '../context/AppContext';
 import { GoogleChatManager } from '../components/GoogleChatManager';
 import { GoogleContacts } from '../components/GoogleContacts';
 import { ActionConfirmationModal } from '../components/ActionConfirmationModal';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 interface GoogleTool {
   id: string;
@@ -496,9 +496,9 @@ const GoogleHubPage: React.FC = () => {
                   onReorder={setTools}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
                 >
-                  {filteredTools.map((tool) => (
+                  {filteredTools.map((tool, tIdx) => (
                     <Reorder.Item
-                      key={tool.id}
+                      key={`ghub-tool-${tool.id || tIdx}-${tIdx}`}
                       value={tool}
                       dragListener={tool.available && searchQuery === ''}
                       whileDrag={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
@@ -905,7 +905,7 @@ const GoogleHubPage: React.FC = () => {
                     </h4>
                     <div className="space-y-2">
                       {guideTool.guide.steps.map((step: string, idx: number) => (
-                        <div key={idx} className="flex items-start gap-3 group text-start">
+                        <div key={`guide-step-${idx}-${step.slice(0, 10)}`} className="flex items-start gap-3 group text-start">
                           <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center text-[10px] font-black group-hover:border-accent/50 transition-colors mt-0.5">
                             {idx + 1}
                           </span>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Share2, Copy, Check, X, Megaphone, Users, ArrowUpRight, MousePointer2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 
 export const IncentiveCard: React.FC = () => {
   const { dir, t, user, milestoneData, setMilestoneData, siteSettings } = useAppContext();

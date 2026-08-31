@@ -2,7 +2,7 @@ import { safeStorageGet, safeStorageSet, safeStorageRemove } from "@/utils/safeS
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { Wallet, Gift, Copy, Check, History, Zap, Share2, UserPlus, CheckCircle2, ChevronRight, ChevronLeft, Clock, XCircle, ArrowRightLeft, Landmark, Bitcoin, CreditCard, Send, ShieldCheck, Camera, Lock, RefreshCw, AlertTriangle, Users, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition, perplextaItemTransition } from '../constants/motions';
@@ -1375,8 +1375,8 @@ export const RewardsPage: React.FC = () => {
                       {dir === 'rtl' ? 'سجل الدعوات المرسلة' : 'Sent Invitations Ledger'}
                     </span>
                     <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin border border-[var(--border-main)] rounded-[4px] bg-[var(--bg-primary)]/40 p-2 md:p-3">
-                      {sentInvitations.map((inv: any) => (
-                        <div key={inv.id} className="flex items-center justify-between text-[11px] py-1 border-b border-[var(--border-main)]/40 last:border-0" style={{ direction: dir === 'rtl' ? 'rtl' : 'ltr' }}>
+                      {sentInvitations.map((inv: any, invIdx: number) => (
+                        <div key={`reward-inv-${inv.id || invIdx}-${invIdx}`} className="flex items-center justify-between text-[11px] py-1 border-b border-[var(--border-main)]/40 last:border-0" style={{ direction: dir === 'rtl' ? 'rtl' : 'ltr' }}>
                           <span className="font-mono text-gray-600 dark:text-gray-300 font-bold">{inv.email}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-[var(--text-muted)] font-medium">
@@ -1458,7 +1458,7 @@ export const RewardsPage: React.FC = () => {
                 
                 return (
                   <button
-                    key={filterOpt}
+                    key={`reward-filter-${filterOpt}`}
                     type="button"
                     onClick={() => setFriendsFilter(filterOpt)}
                     className={`px-3 py-1.5 rounded-[4px] text-[10px] font-black uppercase text-center transition-all duration-300 cursor-pointer ${
@@ -1560,7 +1560,7 @@ export const RewardsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-main)]/50">
-                  {sortedAndFiltered.map((friend) => {
+                  {sortedAndFiltered.map((friend, fIdx) => {
                     // Decide deposit badge styling
                     let depBadgeProps = {
                       bg: 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300',
@@ -1601,7 +1601,7 @@ export const RewardsPage: React.FC = () => {
                     }
 
                     return (
-                      <tr key={friend.referral_id} className="hover:bg-[var(--bg-primary)]/40 transition-theme">
+                      <tr key={`friend-row-${friend.referral_id || friend.id || fIdx}-${fIdx}`} className="hover:bg-[var(--bg-primary)]/40 transition-theme">
                         <td className="py-4 pr-3">
                           <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
                             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs uppercase border border-gray-200 dark:border-gray-700 select-none">
@@ -1926,7 +1926,7 @@ export const RewardsPage: React.FC = () => {
                     </tr>
                   ) : (
                     <>
-                      {transactions.map((tx) => {
+                      {transactions.map((tx, txIdx) => {
                         const pts = Number(tx.points || 0);
                         const amt = Number(tx.amount || 0);
                         const hasPoints = pts !== 0;
@@ -1936,7 +1936,7 @@ export const RewardsPage: React.FC = () => {
                         const label = getTxLabel(tx.transaction_type, dir === 'rtl');
 
                         return (
-                          <tr key={tx.id} className="border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors">
+                          <tr key={`rewards-tx-${tx.id || txIdx}-${txIdx}`} className="border-b border-[var(--border-main)] hover:bg-[var(--bg-primary)]/20 transition-colors">
                             <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
                               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--radius)] text-xs font-semibold ${badgeClass}`}>
                                 {label}

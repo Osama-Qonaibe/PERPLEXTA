@@ -15,7 +15,7 @@ import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
 import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
 import { trackGAEvent } from '../components/GoogleAnalytics';
@@ -1542,7 +1542,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
                         <div className="space-y-1.5 max-h-[250px] overflow-y-auto custom-scrollbar">
                           {outputLogs.map((log, lidx) => (
-                            <div key={lidx} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
+                            <div key={`out-log-${lidx}-${log.time || ''}`} className={`flex items-start gap-2.5 leading-relaxed py-0.5 border-b border-gray-900/10 ${
                               log.type === 'error' ? 'text-red-400 bg-red-950/20 px-2 rounded-sm' :
                               log.type === 'warn' ? 'text-amber-400 bg-amber-950/20 px-2 rounded-sm' :
                               log.type === 'info' ? 'text-accent bg-accent/10 px-2 rounded-sm' : 'text-gray-300'
@@ -1865,7 +1865,7 @@ const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps']
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: idx * 0.05, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            key={idx} 
+            key={`step-${step.step || idx}-${idx}`} 
             className="flex items-center gap-2 sm:gap-4 group"
           >
             {step.status === 'completed' ? (
@@ -1905,7 +1905,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
         if (citation) {
           return (
             <MarkdownCitationLink 
-              key={i}
+              key={`cit-link-${i}-${part}`}
               citation={citation}
               index={index}
             />
@@ -1918,7 +1918,7 @@ const renderChildrenWithCitations = (node: React.ReactNode, msg: any, depth = 0)
 
   if (Array.isArray(node)) {
     return node.map((child, index) => (
-      <React.Fragment key={index}>
+      <React.Fragment key={`cit-frag-${depth}-${index}`}>
         {renderChildrenWithCitations(child, msg, depth + 1)}
       </React.Fragment>
     ));
@@ -2357,7 +2357,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
             const brand = getPlatformBrand(cleanUrl);
             return (
               <div 
-                key={i} 
+                key={`cit-prev-${cleanUrl || i}-${i}`} 
                 className="w-5 h-5 rounded-full bg-white dark:bg-zinc-800 border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm z-[10]"
                 style={{ color: brand ? brand.color : 'inherit' }}
               >
@@ -2399,7 +2399,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
             <div className="pt-3 max-w-full flex flex-col gap-1">
               {citations.map((cite, idx) => (
                 <CitationRow 
-                  key={idx} 
+                  key={`cit-row-${cite.url || idx}-${idx}`} 
                   cite={cite} 
                   idx={idx} 
                   dir={dir} 
@@ -2424,7 +2424,7 @@ const FollowUps = ({ followUps, onSelect, dir }: { followUps: string[], onSelect
       <div className="flex flex-col gap-2">
         {followUps.map((q, idx) => (
           <button
-            key={idx}
+            key={`follow-up-${idx}-${q.slice(0, 15)}`}
             onClick={() => onSelect(q)}
             id={`follow-up-${idx}`}
             className="group flex items-center justify-between gap-3 px-4 py-3 sm:py-3.5 bg-[var(--surface-subtle)]/40 hover:bg-[var(--surface-subtle)] border border-[var(--border-main)]/40 hover:border-accent/40 rounded-xl transition-all duration-200 text-start cursor-pointer w-full text-[var(--text-primary)] shadow-xs"
@@ -3059,7 +3059,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               scaleVal = Math.max(4, Math.min(26, volumeFactor));
               return (
                 <div 
-                  key={i}
+                  key={`audio-vis-bar-${i}`}
                   style={{ height: `${scaleVal}px` }}
                   className="w-1 bg-accent/70 rounded-full transition-theme shadow-[0_0_8px_rgba(156,163,175,0.4)]"
                 />
@@ -3068,7 +3068,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
               return (
                 <motion.div 
-                  key={i}
+                  key={`audio-vis-motion-${i}`}
                   animate={{ 
                     height: [4, 18 + Math.sin(i * 0.5) * 10, 4] 
                   }}
@@ -3086,7 +3086,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
               scaleVal = 4 + Math.sin(i * 0.3) * 3;
               return (
                 <div 
-                  key={i}
+                  key={`audio-vis-idle-${i}`}
                   style={{ height: `${scaleVal}px` }}
                   className="w-1 bg-accent/40 rounded-full transition-theme shadow-[0_0_4px_rgba(156,163,175,0.1)]"
                 />
@@ -3591,7 +3591,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
 
         return (
           <motion.div
-            key={canon.id}
+            key={`canon-${canon.id}-${idx}`}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ 
@@ -5936,9 +5936,9 @@ export const ChatPage: React.FC = () => {
         <div className={`flex items-center justify-between px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none gap-3 md:gap-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
           <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
             <div className="flex items-center gap-2 md:gap-3.5">
-              {ratios.map(r => (
+              {ratios.map((r, rIdx) => (
                 <button
-                  key={r}
+                  key={`img-ratio-${r}-${rIdx}`}
                   onClick={() => setImageSettings(prev => ({ ...prev, aspectRatio: r }))}
                   className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                     imageSettings.aspectRatio === r 
@@ -5954,9 +5954,9 @@ export const ChatPage: React.FC = () => {
             <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5" />
 
             <div className="flex items-center gap-2.5 md:gap-4">
-              {qualities.map(q => (
+              {qualities.map((q, qIdx) => (
                 <button
-                  key={q}
+                  key={`img-quality-${q}-${qIdx}`}
                   onClick={() => setImageSettings(prev => ({ ...prev, quality: q }))}
                   className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                     imageSettings.quality === q 
@@ -5972,9 +5972,9 @@ export const ChatPage: React.FC = () => {
 
           <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
             <div className={`flex items-center gap-2 md:gap-4 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
-              {styles.map(s => (
+              {styles.map((s, sIdx) => (
                 <button
-                  key={s}
+                  key={`img-style-${s}-${sIdx}`}
                   onClick={() => setImageSettings(prev => ({ ...prev, style: s }))}
                   className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-theme whitespace-nowrap pointer-events-auto cursor-pointer ${
                     imageSettings.style === s 
@@ -6048,9 +6048,9 @@ export const ChatPage: React.FC = () => {
         <div className={`flex items-center justify-between px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none gap-3 md:gap-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
           <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
             <div className="flex items-center gap-2 md:gap-3.5">
-              {moods.map(m => (
+              {moods.map((m, mIdx) => (
                 <button
-                  key={m.id}
+                  key={`audio-mood-${m.id}-${mIdx}`}
                   onClick={() => {
                     setAudioSettings(prev => ({ ...prev, mood: m.id }));
                     appendAudioTag(m.label);
@@ -6069,9 +6069,9 @@ export const ChatPage: React.FC = () => {
             <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5" />
 
             <div className="flex items-center gap-2.5 md:gap-4">
-              {[15, 30, 60, 90].map(d => (
+              {[15, 30, 60, 90].map((d, dIdx) => (
                 <button
-                  key={d}
+                  key={`audio-dur-${d}-${dIdx}`}
                   onClick={() => {
                     setAudioSettings(prev => ({ ...prev, duration: d }));
                     appendAudioTag(`${d}${dir === 'rtl' ? ' ثواني' : 's'}`);
@@ -6090,9 +6090,9 @@ export const ChatPage: React.FC = () => {
 
           <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
             <div className={`flex items-center gap-2 md:gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-              {vocalTypes.map(v => (
+              {vocalTypes.map((v, vIdx) => (
                 <button
-                  key={v.id}
+                  key={`audio-vocal-${v.id}-${vIdx}`}
                   onClick={() => {
                     setAudioSettings(prev => ({ ...prev, vocalType: v.id }));
                     appendAudioTag(v.label);
@@ -6148,9 +6148,9 @@ export const ChatPage: React.FC = () => {
         <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
 
           <div className="flex items-center gap-1.5 md:gap-2">
-            {styles.map(st => (
+            {styles.map((st, stIdx) => (
               <button
-                key={st}
+                key={`vid-style-${st}-${stIdx}`}
                 onClick={() => setVideoSettings(prev => ({ ...prev, style: st }))}
                 className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.style === st
@@ -6166,9 +6166,9 @@ export const ChatPage: React.FC = () => {
           <div className="w-px h-3 bg-zinc-800/80" />
 
           <div className="flex items-center gap-2 md:gap-3.5">
-            {ratios.map(r => (
+            {ratios.map((r, rIdx) => (
               <button
-                key={r}
+                key={`vid-ratio-${r}-${rIdx}`}
                 onClick={() => setVideoSettings(prev => ({ ...prev, aspectRatio: r }))}
                 className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.aspectRatio === r 
@@ -6184,9 +6184,9 @@ export const ChatPage: React.FC = () => {
           <div className="w-px h-3 bg-zinc-800/80" />
 
           <div className="flex items-center gap-2.5 md:gap-4">
-            {resolutions.map(res => (
+            {resolutions.map((res, resIdx) => (
               <button
-                key={res}
+                key={`vid-res-${res}-${resIdx}`}
                 onClick={() => setVideoSettings(prev => ({ ...prev, resolution: res }))}
                 className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
                   videoSettings.resolution === res 
@@ -6334,7 +6334,7 @@ export const ChatPage: React.FC = () => {
                 <div className="flex items-end gap-0.5 h-4 select-none pr-1">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <motion.span
-                      key={i}
+                      key={`chat-sound-wave-${i}`}
                       className="w-0.5 bg-red-500 rounded-full"
                       animate={{
                         height: ["4px", "16px", "4px"]
@@ -6610,9 +6610,9 @@ export const ChatPage: React.FC = () => {
                     {t('tools').toUpperCase()}
                   </div>
                   <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool) => (
+                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool, tIdx) => (
                       <button 
-                        key={tool.id} 
+                        key={`adv-tool-${tool.id}-${tIdx}`} 
                         onClick={() => {
                           setSelectedTool(tool.id);
                           if (tool.id === 'video') setShowVideoSettings(true);
@@ -7040,7 +7040,7 @@ export const ChatPage: React.FC = () => {
               >
                 {[...Array(3)].map((_, i) => (
                   <motion.div 
-                    key={i} 
+                    key={`chat-skel-msg-${i}`} 
                     className="flex gap-4 w-full p-6 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)]"
                     animate={{
                       opacity: [0.45, 0.75, 0.45]
@@ -7106,7 +7106,7 @@ export const ChatPage: React.FC = () => {
               {messages.map((msg, idx) => {
                 return (
                   <motion.div 
-                    key={msg.client_id || msg.id || idx} 
+                    key={`msg-${msg.client_id || msg.id || idx}-${idx}`} 
                     id={`message-${idx}`}
                     className={`w-full ${msg.role === 'user' ? 'user-message-anchor' : ''}`}
                   >
@@ -7748,7 +7748,7 @@ export const ChatPage: React.FC = () => {
                   </div>
                 ) : (
                   messages.filter(m => m.is_pinned).map((msg, pIdx) => (
-                    <div key={pIdx} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/30 transition-theme">
+                    <div key={`pinned-msg-${msg.id || pIdx}-${pIdx}`} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/30 transition-theme">
                       <div className="flex items-center justify-between mb-2">
                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent">
                            {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
@@ -7830,7 +7830,7 @@ export const ChatPage: React.FC = () => {
                         </div>
                         <ul className="text-[11px] list-disc list-inside space-y-1 text-red-300">
                           {forensicReport.anomalies.map((anomaly: string, aIdx: number) => (
-                            <li key={aIdx}>{anomaly}</li>
+                            <li key={`forensic-anomaly-${aIdx}`}>{anomaly}</li>
                           ))}
                         </ul>
                       </div>
@@ -7900,7 +7900,7 @@ export const ChatPage: React.FC = () => {
                           {forensicReport.hiddenLayers.length > 0 ? (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {forensicReport.hiddenLayers.map((layer: string, lIdx: number) => (
-                                <span key={lIdx} className="text-[9px] font-bold tracking-tight bg-accent/10 border border-accent/20 text-accent px-2 py-1 rounded-[4px]">
+                                <span key={`forensic-layer-${lIdx}-${layer}`} className="text-[9px] font-bold tracking-tight bg-accent/10 border border-accent/20 text-accent px-2 py-1 rounded-[4px]">
                                   {layer}
                                 </span>
                               ))}
@@ -7952,7 +7952,7 @@ export const ChatPage: React.FC = () => {
                       </h3>
                       <div className="bg-[#0b0b0c] border border-gray-900 rounded p-4 font-mono text-[9px] text-gray-400 space-y-1 max-h-[160px] overflow-y-auto custom-scrollbar">
                         {forensicReport.detailedLog.map((log: string, lIdx: number) => (
-                          <div key={lIdx} className="leading-relaxed hover:text-accent transition-colors">
+                          <div key={`forensic-log-${lIdx}`} className="leading-relaxed hover:text-accent transition-colors">
                             {log}
                           </div>
                         ))}

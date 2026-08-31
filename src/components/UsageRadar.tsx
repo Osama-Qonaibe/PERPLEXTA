@@ -86,7 +86,7 @@ export const UsageRadar: React.FC = () => {
         {/* Skeleton Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
+            <div key={`usage-radar-skel-${i}`} className="h-[156px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-surface)] transition-theme" />
           ))}
         </div>
       </div>

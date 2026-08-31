@@ -312,7 +312,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
       {isLoading ? (
         <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
           {Array.from({ length: limit > 4 ? 4 : limit }).map((_, i) => (
-            <div key={i} className="h-16 sm:h-20 rounded-xl bg-gray-100 dark:bg-gray-800/60 animate-pulse p-3 flex items-center gap-3">
+            <div key={`rec-widget-skel-${i}`} className="h-16 sm:h-20 rounded-xl bg-gray-100 dark:bg-gray-800/60 animate-pulse p-3 flex items-center gap-3">
               <div className="w-11 h-11 bg-gray-200 dark:bg-gray-700 rounded-xl shrink-0" />
               <div className="flex-1 space-y-1.5">
                 <div className="w-3/4 h-3.5 bg-gray-200 dark:bg-gray-700 rounded" />
@@ -346,7 +346,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
       ) : (
         /* Items Grid */
         <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
-          {visibleItems.map(item => {
+          {visibleItems.map((item, recIdx) => {
             const reasonText = language === 'ar' 
               ? (item.reasons_ar?.[0] || 'توصية مخصصة')
               : (item.reasons_en?.[0] || 'Recommended for you');
@@ -363,7 +363,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
               /* SLEEK SIDEBAR COMPACT CARD FOR BULLETIN ADS */
               return (
                 <motion.div
-                  key={item.recommendation_id}
+                  key={`rec-item-compact-${item.recommendation_id || item.item_id || recIdx}-${recIdx}`}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -442,7 +442,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
             /* STANDARD FULL GRID CARD FOR OTHER VARIANTS */
             return (
               <motion.div
-                key={item.recommendation_id}
+                key={`rec-item-full-${item.recommendation_id || item.item_id || recIdx}-${recIdx}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
