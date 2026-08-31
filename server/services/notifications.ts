@@ -1,5 +1,4 @@
 import { pool, getSecurityPool } from '../db/index.js';
-import { io } from '../config/socket.js';
 
 export async function dispatchNotification(
   userIdOrIds: number | string | (number | string)[],
@@ -80,6 +79,7 @@ export async function createNotification(userId: number | string, type: string, 
       RETURNING *
     `, [userId, type, titleEn, titleAr, messageEn, messageAr, JSON.stringify(metadata)]);
 
+    const { io } = await import('../config/socket.js');
     if (io) {
       io.to(`user_${userId}`).emit('notification', res.rows[0]);
     }

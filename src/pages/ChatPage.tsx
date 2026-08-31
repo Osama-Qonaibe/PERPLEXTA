@@ -6623,8 +6623,6 @@ export const ChatPage: React.FC = () => {
                         key={`adv-tool-${tool.id}-${tIdx}`} 
                         onClick={() => {
                           if (isLocked) {
-                            triggerUpgradePrompt(tool.id);
-                            setIsAdvancedToolsOpen(false);
                             return;
                           }
                           setSelectedTool(tool.id);
@@ -6654,7 +6652,7 @@ export const ChatPage: React.FC = () => {
                               </span>
                             )}
                             {isLocked && (
-                              <Lock size={12} className="text-gray-400 opacity-60" />
+                              <Lock size={12} className="text-amber-500" />
                             )}
                           </div>
                         </div>
@@ -6711,8 +6709,6 @@ export const ChatPage: React.FC = () => {
                       key={`${model.id}-${idx}`}
                       onClick={() => {
                         if (isLocked) {
-                          triggerUpgradePrompt(mappedToolId);
-                          setIsModelMenuOpen(false);
                           return;
                         }
                         setSelectedModel(model.id as any);
@@ -6732,7 +6728,7 @@ export const ChatPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         {isLocked && (
-                          <Lock size={12} className="text-gray-400 opacity-60" />
+                          <Lock size={12} className="text-amber-500" />
                         )}
                         {!isLocked && selectedModel === model.id && activeDropdown === 'model' && (
                           <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />

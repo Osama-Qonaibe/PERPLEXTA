@@ -69,7 +69,6 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { motion } from 'motion/react';
-import { UpgradePromptModal } from './components/UpgradePromptModal';
 import { resolveImageUrl } from './utils/imageResolver';
 import { GlobalLoadingOverlay } from "./components/GlobalLoadingOverlay";
 import { InactivityWarningModal } from './components/InactivityWarningModal';
@@ -262,7 +261,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
 
       <IncentiveCard />
-      <UpgradePromptModal />
       <InactivityWarningModal />
       <GlobalLoadingOverlay />
       <PwaInstallSuccessService />

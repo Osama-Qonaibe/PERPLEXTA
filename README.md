@@ -83,6 +83,35 @@ To optimize context limits while preserving historical continuity, the system co
 * **Strict Allowlist Filtering:** Files uploaded to the localized volume go through heavy backend verification, enforcing strict size checks (100MB MAX limit), filename path-traversal sanitization, and type checking.
 * **PDF Analytical Bridge:** Deploys resilient on-the-fly text extraction pipelines to handle multi-version PDF files. Extracted text contexts are injected dynamically into the active Orchestrator runtime prompt parameters.
 
+### 6. Production Cache Optimizations & Zero-Database File Version serving
+To address latency issues and ensure rapid page-loading on high-traffic servers:
+* **High-Performance Version Caching (`fileVersionCache`):** Introduced a specialized, in-memory caching system for file versions to eliminate redundant query executions.
+* **Intelligent DB-Bypass logic:** When serving static assets, logos, and public site illustrations (which are not user-uploaded files), the server immediately bypasses the `user_files` database lookup entirely.
+* **Reactive Cache Invalidation:** The native file-system watcher (`fs.watch`) monitors the uploads directory and automatically flushes both the permissions cache (`filePermissionCache`) and the version cache (`fileVersionCache`) whenever files are modified, replaced, or physically erased, maintaining high performance with zero-lag consistency.
+
+---
+
+## 🧼 Production Purging & Code Alignment Updates (August 31, 2026)
+
+To prepare the platform for enterprise-grade containerized deployment and achieve a flawless 100% build pass:
+
+### 1. UI/UX Purge & Premium Golden Locks System
+* **Removal of Unsolicited Upgrade Prompt Modal:** Completely deleted `/src/components/UpgradePromptModal.tsx` and purged its imports and declarations from `src/App.tsx` to cleanse the project of intrusive promotional elements.
+* **Zero-Prompt Locked Interactivity:** Refactored the interactions for locked advanced tools and AI models in `/src/pages/ChatPage.tsx` to remain passive upon clicking, eliminating noisy pop-up alerts.
+* **Elite Amber/Golden Locks:** Upgraded locked advanced tools and models to feature a premium, high-contrast Amber/Golden padlock (`text-amber-500`) for clear, elegant visual guidance without unsolicited popups.
+
+### 2. File Clean-up & Zero-Clutter Compliance
+Purged all temporary testing scripts, database patches, and transitional configuration files to keep the production root directory strictly pristine:
+* Deleted temporary test scripts: `test.js`, `test-plans.js`, `test-test.ts`, `test-db.js`, `test-db.ts`, and `test-insert.js`.
+* Cleared repair, patch, and transition scripts: `fix-db.js`, `fix-db2.js`, `fix-db-plans.js`, `move_effect.cjs`, and `patch_reels_start_id.sh`.
+* Removed draft documents and local legacy guides: `auth.md`.
+
+### 2. Full-Stack Type Alignment & Bug Fixes
+* **Dynamic Socket.io Loading Bridge:** Transitioned the core `createNotification` service from static `io` imports to dynamic execution imports (`await import('../config/socket.js')`). This completely resolves potential ESM uninitialized import states during initial system boots on production servers.
+* **Universal Async Loading Indicators:** Integrated a native `.loading(message, title, options)` method directly into the `NotificationContext` type and custom `toast` helpers. This ensures that operations across the Ads Management, Video Trimming, and Wallet panels can easily trigger and control state loaders.
+* **Optional Description Parsing:** Added support for the `description` field directly into `NotificationOptions` and `NotificationItem` to accept custom metadata payloads seamlessly, resolving strict type checks on multiple components.
+* **Strict Schema Castings:** Fixed numerical limit assignment within the `PlansSubscriptionsView` admin component, correcting strict typing for quota configurations (supporting numbers, booleans, and `"unlimited"` tokens cleanly).
+
 ---
 
 ## 🤖 Programmative AI Agent Capability Discovery Specifications

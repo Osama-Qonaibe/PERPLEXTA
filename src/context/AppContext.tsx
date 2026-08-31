@@ -1775,30 +1775,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setMemoryNotification(prev => ({ ...prev, isVisible: false }));
   };
 
-  const [upgradePromptState, setUpgradePromptState] = useState<{
-    isOpen: boolean;
-    toolId: string;
-    limit?: number;
-    currentUsage?: number;
-    period?: 'daily' | 'monthly';
-  }>({
+  const upgradePromptState = {
     isOpen: false,
     toolId: '',
-  });
-
-  const triggerUpgradePrompt = (toolId: string, limit?: number, currentUsage?: number, period?: 'daily' | 'monthly') => {
-    setUpgradePromptState({
-      isOpen: true,
-      toolId,
-      limit,
-      currentUsage,
-      period
-    });
   };
-
-  const closeUpgradePrompt = () => {
-    setUpgradePromptState(prev => ({ ...prev, isOpen: false }));
-  };
+  const setUpgradePromptState = () => {};
+  const triggerUpgradePrompt = () => {};
+  const closeUpgradePrompt = () => {};
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     try {
       return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
