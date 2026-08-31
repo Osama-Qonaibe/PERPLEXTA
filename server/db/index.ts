@@ -82,7 +82,8 @@ export function getSslConfig(urlStr?: string) {
 
 /** Resolve pool-size defaults from environment variables — single source of truth. */
 function getPoolSizesFromEnv(): { coreMax: number; ledgerMax: number; externalMax: number; securityMax: number } {
-  const base = Number(process.env.DB_MAX_CONNECTIONS) || 20;
+  const defaultBase = process.env.NODE_ENV === 'production' ? 10 : 20;
+  const base = Number(process.env.DB_MAX_CONNECTIONS) || defaultBase;
   return {
     coreMax:     Number(process.env.DB_CORE_MAX_POOL_SIZE     || process.env.DB_CORE_MAX_CONNECTIONS)     || base,
     ledgerMax:   Number(process.env.DB_LEDGER_MAX_POOL_SIZE   || process.env.DB_LEDGER_MAX_CONNECTIONS)   || base,

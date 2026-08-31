@@ -107,6 +107,7 @@ Purged all temporary testing scripts, database patches, and transitional configu
 * Removed draft documents and local legacy guides: `auth.md`.
 
 ### 2. Full-Stack Type Alignment & Bug Fixes
+* **Adaptive Connection Pool Sizing:** Engineered a dynamic pool size calculator inside `/server/db/index.ts` that detects `NODE_ENV === 'production'` and automatically clamps default database pool connections from `20` down to `10` across our isolated Core, Ledger, External, and Security connection pools. This completely shields the Postgres cloud server from connection exhaustion and "Too many connections" errors during rapid horizontal autoscale expansion on live servers (such as Cloud Run or AWS ECS).
 * **Dynamic Socket.io Loading Bridge:** Transitioned the core `createNotification` service from static `io` imports to dynamic execution imports (`await import('../config/socket.js')`). This completely resolves potential ESM uninitialized import states during initial system boots on production servers.
 * **Universal Async Loading Indicators:** Integrated a native `.loading(message, title, options)` method directly into the `NotificationContext` type and custom `toast` helpers. This ensures that operations across the Ads Management, Video Trimming, and Wallet panels can easily trigger and control state loaders.
 * **Optional Description Parsing:** Added support for the `description` field directly into `NotificationOptions` and `NotificationItem` to accept custom metadata payloads seamlessly, resolving strict type checks on multiple components.
