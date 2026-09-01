@@ -1019,7 +1019,7 @@ export const BulletinBoardPage: React.FC = () => {
     setInquiriesLoading(true);
     try {
       const [legacyRes, directRes] = await Promise.all([
-        fetch('/api/bulletin/inquiries', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/bulletin/inquiries/my', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/bulletin/my-inquiries', { headers: { Authorization: `Bearer ${token}` } })
       ]);
       const legacyData = await legacyRes.json().catch(() => ({ inquiries: [] }));
@@ -1054,12 +1054,12 @@ export const BulletinBoardPage: React.FC = () => {
   const fetchWallet = async () => {
     if (!token) return;
     try {
-      const res = await fetch('/api/finance/wallet', {
+      const res = await fetch('/api/wallet', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.success && data.wallet) {
-        setWalletBalance(parseFloat(data.wallet.balance) || 0);
+      if (res.ok && data) {
+        setWalletBalance(parseFloat(data.balance) || 0);
       }
     } catch (e) {}
   };
