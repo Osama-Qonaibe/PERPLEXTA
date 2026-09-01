@@ -10,6 +10,7 @@ const pwaConfig: any = {
   registerType: 'autoUpdate',
   includeAssets: ['favicon.ico', 'app-assets/icon.png', 'app-assets/og-image.png'],
   workbox: {
+    navigateFallback: null,
     navigateFallbackDenylist: [/^\/api\//],
     skipWaiting: true,
     clientsClaim: true,
