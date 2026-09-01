@@ -224,6 +224,10 @@ export const PwaInstallBanner: React.FC = () => {
                     ? isAr
                       ? 'افتح الصفحة في متصفح Safari للتمكن من التثبيت المباشر:'
                       : 'For best results on iOS, open this page in Safari or use the Share menu:'
+                    : mobilePlatform === 'desktop'
+                    ? isAr
+                      ? 'انقر على أيقونة التثبيت في شريط العنوان أعلى متصفح جوجل كروم، أو اتبع الخطوات التالية:'
+                      : 'Click the install icon in your Chrome address bar, or follow these steps:'
                     : mobilePlatform === 'android-other'
                     ? isAr
                       ? 'استخدم قائمة المتصفح لإضافة التطبيق إلى الشاشة الرئيسية:'
@@ -258,6 +262,14 @@ export const PwaInstallBanner: React.FC = () => {
                             <Share2 size={11} className="text-blue-400 inline" />
                           </div>
                         </>
+                      ) : mobilePlatform === 'desktop' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'أيقونة التثبيت في شريط العنوان' : 'Click Install Icon in Address Bar'}</span>
+                          <div className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'ابحث عن أيقونة الحاسوب أو (⊕) بجوار رابط الموقع' : 'Look for computer/install icon next to URL'}</span>
+                            <Download size={11} className="text-accent inline" />
+                          </div>
+                        </>
                       ) : (
                         <>
                           <span className="font-bold">{isAr ? 'افتح قائمة المتصفح (⋮ أو ≡)' : 'Open Browser Menu (⋮ or ≡)'}</span>
@@ -283,6 +295,14 @@ export const PwaInstallBanner: React.FC = () => {
                           <div className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
                             <span>{isAr ? 'من قائمة الخيارات المتاحة' : 'From the actions list'}</span>
                             <PlusSquare size={11} className="text-accent inline" />
+                          </div>
+                        </>
+                      ) : mobilePlatform === 'desktop' ? (
+                        <>
+                          <span className="font-bold">{isAr ? 'أو افتح قائمة كروم (⋮) واختر "تثبيت بيربليكستا"' : 'Or open Chrome menu (⋮) & select "Install Perplexta"'}</span>
+                          <div className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
+                            <span>{isAr ? 'لفتح التطبيق في نافذة مستقلة' : 'To run as a standalone desktop app'}</span>
+                            <ExternalLink size={11} className="text-accent inline" />
                           </div>
                         </>
                       ) : (

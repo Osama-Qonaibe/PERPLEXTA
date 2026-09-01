@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Smartphone, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Terminal, ShieldCheck, Cpu, Wrench, CheckCircle } from 'lucide-react';
+import { Smartphone, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Terminal, Globe, ShieldCheck, Cpu } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { usePwaContext } from '../context/PwaContext';
 
-export const AdminDiagnosticTool: React.FC = () => {
+export const PwaDiagnosticTool: React.FC = () => {
   const { language } = useAppContext();
   const isAr = language === 'ar';
   const pwa = usePwaContext();
@@ -15,8 +15,6 @@ export const AdminDiagnosticTool: React.FC = () => {
   const [swStatus, setSwStatus] = useState<'checking' | 'active' | 'unsupported' | 'error'>('checking');
   const [swDetails, setSwDetails] = useState<string>('');
   const [logs, setLogs] = useState<string[]>([]);
-  const [missingFiles, setMissingFiles] = useState<string[]>([]);
-  const [checkCompleted, setCheckCompleted] = useState(false);
 
   const addLog = (msg: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 19)]);
@@ -27,19 +25,19 @@ export const AdminDiagnosticTool: React.FC = () => {
     setManifestStatus('checking');
     setManifestError(null);
     setLogs([]);
-    addLog(isAr ? 'بدء الفحص التشخيصي الشامل لبيئة العمل و PWA...' : 'Starting comprehensive PWA & environment diagnostic check...');
+    addLog(isAr ? 'بدء الفحص التشخيصي الشامل لتطبيق PWA...' : 'Starting comprehensive PWA diagnostic check...');
 
     // 1. Check Display Mode & Standalone
     const isStandaloneActive = typeof window !== 'undefined' && (
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true
     );
-    addLog(`Display Mode: ${isStandaloneActive ? 'standalone (Installed App Mode)' : 'browser (Browser Tab Mode)'}`);
+    addLog(`Display Mode: ${isStandaloneActive ? 'standalone (Installed App)' : 'browser (Browser Tab)'}`);
 
     // 2. Check Platform & Prompt Support
     addLog(`Platform Taxonomy: ${pwa.mobilePlatform}`);
-    addLog(`Can Install natively: ${pwa.canInstall ? 'Yes (Shows Installation Notification/Button)' : 'No (Shows Instruction Guide Notification)'}`);
-    addLog(`Has Deferred Prompt: ${pwa.hasPrompt ? 'Available (Ready for promptInstall)' : 'Not available (Manual fallback)'}`);
+    addLog(`Can Install natively: ${pwa.canInstall ? 'Yes' : 'No'}`);
+    addLog(`Has Deferred Prompt: ${pwa.hasPrompt ? 'Available (Ready for promptInstall)' : 'Not available (Will use Instruction Fallback)'}`);
 
     // 3. Test Manifest Fetch & JSON Parsing
     try {
@@ -91,23 +89,13 @@ export const AdminDiagnosticTool: React.FC = () => {
       addLog('[WARN] Service Workers are not supported in navigator.');
     }
 
-    // 5. Check Assets
-    setTimeout(() => {
-      setMissingFiles([]);
-      setCheckCompleted(true);
-      setIsRunning(false);
-      addLog(isAr ? 'اكتمل الفحص التشخيصي بنجاح.' : 'Diagnostic check completed successfully.');
-    }, 800);
+    setIsRunning(false);
+    addLog(isAr ? 'اكتمل الفحص التشخيصي بنجاح.' : 'Diagnostic check completed.');
   };
 
   useEffect(() => {
     runDiagnostics();
   }, []);
-
-  const repairAssets = () => {
-    addLog('Asset verification & cache synchronization triggered.');
-    window.location.reload();
-  };
 
   return (
     <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius)] border border-[var(--border-main)] space-y-6">
@@ -115,12 +103,12 @@ export const AdminDiagnosticTool: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-accent" />
-            {isAr ? 'لوحة تشخيص وتدقيق PWA والمنصة' : 'PWA & Platform Diagnostic Hub'}
+            {isAr ? 'لوحة تشخيص وتدقيق PWA (PWA Diagnostic Hub)' : 'PWA Diagnostic & Debugging Hub'}
           </h2>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
             {isAr 
-              ? 'فحص تفصيلي لـ display-mode: standalone، سلامة ملف manifest.json، استجابة Service Worker، ومزامنة إشعارات التثبيت والتعليمات.'
-              : 'Inspect display-mode: standalone, manifest JSON parsing, service worker status, and synchronized installation/instruction notifications.'}
+              ? 'التحقق من حالة عرض التطبيق (Standalone)، سلامة ملف manifest.json، استجابة Service Worker، ودعم متصفحات الهواتف والكمبيوتر.'
+              : 'Inspect display-mode: standalone, manifest JSON parsing, service worker status, and mobile/desktop install capability.'}
           </p>
         </div>
 
@@ -130,7 +118,7 @@ export const AdminDiagnosticTool: React.FC = () => {
           className="px-4 py-2 bg-[var(--bg-accent-emphasis)] text-white text-xs font-bold rounded-[var(--radius)] hover:opacity-90 flex items-center gap-2 transition-all disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${isRunning ? 'animate-spin' : ''}`} />
-          {isAr ? 'إعادة الفحص التشخيصي' : 'Run Full Diagnostics'}
+          {isAr ? 'إعادة الفحص' : 'Run Full Diagnostics'}
         </button>
       </div>
 
@@ -143,7 +131,7 @@ export const AdminDiagnosticTool: React.FC = () => {
             {pwa.isStandalone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
           </div>
           <p className="text-sm font-bold text-[var(--text-primary)]">
-            {pwa.isStandalone ? 'standalone (Active App)' : 'browser (Tab Mode)'}
+            {pwa.isStandalone ? 'standalone (App Mode)' : 'browser (Tab Mode)'}
           </p>
           <p className="text-[10px] text-[var(--text-secondary)]">
             {pwa.isStandalone ? (isAr ? 'يعمل كتطبيق مستقل بنجاح' : 'Running as standalone app') : (isAr ? 'يعمل داخل تبويب المتصفح' : 'Running inside browser tab')}
@@ -170,14 +158,14 @@ export const AdminDiagnosticTool: React.FC = () => {
           </p>
         </div>
 
-        {/* Platform & Install Notification Card */}
+        {/* Platform & Install Support Card */}
         <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
-            <span>{isAr ? 'نوع الإشعار المعروض' : 'Notification Mode'}</span>
+            <span>{isAr ? 'آلية التثبيت (Prompt)' : 'Install Notification Type'}</span>
             {pwa.canInstall ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <Smartphone className="w-4 h-4 text-blue-500" />}
           </div>
           <p className="text-sm font-bold text-[var(--text-primary)]">
-            {pwa.canInstall ? (pwa.hasPrompt ? 'Installation Notification' : 'Instruction Guide Fallback') : 'Installed / Dismissed'}
+            {pwa.canInstall ? (pwa.hasPrompt ? 'Direct Native Prompt' : 'Instruction Fallback') : 'Already Installed'}
           </p>
           <p className="text-[10px] text-[var(--text-secondary)]">
             Platform: <span className="font-semibold text-accent">{pwa.mobilePlatform}</span>
@@ -199,24 +187,21 @@ export const AdminDiagnosticTool: React.FC = () => {
         </div>
       </div>
 
-      {/* Verification Details & Synchronization Explanation */}
+      {/* Sync Verification Notice */}
       <div className="p-4 rounded-[var(--radius)] bg-accent/5 border border-accent/20 flex items-start gap-3">
         <Cpu className="w-5 h-5 text-accent shrink-0 mt-0.5" />
         <div className="space-y-1 text-xs">
           <h4 className="font-bold text-[var(--text-primary)]">
-            {isAr ? 'التحقق من تزامن إشعارات التثبيت والتعليمات (Sync & Notification Verification)' : 'Installation & Instruction Notification Synchronization'}
+            {isAr ? 'تحقق مزامنة إشعارات التثبيت والتعليمات (Sync Verification)' : 'Installation & Instruction Notification Sync Verification'}
           </h4>
           <p className="text-[var(--text-secondary)] leading-relaxed">
             {isAr
-              ? 'النظام يطابق إشعارات التثبيت والتعليمات بدقة مع قدرات المتصفح والجهاز: الأجهزة التي تدعم التثبيت التلقائي (مثل Android Chrome و Desktop Chrome) تعرض إشعار/زر التثبيت المباشر (Installation Notification)، بينما الأجهزة المقيدة أو التي لا تدعم التثبيت المباشر (مثل iOS Safari) تعرض دليل التعليمات خطوة بخطوة (Instruction Notification). كلا الإشعارين متزامنان تماماً مع حالة تثبيت التطبيق الفعلية.'
-              : 'The system precisely routes installation vs instruction notifications based on device capabilities: automated environments (Android/Desktop Chrome) trigger direct Installation notifications, while unsupported or restricted platforms (iOS Safari) present step-by-step instruction guides. Fully synchronized with actual installation status.'}
+              ? 'يتم اختيار نوع الإشعار تلقائياً بناءً على قدرات المتصفح والجهاز: الأجهزة والبرمجيات التي تدعم التثبيت التلقائي (مثل Android Chrome و Desktop Chrome) تعرض زر التثبيت المباشر (Installation Notification)، بينما الأجهزة التي لا تدعم التثبيت التلقائي أو تتطلب خطوات يدوية (مثل iOS Safari) تعرض دليل التعليمات خطوة بخطوة (Instruction Notification). النظام متزامن بالكامل مع حالة تثبيت التطبيق الفعلية.'
+              : 'Notifications are dynamically routed based on browser capability: devices supporting automated native installation show direct Install prompts, while restricted environments (like iOS Safari) present step-by-step instruction guides. Fully synchronized with actual installation state.'}
           </p>
-          <div className="pt-2 flex items-center gap-4 flex-wrap">
+          <div className="pt-2 flex items-center gap-3">
             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {isAr ? 'دعم التثبيت التلقائي' : 'Native Install Supported'}: {pwa.hasPrompt ? 'Yes' : 'No (Instruction Mode Active)'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent">
-              <Smartphone className="w-3.5 h-3.5" /> {isAr ? 'التصنيف' : 'Platform'}: {pwa.mobilePlatform}
+              <CheckCircle2 className="w-3.5 h-3.5" /> {isAr ? 'دعم التثبيت التلقائي المباشر' : 'Direct Native Install Supported'} ({pwa.hasPrompt ? 'Yes (Prompt Ready)' : 'No (Instruction Guide Active)'})
             </span>
           </div>
         </div>
@@ -227,7 +212,7 @@ export const AdminDiagnosticTool: React.FC = () => {
         <div className="flex items-center justify-between text-xs font-bold text-[var(--text-primary)]">
           <span className="flex items-center gap-1.5">
             <Terminal className="w-4 h-4 text-accent" />
-            {isAr ? 'سجل تشخيص وحدة التحكم والأخطاء (Diagnostic & Console Logs)' : 'Real-time Diagnostic & Console Logs'}
+            {isAr ? 'سجل تشخيص وحدة التحكم (Diagnostic Logs)' : 'Real-time Diagnostic Logs'}
           </span>
           <span className="text-[10px] text-[var(--text-muted)] font-mono">
             {logs.length} events logged
@@ -241,21 +226,6 @@ export const AdminDiagnosticTool: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {checkCompleted && missingFiles.length > 0 && (
-        <div className="p-4 rounded-[var(--radius)] bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs space-y-2">
-          <p className="font-bold">{isAr ? 'تم اكتشاف ملفات مفقودة:' : 'Missing assets detected:'}</p>
-          <ul className="list-disc pl-5">
-            {missingFiles.map(f => <li key={f}>{f}</li>)}
-          </ul>
-          <button
-            onClick={repairAssets}
-            className="px-3 py-1.5 bg-rose-600 text-white rounded font-bold flex items-center gap-1.5"
-          >
-            <Wrench className="w-3.5 h-3.5" /> {isAr ? 'إصلاح ومزامنة الملفات' : 'Repair Assets & Reload'}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
