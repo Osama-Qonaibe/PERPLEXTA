@@ -195,7 +195,15 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
   const connectToPool = async (p: any, poolName: string) => {
     if (!p || p === pool || isSameDb(pool, p)) return null;
     try {
-      return await p.connect();
+      const c = await p.connect();
+      try {
+        await c.query('SELECT 1');
+        return c;
+      } catch (testErr: any) {
+        c.release();
+        console.warn(`[Migrations] Optional ${poolName} DB pool test query failed: ${testErr.message}. Using Core pool fallback.`);
+        return null;
+      }
     } catch (err: any) {
       console.warn(`[Migrations] Optional ${poolName} DB pool unreachable: ${err.message}. Using Core pool fallback.`);
       return null;
@@ -204,7 +212,16 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
 
   const safeQueryClient = async (targetClient: any, fallbackClient: any, queryStr: string, params?: unknown[]) => {
     const activeClient = targetClient || fallbackClient;
-    return activeClient.query(queryStr, params);
+    try {
+      return await activeClient.query(queryStr, params);
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (/not queryable|connection error|closed|terminated/i.test(msg) && activeClient !== fallbackClient) {
+        console.warn(`[Migrations] Target client encountered error (${msg}), falling back to core client.`);
+        return fallbackClient.query(queryStr, params);
+      }
+      throw err;
+    }
   };
 
   ledgerClient = await connectToPool(ledgerPool, 'Ledger');
