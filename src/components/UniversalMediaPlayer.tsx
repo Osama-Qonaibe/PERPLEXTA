@@ -238,13 +238,15 @@ export const UniversalMediaPlayer: React.FC<UniversalMediaPlayerProps> = ({
 
   const directVideoUrl = getMediaUrl(videoInfo.directUrl || url);
 
+  const isVertical = detectedRatio === '9:16' || format === 'reel' || format === 'story' || aspectRatio === '9:16';
+
   return (
     <div
       ref={containerRef}
       onMouseMove={resetHideTimer}
       onMouseEnter={() => setShowOverlayControls(true)}
       onMouseLeave={() => isPlaying && setShowOverlayControls(false)}
-      className="w-full"
+      className={`w-full ${isVertical ? 'max-w-[340px] mx-auto my-4 shadow-xl' : ''}`}
     >
       <UniversalMediaContainer
         aspectRatio={detectedRatio}

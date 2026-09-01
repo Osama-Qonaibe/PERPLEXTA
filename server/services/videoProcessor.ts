@@ -96,12 +96,20 @@ export async function processUploadedVideo(
           let command = ffmpeg(inputFilePath)
             .outputOptions([
               '-c:v libx264',
-              '-preset medium',
-              '-crf 23',
-              '-c:a aac',
-              '-b:a 128k',
-              '-movflags +faststart',
+              '-preset veryfast',
+              '-crf 25',
               '-pix_fmt yuv420p',
+              '-profile:v main',
+              '-level 3.1',
+              '-r 30',
+              '-g 60',
+              '-keyint_min 60',
+              '-sc_threshold 0',
+              '-c:a aac',
+              '-b:a 96k',
+              '-ar 48000',
+              '-ac 2',
+              '-movflags +faststart',
               '-vf scale=trunc(iw/2)*2:trunc(ih/2)*2' // ensure even dimensions for h264
             ]);
 
@@ -173,11 +181,21 @@ export async function processUploadedVideo(
           ffmpeg(inputFilePath)
             .outputOptions([
               '-c:v libx264',
-              '-preset ultrafast',
-              '-crf 26',
+              '-preset veryfast',
+              '-crf 25',
+              '-pix_fmt yuv420p',
+              '-profile:v main',
+              '-level 3.1',
+              '-r 30',
+              '-g 60',
+              '-keyint_min 60',
+              '-sc_threshold 0',
               '-c:a aac',
+              '-b:a 96k',
+              '-ar 48000',
+              '-ac 2',
               '-movflags +faststart',
-              '-pix_fmt yuv420p'
+              '-vf scale=trunc(iw/2)*2:trunc(ih/2)*2'
             ])
             .toFormat('mp4')
             .save(outputVideoPath)
