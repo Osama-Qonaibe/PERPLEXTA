@@ -12,21 +12,41 @@ export interface ProgressData {
   totalSteps?: number;
 }
 
+export type MediaAspectRatio = '16:9' | '9:16' | '1:1' | '4:5' | '21:9' | 'auto' | string;
+export type MediaFitMode = 'cover' | 'contain' | 'ambient' | 'fill';
+export type MediaFormatType = 'video' | 'reel' | 'story' | 'feed' | 'sidebar' | 'banner' | 'instream' | 'square' | 'portrait' | 'auto';
+
+export interface MediaMetadata {
+  aspectRatio?: MediaAspectRatio;
+  fitMode?: MediaFitMode;
+  format?: MediaFormatType;
+  naturalWidth?: number;
+  naturalHeight?: number;
+  calculatedRatio?: number;
+  title?: string;
+  posterUrl?: string;
+}
+
 export interface VideoResourceState {
   status: 'processing' | 'ready' | 'error';
   url?: string;
   progress?: ProgressData;
   error?: string;
+  metadata?: MediaMetadata;
 }
 
 interface VideoResourceContextProps {
   resources: Record<string | number, VideoResourceState>;
   activeMessageId: string | number | null;
+  activePlaybackId: string | null;
   setActiveMessageId: (id: string | number | null) => void;
+  setActivePlaybackId: (id: string | null) => void;
   pollVideoStatus: (messageId: number) => Promise<void>;
   registerProcessingVideo: (messageId: string | number) => void;
   markVideoFailed: (messageId: string | number, errorMsg: string) => void;
   relinkMessageId: (tempId: string | number, dbId: number) => void;
+  updateMediaMetadata: (id: string | number, metadata: Partial<MediaMetadata>) => void;
+  getMediaMetadata: (id: string | number) => MediaMetadata | undefined;
 }
 
 const VideoResourceContext = createContext<VideoResourceContextProps | undefined>(undefined);
@@ -35,6 +55,7 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
   const { socket, token } = useAppContext();
   const [resources, setResources] = useState<Record<string | number, VideoResourceState>>({});
   const [activeMessageId, setActiveMessageId] = useState<string | number | null>(null);
+  const [activePlaybackId, setActivePlaybackId] = useState<string | null>(null);
   
   const activeMessageIdRef = useRef<string | number | null>(null);
   const tokenRef = useRef<string | null>(null);
@@ -46,6 +67,26 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
+
+  const updateMediaMetadata = useCallback((id: string | number, metadata: Partial<MediaMetadata>) => {
+    setResources(prev => {
+      const existing = prev[id] || { status: 'ready' as const };
+      return {
+        ...prev,
+        [id]: {
+          ...existing,
+          metadata: {
+            ...(existing.metadata || {}),
+            ...metadata
+          }
+        }
+      };
+    });
+  }, []);
+
+  const getMediaMetadata = useCallback((id: string | number): MediaMetadata | undefined => {
+    return resources[id]?.metadata;
+  }, [resources]);
 
   const registerProcessingVideo = useCallback((messageId: string | number) => {
     setResources(prev => ({
@@ -223,11 +264,15 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
     <VideoResourceContext.Provider value={{
       resources,
       activeMessageId,
+      activePlaybackId,
       setActiveMessageId,
+      setActivePlaybackId,
       pollVideoStatus,
       registerProcessingVideo,
       markVideoFailed,
-      relinkMessageId
+      relinkMessageId,
+      updateMediaMetadata,
+      getMediaMetadata
     }}>
       {children}
     </VideoResourceContext.Provider>

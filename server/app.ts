@@ -1769,6 +1769,13 @@ async function injectSEOTags(
 }
 
 if (process.env.NODE_ENV === "production") {
+  // Prevent express.static from serving the raw index.html (which lacks injected nonces)
+  // Instead, pass it to the wildcard handler below.
+  app.get('/index.html', (req, res, next) => {
+    req.url = '/';
+    next();
+  });
+
   app.use(express.static(distPath, {
     etag: true,
     lastModified: true,

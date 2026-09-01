@@ -8,9 +8,11 @@ import {
   UserCheck, UserPlus, Inbox, ArrowRight, ArrowLeft, ShieldCheck, Camera,
   Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
   Radio, Clapperboard, Bell, Menu, SlidersHorizontal, Trash2, Ban, Volume2, VolumeX,
-  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, ShoppingBag, Edit2
+  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, ShoppingBag, Edit2,
+  AtSign, Hash
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { BulletinAd, BulletinAdComment, BulletinPage } from '../../server/db/types';
 import { UserAdAnalyticsView } from '../components/UserAdAnalyticsView';
@@ -25,6 +27,7 @@ import { ReelsFeed } from '../components/ReelsFeed';
 import { ReelUploadModal } from '../components/ReelUploadModal';
 import { StoryUploadModal } from '../components/StoryUploadModal';
 import { StoryViewerModal } from '../components/StoryViewerModal';
+import { VideoFrameCapture } from '../components/VideoFrameCapture';
 import { BulletinAvatar } from '../components/BulletinAvatar';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { stopAllMedia } from '../utils/mediaCoordinator';
@@ -681,7 +684,7 @@ export const BulletinBoardPage: React.FC = () => {
     whatsapp_number: '',
     phone_number: '',
     target_url: '',
-    hashtags: '#فلسطين,#تنمية,#أعمال,#خدمات',
+    hashtags: '',
     page_id: '' as string | number,
     location_city: 'القدس الشريف',
     location_radius: '10',
@@ -712,6 +715,7 @@ export const BulletinBoardPage: React.FC = () => {
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [selectedComposerCountry, setSelectedComposerCountry] = useState<string>('فلسطين');
   const [customLocationSearch, setCustomLocationSearch] = useState<string>('');
+
 
   useEffect(() => {
     if (!customLocationSearch || customLocationSearch.trim().length < 2) {
@@ -860,6 +864,11 @@ export const BulletinBoardPage: React.FC = () => {
     } catch (err) {
       // silent error
     }
+  };
+
+  const handleStoryDeleted = (storyId: number) => {
+    setStories(prev => prev.filter(s => s.id !== storyId));
+    fetchStories();
   };
 
   const fetchAds = async (pageNum = 1, append = false) => {
@@ -1439,7 +1448,7 @@ export const BulletinBoardPage: React.FC = () => {
       whatsapp_number: ad.whatsapp_number || '',
       phone_number: ad.phone_number || '',
       target_url: ad.target_url || '',
-      hashtags: Array.isArray(ad.hashtags) ? ad.hashtags.join(',') : (ad.hashtags || '#فلسطين,#تنمية,#أعمال,#خدمات'),
+      hashtags: Array.isArray(ad.hashtags) ? ad.hashtags.join(',') : (ad.hashtags || ''),
       page_id: ad.page_id || '',
       location_city: ad.location_city || 'القدس الشريف',
       location_radius: '10',
@@ -1456,9 +1465,16 @@ export const BulletinBoardPage: React.FC = () => {
     setIsAdModalOpen(true);
   };
 
+  const confirm = useConfirm();
+
   const handleDeleteAd = async (ad: BulletinAd) => {
     if (!token) return;
-    const confirmDelete = window.confirm(isRtl ? 'هل أنت متأكد من حذف هذا المنشور نهائياً؟' : 'Are you sure you want to delete this post permanently?');
+    const confirmDelete = await confirm({
+      title: isRtl ? 'حذف المنشور' : 'Delete Post',
+      description: isRtl ? 'هل أنت متأكد من حذف هذا المنشور نهائياً؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to delete this post permanently? This action cannot be undone.',
+      variant: 'danger',
+      confirmLabel: isRtl ? 'حذف نهائياً' : 'Delete Permanently'
+    });
     if (!confirmDelete) return;
 
     try {
@@ -1488,6 +1504,23 @@ export const BulletinBoardPage: React.FC = () => {
 
     setIsSubmittingAd(true);
     try {
+      const desc = adFormData.description || '';
+      // Intelligent auto-extraction of hashtags (#tag) and mentions (@user) from natural post text
+      const textHashtags = (desc.match(/#[\p{L}\p{N}_]+/gu) || []).map(h => h.replace(/^#/, '').trim());
+      const existingHashtags = adFormData.hashtags ? adFormData.hashtags.split(',').map(h => h.replace(/^#/, '').trim()).filter(Boolean) : [];
+      const mergedHashtags = Array.from(new Set([...existingHashtags, ...textHashtags]));
+
+      const textMentions = (desc.match(/@[\p{L}\p{N}_]+/gu) || []).map(m => m.trim());
+      const existingMentions = Array.isArray(adFormData.tagged_users) ? adFormData.tagged_users : [];
+      const mergedMentions = Array.from(new Set([...existingMentions, ...textMentions]));
+
+      const payload = {
+        ...adFormData,
+        title: adFormData.title?.trim() || (desc.length > 60 ? desc.slice(0, 60) + '...' : desc) || 'منشور جديد',
+        hashtags: mergedHashtags.join(','),
+        tagged_users: mergedMentions
+      };
+
       const url = isEditMode ? `/api/bulletin/ads/${editingAdId}` : '/api/bulletin/ads';
       const method = isEditMode ? 'PUT' : 'POST';
       const res = await fetch(url, {
@@ -1496,18 +1529,15 @@ export const BulletinBoardPage: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(adFormData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
 
       if (data.success) {
-        toast.success(
-          isEditMode
-            ? (isRtl ? 'تم تحديث المنشور بنجاح!' : 'Post updated successfully!')
-            : (isRtl
-              ? 'تم نشر المنشور بنجاح! يمكنك الآن ترويجه في أي وقت لزيادة الوصول.'
-              : 'Post published successfully! You can boost it anytime for higher reach.')
-        );
+        if (isEditMode) {
+          toast.success(isRtl ? 'تم تحديث المنشور بنجاح!' : 'Post updated successfully!');
+        }
+        // Create mode relies on the backend socket notification to avoid duplicates
         setIsAdModalOpen(false);
         setIsEditMode(false);
         setEditingAdId(null);
@@ -1519,7 +1549,7 @@ export const BulletinBoardPage: React.FC = () => {
           whatsapp_number: '',
           phone_number: '',
           target_url: '',
-          hashtags: '#فلسطين,#تنمية,#أعمال,#خدمات',
+          hashtags: '',
           page_id: '',
           location_city: 'القدس الشريف',
           location_radius: '10',
@@ -1825,7 +1855,14 @@ export const BulletinBoardPage: React.FC = () => {
     const text = `${ad.title}\n${ad.description}\n${shareUrl}`;
 
     try {
-      await fetch(`/api/bulletin/ads/${ad.id}/share`, { method: 'POST' });
+      await fetch(`/api/bulletin/ads/${ad.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: user?.id,
+          sharer_name: user?.name || user?.email || (isRtl ? 'أحد المستخدمين' : 'A user'),
+        }),
+      });
     } catch (e) {}
 
     if (navigator.share) {
@@ -2321,6 +2358,11 @@ export const BulletinBoardPage: React.FC = () => {
               onToggleLike={handleToggleLike}
               onMessageAdvertiser={handleMessageAdvertiser}
               onShare={handleShareAd}
+              onDeleteReel={(id) => {
+                const ad = ads.find(a => a.id === id);
+                if (ad) handleDeleteAd(ad);
+              }}
+              onEditReel={handleEditAd}
               onOpenPageDetail={handleOpenPageDetail}
               onClose={() => setActiveTab('board')}
               onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
@@ -3325,12 +3367,18 @@ export const BulletinBoardPage: React.FC = () => {
                               alt={user?.name || 'User'}
                               className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500 opacity-60"
                             />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none z-10" />
                             
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                              <div className="w-10 h-10 rounded-full bg-blue-600 text-white border-[3px] border-white dark:border-[#1c1c1e] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
-                                <Plus size={24} className="stroke-[3]" />
+                            <div className="absolute top-2.5 start-2.5 z-20 pointer-events-auto">
+                              <div className="w-9 h-9 rounded-full bg-blue-600 text-white border-[2px] border-white dark:border-[#1c1c1e] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                                <Plus size={18} className="stroke-[3]" />
                               </div>
+                            </div>
+
+                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 pointer-events-none flex flex-col justify-end items-center">
+                               <span className="text-[11px] font-black text-white drop-shadow-lg text-center">
+                                  {isRtl ? 'إنشاء قصة' : 'Create Story'}
+                               </span>
                             </div>
                           </div>
                         </div>
@@ -3348,58 +3396,71 @@ export const BulletinBoardPage: React.FC = () => {
                                 setSelectedStoryIndex(viewerStartIndex);
                                 setIsStoryViewerOpen(true);
                               }}
-                              className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-zinc-900 shrink-0 cursor-pointer group shadow-md hover:shadow-xl transition-all duration-500 p-3 flex flex-col justify-between border border-white/5 dark:border-white/10"
+                              className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-white dark:bg-[#1c1c1e] border border-gray-200 dark:border-zinc-800 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-center items-center"
                             >
-                              <img
-                                src={getMediaUrl(story.image_url)}
-                                alt={story.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-all duration-700 opacity-90 group-hover:scale-110 group-hover:opacity-100"
-                              />
-                              
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/20" />
-                              
-                              {/* Video icon if it's a video story */}
-                              {story.video_url && (
-                                <div className="absolute top-3 end-3 bg-black/40 p-1.5 rounded-full backdrop-blur-md z-20 border border-white/10 shadow-lg">
-                                  <Video size={12} className="text-white" />
-                                </div>
-                              )}
-
-                              {/* Story Ring Avatar */}
-                              <div 
-                                className="relative z-10 w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-xl transition-transform group-hover:scale-110"
-                                onPointerDown={(e) => {
-                                  e.stopPropagation();
-                                  storyPressTimerRef.current = setTimeout(() => {
-                                    if ("vibrate" in navigator) navigator.vibrate([40]);
-                                    setPreviewingVideoStoryId(story.id);
-                                  }, 400);
-                                }}
-                                onPointerUp={(e) => {
-                                  if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
-                                  if (previewingVideoStoryId === story.id) {
-                                    e.stopPropagation();
-                                    setPreviewingVideoStoryId(null);
-                                  }
-                                }}
-                                onPointerLeave={() => {
-                                  if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
-                                  setPreviewingVideoStoryId(null);
-                                }}
-                              >
+                              <div className="relative w-full h-full overflow-hidden bg-gray-100 dark:bg-zinc-900 flex flex-col justify-center items-center">
+                                {/* Ambient Blurred Background */}
                                 <img
-                                  src={getMediaUrl(story.author_avatar)}
-                                  alt={story.author_name}
-                                  className="w-full h-full rounded-full object-cover border-2 border-black"
+                                  src={getMediaUrl(story.image_url)}
+                                  alt=""
+                                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50 scale-125 saturate-150"
                                 />
-                              </div>
+                                
+                                {/* Centered Proper Image */}
+                                <img
+                                  src={getMediaUrl(story.image_url)}
+                                  alt={story.title}
+                                  className="absolute inset-0 w-full h-full object-contain transition-transform group-hover:scale-110 duration-700 opacity-70 group-hover:opacity-100 z-0"
+                                />
+                                
+                                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors pointer-events-none z-10" />
+                                
+                                {/* Video icon if it's a video story */}
+                                {story.video_url && (
+                                  <div className="absolute top-2 end-2 bg-black/40 p-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto z-20">
+                                    <Video size={12} className="text-white" />
+                                  </div>
+                                )}
 
-                              <div className="relative z-10 min-w-0 flex flex-col">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[11px] font-black text-white truncate drop-shadow-lg">
-                                    {story.page_id ? story.page_name : story.author_name}
-                                  </span>
-                                  {story.page_id && <CheckCircle2 size={10} className="text-blue-400 fill-blue-400/20 shrink-0" />}
+                                {/* Top-Corner Story Ring Avatar */}
+                                <div className="absolute top-2.5 start-2.5 z-20 pointer-events-auto">
+                                  <div 
+                                    className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-xl transition-transform group-hover:scale-110"
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      storyPressTimerRef.current = setTimeout(() => {
+                                        if ("vibrate" in navigator) navigator.vibrate([40]);
+                                        setPreviewingVideoStoryId(story.id);
+                                      }, 400);
+                                    }}
+                                    onPointerUp={(e) => {
+                                      if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
+                                      if (previewingVideoStoryId === story.id) {
+                                        e.stopPropagation();
+                                        setPreviewingVideoStoryId(null);
+                                      }
+                                    }}
+                                    onPointerLeave={() => {
+                                      if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
+                                      setPreviewingVideoStoryId(null);
+                                    }}
+                                  >
+                                    <img
+                                      src={getMediaUrl(story.author_avatar)}
+                                      alt={story.author_name}
+                                      className="w-full h-full rounded-full object-cover border-[2px] border-white dark:border-[#1c1c1e]"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Name positioned at the very bottom center */}
+                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 pointer-events-none flex flex-col justify-end items-center">
+                                  <div className="flex items-center gap-1 justify-center w-full">
+                                    <span className="text-[11px] font-black text-white truncate drop-shadow-lg text-center max-w-[80px]">
+                                      {story.page_id ? story.page_name : story.author_name}
+                                    </span>
+                                    {story.page_id && <CheckCircle2 size={10} className="text-blue-400 fill-blue-400/20 shrink-0 drop-shadow-md" />}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -3529,7 +3590,7 @@ export const BulletinBoardPage: React.FC = () => {
                           whatsapp_number: '',
                           phone_number: '',
                           target_url: '',
-                          hashtags: '#فلسطين,#تنمية,#أعمال,#خدمات',
+                          hashtags: '',
                           page_id: '',
                           location_city: 'القدس الشريف',
                           location_radius: '10',
@@ -3564,6 +3625,11 @@ export const BulletinBoardPage: React.FC = () => {
                       onToggleLike={handleToggleLike}
                       onMessageAdvertiser={handleMessageAdvertiser}
                       onShare={handleShareAd}
+                      onDeleteReel={(id) => {
+                        const ad = ads.find(a => a.id === id);
+                        if (ad) handleDeleteAd(ad);
+                      }}
+                      onEditReel={handleEditAd}
                       onOpenPageDetail={handleOpenPageDetail}
                       onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
                       onUploadReelClick={() => setIsReelUploadModalOpen(true)}
@@ -3639,7 +3705,7 @@ export const BulletinBoardPage: React.FC = () => {
                           whatsapp_number: '',
                           phone_number: '',
                           target_url: '',
-                          hashtags: '#فلسطين,#تنمية,#أعمال,#خدمات',
+                          hashtags: '',
                           page_id: '',
                           location_city: 'القدس الشريف',
                           location_radius: '10',
@@ -4048,72 +4114,92 @@ export const BulletinBoardPage: React.FC = () => {
       {/* ========================================================== */}
       <AnimatePresence>
         {isAdModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-1.5 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] my-2 sm:my-8"
+              className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] my-1 sm:my-8"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-2.5 sm:p-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <button 
-                    onClick={() => {
-                      if (composerView === 'main') setIsAdModalOpen(false);
-                      else setComposerView('main');
-                    }}
-                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors"
-                  >
-                    {composerView === 'main' ? <X size={18} className="sm:w-5 sm:h-5" /> : <ArrowLeft size={18} className={`sm:w-5 sm:h-5 ${isRtl ? 'rotate-180' : ''}`} />}
-                  </button>
-                  <h3 className="text-xs sm:text-base font-extrabold text-gray-800 dark:text-gray-100">
-                    {composerView === 'feelings' ? (isRtl ? 'كيف تشعر؟' : 'How are you feeling?') :
-                     composerView === 'location' ? (isRtl ? 'أين أنت؟' : 'Where are you?') :
-                     composerView === 'tagging' ? (isRtl ? 'إشارة إلى أشخاص' : 'Tag people') :
-                     composerView === 'emojis' ? (isRtl ? 'اختر رمزاً تعبيرياً' : 'Choose Emoji') :
-                     isEditMode ? (isRtl ? 'تعديل المنشور' : 'Edit Post') :
-                     (isRtl ? 'بم تفكر اليوم؟' : "What's on your mind?")}
-                  </h3>
-                </div>
+              {/* Header (Facebook Standard Centered Title & Status) */}
+              <div className="relative flex items-center justify-center p-2.5 sm:p-4 border-b border-gray-100 dark:border-zinc-800">
+                {/* Ready/Upload Status Pill (Facebook style 100% ⬆) */}
+                {(adFormData.image_url || adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
+                  <div className="absolute start-2.5 sm:start-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
+                    <span>100%</span>
+                    <ArrowUp size={11} className="stroke-[3]" />
+                  </div>
+                )}
+
+                <h3 className="text-xs sm:text-base font-extrabold text-gray-900 dark:text-gray-100 text-center">
+                  {composerView === 'feelings' ? (isRtl ? 'كيف تشعر؟' : 'How are you feeling?') :
+                   composerView === 'location' ? (isRtl ? 'أين أنت؟' : 'Where are you?') :
+                   composerView === 'tagging' ? (isRtl ? 'إشارة إلى أشخاص' : 'Tag people') :
+                   composerView === 'emojis' ? (isRtl ? 'اختر رمزاً تعبيرياً' : 'Choose Emoji') :
+                   isEditMode ? (isRtl ? 'تعديل المنشور' : 'Edit Post') :
+                   (isRtl ? 'إنشاء منشور' : 'Create Post')}
+                </h3>
+
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (composerView === 'main') setIsAdModalOpen(false);
+                    else setComposerView('main');
+                  }}
+                  className="absolute end-2.5 sm:end-3.5 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors shadow-xs"
+                >
+                  {composerView === 'main' ? <X size={16} className="sm:size-[18px]" /> : <ArrowLeft size={16} className={`sm:size-[18px] ${isRtl ? 'rotate-180' : ''}`} />}
+                </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto p-2.5 sm:p-5 scrollbar-thin">
                 {composerView === 'main' && (
                   <form onSubmit={handleCreateCampaign} className="space-y-2.5 sm:space-y-4">
-                    {/* User Info Header */}
-                    <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                    {/* User Info & Audience Controls (Facebook Standard) */}
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <BulletinAvatar
                         src={adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.avatar_url : user?.avatar}
                         alt={adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.name : user?.name}
-                        size="md"
+                        size="sm"
                         isPage={Boolean(adFormData.page_id)}
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
+                        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                          <span className="text-xs sm:text-base font-bold text-gray-900 dark:text-gray-100 truncate">
                             {adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.name : user?.name}
                           </span>
                           {adFormData.feeling && (
-                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
+                            <span className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">
                               — {isRtl ? 'يشعر بـ' : 'is feeling'} {FEELINGS.find(f => f.id === adFormData.feeling)?.icon} {isRtl ? FEELINGS.find(f => f.id === adFormData.feeling)?.labelAr : FEELINGS.find(f => f.id === adFormData.feeling)?.labelEn}
                             </span>
                           )}
+                          {adFormData.location_city && (
+                            <span className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">
+                              — {isRtl ? 'في' : 'in'} <span className="text-accent font-bold">{adFormData.location_city}</span>
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <select 
-                            value={adFormData.page_id}
-                            onChange={(e) => setAdFormData({...adFormData, page_id: e.target.value})}
-                            className="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-lg border-none focus:ring-0 font-bold text-gray-500 cursor-pointer"
-                          >
-                            <option value="">{isRtl ? 'حسابي الشخصي' : 'Personal Profile'}</option>
-                            {myPagesList.map((p, pIdx) => <option key={`bulletin-opt-mypage-${p.id}-${pIdx}`} value={p.id}>{p.name}</option>)}
-                          </select>
+
+                        {/* Facebook-Style Option Pills */}
+                        <div className="flex items-center gap-1 sm:gap-1.5 mt-1 sm:mt-1.5 flex-wrap">
+                          {/* Page / Profile Selector */}
+                          {myPagesList.length > 0 && (
+                            <select 
+                              value={adFormData.page_id}
+                              onChange={(e) => setAdFormData({...adFormData, page_id: e.target.value})}
+                              className="text-[10px] sm:text-[11px] bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 sm:px-2 rounded-md border-none focus:ring-0 font-bold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                            >
+                              <option value="">{isRtl ? 'حسابي الشخصي' : 'Personal Profile'}</option>
+                              {myPagesList.map((p, pIdx) => <option key={`bulletin-opt-mypage-${p.id}-${pIdx}`} value={p.id}>{p.name}</option>)}
+                            </select>
+                          )}
+
+                          {/* Audience Selector Pill */}
                           <button
                             type="button"
                             onClick={() => setIsAudienceModalOpen(true)}
-                            className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg transition-theme border cursor-pointer active:scale-95 bg-accent dark:bg-accent/40 border-accent/30 text-accent dark:text-accent hover:bg-accent dark:hover:bg-accent/60"
-                            title={isRtl ? 'تحديد جمهور رؤية المنشور' : 'Change post audience'}
+                            className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2 rounded-md bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                            title={isRtl ? 'تحديد جمهور المنشور' : 'Select audience'}
                           >
                             {adFormData.audience === 'friends' ? (
                               <>
@@ -4127,333 +4213,258 @@ export const BulletinBoardPage: React.FC = () => {
                               </>
                             ) : (
                               <>
-                                <Globe size={10} className="text-accent shrink-0" />
+                                <Globe size={10} className="text-gray-500 dark:text-gray-400 shrink-0" />
                                 <span>{isRtl ? 'العامة' : 'Public'}</span>
                               </>
                             )}
-                            <ChevronDown size={10} className="text-accent/70" />
+                            <ChevronDown size={10} className="text-gray-400" />
                           </button>
 
-                          {/* Ad Format Selector (New: Global Measurement Support) */}
-                          <div className="flex items-center gap-1">
-                            <select
-                              value={adFormData.ad_format}
-                              onChange={(e) => setAdFormData({...adFormData, ad_format: e.target.value as any})}
-                              className="text-[10px] bg-purple-50 dark:bg-purple-950/30 px-1.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800 focus:ring-0 font-bold text-purple-600 dark:text-purple-400 cursor-pointer"
-                            >
-                              <option value="post">{isRtl ? 'منشور عادي' : 'Standard Post'}</option>
-                              <option value="reel">{isRtl ? 'ريلز (9:16)' : 'Reel (9:16)'}</option>
-                              <option value="story">{isRtl ? 'قصة (9:16)' : 'Story (9:16)'}</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Unified Post Creation Input Container */}
-                    <div className="rounded-xl sm:rounded-2xl bg-gray-50/70 dark:bg-zinc-800/40 p-2.5 sm:p-3.5 border border-gray-200/60 dark:border-gray-800/70 focus-within:border-accent/50 focus-within:ring-2 focus-within:ring-accent-500/10 transition-theme space-y-2 sm:space-y-3 shadow-inner">
-                      {/* Main Textarea */}
-                      <textarea
-                        value={adFormData.description}
-                        onChange={(e) => setAdFormData({...adFormData, description: e.target.value, title: e.target.value.slice(0, 50)})}
-                        placeholder={isRtl ? `بم تفكر يا ${user?.name?.split(' ')[0] || 'مستخدم'}؟` : `What's on your mind, ${user?.name?.split(' ')[0] || 'User'}?`}
-                        className="w-full text-sm sm:text-base bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none min-h-[75px] sm:min-h-[110px] text-gray-900 dark:text-gray-100 p-0 placeholder-gray-400 font-medium"
-                        rows={3}
-                      />
-
-                      {/* Professional Media Upload Zone (Facebook Style) */}
-                      {(!adFormData.image_url && !adFormData.video_url) ? (
-                        <div 
-                          className="relative rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-accent dark:hover:border-accent bg-white/50 dark:bg-black/20 transition-theme p-8 flex flex-col items-center justify-center gap-3 cursor-pointer group"
-                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent', 'bg-accent/5'); }}
-                          onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-accent', 'bg-accent/5'); }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.classList.remove('border-accent', 'bg-accent/5');
-                            const file = e.dataTransfer.files?.[0];
-                            if (file) {
-                              const syntheticEvent = { target: { files: [file] } } as any;
-                              if (file.type.startsWith('image/')) handleImageFileUpload(syntheticEvent);
-                              else if (file.type.startsWith('video/')) handleVideoFileUpload(syntheticEvent);
-                            }
-                          }}
-                        >
-                          <label className="absolute inset-0 cursor-pointer">
-                            <input 
-                              type="file" 
-                              accept="image/*,video/*" 
-                              className="hidden" 
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  if (file.type.startsWith('image/')) handleImageFileUpload(e);
-                                  else handleVideoFileUpload(e);
-                                }
-                              }} 
-                            />
-                          </label>
-                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 group-hover:text-accent group-hover:bg-accent/10 transition-theme">
-                            <Plus size={24} />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm font-black text-gray-700 dark:text-gray-200">{isRtl ? 'أضف صوراً/مقطع فيديو' : 'Add Photos/Videos'}</p>
-                            <p className="text-[10px] text-gray-500 mt-1 font-bold">{isRtl ? 'أو سحب وإفلات' : 'or drag and drop'}</p>
-                          </div>
-                          <button 
-                            type="button" 
-                            className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-400"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        /* Media Attachments Preview Grid with Multi-Format Player */
-                        <div className="space-y-3 pt-1.5">
-                          <div className={`grid grid-cols-1 ${adFormData.image_url && (adFormData.video_url || videoMetadataInfo.localVideoUrl) ? 'sm:grid-cols-2' : ''} gap-3`}>
-                            {adFormData.image_url && (
-                              <div className={`relative rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 group ${adFormData.ad_format === 'reel' || adFormData.ad_format === 'story' ? 'aspect-[9/16] max-h-[360px] mx-auto' : ''}`}>
-                                <img src={getMediaUrl(adFormData.image_url)} className="w-full h-full object-cover" />
-                                <button 
-                                  type="button"
-                                  onClick={() => setAdFormData({...adFormData, image_url: ''})}
-                                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/80 text-white flex items-center justify-center hover:bg-red-500 transition-colors shadow-lg z-20 cursor-pointer"
-                                  title={isRtl ? 'إزالة الصورة' : 'Remove image'}
-                                >
-                                  <X size={14} />
-                                </button>
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-theme pointer-events-none" />
-                                <span className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md z-10 border border-white/10">
-                                  {adFormData.ad_format === 'story' ? (isRtl ? 'قصة (Story 9:16)' : 'Story (9:16)') : (isRtl ? 'صورة الغلاف / المرفق' : 'Cover / Image attachment')}
-                                </span>
-                              </div>
-                            )}
-
-                            {(adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
-                              <div className="flex flex-col gap-3">
-                                <VideoPreviewer
-                                  videoUrl={adFormData.video_url || videoMetadataInfo.localVideoUrl}
-                                  fileName={videoMetadataInfo.fileName}
-                                  fileSize={videoMetadataInfo.fileSize}
-                                  duration={videoMetadataInfo.duration}
-                                  resolution={videoMetadataInfo.resolution}
-                                  thumbnailUrl={adFormData.image_url}
-                                  isRtl={isRtl}
-                                  uploadProgress={videoMetadataInfo.uploadProgress}
-                                  processingStage={videoMetadataInfo.processingStage}
-                                  onRemove={() => {
-                                    setAdFormData(prev => ({ ...prev, video_url: '' }));
-                                    setVideoMetadataInfo({ processingStage: 'done' });
-                                  }}
-                                  onTrim={() => {
-                                    setTrimmerVideoUrl(adFormData.video_url || videoMetadataInfo.localVideoUrl || '');
-                                    setIsTrimmerModalOpen(true);
-                                  }}
-                                  onEditFilters={() => {
-                                    setTrimmerVideoUrl(adFormData.video_url || videoMetadataInfo.localVideoUrl || '');
-                                    setIsTrimmerModalOpen(true);
-                                  }}
-                                  onSelectThumbnail={(thumbUrl) => {
-                                    setAdFormData(prev => ({ ...prev, image_url: thumbUrl }));
-                                  }}
-                                />
-                                <div className="relative rounded-xl overflow-hidden border border-gray-200/60 dark:border-gray-800 bg-black group">
-                                  <MediaFormatPlayer
-                                    url={adFormData.video_url || videoMetadataInfo.localVideoUrl || ''}
-                                    adFormat={adFormData.ad_format || 'feed'}
-                                    posterUrl={adFormData.image_url}
-                                    title={adFormData.title}
-                                    isRtl={isRtl}
-                                    className={adFormData.ad_format === 'reel' || adFormData.ad_format === 'story' ? 'max-h-[380px] mx-auto' : ''}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Aspect Ratio & Format Guidance Selector Bar */}
-                          <div className="p-2.5 rounded-xl bg-accent/5 border border-accent/15 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 text-accent dark:text-accent font-bold">
-                              <Sparkles size={14} />
-                              <span className="text-[11px]">{getRecommendedDimensions(adFormData.ad_format, isRtl)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {['post', 'story', 'reel', 'video', 'banner'].map((fmt, fIdx) => (
-                                <button
-                                  key={`bulletin-fmt-${fmt}-${fIdx}`}
-                                  type="button"
-                                  onClick={() => setAdFormData({ ...adFormData, ad_format: fmt as any })}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition-theme ${
-                                    adFormData.ad_format === fmt
-                                      ? 'bg-accent text-white shadow-sm'
-                                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                  }`}
-                                >
-                                  {fmt}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Unified Metadata Row (Hashtags + Location Tag) */}
-                      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-gray-200/40 dark:border-gray-800/50">
-                        {/* Hashtag Field */}
-                        <div className="flex-1 min-w-[120px]">
-                          <input 
-                            type="text"
-                            value={adFormData.hashtags}
-                            onChange={(e) => setAdFormData({...adFormData, hashtags: e.target.value})}
-                            placeholder={isRtl ? '#هاشتاق' : '#hashtags'}
-                            className="w-full text-xs font-bold text-accent dark:text-accent bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 placeholder-accent-500/50"
-                          />
-                        </div>
-
-                        {/* Integrated Location Selector / Tag */}
-                        {adFormData.location_city ? (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-accent/10 border border-accent/25 text-accent dark:text-accent text-[11px] font-bold shrink-0">
-                            <MapPin size={11} className="text-accent shrink-0" />
-                            <span className="truncate max-w-[130px] sm:max-w-[160px]">{adFormData.location_city}</span>
-                            <button
-                              type="button"
-                              onClick={() => setAdFormData(prev => ({ ...prev, location_city: '' }))}
-                              className="text-gray-400 hover:text-red-500 transition-colors ms-0.5"
-                              title={isRtl ? 'إزالة الموقع' : 'Remove location'}
-                            >
-                              <X size={11} />
-                            </button>
-                          </div>
-                        ) : (
+                          {/* AI Content Label Pill (Facebook Standard) */}
                           <button
                             type="button"
-                            onClick={() => setComposerView('location')}
-                            className="flex items-center gap-1 text-[11px] font-bold text-gray-400 hover:text-accent transition-colors px-1.5 py-0.5 rounded-lg hover:bg-accent/10 shrink-0"
+                            onClick={() => setAdFormData(prev => ({ ...prev, is_ai_generated: !prev.is_ai_generated }))}
+                            className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2 rounded-md transition-colors cursor-pointer ${
+                              adFormData.is_ai_generated
+                                ? 'bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300'
+                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                            }`}
+                            title={isRtl ? 'تسمية المحتوى الذي تم إنشاؤه بالذكاء الاصطناعي' : 'Label AI-generated content'}
                           >
-                            <MapPin size={12} className="text-red-500/80" />
-                            <span>{isRtl ? 'إضافة موقع' : 'Add location'}</span>
+                            {adFormData.is_ai_generated ? (
+                              <>
+                                <Sparkles size={10} className="text-purple-500 shrink-0" />
+                                <span>{isRtl ? 'ذكاء اصطناعي: مفعّل' : 'AI label: On'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>{isRtl ? 'تسمية الذكاء الاصطناعي ➕' : 'AI label off ➕'}</span>
+                              </>
+                            )}
+                            <ChevronDown size={10} className="text-gray-400" />
                           </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Natural, Free & Unrestricted Composer Body */}
+                    <div className="py-1 sm:py-2">
+                      <textarea
+                        value={adFormData.description}
+                        onChange={(e) => setAdFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder={
+                          isRtl
+                            ? `بم تفكر يا ${user?.name ? user.name.split(' ')[0] : 'صديقي'}؟ اكتب بحرية وسيتعرف النظام تلقائياً على الوسوم (#) والإشارات (@)...`
+                            : `What's on your mind, ${user?.name ? user.name.split(' ')[0] : 'friend'}? Write freely with natural (#) tags and (@) mentions...`
+                        }
+                        className="w-full text-sm sm:text-lg bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none min-h-[80px] sm:min-h-[140px] text-gray-900 dark:text-gray-100 p-1 placeholder-gray-400 dark:placeholder-zinc-500 font-normal leading-relaxed"
+                        rows={3}
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Media Attachments Preview Grid & Attached Action Card */}
+                    {(adFormData.image_url || adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
+                      <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700/70 bg-black/5 dark:bg-black/40 mb-2 sm:mb-3 shadow-inner">
+                        {/* Circular Delete Button */}
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setAdFormData(prev => ({ ...prev, image_url: '', video_url: '' }));
+                            setVideoMetadataInfo({ processingStage: 'done' });
+                          }}
+                          className="absolute top-2 right-2 rtl:right-auto rtl:left-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/75 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg z-20 cursor-pointer"
+                          title={isRtl ? 'إزالة الوسائط' : 'Remove media'}
+                        >
+                          <X size={14} />
+                        </button>
+
+                        {/* Video or Image Preview */}
+                        {adFormData.image_url && !adFormData.video_url && !videoMetadataInfo.localVideoUrl && (
+                          <div className="relative w-full max-h-[220px] sm:max-h-[380px] bg-black/90 flex items-center justify-center overflow-hidden">
+                            <img src={getMediaUrl(adFormData.image_url)} alt="Attachment" className="w-full max-h-[220px] sm:max-h-[380px] object-contain" />
+                          </div>
+                        )}
+
+                        {(adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
+                          <div className="relative w-full max-h-[220px] sm:max-h-[380px] bg-black flex items-center justify-center overflow-hidden">
+                            <MediaFormatPlayer
+                              url={adFormData.video_url || videoMetadataInfo.localVideoUrl || ''}
+                              adFormat={adFormData.ad_format || 'feed'}
+                              posterUrl={adFormData.image_url}
+                              title={adFormData.title}
+                              isRtl={isRtl}
+                              className={adFormData.ad_format === 'reel' || adFormData.ad_format === 'story' ? 'max-h-[220px] sm:max-h-[360px] mx-auto' : ''}
+                            />
+                          </div>
+                        )}
+
+                        {/* Attached Action Banner (Facebook WhatsApp CTA Card Preview) */}
+                        {adFormData.has_whatsapp_button && (
+                          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-zinc-800/90 border-t border-gray-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-2 sm:gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                                <MessageCircle size={16} className="text-[#25D366] sm:size-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-[11px] sm:text-sm font-extrabold text-gray-900 dark:text-gray-100 truncate">
+                                  {adFormData.page_id ? myPagesList.find(p => p.id === Number(adFormData.page_id))?.name : (user?.name || 'Afaq Academy')}
+                                </h4>
+                                <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate">
+                                  {isRtl ? 'انقر لبدء المحادثة المباشرة عبر واتساب' : 'Click to start direct chat on WhatsApp'}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                              <div className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-[#25D366] text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 shadow-xs">
+                                <MessageCircle size={12} className="fill-white/20 sm:size-[14px]" />
+                                <span>{isRtl ? 'واتساب' : 'WhatsApp'}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAdFormData(prev => ({ ...prev, has_whatsapp_button: false }))}
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-200 dark:bg-zinc-700 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors"
+                                title={isRtl ? 'إزالة زر الواتساب' : 'Remove WhatsApp CTA'}
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* Compact Add to Post Bar */}
-                    <div 
-                      onClick={() => setIsAddToPostModalOpen(true)}
-                      className="p-2 sm:p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors gap-2"
-                    >
-                      <span className="text-[11px] sm:text-xs font-extrabold text-gray-500 shrink-0">{isRtl ? 'إضافة إلى منشورك' : 'Add to post'}</span>
-                      <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
-                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-accent cursor-pointer transition-colors shrink-0" title={isRtl ? 'صور' : 'Photos'} onClick={(e) => e.stopPropagation()}>
-                          <ImageIcon size={18} className="sm:w-5 sm:h-5" />
-                          <input type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.svg,.bmp" className="hidden" onChange={handleImageFileUpload} />
-                        </label>
-                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-blue-500 cursor-pointer transition-colors shrink-0" title={isRtl ? 'فيديو' : 'Video'} onClick={(e) => e.stopPropagation()}>
-                          <Video size={18} className="sm:w-5 sm:h-5" />
-                          <input type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.3gp,.m4v" className="hidden" onChange={handleVideoFileUpload} />
-                        </label>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setComposerView('emojis'); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-amber-500 shrink-0" title={isRtl ? 'رموز تعبيرية' : 'Emojis'}>
-                          <Sparkles size={18} className="sm:w-5 sm:h-5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setComposerView('tagging'); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-blue-400 shrink-0" title={isRtl ? 'إشارة للأصدقاء' : 'Tag Friends'}>
-                          <Users size={18} className="sm:w-5 sm:h-5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setComposerView('feelings'); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-yellow-500 shrink-0" title={isRtl ? 'الشعور/النشاط' : 'Feeling/Activity'}>
-                          <Smile size={18} className="sm:w-5 sm:h-5" />
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setComposerView('location'); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500 shrink-0" title={isRtl ? 'الموقع' : 'Location'}>
-                          <MapPin size={18} className="sm:w-5 sm:h-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {adFormData.has_whatsapp_button && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="overflow-hidden">
-                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-0.5">{isRtl ? 'رقم الواتساب:' : 'WhatsApp Number:'}</label>
-                        <input
-                          type="text"
-                          value={adFormData.whatsapp_number}
-                          onChange={(e) => setAdFormData({ ...adFormData, whatsapp_number: e.target.value })}
-                          placeholder="+970599000000"
-                          className="w-full px-3 py-1.5 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 focus:outline-none focus:border-accent"
-                        />
-                      </motion.div>
                     )}
 
-                    {/* Compact Mobile Toggle Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Sparkles size={14} className="text-indigo-500 shrink-0" />
-                          <span className="text-[11px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 truncate">{isRtl ? 'منشور بالذكاء الاصطناعي' : 'AI Content'}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setAdFormData({...adFormData, is_ai_generated: !adFormData.is_ai_generated})}
-                          className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${adFormData.is_ai_generated ? 'bg-indigo-500' : 'bg-gray-200 dark:bg-gray-700'}`}
-                        >
-                          <motion.div 
-                            animate={{ x: adFormData.is_ai_generated ? 18 : 2 }}
-                            className="absolute top-1 left-0 w-3 h-3 bg-white rounded-full"
-                          />
-                        </button>
+                    {/* Video Cover Frame & Thumbnail Extractor / Scrubber */}
+                    {(adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
+                      <div className="mb-2 sm:mb-3">
+                        <VideoFrameCapture
+                          videoUrl={adFormData.video_url || videoMetadataInfo.localVideoUrl || ''}
+                          currentCoverUrl={adFormData.image_url}
+                          onSelectCover={(coverUrl) => {
+                            setAdFormData(prev => ({ ...prev, image_url: coverUrl }));
+                          }}
+                          onRemoveCover={() => {
+                            setAdFormData(prev => ({ ...prev, image_url: '' }));
+                          }}
+                          isRtl={isRtl}
+                        />
                       </div>
+                    )}
 
-                      <div className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-accent/5 border border-accent/10">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <MessageCircle size={14} className="text-accent shrink-0" />
-                          <span className="text-[11px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 truncate">{isRtl ? 'زر مراسلة واتساب' : 'WhatsApp Button'}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setAdFormData({...adFormData, has_whatsapp_button: !adFormData.has_whatsapp_button})}
-                          className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${adFormData.has_whatsapp_button ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'}`}
-                        >
-                          <motion.div 
-                            animate={{ x: adFormData.has_whatsapp_button ? 18 : 2 }}
-                            className="absolute top-1 left-0 w-3 h-3 bg-white rounded-full"
-                          />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick / Trending Chat Questions Config */}
-                    <div className="p-3 rounded-xl bg-accent/5 border border-accent/10 space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <MessageSquare size={14} className="text-accent shrink-0" />
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {isRtl ? 'الأسئلة السائبة / الرائجة للدردشة المباشرة (اختياري)' : 'Quick / Trending Chat Questions (Optional)'}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-400">
-                        {isRtl ? 'حدد أسئلة سريعة تظهر للمشترين عند فتح صندوق المحادثة المباشرة مع إعلانك' : 'Set preset quick questions for buyers when they open direct chat with your ad'}
-                      </p>
-                      <div className="space-y-1.5">
-                        {[0, 1, 2].map((idx) => (
+                    {/* WhatsApp Number Configuration (Inline when button active) */}
+                    {adFormData.has_whatsapp_button && (
+                      <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <Phone size={13} className="text-[#25D366] shrink-0" />
                           <input
-                            key={`bulletin-qq-${idx}`}
                             type="text"
-                            value={(adFormData.quick_questions as string[])?.[idx] || ''}
-                            onChange={(e) => {
-                              const qq = [...(adFormData.quick_questions || ['', '', ''])];
-                              qq[idx] = e.target.value;
-                              setAdFormData({ ...adFormData, quick_questions: qq });
-                            }}
-                            placeholder={isRtl ? `السؤال السريع رقم ${idx + 1} (مثال: هل السعر قابل للتفاوض؟)` : `Quick Question #${idx + 1} (e.g., Is price negotiable?)`}
-                            className="w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-accent text-gray-800 dark:text-gray-100"
+                            value={adFormData.whatsapp_number}
+                            onChange={(e) => setAdFormData({ ...adFormData, whatsapp_number: e.target.value })}
+                            placeholder={isRtl ? 'رقم الواتساب (مثال: 970599000000+)' : 'WhatsApp Number (e.g., +970599000000)'}
+                            className="w-full text-xs bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 text-gray-800 dark:text-gray-200 font-bold"
                           />
-                        ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Facebook-Standard "Add to Your Post" Toolbar */}
+                    <div className="p-2 sm:p-3 rounded-xl border border-gray-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-800/40 flex items-center justify-between shadow-xs">
+                      <span className="text-[11px] sm:text-sm font-bold text-gray-800 dark:text-gray-200 shrink-0">
+                        {isRtl ? 'إضافة إلى منشورك' : 'Add to your post'}
+                      </span>
+                      <div className="flex items-center gap-0.5 sm:gap-1">
+                        {/* 1. Photo / Video (Emerald) */}
+                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-500 cursor-pointer transition-colors" title={isRtl ? 'صور / فيديو' : 'Photos / Video'}>
+                          <ImageIcon size={17} className="sm:size-[22px]" />
+                          <input 
+                            type="file" 
+                            accept="image/*,video/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.type.startsWith('image/')) handleImageFileUpload(e);
+                                else handleVideoFileUpload(e);
+                              }
+                            }} 
+                          />
+                        </label>
+
+                        {/* 2. Tag People (Blue) */}
+                        <button 
+                          type="button" 
+                          onClick={() => setComposerView('tagging')} 
+                          className="p-1.5 sm:p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-500 transition-colors" 
+                          title={isRtl ? 'إشارة إلى أشخاص' : 'Tag people'}
+                        >
+                          <Users size={17} className="sm:size-[22px]" />
+                        </button>
+
+                        {/* 3. WhatsApp Action Toggle (Vibrant Green) */}
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setAdFormData(prev => ({ 
+                              ...prev, 
+                              has_whatsapp_button: !prev.has_whatsapp_button,
+                              whatsapp_number: prev.whatsapp_number || (user as any)?.phone || ''
+                            }));
+                            if (!adFormData.has_whatsapp_button) {
+                              toast.success(isRtl ? 'تم إرفاق زر المراسلة عبر واتساب' : 'WhatsApp CTA button attached');
+                            }
+                          }} 
+                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.has_whatsapp_button ? 'bg-emerald-500/15 text-[#25D366]' : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-[#25D366]'}`}
+                          title={isRtl ? 'زر مراسلة واتساب' : 'WhatsApp Button'}
+                        >
+                          <MessageCircle size={17} className="sm:size-[22px]" />
+                        </button>
+
+                        {/* 4. Location / Check-in (Rose) */}
+                        <button 
+                          type="button" 
+                          onClick={() => setComposerView('location')} 
+                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.location_city ? 'bg-rose-500/15 text-rose-500' : 'hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500'}`}
+                          title={isRtl ? 'الموقع' : 'Location'}
+                        >
+                          <MapPin size={17} className="sm:size-[22px]" />
+                        </button>
+
+                        {/* 5. Feeling / Activity (Amber) */}
+                        <button 
+                          type="button" 
+                          onClick={() => setComposerView('feelings')} 
+                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.feeling ? 'bg-amber-500/15 text-amber-500' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-500'}`}
+                          title={isRtl ? 'الشعور / النشاط' : 'Feeling / Activity'}
+                        >
+                          <Smile size={17} className="sm:size-[22px]" />
+                        </button>
+
+                        {/* 6. More Options (...) */}
+                        <button 
+                          type="button" 
+                          onClick={() => setIsAddToPostModalOpen(true)} 
+                          className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-400 transition-colors" 
+                          title={isRtl ? 'المزيد' : 'More'}
+                        >
+                          <SlidersHorizontal size={16} className="sm:size-[20px]" />
+                        </button>
                       </div>
                     </div>
 
+                    {/* Copyright & Verification Status (Facebook standard) */}
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 px-1">
+                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0 sm:size-[13px]" />
+                      <span>{isRtl ? '© جارٍ التحقق من وجود محتوى محمي بحقوق النشر' : '© Checking for copyrighted content'}</span>
+                    </div>
+
+                    {/* Full-width High-Contrast Post / Next Button */}
                     <button
                       type="submit"
-                      disabled={isSubmittingAd || !adFormData.description}
-                      className="w-full py-2.5 sm:py-3 rounded-xl bg-accent hover:bg-accent disabled:opacity-50 disabled:hover:bg-accent text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-none transition-theme active:scale-[0.99]"
+                      disabled={isSubmittingAd || (!adFormData.description && !adFormData.image_url && !adFormData.video_url)}
+                      className="w-full py-2 sm:py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-zinc-800 disabled:text-gray-400 dark:disabled:text-zinc-600 text-white font-extrabold text-xs sm:text-base shadow-sm transition-all active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed"
                     >
-                      {isSubmittingAd ? (isRtl ? 'جاري الحفظ...' : 'Saving...') : (isEditMode ? (isRtl ? 'حفظ التعديلات' : 'Save Changes') : (isRtl ? 'نشر الإعلان' : 'Publish Ad'))}
+                      {isSubmittingAd ? (isRtl ? 'جاري النشر...' : 'Publishing...') : (isEditMode ? (isRtl ? 'حفظ التعديلات' : 'Save Changes') : (isRtl ? 'نشر' : 'Post'))}
                     </button>
                   </form>
                 )}
@@ -5985,7 +5996,7 @@ export const BulletinBoardPage: React.FC = () => {
         currentUser={user}
         isRtl={isRtl}
         onStoryViewed={handleStoryViewed}
-        onStoryDeleted={() => fetchStories()}
+        onStoryDeleted={handleStoryDeleted}
       />
 
       {/* Video Trimmer Modal */}
@@ -6017,6 +6028,11 @@ export const BulletinBoardPage: React.FC = () => {
               onToggleLike={handleToggleLike}
               onMessageAdvertiser={handleMessageAdvertiser}
               onShare={handleShareAd}
+              onDeleteReel={(id) => {
+                const ad = ads.find(a => a.id === id);
+                if (ad) handleDeleteAd(ad);
+              }}
+              onEditReel={handleEditAd}
               onOpenPageDetail={handleOpenPageDetail}
               onOpenUploadReels={() => {
                 stopAllMedia('reel_upload_preview');
@@ -6046,7 +6062,7 @@ export const BulletinBoardPage: React.FC = () => {
           >
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="relative w-full max-w-[280px] aspect-[9/16] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white/20 z-10 bg-black">
-              {stories.find(s => s.id === previewingVideoStoryId)?.video_url ? (
+              {getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.video_url) ? (
                 <video
                   src={getMediaUrl(stories.find(s => s.id === previewingVideoStoryId)?.video_url)}
                   className="w-full h-full object-cover"

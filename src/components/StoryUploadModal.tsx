@@ -199,12 +199,6 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
         throw new Error(data.error || 'فشل نشر القصة');
       }
 
-      toast.success(
-        isRtl
-          ? 'تم نشر القصة بنجاح! ستختفي تلقائياً بعد 24 ساعة 🚀'
-          : 'Story published successfully! Will expire in 24 hours 🚀'
-      );
-
       if (isVideo && videoDuration > 15.5) {
         setTimeout(() => {
           toast.info(

@@ -287,7 +287,7 @@ router.get('/ads', async (req, res) => {
       FROM bulletin_ads b
       LEFT JOIN users u ON b.user_id = u.id
       LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
-      WHERE b.status = 'approved'
+      WHERE b.status = 'approved' AND b.ad_format != 'story'
     `;
     const params: any[] = [];
 
@@ -359,7 +359,7 @@ router.get('/ads', async (req, res) => {
         FROM bulletin_ads b
         LEFT JOIN users u ON b.user_id = u.id
         LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
-        WHERE b.status = 'approved'
+        WHERE b.status = 'approved' AND b.ad_format != 'story'
           AND (b.audience = 'public' OR b.audience IS NULL OR b.audience = '')
         ORDER BY (CASE WHEN b.is_boosted AND (b.boosted_until IS NULL OR b.boosted_until > NOW()) THEN 1 ELSE 0 END) DESC, b.created_at DESC, b.id DESC
         LIMIT $1 OFFSET $2
@@ -599,9 +599,14 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
   const validAudience = ['public', 'friends', 'only_me'].includes(audience) ? audience : 'public';
   const validFormat = ['post', 'reel', 'story'].includes(ad_format) ? ad_format : 'post';
 
-  if (!title || !description || (!image_url && !video_url)) {
+  const rawTitle = typeof title === 'string' ? title.trim() : '';
+  const rawDesc = typeof description === 'string' ? description.trim() : '';
+  const finalTitle = rawTitle || (rawDesc.length > 60 ? rawDesc.slice(0, 60) + '...' : rawDesc) || 'منشور جديد';
+  const finalDesc = rawDesc || rawTitle || '';
+
+  if (!finalTitle && !finalDesc && !image_url && !video_url) {
     return res.status(400).json({
-      error: 'يرجى تقديم العنوان، الوصف، ومع إما صورة أو فيديو'
+      error: 'يرجى تقديم نص للمنشور أو إرفاق صورة/فيديو'
     });
   }
 
@@ -629,7 +634,7 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
 
   const normImageUrl = normalizeUrl(image_url);
   const normVideoUrl = normalizeUrl(video_url);
-  const finalImageUrl = normImageUrl || (normVideoUrl ? '/uploads/default_video_poster.jpg' : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1080&q=80');
+  const finalImageUrl = normImageUrl || (normVideoUrl ? '/uploads/default_video_poster.jpg' : null);
 
   try {
     let authorName = req.user.name || 'مستخدم المنصة';
@@ -638,8 +643,11 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     let autoCategory = 'عام / General';
 
     if (page_id) {
-      const pageRes = await pool.query('SELECT id, name, avatar_url, city, category FROM bulletin_pages WHERE id = $1', [page_id]);
+      const pageRes = await pool.query('SELECT id, name, avatar_url, city, category, user_id FROM bulletin_pages WHERE id = $1', [page_id]);
       if (pageRes.rows.length > 0) {
+        if (pageRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'غير مصرح لك بالنشر في هذه الصفحة' });
+        }
         validPageId = pageRes.rows[0].id;
         authorName = pageRes.rows[0].name;
         authorAvatar = pageRes.rows[0].avatar_url;
@@ -655,11 +663,14 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     }
 
     let parsedHashtags = '';
+    const descTags = (finalDesc.match(/#[\p{L}\p{N}_]+/gu) || []).map((h: string) => h.replace(/^#/, '').trim());
+    let incomingTags: string[] = [];
     if (Array.isArray(hashtags)) {
-      parsedHashtags = hashtags.map(h => h.trim()).filter(Boolean).join(',');
+      incomingTags = hashtags.map(h => typeof h === 'string' ? h.replace(/^#/, '').trim() : String(h)).filter(Boolean);
     } else if (typeof hashtags === 'string') {
-      parsedHashtags = hashtags;
+      incomingTags = hashtags.split(',').map(h => h.replace(/^#/, '').trim()).filter(Boolean);
     }
+    parsedHashtags = Array.from(new Set([...incomingTags, ...descTags])).join(',');
 
     const expiresAt = validFormat === 'story' ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
 
@@ -676,8 +687,8 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       location_city || 'فلسطين',
       authorName,
       authorAvatar,
-      title.trim(),
-      description.trim(),
+      finalTitle,
+      finalDesc,
       finalImageUrl,
       whatsapp_number ? whatsapp_number.trim() : null,
       phone_number ? phone_number.trim() : null,
@@ -698,15 +709,103 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     const createdAd = insertRes.rows[0];
 
     try {
+      // 1. Author Confirmation Notification
       await createNotification(
         userId,
         'bulletin_ad',
         'Post Published Successfully',
         'تم نشر منشورك بنجاح! 🚀',
-        `Your post "${title}" has been published successfully.`,
-        `تم نشر منشورك "${title}" بنجاح للعامة. يمكنك ترويجه في أي وقت عبر زر التمويل.`,
+        `Your post "${finalTitle}" has been published successfully.`,
+        `تم نشر منشورك "${finalTitle}" بنجاح للعامة. يمكنك ترويجه في أي وقت عبر زر التمويل.`,
         { ad_id: createdAd.id }
       );
+
+      // 2. Mentions & Audience Notification Dispatch (Strictly De-duplicated)
+      const recipientIds = new Set<number>();
+      const taggedList = Array.isArray(tagged_users) ? tagged_users.map(t => String(typeof t === 'object' && t !== null ? (t.name || t.id || '') : t)) : [];
+      const combinedText = `${finalTitle} ${finalDesc} ${taggedList.join(' ')}`.toLowerCase();
+      const hasEveryoneMention = combinedText.includes('@الجميع') || combinedText.includes('@everyone') || taggedList.includes('@الجميع') || taggedList.includes('@everyone') || taggedList.includes('الجميع') || taggedList.includes('everyone');
+      const hasFollowersMention = combinedText.includes('@اشارة للمتابعين') || combinedText.includes('@اشارة') || combinedText.includes('@followers') || combinedText.includes('@متابعين') || taggedList.includes('@اشارة للمتابعين') || taggedList.includes('@followers') || taggedList.includes('متابعين') || taggedList.includes('followers');
+
+      // Tagged Users from form data
+      if (Array.isArray(tagged_users)) {
+        for (const tag of tagged_users) {
+          const tId = typeof tag === 'object' && tag !== null ? Number(tag.id || tag.user_id) : Number(tag);
+          if (tId && tId !== Number(userId) && !isNaN(tId)) {
+            recipientIds.add(tId);
+          }
+        }
+      }
+
+      // If followers mentioned and page exists, add all page followers
+      if (hasFollowersMention && validPageId) {
+        try {
+          const followersRes = await pool.query(
+            'SELECT user_id FROM bulletin_page_followers WHERE page_id = $1',
+            [validPageId]
+          );
+          for (const row of followersRes.rows) {
+            const fId = Number(row.user_id);
+            if (fId && fId !== Number(userId)) {
+              recipientIds.add(fId);
+            }
+          }
+        } catch (fErr) {
+          console.error('[Bulletin API] Error fetching page followers for mention:', fErr);
+        }
+      }
+
+      // If @everyone mentioned or public audience broadcast
+      if (hasEveryoneMention) {
+        try {
+          const activeUsersRes = await pool.query(
+            'SELECT id FROM users WHERE id != $1 ORDER BY updated_at DESC NULLS LAST LIMIT 100',
+            [userId]
+          );
+          for (const row of activeUsersRes.rows) {
+            const uId = Number(row.id);
+            if (uId && uId !== Number(userId)) {
+              recipientIds.add(uId);
+            }
+          }
+        } catch (uErr) {
+          console.error('[Bulletin API] Error fetching active users for @everyone mention:', uErr);
+        }
+      }
+
+      // Dispatch notifications to all unique recipients
+      for (const recipientId of recipientIds) {
+        try {
+          let mentionTitleEn = 'New Mention in a Post';
+          let mentionTitleAr = 'إشارة جديدة في منشور 📢';
+          let mentionMsgEn = `${authorName} mentioned you in a post: "${title}"`;
+          let mentionMsgAr = `قام ${authorName} بالإشارة إليك في منشور: "${title}"`;
+
+          if (hasEveryoneMention) {
+            mentionTitleEn = 'Everyone Mention';
+            mentionTitleAr = 'إشارة للجميع 📢';
+            mentionMsgEn = `${authorName} tagged @everyone in post: "${title}"`;
+            mentionMsgAr = `قام ${authorName} بالإشارة إلى @الجميع في منشور: "${title}"`;
+          } else if (hasFollowersMention) {
+            mentionTitleEn = 'Follower Mention';
+            mentionTitleAr = 'إشارة للمتابعين 👥';
+            mentionMsgEn = `${authorName} tagged followers in post: "${title}"`;
+            mentionMsgAr = `قام ${authorName} بالإشارة إلى المتابعين في منشور: "${title}"`;
+          }
+
+          await createNotification(
+            recipientId,
+            'bulletin_mention',
+            mentionTitleEn,
+            mentionTitleAr,
+            mentionMsgEn,
+            mentionMsgAr,
+            { ad_id: createdAd.id, author_id: userId, page_id: validPageId }
+          );
+        } catch (mErr) {
+          console.error(`[Bulletin API] Error notifying user ${recipientId}:`, mErr);
+        }
+      }
     } catch (nErr) {
       console.error('[Bulletin API] Notification error:', nErr);
     }
@@ -737,35 +836,14 @@ router.get('/stories', async (req, res) => {
       LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
       WHERE b.status = 'approved'
         AND b.ad_format = 'story'
-        AND (b.expires_at IS NULL OR b.expires_at > NOW())
+        AND (
+          (b.expires_at IS NOT NULL AND b.expires_at > NOW())
+          OR 
+          (b.expires_at IS NULL AND b.created_at > NOW() - INTERVAL '24 hours')
+        )
       ORDER BY b.created_at DESC
       LIMIT 40
     `);
-
-    // If fewer than 4 stories exist, pull approved visual reels or posts as active stories
-    if (result.rows.length < 4) {
-      const fallbackStories = await pool.query(`
-        SELECT b.*,
-          u.name as u_name, u.avatar as u_avatar,
-          bp.name as page_name, bp.avatar_url as page_avatar
-        FROM bulletin_ads b
-        LEFT JOIN users u ON b.user_id = u.id
-        LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
-        WHERE b.status = 'approved'
-          AND (b.image_url IS NOT NULL OR b.video_url IS NOT NULL)
-          AND (b.expires_at IS NULL OR b.expires_at > NOW())
-        ORDER BY (CASE WHEN b.ad_format = 'story' THEN 1 WHEN b.ad_format = 'reel' THEN 2 ELSE 3 END), b.created_at DESC
-        LIMIT 20
-      `);
-
-      const existingIds = new Set(result.rows.map((r: any) => r.id));
-      for (const row of fallbackStories.rows) {
-        if (!existingIds.has(row.id)) {
-          result.rows.push(row);
-          existingIds.add(row.id);
-        }
-      }
-    }
 
     res.json({
       success: true,
@@ -1767,7 +1845,7 @@ router.get('/pages/:id', async (req, res) => {
          bp.name as page_name, bp.avatar_url as page_avatar, bp.cover_url as page_cover, bp.is_verified as page_is_verified
        FROM bulletin_ads b
        LEFT JOIN bulletin_pages bp ON b.page_id = bp.id
-       WHERE (b.page_id = $1 OR (b.user_id = $2 AND b.page_id IS NULL)) AND b.status = 'approved'
+       WHERE (b.page_id = $1 OR (b.user_id = $2 AND b.page_id IS NULL)) AND b.status = 'approved' AND b.ad_format != 'story'
        ORDER BY b.created_at DESC`,
       [pageId, page.user_id]
     );
@@ -2596,11 +2674,56 @@ router.post('/ads/:id/click', async (req, res) => {
 router.post('/ads/:id/share', async (req, res) => {
   try {
     const adId = parseInt(req.params.id);
-    const updateRes = await pool.query('UPDATE bulletin_ads SET shares_count = shares_count + 1 WHERE id = $1 RETURNING shares_count', [adId]);
+    const { target_user_ids, sharer_name, sender_id } = req.body || {};
+
+    const updateRes = await pool.query(
+      'UPDATE bulletin_ads SET shares_count = shares_count + 1 WHERE id = $1 RETURNING shares_count, title, user_id',
+      [adId]
+    );
     
     if (updateRes.rows.length > 0) {
-      const newCount = updateRes.rows[0].shares_count;
+      const ad = updateRes.rows[0];
+      const newCount = ad.shares_count;
       io.emit('reel_share_update', { reelId: adId, count: newCount });
+
+      // Notify post author about the share
+      if (ad.user_id && (!sender_id || Number(sender_id) !== Number(ad.user_id))) {
+        try {
+          const sName = sharer_name || 'أحد المستخدمين';
+          await createNotification(
+            ad.user_id,
+            'bulletin_share',
+            'Your Post Was Shared!',
+            'تمت مشاركة منشورك! 🚀',
+            `${sName} shared your post "${ad.title || 'إعلان'}".`,
+            `قام ${sName} بمشاركة منشورك "${ad.title || 'إعلان'}" على المنصة.`,
+            { ad_id: adId }
+          );
+        } catch (nErr) {
+          console.error('[Bulletin API] Share notification error:', nErr);
+        }
+      }
+
+      // If specific recipients were targeted, notify them (strictly de-duplicated)
+      if (Array.isArray(target_user_ids) && target_user_ids.length > 0) {
+        const uniqueTargets = Array.from(new Set(target_user_ids.map(Number))).filter(id => id && !isNaN(id) && id !== Number(sender_id));
+        for (const recipientId of uniqueTargets) {
+          try {
+            const sName = sharer_name || 'أحد الأصدقاء';
+            await createNotification(
+              recipientId,
+              'bulletin_shared_post',
+              'A post was shared with you',
+              'تمت مشاركة منشور مميز معك 📬',
+              `${sName} shared a post with you: "${ad.title || 'منشور'}"`,
+              `قام ${sName} بمشاركة منشور معك: "${ad.title || 'منشور'}"`,
+              { ad_id: adId, sender_id }
+            );
+          } catch (tErr) {
+            console.error(`[Bulletin API] Error notifying target recipient ${recipientId}:`, tErr);
+          }
+        }
+      }
     }
 
     res.json({ success: true });

@@ -6,7 +6,7 @@ import { io } from '../config/socket.js';
 import { callAIProvider } from './ai.js';
 import { decrypt } from '../utils/crypto.js';
 import { getAppName } from './system.js';
-import { getProtocolString } from '../config/protocol.js';
+import { buildSystemPrompt } from '../config/protocol.js';
 import { VideoResourceProvider } from './videoResourceProvider.js';
 
 export async function createChat(userId: string | number, title?: string) {
@@ -205,7 +205,7 @@ export async function generateChatTitle(chatId: string, firstMessageContent: str
 
     const route = routeResult.rows[0];
     const appName = getAppName('en');
-    const systemPrompt = getProtocolString(appName) + "\n\nGenerate a professional title for this chat based on the user's first message. Keep it short (max 50 chars).";
+    const systemPrompt = buildSystemPrompt(appName) + "\n\nGenerate a professional title for this chat based on the user's first message. Keep it short (max 50 chars).";
 
     const keyRes = await pool.query('SELECT encrypted_key FROM api_keys_vault WHERE provider = $1', [route.primary_provider]);
     if (keyRes.rows.length === 0) return;

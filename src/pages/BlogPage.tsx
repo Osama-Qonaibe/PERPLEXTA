@@ -5,6 +5,7 @@ import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, Use
 import { motion, AnimatePresence } from 'motion/react';
 import { ContentContainer } from '../components/ContentContainer';
 import { toast } from '../context/NotificationContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { useRenderMetrics } from '../hooks/useRenderMetrics';
 import { getMediaUrl } from '../utils/mediaUtils';
 
@@ -67,6 +68,7 @@ export const BlogPage: React.FC = () => {
   const [isCommentsOpenOnMobile, setIsCommentsOpenOnMobile] = useState(false);
   const [mobileCategoryPage, setMobileCategoryPage] = useState(0);
   const [showAdPopup, setShowAdPopup] = useState(false);
+  const confirm = useConfirm();
   const [readingProgress, setReadingProgress] = useState<number>(0);
 
   const handleScrollProgress = (e: React.UIEvent<HTMLDivElement>) => {
@@ -381,7 +383,12 @@ export const BlogPage: React.FC = () => {
   // Delete Comment (Owner or Admin)
   const handleDeleteComment = async (commentId: number) => {
     if (!token) return;
-    if (!window.confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا التعليق؟' : 'Are you sure you want to delete this comment?')) return;
+    const confirmDelete = await confirm({
+      title: language === 'ar' ? 'حذف التعليق' : 'Delete Comment',
+      description: language === 'ar' ? 'هل أنت متأكد من حذف هذا التعليق؟' : 'Are you sure you want to delete this comment?',
+      variant: 'danger',
+    });
+    if (!confirmDelete) return;
     try {
       const res = await fetch(`/api/blog/comments/${commentId}`, {
         method: 'DELETE',

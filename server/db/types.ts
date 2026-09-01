@@ -757,6 +757,7 @@ export interface BulletinAd {
   description: string;
   image_url: string;
   whatsapp_number: string | null;
+  has_whatsapp_button?: boolean;
   phone_number?: string | null;
   video_url?: string | null;
   target_url: string | null;

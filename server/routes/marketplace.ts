@@ -1377,7 +1377,7 @@ async function seedDefaultItems() {
         `, [
           authorId, item.title_en, item.title_ar, item.description_en, item.description_ar, item.price,
           item.category_en, item.category_ar, item.image_url, 'https://t.me/perplexta_support', 'approved',
-          20.00, item.highlight_tag, 'standard', 'https://perplexta.io/delivery/mock_source.zip',
+          20.00, item.highlight_tag, 'standard', 'https://perplexta.io/delivery/source.zip',
           'Premium modular architecture,Fully responsive UI layout,Complete lifetime source code access',
           'React, TypeScript, Tailwind CSS, Express, PostgreSQL'
         ]);

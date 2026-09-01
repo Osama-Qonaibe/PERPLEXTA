@@ -33,7 +33,9 @@ import {
   ArrowLeft,
   RotateCcw,
   PauseCircle,
-  Film
+  Film,
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
@@ -55,6 +57,8 @@ function formatCompactCount(count: number): string {
 
 export interface ReelItemData {
   id: number;
+  user_id?: number;
+  author_id?: number;
   author_name: string;
   author_avatar?: string | null;
   page_id?: number | null;
@@ -93,6 +97,8 @@ export interface ReelsFeedProps {
   onOpenPageDetail?: (pageId: number) => void;
   onMessageAdvertiser?: (ad: BulletinAd) => void;
   onShare?: (ad: BulletinAd) => void;
+  onDeleteReel?: (adId: number) => void;
+  onEditReel?: (ad: BulletinAd) => void;
   initialReelId?: number;
   initialAdId?: number;
 }
@@ -112,6 +118,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   onOpenPageDetail,
   onMessageAdvertiser,
   onShare,
+  onDeleteReel,
+  onEditReel,
   initialReelId,
   initialAdId
 }) => {
@@ -119,9 +127,11 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   const startId = initialAdId || initialReelId;
   const reelsList: ReelItemData[] = React.useMemo(() => {
     return ads
-      .filter((ad) => ad.video_url || ad.ad_format === 'reel')
+      .filter((ad) => ad.video_url) // MUST have a video_url to be a reel
       .map((ad) => ({
         id: ad.id,
+        user_id: ad.user_id,
+        author_id: (ad as any).author_id,
         author_name: ad.author_name || ad.page_name || (isRtl ? 'مستخدم' : 'User'),
         author_avatar: ad.author_avatar || ad.page_avatar,
         page_id: ad.page_id,
@@ -130,7 +140,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         page_is_verified: ad.page_is_verified,
         title: ad.title || '',
         description: ad.description || '',
-        video_url: getMediaUrl(ad.video_url || ad.image_url),
+        video_url: getMediaUrl(ad.video_url),
         image_url: getMediaUrl(ad.image_url),
         location_city: ad.location_city,
         hashtags: ad.hashtags || [],
@@ -142,7 +152,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         user_has_saved: ad.user_has_saved || false,
         created_at: ad.created_at,
         music_title: isRtl ? 'الصوت الأصلي - Perplexta Sound' : 'Original Audio - Perplexta'
-      }));
+      }))
+      .filter((reel) => reel.video_url); // Ensure valid resolved URL
   }, [ads, isRtl]);
 
   // Session Persistence & Active Reel Index Initialization
@@ -1795,6 +1806,32 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     <User size={18} className="text-purple-400 shrink-0" />
                     <span>{isRtl ? 'عرض حساب الناشر وتفاصيل البيج' : 'View Creator Profile & Page Details'}</span>
                   </button>
+                )}
+
+                {/* Edit & Delete for Owner */}
+                {user && (moreMenuReel.user_id === user.id || moreMenuReel.author_id === user.id || user.role === 'admin') && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (onEditReel) onEditReel(moreMenuReel as any);
+                        setMoreMenuReel(null);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-blue-400 cursor-pointer"
+                    >
+                      <Edit2 size={18} className="shrink-0" />
+                      <span>{isRtl ? 'تعديل المقطع' : 'Edit Reel'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (onDeleteReel) onDeleteReel(moreMenuReel.id);
+                        setMoreMenuReel(null);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-red-500 cursor-pointer"
+                    >
+                      <Trash2 size={18} className="shrink-0" />
+                      <span>{isRtl ? 'حذف المقطع' : 'Delete Reel'}</span>
+                    </button>
+                  </>
                 )}
 
                 <button

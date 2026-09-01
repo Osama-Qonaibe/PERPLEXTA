@@ -43,6 +43,75 @@ import { getMediaUrl } from '../utils/mediaUtils';
 import { SOCIAL_COLORS } from '../constants/socialColors';
 import { BulletinAvatar } from './BulletinAvatar';
 
+const renderRichPostText = (text: string | null | undefined, searchQuery?: string) => {
+  if (!text) return null;
+
+  // Split text by whitespace boundaries
+  const words = text.split(/(\s+)/);
+
+  return (
+    <>
+      {words.map((word, idx) => {
+        if (/^\s+$/.test(word)) {
+          return <span key={idx}>{word}</span>;
+        }
+
+        // Mention @الجميع or @everyone
+        if (word === '@الجميع' || word.toLowerCase() === '@everyone') {
+          return (
+            <span
+              key={idx}
+              className="inline-flex items-center gap-1 font-black text-purple-600 dark:text-purple-400 bg-purple-500/10 dark:bg-purple-500/20 px-1.5 py-0.5 rounded-md border border-purple-500/25 mx-0.5 align-middle select-all shadow-xs"
+            >
+              <span>{word}</span>
+              <span className="text-[10px]">📢</span>
+            </span>
+          );
+        }
+
+        // Mention @اشارة للمتابعين or @متابعين or @followers
+        if (word === '@اشارة' || word === '@اشارة_للمتابعين' || word === '@اشارة للمتابعين' || word === '@متابعين' || word.toLowerCase() === '@followers') {
+          return (
+            <span
+              key={idx}
+              className="inline-flex items-center gap-1 font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-1.5 py-0.5 rounded-md border border-blue-500/25 mx-0.5 align-middle select-all shadow-xs"
+            >
+              <span>{word}</span>
+              <span className="text-[10px]">👥</span>
+            </span>
+          );
+        }
+
+        // Generic @mention
+        if (word.startsWith('@') && word.length > 1) {
+          return (
+            <span
+              key={idx}
+              className="inline-flex items-center font-bold text-accent dark:text-accent bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20 mx-0.5 align-middle"
+            >
+              {word}
+            </span>
+          );
+        }
+
+        // #hashtag
+        if (word.startsWith('#') && word.length > 1) {
+          return (
+            <span
+              key={idx}
+              className="font-bold text-accent dark:text-accent hover:underline cursor-pointer inline-block mx-0.5"
+            >
+              <HighlightText text={word} query={searchQuery} />
+            </span>
+          );
+        }
+
+        return <HighlightText key={idx} text={word} query={searchQuery} />;
+      })}
+    </>
+  );
+};
+
 export interface PostFeedProps {
   ads: BulletinAd[];
   loading: boolean;
@@ -154,7 +223,14 @@ export const PostFeed: React.FC<PostFeedProps> = ({
       fallbackCopyText(shareUrl, ad.id);
     }
 
-    fetch(`/api/bulletin/ads/${ad.id}/share`, { method: 'POST' }).catch(() => {});
+    fetch(`/api/bulletin/ads/${ad.id}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender_id: user?.id,
+        sharer_name: user?.name || user?.email || (isRtl ? 'أحد المستخدمين' : 'A user'),
+      }),
+    }).catch(() => {});
   };
 
   const fallbackCopyText = (text: string, adId: number) => {
@@ -188,7 +264,14 @@ export const PostFeed: React.FC<PostFeedProps> = ({
         : `Check out this promotion: "${ad.title}"\n${shareUrl}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
-    fetch(`/api/bulletin/ads/${ad.id}/share`, { method: 'POST' }).catch(() => {});
+    fetch(`/api/bulletin/ads/${ad.id}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender_id: user?.id,
+        sharer_name: user?.name || user?.email || (isRtl ? 'أحد المستخدمين' : 'A user'),
+      }),
+    }).catch(() => {});
   };
 
   const isRequestingRef = useRef(false);
@@ -287,28 +370,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className="w-full rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-theme flex flex-col overflow-hidden touch-pan-y"
           >
-            {/* Creator Ad Insights Drawer Panel (Moved to top) */}
-            <AnimatePresence>
-              {activeInsightsAdId === ad.id && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="border-b border-accent/30 bg-gray-950 p-2 overflow-hidden"
-                >
-                  <AdInsightsTab
-                    adId={ad.id}
-                    isRtl={isRtl}
-                    token={token}
-                    onBoostClick={onBoostAd ? () => onBoostAd(ad) : undefined}
-                    onClose={() => setActiveInsightsAdId(null)}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Header: Author / Merchant Page info */}
-            <div className="p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
+            <div className="p-3 sm:p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
               <div className="flex items-center gap-2.5 min-w-0">
                 <BulletinAvatar
                   src={ad.author_avatar}
@@ -407,22 +470,6 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   </span>
                 )}
 
-                {/* Creator Ad Insights Toggle Button */}
-                {user && (user.id === ad.user_id || user.is_admin) && (
-                  <button
-                    onClick={() => setActiveInsightsAdId(activeInsightsAdId === ad.id ? null : ad.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-theme shadow-sm ${
-                      activeInsightsAdId === ad.id
-                        ? 'bg-accent text-white shadow-none ring-2 ring-accent-400/40'
-                        : 'bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent border border-accent/20'
-                    }`}
-                    title={isRtl ? 'عرض إحصائيات ورؤى الإعلان للمنشئ' : 'View Ad Insights for Creators'}
-                  >
-                    <BarChart2 size={12} className="shrink-0" />
-                    <span className="whitespace-nowrap">{isRtl ? 'إحصائيات' : 'Insights'}</span>
-                  </button>
-                )}
-
                 {/* Edit & Delete Actions for Owners */}
                 {user && (user.id === ad.user_id || user.is_admin) && (
                   <div className="flex items-center gap-1">
@@ -504,46 +551,105 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
             {/* Content: Title, Text & Hashtags */}
             <div className="p-4 space-y-3 flex-1">
-              <h3 className="text-xs font-black text-gray-900 dark:text-gray-100 leading-snug">
-                <HighlightText text={ad.title} query={searchQuery} />
-              </h3>
+              {(() => {
+                const cleanTitle = (ad.title || '').trim();
+                const cleanDesc = (ad.description || '').trim();
 
-              <div className="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed space-y-1">
-                <p className={isLongText && !isTextExpanded ? 'line-clamp-3' : ''}>
-                  <HighlightText text={ad.description} query={searchQuery} />
-                </p>
+                // Determine if title is truly distinct from description
+                const isTitleSameAsDesc = !cleanTitle || !cleanDesc ||
+                  cleanTitle.toLowerCase() === cleanDesc.toLowerCase() ||
+                  cleanDesc.toLowerCase().startsWith(cleanTitle.toLowerCase()) ||
+                  cleanTitle.toLowerCase().startsWith(cleanDesc.toLowerCase());
 
-                {isLongText && (
-                  <button
-                    onClick={() => toggleTextExpand(ad.id)}
-                    className="text-accent font-bold hover:underline inline-flex items-center gap-1 text-[10px]"
-                  >
-                    <span>
-                      {isTextExpanded
-                        ? isRtl
-                          ? 'عرض أقل'
-                          : 'Show Less'
-                        : isRtl
-                        ? 'عرض المزيد...'
-                        : 'See More...'}
-                    </span>
-                    {isTextExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                  </button>
-                )}
-              </div>
+                const showTitleHeader = !isTitleSameAsDesc;
+                const postBodyText = cleanDesc || cleanTitle;
 
-              {ad.hashtags && ad.hashtags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {ad.hashtags.map((tag, idx) => (
-                    <span
-                      key={`tag-${ad.id}-${tag}-${idx}`}
-                      className="text-[10px] font-bold text-accent dark:text-accent hover:underline cursor-pointer"
-                    >
-                      <HighlightText text={tag.startsWith('#') ? tag : `#${tag}`} query={searchQuery} />
-                    </span>
-                  ))}
-                </div>
-              )}
+                return (
+                  <>
+                    {showTitleHeader && (
+                      <h3 className="text-xs font-black text-gray-900 dark:text-gray-100 leading-snug">
+                        {renderRichPostText(cleanTitle, searchQuery)}
+                      </h3>
+                    )}
+
+                    <div className="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed space-y-1">
+                      <div className={isLongText && !isTextExpanded ? 'line-clamp-3' : ''}>
+                        {renderRichPostText(postBodyText, searchQuery)}
+                      </div>
+
+                      {isLongText && (
+                        <button
+                          onClick={() => toggleTextExpand(ad.id)}
+                          className="text-accent font-bold hover:underline inline-flex items-center gap-1 text-[10px]"
+                        >
+                          <span>
+                            {isTextExpanded
+                              ? isRtl
+                                ? 'عرض أقل'
+                                : 'Show Less'
+                              : isRtl
+                              ? 'عرض المزيد...'
+                              : 'See More...'}
+                          </span>
+                          {isTextExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Hashtags separated list */}
+                    {ad.hashtags && ad.hashtags.length > 0 && (() => {
+                      const combinedText = `${cleanTitle} ${cleanDesc}`.toLowerCase();
+                      const uniqueTags = ad.hashtags.filter(tag => {
+                        const clean = tag.replace(/^#/, '').trim().toLowerCase();
+                        return clean && !combinedText.includes(`#${clean}`);
+                      });
+
+                      if (uniqueTags.length === 0) return null;
+
+                      return (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {uniqueTags.map((tag, idx) => (
+                            <span
+                              key={`tag-${ad.id}-${tag}-${idx}`}
+                              className="text-[10px] font-extrabold text-accent dark:text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
+                            >
+                              <HighlightText text={tag.startsWith('#') ? tag : `#${tag}`} query={searchQuery} />
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Tagged users and broadcast mentions separated list */}
+                    {ad.tagged_users && Array.isArray(ad.tagged_users) && ad.tagged_users.length > 0 && (() => {
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {ad.tagged_users.map((tag: any, idx: number) => {
+                            const tagStr = typeof tag === 'object' && tag !== null ? (tag.name || tag.username || tag.id) : String(tag);
+                            if (!tagStr) return null;
+                            const isEveryone = tagStr === '@الجميع' || tagStr === '@everyone' || tagStr === 'الجميع' || tagStr === 'everyone';
+                            const isFollowers = tagStr === '@اشارة للمتابعين' || tagStr === '@followers' || tagStr === 'متابعين' || tagStr === 'followers' || tagStr.includes('متابعين');
+                            return (
+                              <span
+                                key={`tagged-${ad.id}-${idx}`}
+                                className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
+                                  isEveryone
+                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+                                    : isFollowers
+                                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                                    : 'bg-accent/10 text-accent dark:text-accent border-accent/25'
+                                }`}
+                              >
+                                {isEveryone ? '📢 @الجميع' : isFollowers ? '👥 @المتابعين' : `@${tagStr.replace(/^@/, '')}`}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Media Image: Aspect ratio based on format */}
@@ -585,17 +691,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
             {/* Promotional Video / Reels Media Section with Multi-Format Player */}
             {ad.video_url && (
-              <div className="p-3 border-b border-gray-100 dark:border-gray-800/60 bg-black/95 text-white rounded-b-xl">
-                <div className="flex items-center justify-between pb-2 text-[11px] font-extrabold text-accent">
-                  <span className="flex items-center gap-1.5">
-                    <Film size={14} className="animate-pulse text-accent" />
-                    <span>{isRtl ? 'وسائط العرض / الفيديو الترويجي' : 'Media / Promotional Video'}</span>
-                  </span>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent/20 border border-accent/30 text-accent font-mono">
-                    {ad.ad_format === 'reel' ? 'REELS (9:16)' : ad.ad_format === 'story' ? 'STORY (9:16)' : 'VIDEO (16:9)'}
-                  </span>
-                </div>
-
+              <div className="w-full bg-black border-y border-gray-100 dark:border-gray-800/60 overflow-hidden">
                 <MediaFormatPlayer
                   url={getMediaUrl(ad.video_url)}
                   adFormat={ad.ad_format || 'feed'}
@@ -603,242 +699,317 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   title={ad.title}
                   isRtl={isRtl}
                   onOpenReels={() => {
+                    try {
+                      document.querySelectorAll('video').forEach(v => {
+                        try {
+                          v.pause();
+                          v.muted = true;
+                        } catch (_) {}
+                      });
+                    } catch (_) {}
                     if (onOpenReelFeed) {
                       onOpenReelFeed(ad.id);
                     }
                   }}
-                  className={ad.ad_format === 'reel' || ad.ad_format === 'story' ? 'max-h-[520px] mx-auto' : ''}
+                  className={ad.ad_format === 'reel' || ad.ad_format === 'story' ? 'max-h-[520px] mx-auto rounded-none' : 'rounded-none'}
                 />
               </div>
             )}
 
-            {/* Social Engagement Actions Bar */}
-            <div className="p-4 bg-gray-50/60 dark:bg-[#18181b]/60 flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
-              {/* Primary Interaction Group (Likes, Comments, Share, Chat, WhatsApp, Call) */}
-              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-wrap">
-                {/* Like Button */}
-                <button
-                  onClick={() => onToggleLike(ad.id)}
-                  className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition-theme ${
-                    ad.user_has_liked
-                      ? 'text-red-500 bg-red-500/10'
-                      : 'hover:bg-gray-200/60 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-red-500'
-                  }`}
-                  title={isRtl ? 'إعجاب' : 'Like'}
-                >
-                  <Heart size={16} className={ad.user_has_liked ? 'fill-red-500 text-red-500' : ''} />
-                  <span className="text-[11px] font-bold">{ad.likes_count}</span>
-                </button>
-
-                {/* Comments Toggle Button */}
-                <button
-                  onClick={() => onToggleComments(ad.id)}
-                  className="px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-bold hover:bg-gray-200/60 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent transition-theme"
-                  title={isRtl ? 'التعليقات' : 'Comments'}
-                >
-                  <MessageSquare size={16} />
-                  <span className="text-[11px] font-bold">{ad.comments_count}</span>
-                </button>
-
-                {/* Share & Copy Menu Dropdown */}
-                <div className="relative shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveShareMenuId(activeShareMenuId === ad.id ? null : ad.id);
-                    }}
-                    className={`p-1.5 rounded-lg transition-theme flex items-center gap-1 shrink-0 ${
-                      activeShareMenuId === ad.id
-                        ? 'bg-accent text-white'
-                        : 'hover:bg-gray-200/60 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
-                    }`}
-                    title={isRtl ? 'مشاركة ورابط الإعلان' : 'Share & Copy Link'}
-                  >
-                    <Share2 size={16} />
-                  </button>
-
-                  <AnimatePresence>
-                    {activeShareMenuId === ad.id && (
-                      <>
-                        {/* Backdrop to close popup */}
-                        <div
-                          className="fixed inset-0 z-30"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveShareMenuId(null);
-                          }}
-                        />
-
-                        {/* Share Popover Menu */}
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: 6 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 6 }}
-                          transition={{ duration: 0.15 }}
-                          className={`absolute bottom-full mb-2 ${
-                            isRtl ? 'left-0' : 'right-0'
-                          } z-40 w-52 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-1.5 space-y-1 text-xs`}
-                        >
-                          <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/80 text-[10px] font-extrabold text-gray-400 dark:text-gray-500 flex items-center justify-between">
-                            <span>{isRtl ? 'قائمة مشاركة الإعلان' : 'Share Options'}</span>
-                            <span className="text-accent font-bold">#{ad.id}</span>
-                          </div>
-
-                          {/* Copy Link Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyLink(ad);
-                            }}
-                            className={`w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between transition-colors ${
-                              copiedAdId === ad.id
-                                ? 'bg-accent/15 text-accent'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {copiedAdId === ad.id ? (
-                                <Check size={15} className="text-accent shrink-0" />
-                              ) : (
-                                <Copy size={15} className="text-accent shrink-0" />
-                              )}
-                              <span className="text-xs">
-                                {copiedAdId === ad.id
-                                  ? (isRtl ? 'تم نسخ الرابط!' : 'Link Copied!')
-                                  : (isRtl ? 'نسخ رابط الإعلان' : 'Copy Link')}
-                              </span>
-                            </div>
-                            {copiedAdId === ad.id ? (
-                              <span className="text-[10px] font-extrabold bg-accent text-white px-2 py-0.5 rounded-full">
-                                {isRtl ? 'تم' : 'Copied'}
-                              </span>
-                            ) : (
-                              <Link size={12} className="text-gray-400" />
-                            )}
-                          </button>
-
-                          {/* WhatsApp Direct Share */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleWhatsAppShare(ad);
-                              setActiveShareMenuId(null);
-                            }}
-                            className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <Phone size={15} className="shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }} />
-                              <span className="text-xs">{isRtl ? 'مشاركة عبر واتساب' : 'Share to WhatsApp'}</span>
-                            </div>
-                            <span className="text-[10px] font-mono text-gray-400">WA</span>
-                          </button>
-
-                          {/* Native OS / Other Apps Share */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onShare(ad);
-                              setActiveShareMenuId(null);
-                            }}
-                            className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <Share2 size={15} className="text-accent shrink-0" />
-                              <span className="text-xs">{isRtl ? 'تطبيقات أخرى' : 'Other Applications'}</span>
-                            </div>
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Direct Chat / Message Advertiser */}
-                <button
-                  onClick={() => {
-                    setActiveChatAdId(activeChatAdId === ad.id ? null : ad.id);
-                    if (onMessageAdvertiser) onMessageAdvertiser(ad);
-                  }}
-                  disabled={messagingAdId === ad.id}
-                  className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-theme shrink-0 ${
-                    activeChatAdId === ad.id
-                      ? 'bg-accent text-white ring-2 ring-accent-400/50'
-                      : 'bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent border border-accent/20'
-                  }`}
-                  title={isRtl ? 'مراسلة مشفرة للمعلن في محادثة خاصة' : 'Encrypted Message Advertiser'}
-                >
-                  {messagingAdId === ad.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <MessageCircle size={15} />
-                  )}
-                  <span className="text-[11px] whitespace-nowrap hidden sm:inline">
-                    {isRtl ? 'مراسلة' : 'Chat'}
+            {/* ========================================================== */}
+            {/* ROW 1: PAGE / AUTHOR NAME + DYNAMIC CONTACT ACTION BUTTON */}
+            {/* ========================================================== */}
+            <div className="p-3 sm:px-4 bg-gray-50/90 dark:bg-[#18181b]/90 flex items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-800/60">
+              <div 
+                onClick={() => ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)}
+                className={`flex items-center gap-2.5 min-w-0 ${ad.page_id ? 'cursor-pointer group' : ''}`}
+              >
+                <BulletinAvatar
+                  src={ad.author_avatar}
+                  alt={ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
+                  size="sm"
+                  isPage={Boolean(ad.page_id)}
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-black text-gray-900 dark:text-gray-100 truncate group-hover:text-accent transition-colors">
+                      {ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
+                    </span>
+                    <CheckCircle2 size={13} className="text-blue-500 shrink-0" />
+                  </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
+                    {ad.page_id 
+                      ? (isRtl ? 'صفحة تجارية موثقة' : 'Verified Business Page')
+                      : (ad.location_city || (isRtl ? 'معلن معتمد' : 'Verified Poster'))}
                   </span>
-                </button>
+                </div>
+              </div>
 
-                {/* WhatsApp Button */}
-                {ad.whatsapp_number && (
+              {/* Dynamic Contact Action Button (Based on Post Settings) */}
+              <div className="shrink-0">
+                {(ad.whatsapp_number || ad.has_whatsapp_button) ? (
                   <button
                     onClick={(e) => onWhatsApp(ad, e)}
-                    className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shrink-0"
-                    style={{ color: SOCIAL_COLORS.whatsapp.base }}
-                    title={isRtl ? 'تواصل عبر الواتساب' : 'WhatsApp Contact'}
+                    className="px-2.5 py-1 sm:px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-[#25D366] dark:text-[#25D366] border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
+                    title={isRtl ? 'واتساب' : 'WhatsApp'}
                   >
-                    <Phone size={13} />
-                    <span className="hidden sm:inline">واتساب</span>
+                    <Phone size={13} className="text-[#25D366] shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'واتساب' : 'WhatsApp'}</span>
                   </button>
-                )}
-
-                {/* Direct Phone Call Button */}
-                {ad.phone_number && (
+                ) : ad.phone_number ? (
                   <a
                     href={`tel:${ad.phone_number}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shrink-0"
-                    title={isRtl ? `اتصال مباشر: ${ad.phone_number}` : `Call: ${ad.phone_number}`}
+                    className="px-2.5 py-1 sm:px-3 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-600/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
+                    title={isRtl ? `اتصال: ${ad.phone_number}` : `Call: ${ad.phone_number}`}
                   >
-                    <PhoneCall size={13} />
-                    <span className="hidden sm:inline">{isRtl ? 'اتصال' : 'Call'}</span>
+                    <PhoneCall size={13} className="shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'اتصال' : 'Call'}</span>
                   </a>
-                )}
-              </div>
-
-              {/* Secondary Utility Group: Boost (ترويج / تمويل) & Save (حفظ) */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* Boost / Promote Button */}
-                {onBoostAd && (
+                ) : (
                   <button
-                    onClick={() => onBoostAd(ad)}
-                    className={`px-2.5 py-1.5 rounded-lg font-black text-[11px] flex items-center gap-1.5 border transition-theme shadow-none active:scale-95 ${
-                      ad.is_boosted
-                        ? 'bg-amber-500/20 text-amber-500 border-amber-500/40 hover:bg-amber-500/30'
-                        : 'bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 hover:from-amber-500/25 hover:to-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    onClick={() => {
+                      setActiveChatAdId(activeChatAdId === ad.id ? null : ad.id);
+                      if (onMessageAdvertiser) onMessageAdvertiser(ad);
+                    }}
+                    disabled={messagingAdId === ad.id}
+                    className={`px-2.5 py-1 sm:px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95 ${
+                      activeChatAdId === ad.id
+                        ? 'bg-accent text-white ring-2 ring-accent-400/50'
+                        : 'bg-accent text-white hover:bg-accent/90'
                     }`}
-                    title={isRtl ? 'تمويل وتنشيط الإعلان لزيادة الوصول' : 'Boost Post for Higher Visibility'}
+                    title={isRtl ? 'مراسلة' : 'Message'}
                   >
-                    <Rocket size={13} className="shrink-0 text-amber-500" />
-                    <span className="whitespace-nowrap font-bold">
-                      {ad.is_boosted ? (isRtl ? 'تمديد' : 'Extend') : (isRtl ? 'ترويج' : 'Boost')}
-                    </span>
-                  </button>
-                )}
-
-                {/* Save / Bookmark Button */}
-                {user && onToggleSave && (
-                  <button
-                    onClick={() => onToggleSave(ad)}
-                    className={`p-1.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-theme border ${
-                      ad.user_has_saved
-                        ? 'bg-accent text-white border-accent shadow-none'
-                        : 'bg-white dark:bg-[#1a1a1c] text-gray-500 hover:text-accent hover:bg-accent/10 dark:hover:bg-accent/10 border-gray-200 dark:border-gray-800 hover:border-accent/30'
-                    }`}
-                    title={ad.user_has_saved ? (isRtl ? 'إزالة من المحفوظات' : 'Remove from Saved') : (isRtl ? 'حفظ في المحفوظات' : 'Save to Board')}
-                  >
-                    <Bookmark size={16} className={ad.user_has_saved ? "fill-current" : ""} />
+                    {messagingAdId === ad.id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <MessageCircle size={13} className="shrink-0" />
+                    )}
+                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'مراسلة' : 'Message'}</span>
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* ========================================================== */}
+            {/* ROW 2: BOOST (PROMOTION) BUTTON + INSIGHTS (STATS) BUTTON */}
+            {/* ========================================================== */}
+            <div className="py-1 px-3 sm:px-4 bg-transparent flex items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-800/60">
+              {/* Boost / Promote Button */}
+              {onBoostAd ? (
+                <button
+                  onClick={() => onBoostAd(ad)}
+                  className="flex-1 py-1 px-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all text-amber-500 hover:text-amber-400 active:scale-95 cursor-pointer"
+                  title={isRtl ? 'ترويج' : 'Boost'}
+                >
+                  <Rocket size={13} className="shrink-0 text-amber-500 animate-pulse" />
+                  <span className="truncate text-[11px] sm:text-xs">
+                    {ad.is_boosted ? (isRtl ? 'تمديد 🚀' : 'Extend 🚀') : (isRtl ? 'ترويج' : 'Boost')}
+                  </span>
+                </button>
+              ) : null}
+
+              {/* Vertical divider */}
+              <div className="w-px h-3.5 bg-gray-200 dark:bg-gray-800 shrink-0" />
+
+              {/* Insights / Stats Button (الرؤى) */}
+              <button
+                onClick={() => setActiveInsightsAdId(activeInsightsAdId === ad.id ? null : ad.id)}
+                className={`flex-1 py-1 px-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+                  activeInsightsAdId === ad.id
+                    ? 'text-accent font-black'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-accent'
+                }`}
+                title={isRtl ? 'الرؤى' : 'Insights'}
+              >
+                <BarChart2 size={13} className={`shrink-0 ${activeInsightsAdId === ad.id ? 'text-accent' : 'text-gray-500 dark:text-gray-400'}`} />
+                <span className="truncate text-[11px] sm:text-xs">{isRtl ? 'الرؤى' : 'Insights'}</span>
+              </button>
+            </div>
+
+            {/* Insights Drawer (Opens right under Row 2) */}
+            <AnimatePresence>
+              {activeInsightsAdId === ad.id && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-accent/30 bg-gray-950 p-2 overflow-hidden"
+                >
+                  <AdInsightsTab
+                    adId={ad.id}
+                    isRtl={isRtl}
+                    token={token}
+                    onBoostClick={onBoostAd ? () => onBoostAd(ad) : undefined}
+                    onClose={() => setActiveInsightsAdId(null)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ========================================================== */}
+            {/* ROW 3: SOCIAL ENGAGEMENT BUTTONS (LIKE, COMMENT, SHARE, SAVE) */}
+            {/* ========================================================== */}
+            <div className="p-2.5 sm:px-4 bg-gray-50/70 dark:bg-[#151518]/70 flex items-center justify-between gap-1 sm:gap-2 text-xs text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-gray-800/60">
+              {/* Like Button */}
+              <button
+                onClick={() => onToggleLike(ad.id)}
+                className={`flex-1 py-1.5 px-2 rounded-xl flex items-center justify-center gap-1.5 font-bold transition-all active:scale-95 ${
+                  ad.user_has_liked
+                    ? 'text-red-500 bg-red-500/10 font-black'
+                    : 'hover:bg-gray-200/70 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-red-500'
+                }`}
+                title={isRtl ? 'إعجاب' : 'Like'}
+              >
+                <Heart size={16} className={ad.user_has_liked ? 'fill-red-500 text-red-500' : ''} />
+                <span className="text-xs font-bold">{ad.likes_count > 0 ? ad.likes_count : (isRtl ? 'إعجاب' : 'Like')}</span>
+              </button>
+
+              {/* Comments Toggle Button */}
+              <button
+                onClick={() => onToggleComments(ad.id)}
+                className={`flex-1 py-1.5 px-2 rounded-xl flex items-center justify-center gap-1.5 font-bold transition-all active:scale-95 ${
+                  expandedAdId === ad.id
+                    ? 'bg-accent/10 text-accent font-black'
+                    : 'hover:bg-gray-200/70 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent'
+                }`}
+                title={isRtl ? 'التعليقات' : 'Comments'}
+              >
+                <MessageSquare size={16} />
+                <span className="text-xs font-bold">{ad.comments_count > 0 ? ad.comments_count : (isRtl ? 'تعليق' : 'Comment')}</span>
+              </button>
+
+              {/* Share & Copy Menu Dropdown */}
+              <div className="relative flex-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveShareMenuId(activeShareMenuId === ad.id ? null : ad.id);
+                  }}
+                  className={`w-full py-1.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 font-bold active:scale-95 ${
+                    activeShareMenuId === ad.id
+                      ? 'bg-accent text-white font-black'
+                      : 'hover:bg-gray-200/70 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent'
+                  }`}
+                  title={isRtl ? 'مشاركة ورابط الإعلان' : 'Share & Copy Link'}
+                >
+                  <Share2 size={16} />
+                  <span className="text-xs font-bold">{isRtl ? 'مشاركة' : 'Share'}</span>
+                </button>
+
+                <AnimatePresence>
+                  {activeShareMenuId === ad.id && (
+                    <>
+                      {/* Backdrop to close popup */}
+                      <div
+                        className="fixed inset-0 z-30"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveShareMenuId(null);
+                        }}
+                      />
+
+                      {/* Share Popover Menu */}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 6 }}
+                        transition={{ duration: 0.15 }}
+                        className={`absolute bottom-full mb-2 ${
+                          isRtl ? 'left-0' : 'right-0'
+                        } z-40 w-52 bg-white dark:bg-[#1f1f23] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-1.5 space-y-1 text-xs`}
+                      >
+                        <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/80 text-[10px] font-extrabold text-gray-400 dark:text-gray-500 flex items-center justify-between">
+                          <span>{isRtl ? 'قائمة مشاركة الإعلان' : 'Share Options'}</span>
+                          <span className="text-accent font-bold">#{ad.id}</span>
+                        </div>
+
+                        {/* Copy Link Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyLink(ad);
+                          }}
+                          className={`w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between transition-colors ${
+                            copiedAdId === ad.id
+                              ? 'bg-accent/15 text-accent'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            {copiedAdId === ad.id ? (
+                              <Check size={15} className="text-accent shrink-0" />
+                            ) : (
+                              <Copy size={15} className="text-accent shrink-0" />
+                            )}
+                            <span className="text-xs">
+                              {copiedAdId === ad.id
+                                ? (isRtl ? 'تم نسخ الرابط!' : 'Link Copied!')
+                                : (isRtl ? 'نسخ رابط الإعلان' : 'Copy Link')}
+                            </span>
+                          </div>
+                          {copiedAdId === ad.id ? (
+                            <span className="text-[10px] font-extrabold bg-accent text-white px-2 py-0.5 rounded-full">
+                              {isRtl ? 'تم' : 'Copied'}
+                            </span>
+                          ) : (
+                            <Link size={12} className="text-gray-400" />
+                          )}
+                        </button>
+
+                        {/* WhatsApp Direct Share */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleWhatsAppShare(ad);
+                            setActiveShareMenuId(null);
+                          }}
+                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Phone size={15} className="shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }} />
+                            <span className="text-xs">{isRtl ? 'مشاركة عبر واتساب' : 'Share to WhatsApp'}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-gray-400">WA</span>
+                        </button>
+
+                        {/* Native OS / Other Apps Share */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onShare(ad);
+                            setActiveShareMenuId(null);
+                          }}
+                          className="w-full px-3 py-2.5 rounded-xl text-start font-bold flex items-center justify-between hover:bg-accent/10 hover:text-accent transition-colors text-gray-700 dark:text-gray-200"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Share2 size={15} className="text-accent shrink-0" />
+                            <span className="text-xs">{isRtl ? 'تطبيقات أخرى' : 'Other Applications'}</span>
+                          </div>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Save / Bookmark Button */}
+              {user && onToggleSave && (
+                <button
+                  onClick={() => onToggleSave(ad)}
+                  className={`py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all border shrink-0 active:scale-95 ${
+                    ad.user_has_saved
+                      ? 'bg-accent text-white border-accent font-bold'
+                      : 'bg-white dark:bg-[#1a1a1c] text-gray-500 hover:text-accent hover:bg-accent/10 dark:hover:bg-accent/10 border-gray-200 dark:border-gray-800 hover:border-accent/30'
+                  }`}
+                  title={ad.user_has_saved ? (isRtl ? 'إزالة من المحفوظات' : 'Remove from Saved') : (isRtl ? 'حفظ في المحفوظات' : 'Save to Board')}
+                >
+                  <Bookmark size={15} className={ad.user_has_saved ? "fill-current" : ""} />
+                  <span className="text-xs font-bold hidden sm:inline">
+                    {ad.user_has_saved ? (isRtl ? 'محفوظ' : 'Saved') : (isRtl ? 'حفظ' : 'Save')}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Interactive Comments Drawer */}

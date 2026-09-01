@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { useConfirm } from '../context/ConfirmContext';
 import {
   Megaphone,
   Plus,
@@ -107,6 +108,7 @@ export const AdsManagementView: React.FC<{
   const [rejectionReason, setRejectionReason] = useState<string>('');
   const [refundOnReject, setRefundOnReject] = useState<boolean>(true);
   const [selectedBulletinIds, setSelectedBulletinIds] = useState<number[]>([]);
+  const confirm = useConfirm();
   const [stoppingAdId, setStoppingAdId] = useState<number | null>(null);
   const [stopReason, setStopReason] = useState<string>('');
   const [economySettings, setEconomySettings] = useState({
@@ -416,7 +418,12 @@ export const AdsManagementView: React.FC<{
   };
 
   const handleDeleteGift = async (id: number) => {
-    if (!window.confirm('Are you sure?')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Gift',
+      description: 'Are you sure you want to delete this gift?',
+      variant: 'danger'
+    });
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/admin/gifts/${id}`, {
         method: 'DELETE',
@@ -590,9 +597,12 @@ export const AdsManagementView: React.FC<{
   };
 
   const handleDeleteBulletinAd = async (id: number) => {
-    if (!window.confirm(isRtl ? 'هل أنت تأكد من حذف هذا الإعلان نهائياً؟' : 'Are you sure you want to delete this ad?')) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: isRtl ? 'حذف الإعلان' : 'Delete Ad',
+      description: isRtl ? 'هل أنت متأكد من حذف هذا الإعلان نهائياً؟' : 'Are you sure you want to delete this ad permanently?',
+      variant: 'danger'
+    });
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/bulletin/admin/${id}`, {
         method: 'DELETE',
@@ -616,9 +626,12 @@ export const AdsManagementView: React.FC<{
       toast.error(isRtl ? 'الرجاء تحديد إعلان واحد على الأقل' : 'Please select at least one ad');
       return;
     }
-    if (!window.confirm(isRtl ? `هل أنت متأكد من حذف ${idsToDelete.length} إعلان المحددة نهائياً؟` : `Are you sure you want to delete ${idsToDelete.length} selected ads permanently?`)) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: isRtl ? 'حذف الإعلانات المحددة' : 'Delete Selected Ads',
+      description: isRtl ? `هل أنت متأكد من حذف ${idsToDelete.length} إعلان محدد نهائياً؟` : `Are you sure you want to delete ${idsToDelete.length} selected ads permanently?`,
+      variant: 'danger'
+    });
+    if (!isConfirmed) return;
     try {
       const res = await fetch('/api/bulletin/admin/bulk-delete', {
         method: 'POST',
@@ -996,9 +1009,12 @@ export const AdsManagementView: React.FC<{
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm(isRtl ? 'هل أنت تأكد من حذف هذا الإعلان؟' : 'Are you sure you want to delete this ad?')) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: isRtl ? 'حذف الإعلان' : 'Delete Ad',
+      description: isRtl ? 'هل أنت متأكد من حذف هذا الإعلان؟' : 'Are you sure you want to delete this ad?',
+      variant: 'danger'
+    });
+    if (!isConfirmed) return;
 
     try {
       const res = await fetch(`/api/ads/admin/delete/${id}`, {
@@ -3537,7 +3553,7 @@ export const AdsManagementView: React.FC<{
             </div>
             
             <p className="text-[10px] text-center text-[var(--text-muted)] italic">
-              {isRtl ? 'تم إرسال الرمز إلى بريدك الإلكتروني المسجل (محاكاة)' : 'Code has been sent to your registered email (Simulated)'}
+              {isRtl ? 'تم إرسال الرمز إلى بريدك الإلكتروني المسجل' : 'Code has been sent to your registered email'}
             </p>
           </div>
         </div>

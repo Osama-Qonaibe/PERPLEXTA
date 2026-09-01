@@ -494,7 +494,16 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                       notifications.map((notif, nIdx) => (
                         <div
                           key={`notif-${notif.id || nIdx}-${nIdx}`}
-                          onClick={() => { if (!notif.is_read) markAsRead(notif.id); }}
+                          onClick={() => {
+                            if (!notif.is_read) markAsRead(notif.id);
+                            if (notif.metadata?.ad_id) {
+                              navigate(`/bulletin/${notif.metadata.ad_id}`);
+                              setIsNotifOpen(false);
+                            } else if (notif.metadata?.inquiry_id) {
+                              navigate(`/bulletin/${notif.metadata.ad_id || ''}`);
+                              setIsNotifOpen(false);
+                            }
+                          }}
                           className={`w-full p-2.5 sm:p-4 flex gap-2.5 sm:gap-3 text-right hover:bg-[var(--bg-primary)] transition-theme border-b border-[var(--border-main)] last:border-0 group relative cursor-pointer ${
                             !notif.is_read ? 'bg-accent/[0.03] border-r-2 border-r-accent-500' : ''
                           }`}

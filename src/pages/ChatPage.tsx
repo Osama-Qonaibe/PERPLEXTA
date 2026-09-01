@@ -658,24 +658,26 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             </div>
           )}
 
-          <video 
-            ref={videoRef}
-            src={cleanDisplayUrl}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedData={() => {
-              setIsVideoLoaded(true);
-            }}
-            onLoadedMetadata={() => {
-              setIsVideoLoaded(true);
-              handleLoadedMetadata();
-            }}
-            onEnded={() => setIsPlaying(false)}
-            onClick={() => setIsPreviewOpen(true)}
-            className={`block w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`} 
-            loop
-            playsInline
-            muted={isMuted}
-          />
+          {cleanDisplayUrl && (
+            <video 
+              ref={videoRef}
+              src={cleanDisplayUrl}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedData={() => {
+                setIsVideoLoaded(true);
+              }}
+              onLoadedMetadata={() => {
+                setIsVideoLoaded(true);
+                handleLoadedMetadata();
+              }}
+              onEnded={() => setIsPlaying(false)}
+              onClick={() => setIsPreviewOpen(true)}
+              className={`block w-full h-full object-cover cursor-pointer transition-opacity duration-300 ${isVideoLoaded ? 'opacity-100' : 'opacity-0'}`} 
+              loop
+              playsInline
+              muted={isMuted}
+            />
+          )}
 
           {!isVideoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/95 pointer-events-none z-20">
@@ -816,19 +818,21 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                   className="relative max-w-[90vw] max-h-[75vh] aspect-video flex items-center justify-center transition-shadow duration-500 bg-black rounded-[4px] border border-zinc-800/80 shadow-[0_25px_70px_-10px_rgba(0,0,0,0.85)]"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <video
-                    ref={previewVideoRef}
-                    src={cleanDisplayUrl}
-                    onTimeUpdate={handlePreviewTimeUpdate}
-                    onLoadedMetadata={handlePreviewLoadedMetadata}
-                    onEnded={() => setIsPreviewPlaying(false)}
-                    onClick={togglePreviewPlay}
-                    className="max-w-full max-h-[70vh] rounded-[4px] object-contain block focus:outline-none"
-                    loop
-                    preload="auto"
-                    muted={isPreviewMuted}
-                    playsInline
-                  />
+                  {cleanDisplayUrl && (
+                    <video
+                      ref={previewVideoRef}
+                      src={cleanDisplayUrl}
+                      onTimeUpdate={handlePreviewTimeUpdate}
+                      onLoadedMetadata={handlePreviewLoadedMetadata}
+                      onEnded={() => setIsPreviewPlaying(false)}
+                      onClick={togglePreviewPlay}
+                      className="max-w-full max-h-[70vh] rounded-[4px] object-contain block focus:outline-none"
+                      loop
+                      preload="auto"
+                      muted={isPreviewMuted}
+                      playsInline
+                    />
+                  )}
 
                   <div 
                     onClick={togglePreviewPlay}

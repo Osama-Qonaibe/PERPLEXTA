@@ -9,6 +9,7 @@ import { useAppContext } from '../context/AppContext';
 interface Story {
   id: number;
   user_id: number;
+  author_id?: number;
   author_name: string;
   author_avatar: string;
   title: string;
@@ -81,11 +82,13 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
   }, [isOpen, initialStoryIndex]);
 
   useEffect(() => {
-    if (!isOpen || !currentStory) return;
-    
-    if (currentStory.id && onStoryViewed) {
+    if (isOpen && currentStory?.id && onStoryViewed) {
       onStoryViewed(currentStory.id);
     }
+  }, [isOpen, currentStory?.id]);
+
+  useEffect(() => {
+    if (!isOpen || !currentStory) return;
 
     const shouldPause = isPaused || isZoomed;
 
@@ -281,13 +284,17 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
 
       if (res.ok) {
         toast.success(isRtl ? 'تم حذف القصة بنجاح' : 'Story deleted successfully');
-        if (onStoryDeleted) onStoryDeleted(currentStory.id);
         
-        if (stories.length > 1) {
-          handleNext();
-        } else {
+        if (stories.length <= 1) {
           onClose();
+        } else {
+          if (currentIndex === stories.length - 1) {
+            setCurrentIndex(prev => prev - 1);
+          }
+          setProgress(0);
         }
+        
+        if (onStoryDeleted) onStoryDeleted(currentStory.id);
       } else {
         const data = await res.json();
         toast.error(data.error || (isRtl ? 'فشل حذف القصة' : 'Failed to delete story'));
@@ -302,7 +309,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
     }
   };
 
-  const isOwnStory = currentUser && (currentStory.user_id === currentUser.id || currentUser.role === 'admin');
+  const isOwnStory = currentUser && ((currentStory.user_id === currentUser.id) || (currentStory.author_id === currentUser.id) || currentUser.role === 'admin');
   const authorName = currentStory.page_id ? currentStory.page_name : currentStory.author_name;
   const authorAvatar = currentStory.page_id ? currentStory.page_avatar : currentStory.author_avatar;
 
@@ -312,9 +319,33 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
+        className="fixed inset-0 z-[999] bg-zinc-950 flex items-center justify-center overflow-hidden"
       >
-        <div className="relative w-full h-full max-w-[500px] bg-black shadow-2xl overflow-hidden">
+        {/* Ambient Blurred Backdrop for Desktop */}
+        <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none z-0 select-none">
+          {getMediaUrl(currentStory.video_url) ? (
+            <video
+              key={`ambient-vid-${currentStory.id}`}
+              src={getMediaUrl(currentStory.video_url)}
+              poster={getMediaUrl(currentStory.image_url)}
+              muted
+              autoPlay
+              loop
+              playsInline
+              className="ambient-video w-full h-full object-cover scale-125 blur-3xl opacity-30 filter saturate-150 brightness-75"
+            />
+          ) : currentStory.image_url ? (
+            <img
+              key={`ambient-img-${currentStory.id}`}
+              src={getMediaUrl(currentStory.image_url)}
+              alt="Ambient"
+              className="ambient-video w-full h-full object-cover scale-125 blur-3xl opacity-30 filter saturate-150 brightness-75"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-zinc-950/85 to-black/95 backdrop-blur-2xl" />
+        </div>
+
+        <div className="relative w-full h-full md:w-auto md:aspect-[9/16] md:max-w-none md:h-[95vh] md:rounded-[2rem] bg-black shadow-2xl overflow-hidden z-10 border-0 md:border md:border-white/10 flex items-center justify-center">
           {/* Progress Bars (Persistent) */}
           <div className="absolute top-4 inset-x-0 z-50 flex items-center gap-1.5 px-4 pointer-events-none">
             {stories.map((story, idx) => (
@@ -359,16 +390,26 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
               >
                 {/* Media Container with Zoom Scale & Transform */}
                 <div
-                  className="w-full h-full will-change-transform origin-center transition-transform duration-100 ease-out"
+                  className="relative w-full h-full will-change-transform origin-center transition-transform duration-100 ease-out bg-black flex items-center justify-center overflow-hidden"
                   style={{
                     transform: `scale(${zoomScale}) translate(${zoomTranslate.x}px, ${zoomTranslate.y}px)`,
                   }}
                 >
-                  {currentStory.video_url ? (
+                  {/* Blurred Background */}
+                  <div 
+                    className="absolute inset-0 z-0 opacity-40 blur-2xl scale-110 pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getMediaUrl(currentStory.video_url ? currentStory.image_url || '' : currentStory.image_url)})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+
+                  {getMediaUrl(currentStory.video_url) ? (
                     <video
                       ref={videoRef}
                       src={getMediaUrl(currentStory.video_url)}
-                      className="w-full h-full object-cover"
+                      className="relative z-10 w-full h-full object-contain max-h-[100dvh]"
                       playsInline
                       autoPlay
                       muted={isMuted}
@@ -382,7 +423,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                     <img
                       src={getMediaUrl(currentStory.image_url)}
                       alt="Story"
-                      className="w-full h-full object-cover"
+                      className="relative z-10 w-full h-full object-contain max-h-[100dvh]"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.currentTarget;

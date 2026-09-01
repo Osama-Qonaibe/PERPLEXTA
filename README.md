@@ -106,12 +106,60 @@ Purged all temporary testing scripts, database patches, and transitional configu
 * Cleared repair, patch, and transition scripts: `fix-db.js`, `fix-db2.js`, `fix-db-plans.js`, `move_effect.cjs`, and `patch_reels_start_id.sh`.
 * Removed draft documents and local legacy guides: `auth.md`.
 
-### 2. Full-Stack Type Alignment & Bug Fixes
+### 3. Full-Stack Type Alignment & Bug Fixes
 * **Adaptive Connection Pool Sizing:** Engineered a dynamic pool size calculator inside `/server/db/index.ts` that detects `NODE_ENV === 'production'` and automatically clamps default database pool connections from `20` down to `10` across our isolated Core, Ledger, External, and Security connection pools. This completely shields the Postgres cloud server from connection exhaustion and "Too many connections" errors during rapid horizontal autoscale expansion on live servers (such as Cloud Run or AWS ECS).
 * **Dynamic Socket.io Loading Bridge:** Transitioned the core `createNotification` service from static `io` imports to dynamic execution imports (`await import('../config/socket.js')`). This completely resolves potential ESM uninitialized import states during initial system boots on production servers.
 * **Universal Async Loading Indicators:** Integrated a native `.loading(message, title, options)` method directly into the `NotificationContext` type and custom `toast` helpers. This ensures that operations across the Ads Management, Video Trimming, and Wallet panels can easily trigger and control state loaders.
 * **Optional Description Parsing:** Added support for the `description` field directly into `NotificationOptions` and `NotificationItem` to accept custom metadata payloads seamlessly, resolving strict type checks on multiple components.
 * **Strict Schema Castings:** Fixed numerical limit assignment within the `PlansSubscriptionsView` admin component, correcting strict typing for quota configurations (supporting numbers, booleans, and `"unlimited"` tokens cleanly).
+
+---
+
+## 🗺️ Architectural Roadmap: Quad-Database Studio & High-Precision Infrastructure (Upcoming Phase)
+
+To uphold the sovereign engineering decree of PERPLEXTA ("Only Evolve, Never Rewrite"), the next development milestone expands our administration command center with dedicated introspection and maintenance tooling without disturbing existing infrastructure:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│               PERPLEXTA QUAD-DATABASE SCHEMA STUDIO & INFRASTRUCTURE ROADMAP          │
+├────────────────────┬────────────────────┬────────────────────┬─────────────────────────┤
+│  🏢 Core Database  │  💰 Ledger DB      │  🌐 External DB    │  🛡️ Security DB        │
+│  (Operational)     │  (Append-Only)     │  (Integrations)    │  (Forensic Audit/WAF)   │
+├────────────────────┴────────────────────┴────────────────────┴─────────────────────────┤
+│  • 1-Click Vacuum & Reindex Optimization                                               │
+│  • Live Connection Pool Telemetry & Latency Diagnostics                                │
+│  • Visual Schema & Table Size Explorer with Row-Count Telemetry                        │
+│  • Dedicated Local PostgreSQL Unix-Socket Support & RAM Buffer Tuning                  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Dedicated Quad-Database Studio (Additive Tab Layout)
+* **Zero-Rewrite Non-Destructive Extension:** The existing Database Management cards (`Test Connection`, `Save & Encrypt`, `Migrations / Schema Builder`, and `Disaster Recovery`) remain fully untouched and active. A new secondary tab (`Schema Studio & Live Health`) will be introduced alongside the existing panel.
+* **Four-Database Segregated Explorer:** Independent exploratory tabs for the 4 dedicated database instances:
+  1. `Core Database` (`perplexta_core`): Operational chat logs, memory distillation records, uploaded files catalog, and system settings.
+  2. `Finance & Ledger Database` (`perplexta_ledger`): Append-only transactional journals, user wallet balances, and referral tree graphs.
+  3. `External & Integration Database` (`perplexta_external`): Dynamic API registries, third-party provider webhooks, and tool mappings.
+  4. `Security & Audit Database` (`perplexta_security`): Forensic activity audit trails, IP blacklist rules, and rate-limiting breach telemetry.
+* **Granular Table Telemetry:** Displays physical table sizes on disk (`pg_total_relation_size`), live tuple/row counts, index sizes, and bloat metrics directly from `pg_stat_user_tables`.
+* **1-Click Self-Healing & Optimization Actions:**
+  * `VACUUM ANALYZE`: Cleans dead row versions and refreshes optimizer statistics.
+  * `REINDEX TABLE`: Rebuilds degraded b-tree indexes for accelerated query lookups.
+  * `Integrity Check`: Runs non-destructive consistency sweeps across relational keys.
+
+### 2. Local Dedicated PostgreSQL Tuning & UNIX Domain Socket Bridge
+* **Zero-SSL Handshake Optimization:** Automatic detection of `localhost` / `127.0.0.1` instances to bypass TLS overhead while maintaining strict SSL enforcement on cloud instances (Neon, AWS RDS, Supabase).
+* **UNIX Domain Socket Routing:** Optional routing through `/var/run/postgresql/.s.PGSQL.5432` for local dedicated servers, bypassing the TCP/IP stack to increase internal data throughput by up to 35%.
+* **Memory & Buffer Tuning Presets:** Pre-calculated configurations for local PostgreSQL servers allocating 25% RAM to `shared_buffers`, 75% to `effective_cache_size`, and optimal `work_mem` thresholds for analytical indexing.
+
+### 3. Universal Multi-Format Media Player & Cinematic Social Engine
+* **Purge of Simulated/Debug Overlays:** Completely removed all development simulation toggles (such as `Cover 🔄`, `auto 🔄`, `FEED ✨`, and `قص ملائم` labels) from video frames, elevating the player into a distraction-free, cinematic viewing experience.
+* **Native Aspect-Ratio Multi-Format Support:**
+  * **Square Feed (1:1):** Classic high-density social media video posts (`aspect-square`).
+  * **Vertical Reels & Stories (9:16):** Full-length immersive mobile video formats (`aspect-[9/16]`) with fullscreen expansion.
+  * **Portrait Posts (4:5):** High-conversion vertical newsfeed videos (`aspect-[4/5]`).
+  * **Widescreen Video (16:9):** Cinematic in-stream landscape video units (`aspect-video`).
+  * **Ultra-Wide Banners (21:9):** Header & featured promotional media banners (`aspect-[21/9]`).
+* **Adaptive Playback & Intelligent Idle Fade:** Control bars and scrubber timelines seamlessly fade during active playback, reappearing smoothly on touch or hover without layout jumping or duplicate notifications.
 
 ---
 

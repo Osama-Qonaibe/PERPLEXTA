@@ -55,17 +55,17 @@ export function getAspectRatioClass(aspectRatio?: string, adFormat?: string): st
   if (aspectRatio === '9:16' || adFormat === 'reel' || adFormat === 'story') {
     return 'aspect-[9/16]';
   }
-  if (aspectRatio === '16:9' || adFormat === 'video' || adFormat === 'instream') {
-    return 'aspect-video';
-  }
-  if (aspectRatio === '1:1' || adFormat === 'sidebar') {
+  if (aspectRatio === '1:1' || adFormat === 'sidebar' || adFormat === 'post' || adFormat === 'square') {
     return 'aspect-square';
   }
-  if (aspectRatio === '4:5') {
+  if (aspectRatio === '4:5' || adFormat === 'portrait') {
     return 'aspect-[4/5]';
   }
   if (aspectRatio === '21:9' || adFormat === 'banner' || adFormat === 'header_banner') {
     return 'aspect-[21/9]';
+  }
+  if (aspectRatio === '16:9' || adFormat === 'video' || adFormat === 'instream') {
+    return 'aspect-video';
   }
   return 'aspect-video';
 }

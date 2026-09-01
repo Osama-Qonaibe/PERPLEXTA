@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { useConfirm } from '../context/ConfirmContext';
 import {
   Users,
   Search,
@@ -87,7 +88,8 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'wallet' | 'plan' | 'activity'>('profile');
-
+  const confirmDialog = useConfirm();
+  
   // Sub-data states for Selected User
   const [selectedUserUsage, setSelectedUserUsage] = useState<any>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
@@ -509,7 +511,13 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
   };
 
   const handleDeleteKYCSelfie = async (userId: string) => {
-    if (!confirm(isRtl ? 'هل أنت متأكد من حذف صورة التوثيق؟' : 'Are you sure you want to delete this selfie?')) return;
+    const isConfirmed = await confirmDialog({
+      title: isRtl ? 'حذف صورة التوثيق' : 'Delete KYC Selfie',
+      description: isRtl ? 'هل أنت متأكد من حذف صورة التوثيق؟' : 'Are you sure you want to delete this selfie?',
+      variant: 'danger',
+      confirmLabel: isRtl ? 'حذف' : 'Delete'
+    });
+    if (!isConfirmed) return;
     setIsUpdating(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}/kyc-selfie`, {
@@ -716,14 +724,16 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
       return;
     }
 
-    if (
-      !confirm(
-        isRtl
-          ? 'هل أنت متأكد من حذف هذا المستخدم نهائياً؟ سيتم إلغاء كافة بياناته ورصيده بصفة قطعية.'
-          : 'Are you sure you want to delete this user? All their data and wallet will be permanently removed.'
-      )
-    )
-      return;
+    const isConfirmed = await confirmDialog({
+      title: isRtl ? 'حذف المستخدم' : 'Delete User',
+      description: isRtl 
+        ? 'هل أنت متأكد من حذف هذا المستخدم نهائياً؟ سيتم إلغاء كافة بياناته ورصيده بصفة قطعية.'
+        : 'Are you sure you want to delete this user? All their data and wallet will be permanently removed.',
+      variant: 'danger',
+      confirmLabel: isRtl ? 'حذف نهائياً' : 'Delete Permanently'
+    });
+
+    if (!isConfirmed) return;
 
     setIsUpdating(true);
     try {

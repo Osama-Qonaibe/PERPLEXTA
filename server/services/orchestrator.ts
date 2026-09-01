@@ -10,7 +10,7 @@ import { performPerplextaSearch } from './search.js';
 import { getAppName } from './system.js';
 import { extractFollowUps, normalizeArabicNumerals } from '../utils/helpers.js';
 import { SEARCH_KEYWORDS } from '../config/searchKeywords.js';
-import { getProtocolString } from '../config/protocol.js';
+import { buildSystemPrompt } from '../config/protocol.js';
 import { executeWithBillingMiddleware } from './billing.js';
 import { getEconomySettings } from './wallet.js';
 import { OrchestratorRegistry } from './orchestratorRegistry.js';
@@ -287,7 +287,7 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
 
   const userLang = user?.language || 'en';
   const appName = getAppName(userLang);
-  const protocol = getProtocolString(appName);
+  const protocol = buildSystemPrompt(appName, toolIdStr, userLang);
 
   const chatWantsSearch = isChatOnly && !isSocialGreeting(cleanUserPrompt);
 
@@ -484,13 +484,9 @@ You are equipped with a LIVE WEB CONTEXT block below.
     refinedSystemPromptSegment = refinedSystemPromptSegment ? `${refinedSystemPromptSegment}\n${searchInstructions}` : searchInstructions;
   }
 
-  const toolBoundary = isChatOnly
-    ? `[TOOL: chat]: No direct code blocks. For code, output specific En/Ar workstation disclosure.`
-    : `[TOOL: ${toolIdStr}]`;
-
   const finalSystemPrompt = `${protocol}
 [OBJECTIVE]: ${taskDesc || 'Professional precision execution.'}
-${toolBoundary}${contextSummary}${userMemoriesStr}
+${contextSummary}${userMemoriesStr}
 ${refinedSystemPromptSegment}`.trim();
 
   const modelsToTry = [

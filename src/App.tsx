@@ -5,6 +5,7 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import { VideoResourceProvider } from './context/VideoResourceContext';
 import { PwaProvider } from './context/PwaContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 
@@ -110,6 +111,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    console.log('[App] Initializing application - Cache busted');
     const timer = setTimeout(() => {
       document.body.classList.remove('layout-locked');
     }, 100);
@@ -283,10 +285,11 @@ export default function App() {
       <ThemeEngineProvider>
         <AppProvider>
           <NotificationProvider>
-            <PwaProvider>
-              <VideoResourceProvider>
-                <ErrorBoundary name="Perplexta Core Runtime">
-                  <PWAWrapper>
+            <ConfirmProvider>
+              <PwaProvider>
+                <VideoResourceProvider>
+                  <ErrorBoundary name="Perplexta Core Runtime">
+                    <PWAWrapper>
                     <Routes>
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Navigate to="/chat" replace />} />
@@ -322,6 +325,7 @@ export default function App() {
         </ErrorBoundary>
       </VideoResourceProvider>
     </PwaProvider>
+    </ConfirmProvider>
   </NotificationProvider>
 </AppProvider>
     </ThemeEngineProvider>

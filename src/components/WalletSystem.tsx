@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { toast } from '../context/NotificationContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 interface Transaction {
   id: number;
@@ -309,13 +310,20 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  const confirm = useConfirm();
+
   const handleClearAllHistory = async () => {
     if (!token) return;
-    const confirmMessage = dir === 'rtl' 
-      ? 'هل أنت متأكد من رغبتك في تصفية وتنظيف تامة لسجل المعاملات بالدفتر المالي؟ لن تظهر المعاملات الحالية في واجهة العرض مجدداً، دون التأثير على رصيدك الفعلي.' 
-      : 'Are you sure you want to completely archive and clear your ledger transactions view history? Existing transactions will be cleared from this screen without affecting your actual balance.';
-    
-    if (!window.confirm(confirmMessage)) return;
+    const isConfirmed = await confirm({
+      title: dir === 'rtl' ? 'تصفية سجل المعاملات' : 'Clear Transaction History',
+      description: dir === 'rtl' 
+        ? 'هل أنت متأكد من رغبتك في تصفية وتنظيف تامة لسجل المعاملات بالدفتر المالي؟ لن تظهر المعاملات الحالية في واجهة العرض مجدداً، دون التأثير على رصيدك الفعلي.' 
+        : 'Are you sure you want to completely archive and clear your ledger transactions view history? Existing transactions will be cleared from this screen without affecting your actual balance.',
+      variant: 'danger',
+      confirmLabel: dir === 'rtl' ? 'تأكيد التصفية' : 'Confirm Clear'
+    });
+        
+    if (!isConfirmed) return;
 
     try {
       const res = await fetch('/api/wallet/clear', {

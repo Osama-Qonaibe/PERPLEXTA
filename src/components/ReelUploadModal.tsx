@@ -100,7 +100,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
   // Form Details State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [hashtags, setHashtags] = useState('#ريلز,#ترند,#اكسبلور,#فلسطين');
+  const [hashtags, setHashtags] = useState('');
   const [locationCity, setLocationCity] = useState('القدس الشريف');
   const [hasWhatsappButton, setHasWhatsappButton] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -1251,7 +1251,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
             setUploadProgress(100);
             setUploadStatusText(isRtl ? '🎉 تم النشر بنجاح!' : '🎉 Published successfully!');
 
-            toast.success(isRtl ? '🎉 تم نشر مقطع الريلز باحترافية على المنصة!' : '🎉 Reel published successfully!');
+            // UI toast removed to prevent duplication with backend socket notification
 
             if (onUploadSuccess) {
               onUploadSuccess(createData.ad || {
@@ -1273,7 +1273,7 @@ export const ReelUploadModal: React.FC<ReelUploadModalProps> = ({
             }, 500);
           } catch (err: any) {
             setUploadProgress(100);
-            toast.success(isRtl ? '🎉 تم حفظ ونشر الريلز!' : '🎉 Reel published!');
+            toast.error(isRtl ? 'فشل إتمام عملية الرفع بالكامل' : 'Upload process failed partially');
             onClose();
           } finally {
             setIsUploading(false);

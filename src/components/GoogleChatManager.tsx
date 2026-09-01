@@ -7,6 +7,7 @@ import {
   LogIn, LogOut, CheckCircle2, AlertCircle, ShieldCheck, Loader2 
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 
 const chatProvider = new GoogleAuthProvider();
@@ -50,6 +51,7 @@ interface Message {
 
 export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => {
   const isAr = dir === 'rtl';
+  const confirmDialog = useConfirm();
 
   const [isConnected, setIsConnected] = useState(false);
   const [googleUser, setGoogleUser] = useState<User | null>(null);
@@ -230,11 +232,14 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
     e.preventDefault();
     if (!newSpaceName.trim() || !cachedChatToken) return;
     
-    const confirmed = window.confirm(
-      isAr 
+    const confirmed = await confirmDialog({
+      title: isAr ? 'إنشاء مساحة عمل' : 'Create Space',
+      description: isAr 
         ? `هل أنت متأكد من إنشاء مساحة عمل جديدة باسم "${newSpaceName.trim()}"؟`
-        : `Are you sure you want to create a new space named "${newSpaceName.trim()}"?`
-    );
+        : `Are you sure you want to create a new space named "${newSpaceName.trim()}"?`,
+      variant: 'info',
+      confirmLabel: isAr ? 'إنشاء' : 'Create'
+    });
     if (!confirmed) return;
 
     try {

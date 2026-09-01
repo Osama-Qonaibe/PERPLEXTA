@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Archive, RotateCcw, Trash2, Loader2, Play, Image as ImageIcon } from 'lucide-react';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { useConfirm } from '../context/ConfirmContext';
 
 interface StoryArchiveProps {
   dir: 'rtl' | 'ltr';
@@ -9,6 +10,7 @@ interface StoryArchiveProps {
 }
 
 export const StoryArchive: React.FC<StoryArchiveProps> = ({ dir, token, showToast }) => {
+  const confirmDialog = useConfirm();
   const [archivedStories, setArchivedStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,13 @@ export const StoryArchive: React.FC<StoryArchiveProps> = ({ dir, token, showToas
 
   const handleDelete = async (id: number) => {
     if (!token) return;
-    if (!confirm(dir === 'rtl' ? 'هل أنت متأكد من حذف هذه القصة نهائياً؟' : 'Are you sure you want to permanently delete this story?')) return;
+    const isConfirmed = await confirmDialog({
+      title: dir === 'rtl' ? 'حذف القصة' : 'Delete Story',
+      description: dir === 'rtl' ? 'هل أنت متأكد من حذف هذه القصة نهائياً؟' : 'Are you sure you want to permanently delete this story?',
+      variant: 'danger',
+      confirmLabel: dir === 'rtl' ? 'حذف' : 'Delete'
+    });
+    if (!isConfirmed) return;
     try {
       const res = await fetch(`/api/bulletin/ads/${id}`, {
         method: 'DELETE',

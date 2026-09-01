@@ -144,10 +144,6 @@ export async function createPayPalOrder(amount: number, returnUrl: string, cance
 }
 
 export async function capturePayPalOrder(orderId: string, dbAmountFallback?: number) {
-  if (orderId && orderId.startsWith('PAYPAL-MOCK-ORDER-')) {
-    throw new Error('Simulated automatic payments are disabled.');
-  }
-
   const creds = await getPayPalCredentials();
   if (!creds) {
     throw new Error('PayPal is not configured by the administrator.');
@@ -184,17 +180,7 @@ export async function capturePayPalOrder(orderId: string, dbAmountFallback?: num
     
     return { success: false, status: capture.status };
   } catch (error: any) {
-    console.warn(`[PayPal Capture Order] Capture failed via API, fallback for demo or orderId match:`, error.message);
-    if (orderId) {
-      const parts = orderId.split('-');
-      const amountIdx = parts.findIndex(p => p === 'ORDER') + 1;
-      const amount = amountIdx > 0 && amountIdx < parts.length ? parseFloat(parts[amountIdx]) : (dbAmountFallback || 10.00);
-      return {
-        success: true,
-        captureId: `MOCK-CAPTURE-${Math.floor(Math.random() * 1000000)}`,
-        amount: isNaN(amount) ? (dbAmountFallback || 10.00) : amount
-      };
-    }
+    console.error(`[PayPal Capture Order] Capture failed via API:`, error.message);
     throw error;
   }
 }
