@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Eye, MessageSquare, Plus, ArrowLeft, Trash2, Send, Calendar, User, BookOpen, Star, Share2, Link, Check, Heart, MessageCircle, Search, Grid, Newspaper, Cpu, RefreshCw, Code, Brain, TrendingUp, SlidersHorizontal, ArrowRight, ChevronDown, Wrench, X, ChevronLeft, ChevronRight, AlignLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ContentContainer } from '../components/ContentContainer';
 import { toast } from '../context/NotificationContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { useRenderMetrics } from '../hooks/useRenderMetrics';
+import { useScrollSpy } from '../hooks/useScrollSpy';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { triggerHaptic } from '../utils/haptics';
 
 interface Article {
   id: number;
@@ -66,10 +68,42 @@ export const BlogPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'highest-rated'>('latest');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCommentsOpenOnMobile, setIsCommentsOpenOnMobile] = useState(false);
-  const [mobileCategoryPage, setMobileCategoryPage] = useState(0);
   const [showAdPopup, setShowAdPopup] = useState(false);
   const confirm = useConfirm();
   const [readingProgress, setReadingProgress] = useState<number>(0);
+
+  // Mobile Scroll Spy Configuration
+  const mobileArticleScrollRef = useRef<HTMLDivElement>(null);
+  const mobileFeedScrollRef = useRef<HTMLElement>(null);
+
+  const articleSectionIds = useMemo(() => [
+    'art-sec-overview',
+    'art-sec-content',
+    'art-sec-rating',
+    'art-sec-comments',
+    'art-sec-actions',
+  ], []);
+
+  const feedSectionIds = useMemo(() => [
+    'feed-sec-header',
+    'feed-sec-featured',
+    'feed-sec-grid',
+    'feed-sec-newsletter',
+  ], []);
+
+  const articleSpy = useScrollSpy({
+    sectionIds: articleSectionIds,
+    containerRef: mobileArticleScrollRef,
+    offset: 100,
+    enabled: !!selectedArticle,
+  });
+
+  const feedSpy = useScrollSpy({
+    sectionIds: feedSectionIds,
+    containerRef: mobileFeedScrollRef as any,
+    offset: 100,
+    enabled: !selectedArticle,
+  });
 
   const handleScrollProgress = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -444,22 +478,23 @@ export const BlogPage: React.FC = () => {
               transition={{ duration: 0.15, ease: "easeOut" }}
               className="flex-1 flex flex-col overflow-hidden"
             >
-              <header className={`px-8 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6 border-b relative select-none flex-shrink-0 ${
+              <header className={`px-4 md:px-6 lg:px-8 py-3 md:py-6 border-b relative select-none flex-shrink-0 ${
                 isThemeDark ? 'border-gray-800/60 bg-[#131315]' : 'border-gray-200/80 bg-white'
               }`}>
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
                 
-                <div className="flex flex-row items-start justify-between gap-4">
+                {/* Desktop Rich Header (Hidden on Mobile) */}
+                <div className="hidden md:flex flex-row items-start justify-between gap-4">
                   <div className="space-y-1 min-w-0 flex-1">
                     <h1 className="text-base sm:text-lg md:text-2xl font-black font-sans tracking-tight">
                       {isRtl ? (
                         <>
-                          <span className="text-accent  font-sans">نبض بيربليكستا </span>
+                          <span className="text-accent font-sans">نبض بيربليكستا </span>
                           <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>للمقالات والتحليلات</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-accent ">Perplexta Insights </span>
+                          <span className="text-accent">Perplexta Insights </span>
                           <span className={isThemeDark ? 'text-white' : 'text-gray-900'}>& Research Portal</span>
                         </>
                       )}
@@ -504,13 +539,12 @@ export const BlogPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Sub-header Filter and Search bar - Unified with Marketplace */}
-                <div className={`mt-4 sm:mt-6 p-2 rounded-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 md:gap-4 border ${
+                {/* Desktop Filter and Search Bar */}
+                <div className={`hidden md:flex mt-4 sm:mt-6 p-2 rounded-xl flex-row items-center justify-between gap-3 md:gap-4 border ${
                   isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-[#fafafa] border-gray-200/80'
                 }`}>
-                  
                   {/* Desktop Categories List */}
-                  <div className="hidden sm:flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-1 overflow-x-auto scrollbar-none px-1 py-0.5 flex-1 min-w-0">
                     {categories.map((cat, catIdx) => {
                       const isSelected = selectedCategory === cat.id;
                       const iconCol = categoryColors[cat.id] || '#334155';
@@ -520,7 +554,7 @@ export const BlogPage: React.FC = () => {
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
                             isSelected
-                              ? 'bg-accent/10 border border-accent/30 text-accent dark:text-accent  dark: font-black'
+                              ? 'bg-accent/10 border border-accent/30 text-accent dark:text-accent dark:font-black'
                               : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-650 hover:text-gray-800')
                           }`}
                         >
@@ -533,80 +567,7 @@ export const BlogPage: React.FC = () => {
                     })}
                   </div>
 
-                  {/* Mobile 2-Category Carousel/Scroller */}
-                  <div className="flex sm:hidden flex-col gap-1.5 flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5 w-full">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMobileCategoryPage(prev => (prev > 0 ? prev - 1 : 3));
-                        }}
-                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
-                          isThemeDark
-                            ? 'text-gray-400 hover:text-accent hover:bg-gray-800'
-                            : 'text-slate-500 hover:text-accent hover:bg-gray-100'
-                        }`}
-                        title={isRtl ? 'السابق' : 'Previous'}
-                      >
-                        {isRtl ? <ChevronRight size={14} className="hover:" /> : <ChevronLeft size={14} className="hover:" />}
-                      </button>
-
-                      <div className="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
-                        {categories.slice(mobileCategoryPage * 2, mobileCategoryPage * 2 + 2).map((cat, catIdx) => {
-                          const isSelected = selectedCategory === cat.id;
-                          const iconCol = categoryColors[cat.id] || '#334155';
-                          return (
-                            <button
-                              key={`blog-cat-mob-${cat.id}-${catIdx}`}
-                              type="button"
-                              onClick={() => setSelectedCategory(cat.id)}
-                              className={`px-1.5 py-1 rounded-[4px] text-[10px] font-black whitespace-nowrap truncate cursor-pointer transition-theme border text-center flex items-center justify-center gap-1 min-w-0 ${
-                                isSelected
-                                  ? 'bg-accent/10 border-accent/30 text-accent dark:text-accent  dark:'
-                                  : (isThemeDark 
-                                      ? 'bg-[#131315]/80 border-gray-800/60 text-gray-400 hover:text-gray-200 hover:border-gray-700' 
-                                      : 'bg-white border-gray-200 text-slate-650 hover:text-slate-800 hover:border-gray-300')
-                              }`}
-                            >
-                              <span style={{ color: iconCol }} className="shrink-0">{getCategoryIcon(cat.id, "w-3.5 h-3.5")}</span>
-                              <span className="truncate">{isRtl ? cat.labelAr : cat.labelEn}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMobileCategoryPage(prev => (prev < 3 ? prev + 1 : 0));
-                        }}
-                        className={`w-8 h-8 rounded-[4px] border border-transparent flex items-center justify-center transition-theme shrink-0 ${
-                          isThemeDark
-                            ? 'text-gray-400 hover:text-accent hover:bg-gray-800'
-                            : 'text-slate-500 hover:text-accent hover:bg-gray-100'
-                        }`}
-                        title={isRtl ? 'التالي' : 'Next'}
-                      >
-                        {isRtl ? <ChevronLeft size={14} className="hover:" /> : <ChevronRight size={14} className="hover:" />}
-                      </button>
-                    </div>
-
-                    {/* Micro indicator dots */}
-                    <div className="flex items-center justify-center gap-1">
-                      {[0, 1, 2, 3].map((page, pIdx) => (
-                        <div
-                          key={`blog-dot-${page}-${pIdx}`}
-                          className={`h-1 rounded-full transition-theme ${
-                            mobileCategoryPage === page
-                              ? 'w-3.5 bg-accent shadow-[0_0_8px_rgba(156,163,175,0.65)]'
-                              : 'w-1 bg-gray-305 dark:bg-gray-800/80'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-center border rounded-lg px-3 py-1.5 w-full sm:w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
+                  <div className={`flex items-center border rounded-lg px-3 py-1.5 w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
                     isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-accent/35' : 'bg-white border-gray-200 focus-within:border-accent/35'
                   }`}>
                     <Search size={14} className="text-gray-400 shrink-0" />
@@ -623,7 +584,82 @@ export const BlogPage: React.FC = () => {
                       {sortedArticles.length}
                     </div>
                   </div>
+                </div>
 
+                {/* Mobile Native App Bar (Clean & Uncluttered) */}
+                <div id="feed-sec-header" className="md:hidden flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center border rounded-xl px-3 py-2 flex-1 transition-theme shadow-sm ${
+                      isThemeDark ? 'bg-zinc-900/80 border-white/10 focus-within:border-accent/40' : 'bg-gray-50/90 border-gray-200 focus-within:border-accent/40'
+                    }`}>
+                      <Search size={14} className="text-gray-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={isRtl ? 'ابحث في المقالات...' : 'Search articles...'}
+                        className={`flex-1 bg-transparent text-xs placeholder-gray-500 outline-none px-2 ${
+                          isThemeDark ? 'text-white' : 'text-gray-800'
+                        }`}
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          className="p-1 text-gray-400 hover:text-gray-200 cursor-pointer"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                      <div className="text-[9px] font-mono text-accent font-bold bg-accent/10 px-1.5 py-0.5 rounded shrink-0 border border-accent/15">
+                        {sortedArticles.length}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsMobileSidebarOpen(true)}
+                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-theme shrink-0 active:scale-95 cursor-pointer ${
+                        isThemeDark
+                          ? 'border-gray-800/80 bg-zinc-900/80 text-gray-300 hover:text-accent hover:border-accent/30'
+                          : 'border-gray-200 bg-white text-slate-700 hover:text-accent shadow-sm'
+                      }`}
+                      title={isRtl ? 'تصفية وترتيب الأقسام' : 'Filter & Sort'}
+                    >
+                      <SlidersHorizontal size={15} />
+                    </button>
+                  </div>
+
+                  {/* Active Category Filter Tag on Mobile if filtered */}
+                  {selectedCategory !== 'All' && (
+                    <div className="flex items-center justify-between pt-0.5 animate-fade-in">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent">
+                        <span style={{ color: categoryColors[selectedCategory] || '#334155' }}>
+                          {getCategoryIcon(selectedCategory, "w-3 h-3")}
+                        </span>
+                        <span>
+                          {isRtl 
+                            ? categories.find(c => c.id === selectedCategory)?.labelAr 
+                            : categories.find(c => c.id === selectedCategory)?.labelEn}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategory('All')}
+                          className="p-0.5 hover:bg-accent/20 rounded-full cursor-pointer ml-1"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategory('All')}
+                        className="text-[10px] font-bold text-gray-400 hover:text-accent cursor-pointer"
+                      >
+                        {isRtl ? 'عرض الكل' : 'Clear Filter'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </header>
 
@@ -695,7 +731,7 @@ export const BlogPage: React.FC = () => {
                 </div>
               </aside>
 
-              <main className="flex-1 overflow-y-auto scrollbar-none">
+              <main ref={mobileFeedScrollRef} className="flex-1 overflow-y-auto scrollbar-none">
                 <ContentContainer className="py-4 pb-24 space-y-6 md:space-y-10">
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -830,7 +866,7 @@ export const BlogPage: React.FC = () => {
                     </div>
 
                     {/* Mobile-Only Premium Editorial Feed Layout */}
-                    <div className="md:hidden flex flex-col gap-4 pb-12 select-none">
+                    <div id="feed-sec-grid" className="md:hidden flex flex-col gap-4 pb-12 select-none">
                       <AnimatePresence mode="popLayout">
                         {sortedArticles.map((article, index) => {
                           const isFeatured = index === 0;
@@ -838,6 +874,7 @@ export const BlogPage: React.FC = () => {
                           if (isFeatured) {
                             return (
                               <motion.div
+                                id="feed-sec-featured"
                                 key={`mob-featured-${article.id || index}-${index}`}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -941,23 +978,6 @@ export const BlogPage: React.FC = () => {
                     </button>
                   </div>
                 )}
-
-                {/* Mobile Footer in Scroll Flow */}
-                <div className="md:hidden border-t border-gray-150/10 dark:border-gray-800/40 pt-4 mt-8 text-center text-gray-500 text-[9px] select-none">
-                  <div className="mb-1 font-sans font-black tracking-widest text-[8px] uppercase text-gray-400">
-                    PERPLEXTA PLATFORM INSIGHTS SYSTEM
-                  </div>
-                  <div className="flex items-center justify-center gap-2.5 mb-1.5 text-accent font-bold">
-                    <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{isRtl ? 'من نحن' : 'About Us'}</span>
-                    <span className="text-gray-500/20">•</span>
-                    <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{isRtl ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
-                    <span className="text-gray-500/20">•</span>
-                    <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{isRtl ? 'الخصوصية' : 'Privacy'}</span>
-                  </div>
-                  <div className="text-gray-400 font-sans font-semibold">
-                    {isRtl ? 'الموقع محفوظ لـ ViralLinkUp 2026 ©' : 'All Sovereignties Reserved ViralLinkUp 2026 ©'}
-                  </div>
-                </div>
               </ContentContainer>
             </main>
 
@@ -1317,107 +1337,116 @@ export const BlogPage: React.FC = () => {
 
             {/* Mobile-Only Immersive Reading View */}
             <div 
+              ref={mobileArticleScrollRef}
               onScroll={handleScrollProgress}
-              className="md:hidden flex flex-col flex-1 overflow-y-auto pb-16 scrollbar-none" 
+              className="md:hidden flex flex-col flex-1 overflow-y-auto pb-20 scrollbar-none" 
               dir={isRtl ? 'rtl' : 'ltr'}
             >
-              {/* Back button & Action Bar */}
-              <div className={`p-4 flex items-center justify-between border-b ${
-                isThemeDark ? 'bg-zinc-950/80 border-white/5' : 'bg-white border-gray-150'
-              }`}>
-                <button
-                  onClick={handleBackToList}
-                  className="flex items-center gap-1 text-xs font-black text-gray-500 active:text-accent cursor-pointer"
-                >
-                  <ArrowLeft size={16} className={isRtl ? 'rotate-180 text-accent' : 'text-accent'} />
-                  <span>{isRtl ? 'المقالات' : 'Articles'}</span>
-                </button>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsShareOpen(true)}
-                    className="p-1.5 focus:bg-accent/10 text-gray-400 hover:text-accent cursor-pointer"
-                  >
-                    <Share2 size={15} />
-                  </button>
-                </div>
-              </div>
-
               {/* Cover Image & Primary Info Banner */}
-              <div className="relative w-full h-52 shrink-0 bg-slate-900 select-none">
-                {selectedArticle.image_url ? (
-                  <img src={getMediaUrl(selectedArticle.image_url)} alt="" className="w-full h-full object-cover animate-fade-in animate-duration-500" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-500/10 to-teal-900 flex flex-col items-center justify-center p-4">
-                    <BookOpen size={36} className="text-accent/30 mb-1" />
-                    <span className="text-[8px] tracking-widest font-bold uppercase text-accent">{isRtl ? 'تحليلات مستقلة' : 'Sovereign Intelligence'}</span>
+              <div id="art-sec-overview" className="flex flex-col">
+                {/* Back button & Action Bar */}
+                <div className={`p-4 flex items-center justify-between border-b ${
+                  isThemeDark ? 'bg-zinc-950/80 border-white/5' : 'bg-white border-gray-150'
+                }`}>
+                  <button
+                    onClick={() => {
+                      triggerHaptic('light');
+                      handleBackToList();
+                    }}
+                    className="flex items-center gap-1 text-xs font-black text-gray-500 active:text-accent cursor-pointer"
+                  >
+                    <ArrowLeft size={16} className={isRtl ? 'rotate-180 text-accent' : 'text-accent'} />
+                    <span>{isRtl ? 'المقالات' : 'Articles'}</span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        triggerHaptic('medium');
+                        setIsShareOpen(true);
+                      }}
+                      className="p-1.5 focus:bg-accent/10 text-gray-400 hover:text-accent cursor-pointer"
+                    >
+                      <Share2 size={15} />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                
-                {/* Float Category Badge */}
-                <div className="absolute top-3 right-3 select-none">
-                  <span className="text-[8px] bg-accent text-white font-black px-2.5 py-1 rounded-full uppercase shadow-lg">
-                    {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
-                  </span>
                 </div>
 
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h1 className="text-sm font-black text-white leading-snug font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
-                    {isRtl ? selectedArticle.title_ar : selectedArticle.title_en}
-                  </h1>
-                </div>
-              </div>
-
-              {/* Compact Author & Stat Rails */}
-              <div className={`p-4 border-b flex items-center justify-between select-none ${
-                isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-gray-50 border-gray-150'
-              }`}>
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {selectedArticle.author_avatar ? (
-                    <img src={selectedArticle.author_avatar} alt="" className="w-6 h-6 rounded-full border border-white/10" />
+                <div className="relative w-full h-52 shrink-0 bg-slate-900 select-none">
+                  {selectedArticle.image_url ? (
+                    <img src={getMediaUrl(selectedArticle.image_url)} alt="" className="w-full h-full object-cover animate-fade-in animate-duration-500" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
+                    <div className="w-full h-full bg-gradient-to-br from-gray-500/10 to-teal-900 flex flex-col items-center justify-center p-4">
+                      <BookOpen size={36} className="text-accent/30 mb-1" />
+                      <span className="text-[8px] tracking-widest font-bold uppercase text-accent">{isRtl ? 'تحليلات مستقلة' : 'Sovereign Intelligence'}</span>
+                    </div>
                   )}
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black text-slate-900 dark:text-white truncate leading-none font-sans">{selectedArticle.author_name}</div>
-                    <span className="text-[7.5px] font-mono text-accent uppercase tracking-wider block mt-0.5">{isRtl ? 'محلل معتمد' : 'Field Analyst'}</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                  
+                  {/* Float Category Badge */}
+                  <div className="absolute top-3 right-3 select-none">
+                    <span className="text-[8px] bg-accent text-white font-black px-2.5 py-1 rounded-full uppercase shadow-lg">
+                      {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h1 className="text-sm font-black text-white leading-snug font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+                      {isRtl ? selectedArticle.title_ar : selectedArticle.title_en}
+                    </h1>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-[9px] font-mono text-gray-500">
-                  <span>{new Date(selectedArticle.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}</span>
-                  <div className="flex items-center gap-0.5 font-bold">
-                    <Eye size={10} className="text-gray-400" />
-                    <span>{selectedArticle.views}</span>
+                {/* Compact Author & Stat Rails */}
+                <div className={`p-4 border-b flex items-center justify-between select-none ${
+                  isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-gray-50 border-gray-150'
+                }`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {selectedArticle.author_avatar ? (
+                      <img src={selectedArticle.author_avatar} alt="" className="w-6 h-6 rounded-full border border-white/10" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-black text-slate-900 dark:text-white truncate leading-none font-sans">{selectedArticle.author_name}</div>
+                      <span className="text-[7.5px] font-mono text-accent uppercase tracking-wider block mt-0.5">{isRtl ? 'محلل معتمد' : 'Field Analyst'}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-0.5 font-bold text-amber-500">
-                    <Star size={10} className="fill-[currentColor]" />
-                    <span>{selectedArticle.avg_rating && Number(selectedArticle.avg_rating) > 0 ? Number(selectedArticle.avg_rating).toFixed(1) : '5.0'}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Mobile Visual Reading Progress Indicator */}
-              <div className={`mx-4 mt-4 p-3.5 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150'} shadow-sm`}>
-                <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                    <span>{isRtl ? 'مؤشر تقدم القراءة' : 'Reading Progress'}</span>
-                  </span>
-                  <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
-                    {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
-                  </span>
+                  <div className="flex items-center gap-3 text-[9px] font-mono text-gray-500">
+                    <span>{new Date(selectedArticle.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}</span>
+                    <div className="flex items-center gap-0.5 font-bold">
+                      <Eye size={10} className="text-gray-400" />
+                      <span>{selectedArticle.views}</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 font-bold text-amber-500">
+                      <Star size={10} className="fill-[currentColor]" />
+                      <span>{selectedArticle.avg_rating && Number(selectedArticle.avg_rating) > 0 ? Number(selectedArticle.avg_rating).toFixed(1) : '5.0'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
-                  <div 
-                    className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
-                    style={{ width: `${readingProgress}%` }}
-                  />
+
+                {/* Mobile Visual Reading Progress Indicator */}
+                <div className={`mx-4 mt-4 p-3.5 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150'} shadow-sm`}>
+                  <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                      <span>{isRtl ? 'مؤشر تقدم القراءة' : 'Reading Progress'}</span>
+                    </span>
+                    <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
+                      {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
+                    <div 
+                      className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
+                      style={{ width: `${readingProgress}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Immersive Text Body Component */}
-              <div className="p-5 font-sans leading-relaxed space-y-4 select-text">
+              <div id="art-sec-content" className="p-5 font-sans leading-relaxed space-y-4 select-text">
                 <article className="text-[14px] leading-8 font-normal text-justify text-[var(--text-primary)]">
                   {(isRtl ? selectedArticle.content_ar : selectedArticle.content_en).split('\n').map((paragraph, index) => {
                     if (!paragraph.trim()) return <div key={`blog-mob-p-gap-${index}`} className="h-3" />;
@@ -1431,7 +1460,7 @@ export const BlogPage: React.FC = () => {
               </div>
 
               {/* Ratings Interactivity */}
-              <div className={`mx-4 p-4 rounded-xl border ${
+              <div id="art-sec-rating" className={`mx-4 p-4 rounded-xl border ${
                 isThemeDark ? 'bg-zinc-950/30 border-white/5' : 'bg-white border-gray-150'
               }`}>
                 <h4 className="text-[10.5px] font-black font-sans uppercase text-gray-400 tracking-wider mb-2">{isRtl ? 'ما هو تقييمك لهذا التقرير؟' : 'Your Rating Indicator'}</h4>
@@ -1461,10 +1490,13 @@ export const BlogPage: React.FC = () => {
               </div>
 
               {/* Collapsible Mobile Discussions Accordion */}
-              <div className="mx-4 my-6">
+              <div id="art-sec-comments" className="mx-4 my-6">
                 <button
                   type="button"
-                  onClick={() => setIsCommentsOpenOnMobile(!isCommentsOpenOnMobile)}
+                  onClick={() => {
+                    triggerHaptic('selection');
+                    setIsCommentsOpenOnMobile(!isCommentsOpenOnMobile);
+                  }}
                   className={`w-full p-4 rounded-xl border flex items-center justify-between text-xs font-black font-sans transition-theme active:scale-[0.99] cursor-pointer ${
                     isThemeDark ? 'bg-zinc-950/40 border-white/5 text-white active:bg-zinc-900/60' : 'bg-white border-gray-150 text-gray-900'
                   }`}
@@ -1532,7 +1564,7 @@ export const BlogPage: React.FC = () => {
               </div>
 
               {/* Bottom Tactile Back Panel */}
-              <div className="px-4 pb-6">
+              <div id="art-sec-actions" className="px-4 pb-6">
                 <button
                   type="button"
                   onClick={handleBackToList}
@@ -1541,23 +1573,6 @@ export const BlogPage: React.FC = () => {
                   <ArrowLeft size={14} className={isRtl ? 'rotate-180 text-accent' : 'text-accent'} />
                   <span>{isRtl ? 'العودة للمقالات والأبحاث' : 'Back to Insight Portal'}</span>
                 </button>
-              </div>
-
-              {/* Mobile Detail Footer in scroll flow */}
-              <div className="border-t border-gray-150/10 dark:border-gray-800/40 pt-4 pb-8 px-4 text-center text-gray-500 text-[9px] select-none">
-                <div className="mb-1 font-sans font-black tracking-widest text-[8px] uppercase text-gray-400">
-                  PERPLEXTA PLATFORM INSIGHTS SYSTEM
-                </div>
-                <div className="flex items-center justify-center gap-2.5 mb-1.5 text-accent font-bold">
-                  <span onClick={() => navigate('/about')} className="cursor-pointer hover:underline">{language === 'ar' ? 'من نحن' : 'About Us'}</span>
-                  <span className="text-gray-500/20">•</span>
-                  <span onClick={() => navigate('/terms')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</span>
-                  <span className="text-gray-500/20">•</span>
-                  <span onClick={() => navigate('/privacy')} className="cursor-pointer hover:underline">{language === 'ar' ? 'الخصوصية' : 'Privacy'}</span>
-                </div>
-                <div className="text-gray-400 font-sans font-semibold">
-                  {language === 'ar' ? 'الموقع محفوظ لـ ViralLinkUp 2026 ©' : 'All Sovereignties Reserved ViralLinkUp 2026 ©'}
-                </div>
               </div>
             </div>
           </ContentContainer>
@@ -1894,6 +1909,255 @@ export const BlogPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation Bar (Articles Section Navigation with Scroll-Spy) */}
+      <nav 
+        dir={isRtl ? 'rtl' : 'ltr'}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-around py-1.5 px-2 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none"
+      >
+        {selectedArticle ? (
+          <>
+            {/* Article Section 1: Overview */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                articleSpy.scrollToSection('art-sec-overview');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                articleSpy.activeSection === 'art-sec-overview'
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <BookOpen size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المقدمة' : 'Intro'}</span>
+              {articleSpy.activeSection === 'art-sec-overview' && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Article Section 2: Body Content */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                articleSpy.scrollToSection('art-sec-content');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                articleSpy.activeSection === 'art-sec-content'
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <AlignLeft size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المحتوى' : 'Text'}</span>
+              {articleSpy.activeSection === 'art-sec-content' && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Article Section 3: Rating */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                articleSpy.scrollToSection('art-sec-rating');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                articleSpy.activeSection === 'art-sec-rating'
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <Star size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'التقييم' : 'Rating'}</span>
+              {articleSpy.activeSection === 'art-sec-rating' && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Article Section 4: Debates */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setIsCommentsOpenOnMobile(true);
+                articleSpy.scrollToSection('art-sec-comments');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                articleSpy.activeSection === 'art-sec-comments' || isCommentsOpenOnMobile
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <MessageSquare size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'التعليقات' : 'Debates'}</span>
+              {(articleSpy.activeSection === 'art-sec-comments' || isCommentsOpenOnMobile) && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Article Section 5: Back */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('light');
+                handleBackToList();
+              }}
+              className="flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer text-gray-400 hover:text-accent"
+            >
+              <ArrowLeft size={16} className={`stroke-[2.2] ${isRtl ? 'rotate-180' : ''}`} />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'العودة' : 'Back'}</span>
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Feed Section 1: All Articles */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setSelectedCategory('All');
+                setIsMobileSidebarOpen(false);
+                feedSpy.scrollToSection('feed-sec-header');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                (feedSpy.activeSection === 'feed-sec-header' || selectedCategory === 'All') && !isMobileSidebarOpen
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <Grid size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الكل' : 'All'}</span>
+              {(feedSpy.activeSection === 'feed-sec-header' || selectedCategory === 'All') && !isMobileSidebarOpen && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Feed Section 2: News */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setSelectedCategory('News');
+                setIsMobileSidebarOpen(false);
+                feedSpy.scrollToSection('feed-sec-featured');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                (feedSpy.activeSection === 'feed-sec-featured' || selectedCategory === 'News') && !isMobileSidebarOpen
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <Newspaper size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الأخبار' : 'News'}</span>
+              {(feedSpy.activeSection === 'feed-sec-featured' || selectedCategory === 'News') && !isMobileSidebarOpen && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Feed Section 3: AI Insights */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setSelectedCategory('AI');
+                setIsMobileSidebarOpen(false);
+                feedSpy.scrollToSection('feed-sec-grid');
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                (feedSpy.activeSection === 'feed-sec-grid' || selectedCategory === 'AI') && !isMobileSidebarOpen
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <Brain size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الذكاء' : 'AI'}</span>
+              {(feedSpy.activeSection === 'feed-sec-grid' || selectedCategory === 'AI') && !isMobileSidebarOpen && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Feed Section 4: Devs */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setSelectedCategory('Developers');
+                setIsMobileSidebarOpen(false);
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                selectedCategory === 'Developers' && !isMobileSidebarOpen
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <Code size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المطورين' : 'Devs'}</span>
+              {selectedCategory === 'Developers' && !isMobileSidebarOpen && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+
+            {/* Feed Section 5: Sections Drawer & Filter */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('medium');
+                setIsMobileSidebarOpen(true);
+              }}
+              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                isMobileSidebarOpen || (selectedCategory !== 'All' && selectedCategory !== 'News' && selectedCategory !== 'AI' && selectedCategory !== 'Developers')
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <SlidersHorizontal size={16} className="stroke-[2.2]" />
+              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الأقسام' : 'Sections'}</span>
+              {(isMobileSidebarOpen || (selectedCategory !== 'All' && selectedCategory !== 'News' && selectedCategory !== 'AI' && selectedCategory !== 'Developers')) && (
+                <motion.div
+                  layoutId="blog-mobile-nav-indicator"
+                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          </>
+        )}
+      </nav>
 
       </div>
     </div>

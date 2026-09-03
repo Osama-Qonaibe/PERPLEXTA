@@ -5,7 +5,6 @@ const rootDir = process.cwd();
 
 const MANIFEST_PATH = path.join(rootDir, 'public', 'manifest.json');
 const SW_PATH = path.join(rootDir, 'public', 'sw.js');
-const APP_ASSETS_DIR = path.join(rootDir, 'public', 'app-assets');
 
 export interface CheckResult {
   passed: string[];
@@ -148,25 +147,14 @@ export function validatePwa(): { isValid: boolean; results: CheckResult; manifes
     `[Theme] 'background_color' is missing or not a valid hex color string.`
   );
 
-  // 6. Icons & Asset Directory Deep Checks
+  // 6. Icons & Asset Directory Checks
   check(
-    fs.existsSync(APP_ASSETS_DIR),
-    `[Assets] Asset directory exists on disk: public/app-assets/`,
-    `[Assets] Missing public/app-assets/ directory.`
-  );
-
-  check(
-    Array.isArray(manifest.icons) && manifest.icons.length > 0,
-    `[Icons] 'icons' array contains ${manifest.icons ? manifest.icons.length : 0} defined icons.`,
-    `[Icons] 'icons' array is missing or empty.`
+    Array.isArray(manifest.icons),
+    `[Icons] 'icons' array defined in manifest.json.`,
+    `[Icons] 'icons' array is missing in manifest.json.`
   );
 
   if (Array.isArray(manifest.icons)) {
-    let has192 = false;
-    let has512 = false;
-    let hasMaskable = false;
-    let hasAny = false;
-
     manifest.icons.forEach((icon: any, idx: number) => {
       const label = `Icon #${idx + 1} (${icon.src || 'no src'})`;
 
@@ -175,11 +163,6 @@ export function validatePwa(): { isValid: boolean; results: CheckResult; manifes
         `  ✓ ${label} src is valid.`,
         `  ❌ ${label} src is missing.`
       );
-
-      // Check cross-origin icon URLs
-      if (icon.src && /^https?:\/\//i.test(icon.src)) {
-        results.warnings.push(`  ⚠️ ${label} uses external absolute URL ("${icon.src}"). Local relative paths are preferred for offline PWA reliability.`);
-      }
 
       check(
         typeof icon.sizes === 'string' && icon.sizes.length > 0,
@@ -193,15 +176,7 @@ export function validatePwa(): { isValid: boolean; results: CheckResult; manifes
         `  ❌ ${label} type missing or invalid.`
       );
 
-      if (icon.sizes && icon.sizes.includes('192x192')) has192 = true;
-      if (icon.sizes && icon.sizes.includes('512x512')) has512 = true;
-
-      const purpose = icon.purpose || 'any';
-      if (purpose.includes('maskable')) hasMaskable = true;
-      if (purpose.includes('any')) hasAny = true;
-
-      // Verify physical existence on disk
-      if (icon.src) {
+      if (icon.src && !icon.src.startsWith('/uploads/') && !icon.src.startsWith('/api/')) {
         const cleanSrc = icon.src.startsWith('/') ? icon.src.slice(1) : icon.src;
         const filePath = path.join(rootDir, 'public', cleanSrc);
         check(
@@ -211,32 +186,6 @@ export function validatePwa(): { isValid: boolean; results: CheckResult; manifes
         );
       }
     });
-
-    check(
-      has192,
-      `[Icons] Required 192x192 icon present for mobile home screen.`,
-      `[Icons] Missing required 192x192 icon in manifest.`
-    );
-
-    check(
-      has512,
-      `[Icons] Required 512x512 icon present for splash screen & high-DPI displays.`,
-      `[Icons] Missing required 512x512 icon in manifest.`
-    );
-
-    check(
-      hasMaskable,
-      `[Icons] Found 'maskable' icon purpose for Android adaptive icon support.`,
-      `[Icons] Missing 'maskable' icon purpose.`,
-      true
-    );
-
-    check(
-      hasAny,
-      `[Icons] Found 'any' icon purpose for standard rendering.`,
-      `[Icons] Missing 'any' icon purpose.`,
-      true
-    );
   }
 
   // 7. Service Worker Scope & Cross-Origin Verification

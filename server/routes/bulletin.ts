@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool, ledgerPool, getExternalPool } from '../db/index.js';
-import { authenticateToken, authenticateAdmin } from '../middleware/auth.js';
+import { authenticateToken, authenticateAdmin, authenticateTokenOptional } from '../middleware/auth.js';
 import { createNotification } from '../services/notifications.js';
 import { createChat, addChatMessage } from '../services/chat.js';
 import { io } from '../config/socket.js';
@@ -370,9 +370,10 @@ router.get('/ads', async (req, res) => {
 
     let likedAdIds = new Set<number>();
     let savedAdIds = new Set<number>();
+    let mutedAdIds = new Set<number>();
     if (currentUserId && result.rows.length > 0) {
       const adIds = result.rows.map((row: any) => row.id);
-      const [likesRes, savedRes] = await Promise.all([
+      const [likesRes, savedRes, mutedRes] = await Promise.all([
         pool.query(
           'SELECT ad_id FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = ANY($2)',
           [currentUserId, adIds]
@@ -380,10 +381,15 @@ router.get('/ads', async (req, res) => {
         pool.query(
           'SELECT ad_id FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = ANY($2)',
           [currentUserId, adIds]
+        ).catch(() => ({ rows: [] })),
+        pool.query(
+          'SELECT ad_id FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = ANY($2)',
+          [currentUserId, adIds]
         ).catch(() => ({ rows: [] }))
       ]);
       likesRes.rows.forEach((r: any) => likedAdIds.add(r.ad_id));
       savedRes.rows.forEach((r: any) => savedAdIds.add(r.ad_id));
+      mutedRes.rows.forEach((r: any) => mutedAdIds.add(r.ad_id));
     }
 
     const formattedAds = result.rows.map((row: any) => {
@@ -421,13 +427,31 @@ router.get('/ads', async (req, res) => {
         impressions_count: Number(row.impressions_count || 0),
         user_has_liked: likedAdIds.has(row.id),
         user_has_saved: savedAdIds.has(row.id),
+        is_muted_notifications: mutedAdIds.has(row.id),
+        who_can_comment: row.who_can_comment || 'anyone',
+        allow_translation: row.allow_translation !== false,
+        partnership_code: row.partnership_code || null,
+        is_partnership: Boolean(row.is_partnership),
+        partnership_brand: row.partnership_brand || null,
+        is_ai_generated: Boolean(row.is_ai_generated),
+        archived_at: row.archived_at || null,
+        deleted_at: row.deleted_at || null,
         is_boosted: Boolean(row.is_boosted_active || row.is_boosted),
         boosted_until: row.boosted_until || null,
         boost_tier: row.boost_tier || null,
         boost_price: Number(row.boost_price || 0),
         starts_at: row.starts_at,
         expires_at: row.expires_at,
-        created_at: row.created_at
+        created_at: row.created_at,
+        ad_format: row.ad_format || 'post',
+        aspect_ratio: row.aspect_ratio || 'grid',
+        quick_questions: row.quick_questions || [],
+        feeling: row.feeling || null,
+        tagged_users: row.tagged_users || [],
+        audience: row.audience || 'public',
+        has_whatsapp_button: Boolean(row.has_whatsapp_button),
+        media_gallery: (row.metadata && Array.isArray(row.metadata.media_gallery)) ? row.metadata.media_gallery : null,
+        metadata: row.metadata || null
       };
     });
 
@@ -484,14 +508,17 @@ router.get('/ads/:id', async (req: any, res: any, next: any) => {
     const row = result.rows[0];
     let liked = false;
     let saved = false;
+    let isMuted = false;
 
     if (currentUserId) {
-      const [lRes, sRes] = await Promise.all([
+      const [lRes, sRes, mRes] = await Promise.all([
         pool.query('SELECT 1 FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
-        pool.query('SELECT 1 FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] }))
+        pool.query('SELECT 1 FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
+        pool.query('SELECT 1 FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] }))
       ]);
       liked = (lRes.rows.length > 0);
       saved = (sRes.rows.length > 0);
+      isMuted = (mRes.rows.length > 0);
     }
 
     const hashtagList = row.hashtags
@@ -528,13 +555,31 @@ router.get('/ads/:id', async (req: any, res: any, next: any) => {
       impressions_count: Number(row.impressions_count || 0),
       user_has_liked: liked,
       user_has_saved: saved,
+      is_muted_notifications: isMuted,
+      who_can_comment: row.who_can_comment || 'anyone',
+      allow_translation: row.allow_translation !== false,
+      partnership_code: row.partnership_code || null,
+      is_partnership: Boolean(row.is_partnership),
+      partnership_brand: row.partnership_brand || null,
+      is_ai_generated: Boolean(row.is_ai_generated),
+      archived_at: row.archived_at || null,
+      deleted_at: row.deleted_at || null,
       is_boosted: Boolean(row.is_boosted_active || row.is_boosted),
       boosted_until: row.boosted_until || null,
       boost_tier: row.boost_tier || null,
       boost_price: Number(row.boost_price || 0),
       starts_at: row.starts_at,
       expires_at: row.expires_at,
-      created_at: row.created_at
+      created_at: row.created_at,
+      ad_format: row.ad_format || 'post',
+      aspect_ratio: row.aspect_ratio || 'grid',
+      quick_questions: row.quick_questions || [],
+      feeling: row.feeling || null,
+      tagged_users: row.tagged_users || [],
+      audience: row.audience || 'public',
+      has_whatsapp_button: Boolean(row.has_whatsapp_button),
+      media_gallery: (row.metadata && Array.isArray(row.metadata.media_gallery)) ? row.metadata.media_gallery : null,
+      metadata: row.metadata || null
     };
 
     return res.json({ success: true, ad: formattedAd });
@@ -560,7 +605,8 @@ router.get('/ads/my', authenticateToken, async (req: any, res) => {
 
     const formatted = result.rows.map((row: any) => ({
       ...row,
-      hashtags: row.hashtags ? row.hashtags.split(',').map((t: string) => t.trim()).filter(Boolean) : []
+      hashtags: row.hashtags ? row.hashtags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+      media_gallery: (row.metadata && Array.isArray(row.metadata.media_gallery)) ? row.metadata.media_gallery : null
     }));
 
     res.json({ success: true, ads: formatted });
@@ -580,6 +626,7 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     title,
     description,
     image_url,
+    media_gallery,
     whatsapp_number,
     phone_number,
     video_url,
@@ -593,7 +640,9 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     has_whatsapp_button,
     audience,
     ad_format,
-    quick_questions
+    quick_questions,
+    aspect_ratio,
+    metadata
   } = req.body;
 
   const validAudience = ['public', 'friends', 'only_me'].includes(audience) ? audience : 'public';
@@ -604,7 +653,23 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
   const finalTitle = rawTitle || (rawDesc.length > 60 ? rawDesc.slice(0, 60) + '...' : rawDesc) || 'منشور جديد';
   const finalDesc = rawDesc || rawTitle || '';
 
-  if (!finalTitle && !finalDesc && !image_url && !video_url) {
+  const galleryItems = Array.isArray(media_gallery) ? media_gallery : [];
+  if (galleryItems.length > 20) {
+    return res.status(400).json({
+      error: 'الحد الأقصى المسموح به هو 20 وسيطة / Maximum limit is 20 media items'
+    });
+  }
+
+  if (image_url && typeof image_url === 'string') {
+    const imagesCount = image_url.split(',').map((u: string) => u.trim()).filter(Boolean).length;
+    if (imagesCount > 20) {
+      return res.status(400).json({
+        error: 'الحد الأقصى المسموح به هو 20 وسيطة / Maximum limit is 20 media items'
+      });
+    }
+  }
+
+  if (!finalTitle && !finalDesc && !image_url && !video_url && galleryItems.length === 0) {
     return res.status(400).json({
       error: 'يرجى تقديم نص للمنشور أو إرفاق صورة/فيديو'
     });
@@ -632,9 +697,25 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     return `/uploads/${clean}`;
   };
 
-  const normImageUrl = normalizeUrl(image_url);
-  const normVideoUrl = normalizeUrl(video_url);
+  const normGallery = galleryItems.map((item: any) => ({
+    id: String(item.id || Date.now() + Math.random()),
+    url: normalizeUrl(item.url) || item.url,
+    type: item.type === 'video' ? 'video' : 'image',
+    caption: typeof item.caption === 'string' ? item.caption.trim() : '',
+    thumbnailUrl: item.thumbnailUrl ? (normalizeUrl(item.thumbnailUrl) || item.thumbnailUrl) : undefined
+  }));
+
+  const galleryImages = normGallery.filter(i => i.type === 'image').map(i => i.url);
+  const galleryVideos = normGallery.filter(i => i.type === 'video').map(i => i.url);
+
+  const normImageUrl = normalizeUrl(image_url) || (galleryImages.length > 0 ? galleryImages.join(',') : null);
+  const normVideoUrl = normalizeUrl(video_url) || (galleryVideos.length > 0 ? galleryVideos[0] : null);
   const finalImageUrl = normImageUrl || (normVideoUrl ? '/uploads/default_video_poster.jpg' : null);
+
+  const metadataToSave = {
+    ...(metadata && typeof metadata === 'object' ? metadata : {}),
+    media_gallery: normGallery.length > 0 ? normGallery : undefined
+  };
 
   try {
     let authorName = req.user.name || 'مستخدم المنصة';
@@ -678,8 +759,8 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       INSERT INTO bulletin_ads (
         user_id, page_id, location_city, author_name, author_avatar, title, description, image_url,
         whatsapp_number, phone_number, video_url, target_url, hashtags, category, price_paid, duration_days, status,
-        feeling, is_ai_generated, tagged_users, has_whatsapp_button, audience, ad_format, quick_questions, expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 0, 0, 'approved', $15, $16, $17, $18, $19, $20, $21, $22)
+        feeling, is_ai_generated, tagged_users, has_whatsapp_button, audience, ad_format, quick_questions, expires_at, aspect_ratio, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 0, 0, 'approved', $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING *
     `, [
       userId,
@@ -703,10 +784,15 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       validAudience,
       validFormat,
       JSON.stringify((quick_questions || []).filter(Boolean)),
-      expiresAt
+      expiresAt,
+      aspect_ratio || 'grid',
+      JSON.stringify(metadataToSave)
     ]);
 
     const createdAd = insertRes.rows[0];
+    if (normGallery.length > 0) {
+      createdAd.media_gallery = normGallery;
+    }
 
     try {
       // 1. Author Confirmation Notification
@@ -1003,16 +1089,23 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
  * GET /api/bulletin/ads/:id/comments
  * Fetch comments for an ad
  */
-router.get('/ads/:id/comments', async (req, res) => {
+router.get('/ads/:id/comments', authenticateTokenOptional, async (req: any, res) => {
   try {
     const adId = parseInt(req.params.id);
+    const userId = req.user?.id;
+
     const result = await pool.query(`
-      SELECT c.*, u.name as u_name, u.avatar as u_avatar
+      SELECT 
+        c.*, 
+        u.name as u_name, 
+        u.avatar as u_avatar,
+        (SELECT COUNT(*) FROM bulletin_comment_likes cl WHERE cl.comment_id = c.id) as like_count
+        ${userId ? `, (SELECT reaction FROM bulletin_comment_likes cl WHERE cl.comment_id = c.id AND cl.user_id = $2) as user_reaction` : ''}
       FROM bulletin_ad_comments c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.ad_id = $1
       ORDER BY c.created_at ASC
-    `, [adId]);
+    `, userId ? [adId, userId] : [adId]);
 
     const formatted = result.rows.map((row: any) => ({
       id: row.id,
@@ -1022,6 +1115,8 @@ router.get('/ads/:id/comments', async (req, res) => {
       author_avatar: row.u_avatar || row.author_avatar || null,
       content: row.content,
       parent_id: row.parent_id,
+      like_count: Number(row.like_count) || 0,
+      user_reaction: row.user_reaction || null,
       created_at: row.created_at
     }));
 
@@ -1046,6 +1141,30 @@ router.post('/ads/:id/comments', authenticateToken, async (req: any, res) => {
       return res.status(400).json({ error: 'يرجى كتابة نص التعليق' });
     }
 
+    // Verify ad existence and commenting permission
+    const adOwnerRes = await pool.query('SELECT user_id, title, who_can_comment, page_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adOwnerRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+
+    const adData = adOwnerRes.rows[0];
+    const isOwnerOrAdmin = Number(adData.user_id) === Number(userId) || req.user.role === 'admin';
+
+    if (!isOwnerOrAdmin) {
+      if (adData.who_can_comment === 'nobody') {
+        return res.status(403).json({ error: 'قام صاحب المنشور بإيقاف التعليقات على هذا المنشور' });
+      }
+      if (adData.who_can_comment === 'followers' && adData.page_id) {
+        const followerCheck = await pool.query(
+          'SELECT 1 FROM bulletin_page_followers WHERE user_id = $1 AND page_id = $2',
+          [userId, adData.page_id]
+        ).catch(() => ({ rows: [] }));
+        if (followerCheck.rows.length === 0) {
+          return res.status(403).json({ error: 'التعليقات متاحة لمتابعي الصفحة فقط' });
+        }
+      }
+    }
+
     const userRes = await pool.query('SELECT name, avatar FROM users WHERE id = $1', [userId]);
     const authorName = userRes.rows[0]?.name || req.user.name || 'مستخدم';
     const authorAvatar = userRes.rows[0]?.avatar || null;
@@ -1058,22 +1177,29 @@ router.post('/ads/:id/comments', authenticateToken, async (req: any, res) => {
 
     await pool.query('UPDATE bulletin_ads SET comments_count = comments_count + 1 WHERE id = $1', [adId]);
 
-    // Dispatch notification to ad/reel owner
+    // Dispatch notification to ad/reel owner if not muted
     try {
-      const adOwnerRes = await pool.query('SELECT user_id, title FROM bulletin_ads WHERE id = $1', [adId]);
-      const adOwnerId = adOwnerRes.rows[0]?.user_id;
-      const adTitle = adOwnerRes.rows[0]?.title || 'منشورك';
+      const adOwnerId = adData.user_id;
+      const adTitle = adData.title || 'منشورك';
       if (adOwnerId && Number(adOwnerId) !== Number(userId)) {
-        const { dispatchNotification } = await import('../services/notifications.js');
-        await dispatchNotification(
-          adOwnerId,
-          'new_comment',
-          'New Comment on Your Reel/Ad',
-          'تعليق جديد على مقطعك أو إعلانك',
-          `${authorName} commented on "${adTitle}": "${content.substring(0, 40)}..."`,
-          `قام ${authorName} بالتعليق على "${adTitle}": "${content.substring(0, 40)}..."`,
-          { adId, commentId: insertRes.rows[0].id }
-        );
+        // Check if owner muted notifications for this post
+        const mutedCheck = await pool.query(
+          'SELECT 1 FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = $2',
+          [adOwnerId, adId]
+        ).catch(() => ({ rows: [] }));
+
+        if (mutedCheck.rows.length === 0) {
+          const { dispatchNotification } = await import('../services/notifications.js');
+          await dispatchNotification(
+            adOwnerId,
+            'new_comment',
+            'New Comment on Your Reel/Ad',
+            'تعليق جديد على مقطعك أو إعلانك',
+            `${authorName} commented on "${adTitle}": "${content.substring(0, 40)}..."`,
+            `قام ${authorName} بالتعليق على "${adTitle}": "${content.substring(0, 40)}..."`,
+            { adId, commentId: insertRes.rows[0].id }
+          );
+        }
       }
     } catch (nErr) {
       console.error('[Bulletin API] Comment notification error:', nErr);
@@ -3188,9 +3314,25 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
   try {
     const adId = parseInt(req.params.id);
     const userId = req.user.id;
-    const { title, description, image_url, whatsapp_number, phone_number, video_url, target_url, hashtags, location_city, audience, ad_format, quick_questions } = req.body;
+    const { title, description, image_url, media_gallery, whatsapp_number, phone_number, video_url, target_url, hashtags, location_city, audience, ad_format, quick_questions, aspect_ratio } = req.body;
 
-    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    const galleryItems = Array.isArray(media_gallery) ? media_gallery : [];
+    if (galleryItems.length > 20) {
+      return res.status(400).json({
+        error: 'الحد الأقصى المسموح به هو 20 وسيطة / Cannot have more than 20 media items'
+      });
+    }
+
+    if (image_url && typeof image_url === 'string') {
+      const imagesCount = image_url.split(',').map((u: string) => u.trim()).filter(Boolean).length;
+      if (imagesCount > 20) {
+        return res.status(400).json({
+          error: 'لا يمكن تعديل المنشور بأكثر من 20 وسيطة / Cannot have more than 20 media items'
+        });
+      }
+    }
+
+    const adRes = await pool.query('SELECT user_id, metadata FROM bulletin_ads WHERE id = $1', [adId]);
     if (adRes.rows.length === 0) {
       return res.status(404).json({ error: 'الإعلان غير موجود' });
     }
@@ -3228,8 +3370,25 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
       return `/uploads/${clean}`;
     };
 
-    const normEditImg = normalizeEditUrl(image_url);
-    const normEditVid = normalizeEditUrl(video_url);
+    const normGallery = galleryItems.map((item: any) => ({
+      id: String(item.id || Date.now() + Math.random()),
+      url: normalizeEditUrl(item.url) || item.url,
+      type: item.type === 'video' ? 'video' : 'image',
+      caption: typeof item.caption === 'string' ? item.caption.trim() : '',
+      thumbnailUrl: item.thumbnailUrl ? (normalizeEditUrl(item.thumbnailUrl) || item.thumbnailUrl) : undefined
+    }));
+
+    const galleryImages = normGallery.filter(i => i.type === 'image').map(i => i.url);
+    const galleryVideos = normGallery.filter(i => i.type === 'video').map(i => i.url);
+
+    const normEditImg = normalizeEditUrl(image_url) || (galleryImages.length > 0 ? galleryImages.join(',') : null);
+    const normEditVid = normalizeEditUrl(video_url) || (galleryVideos.length > 0 ? galleryVideos[0] : null);
+
+    const existingMetadata = adRes.rows[0].metadata || {};
+    const updatedMetadata = {
+      ...existingMetadata,
+      media_gallery: normGallery.length > 0 ? normGallery : (media_gallery !== undefined ? undefined : existingMetadata.media_gallery)
+    };
 
     const updateRes = await pool.query(`
       UPDATE bulletin_ads
@@ -3245,8 +3404,10 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
           audience = $10,
           ad_format = $11,
           quick_questions = $12,
+          aspect_ratio = $13,
+          metadata = $14,
           updated_at = NOW()
-      WHERE id = $13
+      WHERE id = $15
       RETURNING *
     `, [
       title.trim(),
@@ -3261,10 +3422,17 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
       audience || 'public',
       ad_format || 'post',
       JSON.stringify((quick_questions || []).filter(Boolean)),
+      aspect_ratio || 'grid',
+      JSON.stringify(updatedMetadata),
       adId
     ]);
 
-    res.json({ success: true, message: 'تم تحديث الإعلان بنجاح', ad: updateRes.rows[0] });
+    const updatedAd = updateRes.rows[0];
+    if (normGallery.length > 0) {
+      updatedAd.media_gallery = normGallery;
+    }
+
+    res.json({ success: true, message: 'تم تحديث الإعلان بنجاح', ad: updatedAd });
   } catch (error: any) {
     console.error('[Bulletin API] Update ad error:', error.message);
     res.status(500).json({ error: 'فشل تحديث الإعلان' });
@@ -3326,4 +3494,401 @@ router.post('/stories/:id/reshare', authenticateToken, async (req: any, res) => 
   }
 });
 
+/**
+ * PATCH /api/bulletin/ads/:id/who-can-comment
+ * Update comment permission (anyone, followers, mentioned, nobody)
+ */
+router.patch('/ads/:id/who-can-comment', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { who_can_comment } = req.body;
+
+    const allowed = ['anyone', 'followers', 'mentioned', 'nobody'];
+    if (!allowed.includes(who_can_comment)) {
+      return res.status(400).json({ error: 'خيار غير صالح لتحديد من يمكنه التعليق' });
+    }
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا المنشور' });
+    }
+
+    await pool.query('UPDATE bulletin_ads SET who_can_comment = $1 WHERE id = $2', [who_can_comment, adId]);
+    res.json({ success: true, who_can_comment, message: 'تم تحديث إعدادات التعليق بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error updating who_can_comment:', err.message);
+    res.status(500).json({ error: 'فشل تحديث إعدادات التعليق' });
+  }
+});
+
+/**
+ * PATCH /api/bulletin/ads/:id/audience
+ * Update audience (public, friends, only_me)
+ */
+router.patch('/ads/:id/audience', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { audience } = req.body;
+
+    const allowed = ['public', 'friends', 'only_me'];
+    if (!allowed.includes(audience)) {
+      return res.status(400).json({ error: 'خيار جمهور غير صالح' });
+    }
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا المنشور' });
+    }
+
+    await pool.query('UPDATE bulletin_ads SET audience = $1 WHERE id = $2', [audience, adId]);
+    res.json({ success: true, audience, message: 'تم تعديل جمهور المنشور بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error updating audience:', err.message);
+    res.status(500).json({ error: 'فشل تعديل الجمهور' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/toggle-notifications
+ * Toggle mute / unmute notifications for an ad
+ */
+router.post('/ads/:id/toggle-notifications', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    const existing = await pool.query(
+      'SELECT id FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = $2',
+      [userId, adId]
+    );
+
+    let isMuted: boolean;
+    if (existing.rows.length > 0) {
+      await pool.query(
+        'DELETE FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = $2',
+        [userId, adId]
+      );
+      isMuted = false;
+    } else {
+      await pool.query(
+        'INSERT INTO bulletin_ad_muted_notifications (user_id, ad_id) VALUES ($1, $2)',
+        [userId, adId]
+      );
+      isMuted = true;
+    }
+
+    res.json({
+      success: true,
+      is_muted: isMuted,
+      message: isMuted ? 'تم إيقاف تشغيل الإشعارات لهذا المنشور' : 'تم تشغيل الإشعارات لهذا المنشور'
+    });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error toggling notifications:', err.message);
+    res.status(500).json({ error: 'فشل تغيير إعدادات الإشعارات' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/partnership-code
+ * Save or update branded partnership details
+ */
+router.post('/ads/:id/partnership-code', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { partnership_code, is_partnership, partnership_brand } = req.body;
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا المنشور' });
+    }
+
+    const result = await pool.query(
+      `UPDATE bulletin_ads 
+       SET partnership_code = $1, is_partnership = $2, partnership_brand = $3 
+       WHERE id = $4
+       RETURNING partnership_code, is_partnership, partnership_brand`,
+      [partnership_code || null, Boolean(is_partnership), partnership_brand || null, adId]
+    );
+
+    res.json({
+      success: true,
+      ...result.rows[0],
+      message: 'تم حفظ تفاصيل إعلان الشراكة بنجاح'
+    });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error updating partnership details:', err.message);
+    res.status(500).json({ error: 'فشل تحديث تفاصيل الشراكة' });
+  }
+});
+
+/**
+ * PATCH /api/bulletin/ads/:id/toggle-translation
+ * Toggle allow translation on a post
+ */
+router.patch('/ads/:id/toggle-translation', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { allow_translation } = req.body;
+
+    const adRes = await pool.query('SELECT user_id, allow_translation FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا المنشور' });
+    }
+
+    const newVal = typeof allow_translation === 'boolean' 
+      ? allow_translation 
+      : !(adRes.rows[0].allow_translation !== false);
+
+    await pool.query('UPDATE bulletin_ads SET allow_translation = $1 WHERE id = $2', [newVal, adId]);
+    res.json({ 
+      success: true, 
+      allow_translation: newVal,
+      message: newVal ? 'تم تشغيل الترجمة لهذا المنشور' : 'تم إيقاف تشغيل الترجمة لهذا المنشور'
+    });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error toggling translation:', err.message);
+    res.status(500).json({ error: 'فشل تعديل حالة الترجمة' });
+  }
+});
+
+/**
+ * PATCH /api/bulletin/ads/:id/toggle-ai
+ * Toggle AI-generated content label
+ */
+router.patch('/ads/:id/toggle-ai', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { is_ai_generated } = req.body;
+
+    const adRes = await pool.query('SELECT user_id, is_ai_generated FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذا المنشور' });
+    }
+
+    const newVal = typeof is_ai_generated === 'boolean' 
+      ? is_ai_generated 
+      : !adRes.rows[0].is_ai_generated;
+
+    await pool.query('UPDATE bulletin_ads SET is_ai_generated = $1 WHERE id = $2', [newVal, adId]);
+    res.json({ 
+      success: true, 
+      is_ai_generated: newVal,
+      message: newVal ? 'تم وسم المنشور كمحتوى تم إنشاؤه بالذكاء الاصطناعي' : 'تمت إزالة وسم الذكاء الاصطناعي'
+    });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error toggling AI flag:', err.message);
+    res.status(500).json({ error: 'فشل تعديل وسم الذكاء الاصطناعي' });
+  }
+});
+
+/**
+ * PATCH /api/bulletin/ads/:id/date
+ * Edit publication date
+ */
+router.patch('/ads/:id/date', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { created_at } = req.body;
+
+    if (!created_at || isNaN(Date.parse(created_at))) {
+      return res.status(400).json({ error: 'تاريخ غير صالح' });
+    }
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل تاريخ هذا المنشور' });
+    }
+
+    await pool.query('UPDATE bulletin_ads SET created_at = $1 WHERE id = $2', [created_at, adId]);
+    res.json({ success: true, created_at, message: 'تم تعديل تاريخ المنشور بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error updating date:', err.message);
+    res.status(500).json({ error: 'فشل تعديل تاريخ المنشور' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/archive
+ * Move post to archive
+ */
+router.post('/ads/:id/archive', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لنقل هذا المنشور إلى الأرشيف' });
+    }
+
+    await pool.query(
+      'UPDATE bulletin_ads SET status = \'archived\', archived_at = NOW() WHERE id = $1',
+      [adId]
+    );
+
+    res.json({ success: true, message: 'تم نقل المنشور إلى الأرشيف بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error archiving ad:', err.message);
+    res.status(500).json({ error: 'فشل نقل المنشور إلى الأرشيف' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/unarchive
+ * Restore post from archive
+ */
+router.post('/ads/:id/unarchive', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية' });
+    }
+
+    await pool.query(
+      'UPDATE bulletin_ads SET status = \'approved\', archived_at = NULL WHERE id = $1',
+      [adId]
+    );
+
+    res.json({ success: true, message: 'تمت استعادة المنشور من الأرشيف بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error unarchiving ad:', err.message);
+    res.status(500).json({ error: 'فشل استعادة المنشور من الأرشيف' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/trash
+ * Move post to trash (retained for 30 days before auto-purge)
+ */
+router.post('/ads/:id/trash', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لنقل هذا المنشور إلى سلة المهملات' });
+    }
+
+    await pool.query(
+      'UPDATE bulletin_ads SET status = \'trash\', deleted_at = NOW() WHERE id = $1',
+      [adId]
+    );
+
+    res.json({
+      success: true,
+      message: 'تم نقل المنشور إلى سلة المهملات. يتم حذف العناصر الموجودة في سلة المهملات بعد 30 يومًا.'
+    });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error trashing ad:', err.message);
+    res.status(500).json({ error: 'فشل نقل المنشور إلى سلة المهملات' });
+  }
+});
+
+/**
+ * POST /api/bulletin/ads/:id/restore-trash
+ * Restore post from trash
+ */
+router.post('/ads/:id/restore-trash', authenticateToken, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    const adRes = await pool.query('SELECT user_id FROM bulletin_ads WHERE id = $1', [adId]);
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'المنشور غير موجود' });
+    }
+    if (adRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'ليس لديك صلاحية' });
+    }
+
+    await pool.query(
+      'UPDATE bulletin_ads SET status = \'approved\', deleted_at = NULL WHERE id = $1',
+      [adId]
+    );
+
+    res.json({ success: true, message: 'تمت استعادة المنشور من سلة المهملات بنجاح' });
+  } catch (err: any) {
+    console.error('[Bulletin API] Error restoring ad from trash:', err.message);
+    res.status(500).json({ error: 'فشل استعادة المنشور' });
+  }
+});
+
+
+/**
+ * POST /api/bulletin/comments/:id/like
+ * Toggle like/reaction on a comment
+ */
+router.post('/comments/:id/like', authenticateToken, async (req: any, res) => {
+  try {
+    const commentId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const { reaction = 'like' } = req.body;
+
+    const existingLike = await pool.query(
+      'SELECT id, reaction FROM bulletin_comment_likes WHERE comment_id = $1 AND user_id = $2',
+      [commentId, userId]
+    );
+
+    let newReaction = null;
+    if (existingLike.rows.length > 0) {
+      if (existingLike.rows[0].reaction === reaction) {
+        // Toggle off
+        await pool.query('DELETE FROM bulletin_comment_likes WHERE comment_id = $1 AND user_id = $2', [commentId, userId]);
+      } else {
+        // Change reaction
+        await pool.query('UPDATE bulletin_comment_likes SET reaction = $1 WHERE comment_id = $2 AND user_id = $3', [reaction, commentId, userId]);
+        newReaction = reaction;
+      }
+    } else {
+      // Add reaction
+      await pool.query('INSERT INTO bulletin_comment_likes (comment_id, user_id, reaction) VALUES ($1, $2, $3)', [commentId, userId, reaction]);
+      newReaction = reaction;
+    }
+
+    const likeCountResult = await pool.query('SELECT COUNT(*) FROM bulletin_comment_likes WHERE comment_id = $1', [commentId]);
+    const likeCount = parseInt(likeCountResult.rows[0].count);
+
+    res.json({ success: true, like_count: likeCount, user_reaction: newReaction });
+  } catch (error: any) {
+    console.error('[Bulletin API] Comment like error:', error.message);
+    res.status(500).json({ error: 'Failed to process reaction' });
+  }
+});
 export default router;

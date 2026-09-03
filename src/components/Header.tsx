@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { Bell, Languages, Menu, Check, Trash2, Clock, ShieldCheck, Landmark, MessageSquare, Edit2, X, WifiOff, Megaphone, Cpu } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { DefaultLogo } from './DefaultLogo';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { MemoryNotification } from './MemoryNotification';
 import { ThemeToggleButton } from './ThemeToggleButton';
 import { NotificationIconRenderer } from '../utils/imageProcessor';
+import { triggerHaptic } from '../utils/haptics';
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
   const { language: globalLang, setLanguage, theme, isSidebarOpen, setIsSidebarOpen, user, notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, siteSettings, t, token, memoryNotification, closeMemoryNotification, isOperationPending } = useAppContext();
@@ -215,17 +215,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
                         alt="Logo" 
                         className="w-full h-full object-cover block"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          if (target.src !== '/app-assets/icon.png') {
-                            target.src = '/app-assets/icon.png';
-                          }
-                        }}
                       />
                     </motion.div>
                   ) : (
                     <motion.div
-                      className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center relative z-10 transition-theme`}
+                      className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} rounded-[10px] bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center relative z-10 transition-theme group-hover:border-accent/50`}
                       animate={isStreaming ? {
                         scale: [1, 1.05, 1]
                       } : {}}
@@ -235,7 +229,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         ease: "easeInOut"
                       } : {}}
                     >
-                      <DefaultLogo className={`${isMobileView ? 'w-9 h-9' : 'w-10 h-10'} group-hover:scale-105 relative z-10 transition-theme`} iconClassName={isMobileView ? "w-5 h-5" : "w-6 h-6"} />
+                      <Cpu className={isMobileView ? "w-5 h-5 text-accent" : "w-6 h-6 text-accent"} />
                     </motion.div>
                   )}
                 </div>
@@ -263,7 +257,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
               
               {shouldShowMenuButton && (
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerHaptic('medium');
+                    setIsSidebarOpen(true);
+                  }} 
                   className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0 hover:bg-[var(--bg-secondary)]"
                   title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
                 >
@@ -418,7 +416,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           </AnimatePresence>
 
            <button 
-                onClick={toggleLanguage}
+                onClick={() => {
+                  triggerHaptic('light');
+                  toggleLanguage();
+                }}
                 className="flex items-center justify-center gap-1 md:gap-1.5 text-[10px] sm:text-[11px] font-black w-10 sm:w-auto px-0 sm:px-2 md:px-3 h-10 rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
               >
             <Languages size={16} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
@@ -431,6 +432,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
           <div className="flex items-center gap-1.5 h-full">
             <button
               onClick={() => {
+                triggerHaptic('light');
                 navigate('/bulletin');
                 window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
               }}
@@ -442,7 +444,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
               <button 
-                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                onClick={() => {
+                  triggerHaptic('light');
+                  setIsNotifOpen(!isNotifOpen);
+                }}
                 className={`flex items-center justify-center w-10 h-10 rounded-[4px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-accent/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
               >
                 <Bell size={16} className={`transition-theme ${unreadCount > 0 ? "text-accent" : "text-gray-400 group-hover:text-accent"}`} />

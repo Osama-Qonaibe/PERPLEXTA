@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from './AppContext';
+import { getGlobalMuteState, setGlobalMuteState } from '../utils/mediaCoordinator';
 
 export interface ProgressData {
   progress: number;
@@ -47,6 +48,8 @@ interface VideoResourceContextProps {
   relinkMessageId: (tempId: string | number, dbId: number) => void;
   updateMediaMetadata: (id: string | number, metadata: Partial<MediaMetadata>) => void;
   getMediaMetadata: (id: string | number) => MediaMetadata | undefined;
+  globalMuted: boolean;
+  setGlobalMuted: (muted: boolean) => void;
 }
 
 const VideoResourceContext = createContext<VideoResourceContextProps | undefined>(undefined);
@@ -56,6 +59,9 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [resources, setResources] = useState<Record<string | number, VideoResourceState>>({});
   const [activeMessageId, setActiveMessageId] = useState<string | number | null>(null);
   const [activePlaybackId, setActivePlaybackId] = useState<string | null>(null);
+  const [globalMuted, setGlobalMutedStateReact] = useState<boolean>(() => {
+    return getGlobalMuteState();
+  });
   
   const activeMessageIdRef = useRef<string | number | null>(null);
   const tokenRef = useRef<string | null>(null);
@@ -67,6 +73,165 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
+
+  // Autoplay Diagnostics and Browser Compatibility Check
+  useEffect(() => {
+    const runAutoplayDiagnostics = async () => {
+      console.log(
+        '%c🔍 PERPLEXTA MEDIA DIAGNOSTICS: Starting Browser Playback Capability Scan...',
+        'color: #10b981; font-weight: bold; font-size: 13px;'
+      );
+
+      const navAny = navigator as any;
+      const report: Record<string, any> = {
+        userAgent: navigator.userAgent,
+        userActivation: {
+          isActive: !!navAny.userActivation?.isActive,
+          hasBeenActive: !!navAny.userActivation?.hasBeenActive,
+        },
+        audioContextState: 'unknown',
+        mutedAutoplay: 'unknown',
+        unmutedAutoplay: 'unknown',
+        cookieEnabled: navigator.cookieEnabled,
+        isIframe: window.self !== window.top,
+      };
+
+      // 1. AudioContext State Check
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const testCtx = new AudioCtx();
+          report.audioContextState = testCtx.state;
+          // Clean up to prevent leaking resources
+          testCtx.close().catch(() => {});
+        } else {
+          report.audioContextState = 'unsupported';
+        }
+      } catch (err: any) {
+        report.audioContextState = `error: ${err.message || err}`;
+      }
+
+      // 2. Playback diagnostics with a dummy video
+      const testVideo = document.createElement('video');
+      testVideo.playsInline = true;
+      testVideo.setAttribute('playsinline', 'true');
+      testVideo.style.display = 'none';
+      testVideo.style.width = '1px';
+      testVideo.style.height = '1px';
+      testVideo.style.position = 'absolute';
+      testVideo.style.opacity = '0';
+      
+      // Minimal base64 silent video to allow actual playback attempt
+      testVideo.src = 'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAzZtb292AAAAbG12aGQAAAAA0bM8utGzPLsAALuUAAAD6QABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAACNXRyYWsAAABcdGtoZAAAAAnRszy60bM8ugAAAAEAAAAAAAD6QAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAMAdWR0YQAAAChtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAOG1kYXQAAAAnEAAAHwQA8ABgAAYAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAg==';
+
+      // We append it to body to ensure the browser processes it correctly as part of the DOM
+      try {
+        document.body.appendChild(testVideo);
+      } catch (_) {}
+
+      // A. Muted Autoplay Test
+      testVideo.muted = true;
+      try {
+        await testVideo.play();
+        report.mutedAutoplay = 'ALLOWED';
+      } catch (err: any) {
+        if (err.name === 'NotAllowedError') {
+          report.mutedAutoplay = 'BLOCKED_BY_BROWSER_POLICY';
+        } else {
+          report.mutedAutoplay = `FAILED_WITH_ERROR (${err.name || 'UnknownError'}): ${err.message || err}`;
+        }
+      }
+
+      // B. Unmuted Autoplay Test
+      testVideo.muted = false;
+      try {
+        await testVideo.play();
+        report.unmutedAutoplay = 'ALLOWED';
+      } catch (err: any) {
+        if (err.name === 'NotAllowedError') {
+          report.unmutedAutoplay = 'BLOCKED_BY_BROWSER_POLICY';
+        } else {
+          report.unmutedAutoplay = `FAILED_WITH_ERROR (${err.name || 'UnknownError'}): ${err.message || err}`;
+        }
+      }
+
+      // Cleanup
+      try {
+        if (testVideo.parentNode) {
+          testVideo.parentNode.removeChild(testVideo);
+        }
+      } catch (_) {}
+
+      // 3. Output beautiful structured logs
+      const isMutedBlocked = report.mutedAutoplay === 'BLOCKED_BY_BROWSER_POLICY';
+      const isUnmutedBlocked = report.unmutedAutoplay === 'BLOCKED_BY_BROWSER_POLICY';
+      const isSuspended = report.audioContextState === 'suspended';
+
+      console.groupCollapsed(
+        `%c📊 Perplexta Media Diagnostic Report: ${
+          isMutedBlocked || isUnmutedBlocked ? '⚠️ RESTRICTIONS DETECTED' : '✅ ALL SYSTEMS GO'
+        }`,
+        `color: ${isMutedBlocked || isUnmutedBlocked ? '#f59e0b' : '#10b981'}; font-weight: bold;`
+      );
+      
+      console.log('User Agent:', report.userAgent);
+      console.log('Running inside iframe:', report.isIframe);
+      console.log('User Has Interacted with Page:', report.userActivation.hasBeenActive ? 'Yes (hasBeenActive)' : 'No (Requires gesture)');
+      console.log('Audio Context State:', report.audioContextState);
+      console.log('Muted Autoplay Status:', report.mutedAutoplay);
+      console.log('Unmuted Autoplay Status:', report.unmutedAutoplay);
+
+      if (report.isIframe) {
+        console.warn(
+          '⚠️ WARNING: The application is running inside an iframe. Chrome/Safari strict sandbox rules block unmuted autoplay and can sometimes suspend the AudioContext unless the iframe has explicit "allow=autoplay" permissions.'
+        );
+      }
+
+      if (isMutedBlocked) {
+        console.error(
+          '❌ MUTED AUTOPLAY BLOCKED: Your browser is blocking even muted autoplay. This is typical under extreme battery-saving modes, strict browser privacy extensions, or customized browser safety shields.'
+        );
+      }
+
+      if (isUnmutedBlocked) {
+        console.warn(
+          '⚠️ UNMUTED AUTOPLAY BLOCKED: Browser autoplay policy requires an explicit user gesture (e.g., a click or tap on the page) before any unmuted video can begin playing with sound. This is standard modern browser behavior to prevent noisy ads.'
+        );
+      }
+
+      if (isSuspended) {
+        console.warn(
+          '⚠️ AUDIO CONTEXT SUSPENDED: Audio playback is currently locked by the browser. It will automatically resume as soon as the user interacts with the page.'
+        );
+      }
+
+      console.groupEnd();
+    };
+
+    // Run diagnostics slightly after mount to ensure DOM is fully ready
+    const timer = setTimeout(runAutoplayDiagnostics, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const setGlobalMuted = useCallback((muted: boolean) => {
+    setGlobalMutedStateReact(muted);
+    setGlobalMuteState(muted);
+  }, []);
+
+  // Sync React state if mute triggers occur globally outside of the react context
+  useEffect(() => {
+    const handleMuteChange = (e: Event) => {
+      const customEvt = e as CustomEvent<{ muted: boolean }>;
+      if (customEvt.detail && typeof customEvt.detail.muted === 'boolean') {
+        setGlobalMutedStateReact(customEvt.detail.muted);
+      }
+    };
+
+    window.addEventListener('perplexta:mute_change', handleMuteChange);
+    return () => {
+      window.removeEventListener('perplexta:mute_change', handleMuteChange);
+    };
+  }, []);
 
   const updateMediaMetadata = useCallback((id: string | number, metadata: Partial<MediaMetadata>) => {
     setResources(prev => {
@@ -272,7 +437,9 @@ export const VideoResourceProvider: React.FC<{ children: React.ReactNode }> = ({
       markVideoFailed,
       relinkMessageId,
       updateMediaMetadata,
-      getMediaMetadata
+      getMediaMetadata,
+      globalMuted,
+      setGlobalMuted
     }}>
       {children}
     </VideoResourceContext.Provider>

@@ -234,3 +234,29 @@ export const authenticateAdmin = (req: Request, res: Response, next: NextFunctio
     next();
   });
 };
+export const authenticateTokenOptional = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  let token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    token = token.trim();
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.slice(1, -1);
+    }
+  }
+  if (!token || token === 'null' || token === 'undefined' || token === '') {
+    return next();
+  }
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return next();
+  }
+
+  jwt.verify(token, jwtSecret, (err: any, user: any) => {
+    if (!err) {
+      (req as any).user = user;
+      (req as any).token = token;
+    }
+    next();
+  });
+};

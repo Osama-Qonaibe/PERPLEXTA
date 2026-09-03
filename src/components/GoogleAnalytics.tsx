@@ -111,7 +111,7 @@ export const GoogleAnalytics = () => {
       
       const logoUrl = siteSettings.logoBase64 
         ? (siteSettings.logoBase64.startsWith('data:') ? siteSettings.logoBase64 : `${currentUrl}${siteSettings.logoBase64}`) 
-        : `${currentUrl}/app-assets/og-image.png`;
+        : '';
 
       // A. Build & Inject standard Organization Schema
       const orgSchema = buildOrganizationSchema({

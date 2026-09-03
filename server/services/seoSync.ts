@@ -337,7 +337,7 @@ export async function syncBlogArticlesMetadata() {
     }
 
     if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = image_url && image_url.trim() ? image_url.trim() : '/app-assets/og-image.png';
+      og_image_url = image_url && image_url.trim() ? image_url.trim() : '';
       needsUpdate = true;
     }
 
@@ -498,7 +498,7 @@ export async function syncMarketplaceItemsMetadata() {
     if (!og_image_url || !og_image_url.trim()) {
       og_image_url = (image_url && image_url.trim())
         ? image_url.trim()
-        : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.png');
+        : ((preview_url && preview_url.trim()) ? preview_url.trim() : '');
       needsUpdate = true;
     }
 
@@ -633,7 +633,7 @@ export async function syncBulletinAdsMetadata() {
     }
 
     if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = '/app-assets/og-image.png';
+      og_image_url = '';
       needsUpdate = true;
     }
 
@@ -902,7 +902,7 @@ export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'b
   const meta_description_ar = aiData?.meta_description_ar || extractDescription(content_ar || description_ar || title_ar || '');
   const keywords_en = aiData?.keywords_en || extractKeywords(title_en || '', category_en || '', content_en || description_en || '', 'en');
   const keywords_ar = aiData?.keywords_ar || extractKeywords(title_ar || '', category_ar || '', content_ar || description_ar || '', 'ar');
-  const og_image_url = (image_url && image_url.trim()) ? image_url.trim() : ((preview_url && preview_url.trim()) ? preview_url.trim() : '/app-assets/og-image.png');
+  const og_image_url = (image_url && image_url.trim()) ? image_url.trim() : ((preview_url && preview_url.trim()) ? preview_url.trim() : '');
 
   if (type === 'bulletin') {
     await db.query(
@@ -1004,7 +1004,7 @@ export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bull
   const suggestedKeywordsEn = aiData?.keywords_en || extractKeywords(row.title_en || '', row.category_en || '', row.content_en || row.description_en || '', 'en');
   const suggestedKeywordsAr = aiData?.keywords_ar || extractKeywords(row.title_ar || '', row.category_ar || '', row.content_ar || row.description_ar || '', 'ar');
   const suggestedSlug = row.slug && row.slug.trim() ? row.slug.trim() : `${type}-${row.id}-${slugify(row.title_en || row.title_ar || 'item')}`;
-  const suggestedOgImage = row.og_image_url && row.og_image_url.trim() ? row.og_image_url.trim() : (row.image_url && row.image_url.trim() ? row.image_url.trim() : '/app-assets/og-image.png');
+  const suggestedOgImage = row.og_image_url && row.og_image_url.trim() ? row.og_image_url.trim() : (row.image_url && row.image_url.trim() ? row.image_url.trim() : '');
 
   return {
     id: row.id,
@@ -1076,7 +1076,7 @@ export async function applySmartSeoSuggestion(
   const keywords_en = (metadata.keywords_en !== undefined ? metadata.keywords_en : existing.keywords_en) || extractKeywords(itemTitleEn, itemCatEn, '', 'en');
   const keywords_ar = (metadata.keywords_ar !== undefined ? metadata.keywords_ar : existing.keywords_ar) || extractKeywords(itemTitleAr, itemCatAr, '', 'ar');
   const slug = (metadata.slug !== undefined ? metadata.slug : existing.slug) || `${type}-${id}-${slugify(itemTitleEn)}`;
-  const og_image_url = (metadata.og_image_url !== undefined ? metadata.og_image_url : existing.og_image_url) || existing.image_url || '/app-assets/og-image.png';
+  const og_image_url = (metadata.og_image_url !== undefined ? metadata.og_image_url : existing.og_image_url) || existing.image_url || '';
 
   if (type === 'bulletin') {
       await db.query(

@@ -7,7 +7,7 @@ import {
   Grid, TrendingUp, SlidersHorizontal, Eye, Play,
   Plus, X, Upload, Check, ExternalLink, ArrowLeft, ArrowRight, Wallet, CreditCard,
   ChevronDown, Trash2, Search, Sliders, AlertCircle, Sparkles, Flame, Star, Award, ShoppingBag, Gift, Share2, ShoppingCart,
-  Edit, ShieldAlert, BookOpen, Smartphone, Rocket, RefreshCw
+  Edit, ShieldAlert, BookOpen, Smartphone, Rocket, RefreshCw, Monitor, Code2
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { RecommendationWidget } from '../components/RecommendationWidget';
@@ -1249,47 +1249,6 @@ export const MarketplacePage: React.FC = () => {
       });
     }
 
-    // Category specific premium static mockups for complete design presentation and immersive galleries
-    const categoryKey = getSubcategoryKey(product);
-    
-    const categoryMocks: Record<string, { url: string; en: string; ar: string }[]> = {
-      saas: [
-        { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&fit=crop', en: 'Analytical Control Dashboard & Real-Time Node Tracking', ar: 'شاشة مراقبة العمليات البرمجية والمقاييس الذكية' },
-        { url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&fit=crop', en: 'Platform Component Orchestrator & Task Pipelines Layout', ar: 'مخطط مكونات الواجهة وتوزيع وتصميم الإجراءات' },
-        { url: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=1200&fit=crop', en: 'System Settings, API Sandbox & Performance Monitor', ar: 'لوحة التحكم ببارامترات التشغيل ومراقبة جودة الضخ الرقمي' }
-      ],
-      mobile: [
-        { url: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1200&fit=crop', en: 'Premium Native App Screens & Fluid Interaction Mockups', ar: 'المخطط السيميائي والواجهات التفاعلية للهواتف المحمولة' },
-        { url: 'https://images.unsplash.com/photo-1555421689-491a97ff2040?w=1200&fit=crop', en: 'Workspace Dark Mode Visual Architecture & User Profiles', ar: 'بنية الواجهات الداكنة ولوحة الحساب السحابي للعميل' }
-      ],
-      templates: [
-        { url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200&fit=crop', en: 'Component Grid Layout & Adaptive Style Presets Canvas', ar: 'مصفوفة الترتيب الشبكي والجماليات المخصصة لكتل البرمجة' },
-        { url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1200&fit=crop', en: 'UI Wireframing & Responsive Structural Design Library', ar: 'مكتبة الواجهات وعناصر figma الجاهزة متعددة الهيكلية' }
-      ],
-      'ai-agents': [
-        { url: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=1200&fit=crop', en: 'Neural Flow Controller & Prompt Sequence Model Settings', ar: 'لوحة تحكم المسارات العصبية وتسلسل النماذج التوليدية' },
-        { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&fit=crop', en: 'Autonomous Automation Execution Frame and Web-Scraping Pipeline', ar: 'إطار المعالجة الذاتية التلقائية وصندوق أدوات الأتمتة' }
-      ],
-      'trading-bots': [
-        { url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&fit=crop', en: 'Quant High-Frequency Technical Graphs & Trade Logger', ar: 'رسوم بيانية كمية سريعة وسجل المعاملات الفورية للماتريكس' },
-        { url: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&fit=crop', en: 'Risk Assessor Engine Dashboard & Profit/Loss Visualizers', ar: 'واجهة مقيمي المخاطر المالية ونواتج الأرباح والنسب' }
-      ]
-    };
-
-    const mocks = categoryMocks[categoryKey] || [
-      { url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=1200&fit=crop', en: 'Digital Workspace Structure Overview', ar: 'نظرة عامة على هيكلية ووثائق المنتج البرمجي والمرافق' },
-      { url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&fit=crop', en: 'Functional Blueprint & System Specifications Sheet', ar: 'كراسة الإجراءات الهندسية ومحيط العمل والمنظومة البرمجية' }
-    ];
-
-    mocks.forEach((m) => {
-      assets.push({
-        type: 'image',
-        url: m.url,
-        titleEn: m.en,
-        titleAr: m.ar
-      });
-    });
-
     return assets;
   };
 
@@ -1541,8 +1500,54 @@ export const MarketplacePage: React.FC = () => {
         } bg-[size:28px_28px]`}
       />
 
-      {/* Main Content Card Wrapper - Integrated full screen with no outer margins */}
-      <div className={`w-full h-full flex flex-col overflow-hidden relative z-10 ${
+      {/* Mobile Workstation Gate - Shown exclusively on mobile screens (<md) */}
+      <div className="flex md:hidden flex-col items-center justify-center flex-1 w-full max-w-md mx-auto p-6 text-center z-10 my-auto">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-main)] flex items-center justify-center mb-5 text-accent shadow-lg">
+          <Monitor size={30} className="text-accent" />
+        </div>
+
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold mb-3 tracking-wide">
+          <Code2 size={13} />
+          <span>{language === 'ar' ? 'منصة مخصصة لبيئات المطورين' : 'Developer & Workstation Only'}</span>
+        </div>
+
+        <h2 className="text-xl font-black tracking-tight mb-2 text-[var(--text-primary)]">
+          {language === 'ar' ? 'سوق المنصة مخصص لسطح المكتب' : 'Desktop Workstation Required'}
+        </h2>
+
+        <p className="text-xs font-medium leading-relaxed text-gray-400 mb-8 max-w-xs">
+          {language === 'ar'
+            ? 'تم تصميم سوق بيربليكستا كبيئة عمل متقدمة وشاملة للمطورين والمبرمجين لاستعراض الشيفرات المصدرية، والنماذج، والأنظمة الضخمة، وتتطلب شاشات سطح المكتب للاستفادة الكاملة.'
+            : 'The Perplexta Digital Marketplace is an intensive developer ecosystem engineered for high-resolution desktop workstations and development tools.'}
+        </p>
+
+        <div className="w-full space-y-3">
+          <button
+            onClick={() => navigate('/bulletin')}
+            className="w-full h-11 rounded-xl bg-accent text-[var(--fg-on-emphasis)] font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:opacity-90 active:scale-98 transition-theme cursor-pointer"
+          >
+            <ShoppingBag size={15} />
+            <span>{language === 'ar' ? 'العودة إلى ساحة الإعلانات' : 'Return to Global Feed'}</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/chat')}
+            className="w-full h-11 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold text-xs flex items-center justify-center gap-2 transition-theme active:scale-98 cursor-pointer"
+          >
+            <Rocket size={15} className="text-accent" />
+            <span>{language === 'ar' ? 'الذهاب إلى المحادثة الذكية' : 'Open AI Chat'}</span>
+          </button>
+        </div>
+
+        <p className="text-[10px] text-gray-500 mt-6">
+          {language === 'ar'
+            ? 'جميع خدمات الذكاء الاصطناعي، والأدوات، ولوحة الإعلانات متوافقة بالكامل مع هاتفك.'
+            : 'All other AI tools, chat systems, and community feeds are fully mobile-optimized.'}
+        </p>
+      </div>
+
+      {/* Main Desktop Marketplace View - Visible only on md and larger screens */}
+      <div className={`hidden md:flex w-full h-full flex-col overflow-hidden relative z-10 ${
         isThemeDark
           ? 'bg-[#080808]/95 shadow-black/80'
           : 'bg-white shadow-gray-200/50'

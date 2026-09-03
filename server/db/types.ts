@@ -742,6 +742,14 @@ export interface BulletinInquiry {
   created_at: Date | string;
 }
 
+export interface MediaGalleryItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video';
+  caption?: string;
+  thumbnailUrl?: string;
+}
+
 export interface BulletinAd {
   id: number;
   user_id: number;
@@ -756,6 +764,8 @@ export interface BulletinAd {
   title: string;
   description: string;
   image_url: string;
+  media_gallery?: MediaGalleryItem[];
+  metadata?: any;
   whatsapp_number: string | null;
   has_whatsapp_button?: boolean;
   phone_number?: string | null;
@@ -765,7 +775,7 @@ export interface BulletinAd {
   category: string;
   price_paid: number;
   duration_days: number;
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  status: 'pending' | 'approved' | 'rejected' | 'expired' | 'archived' | 'trash' | string;
   rejection_reason?: string | null;
   likes_count: number;
   comments_count: number;
@@ -778,6 +788,16 @@ export interface BulletinAd {
   feeling?: string | null;
   tagged_users?: string[] | null;
   audience?: 'public' | 'friends' | 'only_me' | string;
+  who_can_comment?: 'anyone' | 'followers' | 'mentioned' | 'nobody' | string;
+  allow_translation?: boolean;
+  is_muted_notifications?: boolean;
+  partnership_code?: string | null;
+  is_partnership?: boolean;
+  partnership_brand?: string | null;
+  partnership_label_enabled?: boolean;
+  partnership_sponsor_name?: string | null;
+  archived_at?: Date | string | null;
+  deleted_at?: Date | string | null;
   ad_format?: 'post' | 'reel' | 'story' | string;
   quick_questions?: string[] | null;
   is_boosted?: boolean;
@@ -798,6 +818,10 @@ export interface BulletinAdComment {
   author_avatar: string | null;
   content: string;
   parent_id?: number | null;
+  like_count?: number;
+  user_reaction?: string | null;
+  reactions_summary?: string[];
+  replies?: BulletinAdComment[];
   created_at: Date | string;
 }
 

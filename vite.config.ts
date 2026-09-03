@@ -16,6 +16,16 @@ const pwaConfig: any = {
     clientsClaim: true,
     cleanupOutdatedCaches: true,
     maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+    runtimeCaching: [
+      {
+        urlPattern: /\/uploads\/.*/i,
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: /\/api\/.*/i,
+        handler: 'NetworkOnly',
+      },
+    ],
   },
   manifest: {
     name: 'Perplexta Intelligence Platform',

@@ -141,12 +141,13 @@ export async function verifySchemaIntegrity() {
   const expectedSchema: Record<string, Record<string, { columns: string[]; repairCols?: Record<string, string | { type: string; default?: any }> }>> = {
     core: {
       users: {
-        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications', 'avatar_asset_id'],
+        columns: ['id', 'name', 'email', 'password_hash', 'role', 'status', 'kyc_status', 'kyc_required', 'kyc_rejection_reason', 'kyc_submitted_at', 'referred_by', 'language', 'theme', 'memory', 'support_notes', 'custom_instructions', 'last_active_at', 'created_at', 'updated_at', 'provider', 'avatar', 'referral_code', 'email_notifications', 'avatar_asset_id', 'media_muted'],
         repairCols: {
           email_notifications: { type: 'BOOLEAN', default: 'true' },
           avatar: { type: 'TEXT' },
           referral_code: { type: 'VARCHAR(6)' },
-          avatar_asset_id: { type: 'UUID' }
+          avatar_asset_id: { type: 'UUID' },
+          media_muted: { type: 'BOOLEAN', default: 'true' }
         }
       },
       user_sessions: {
@@ -199,7 +200,10 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'chat_id', 'file_name', 'file_type', 'mime_type', 'file_size', 'file_url', 'file_content', 'metadata', 'created_at', 'updated_at']
       },
       system_settings: {
-        columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high']
+        columns: ['id', 'site_name_en', 'site_name_ar', 'logo_url', 'logo_light_url', 'favicon_url', 'site_description_en', 'site_description_ar', 'seo_description_en', 'seo_description_ar', 'keywords_en', 'keywords_ar', 'google_analytics_id', 'google_site_verification', 'seo_image_url', 'stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret', 'stripe_live_mode', 'stripe_status', 'stripe_last_verified_at', 'paypal_client_id', 'paypal_client_secret', 'paypal_mode', 'paypal_status', 'paypal_last_verified_at', 'image_prompt_pref_threshold', 'blocked_paths', 'seo_site_name_en', 'seo_site_name_ar', 'updated_at', 'memory_limit_per_user', 'require_2fa_for_economy', 'bulletin_ad_daily_price', 'live_gift_commission_percent', 'sidebar_ad_impression_price', 'sidebar_ad_click_price', 'font_loading_config', 'font_config_ar', 'font_config_en', 'quota_warning_threshold_low', 'quota_warning_threshold_high', 'media_muted_default'],
+        repairCols: {
+          media_muted_default: { type: 'BOOLEAN', default: 'true' }
+        }
       },
       system_logs: {
         columns: ['id', 'user_id', 'action', 'type', 'description', 'details', 'metadata', 'ip_address', 'created_at']

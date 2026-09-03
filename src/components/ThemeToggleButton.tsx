@@ -2,6 +2,7 @@ import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
+import { triggerHaptic } from '../utils/haptics';
 
 export interface ThemeToggleButtonProps {
   variant?: 'icon-button' | 'segmented' | 'dropdown';
@@ -31,7 +32,10 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
       >
         <button
           type="button"
-          onClick={() => setTheme('light')}
+          onClick={() => {
+            triggerHaptic('medium');
+            setTheme('light');
+          }}
           role="radio"
           aria-checked={theme === 'light'}
           aria-label={t('lightMode') || (language === 'ar' ? 'الثيم الفاتح' : 'Light Mode')}
@@ -47,7 +51,10 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
 
         <button
           type="button"
-          onClick={() => setTheme('dark')}
+          onClick={() => {
+            triggerHaptic('medium');
+            setTheme('dark');
+          }}
           role="radio"
           aria-checked={theme === 'dark'}
           aria-label={t('darkMode') || (language === 'ar' ? 'الثيم الداكن' : 'Dark Mode')}
@@ -63,7 +70,10 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
 
         <button
           type="button"
-          onClick={() => setTheme('system')}
+          onClick={() => {
+            triggerHaptic('medium');
+            setTheme('system');
+          }}
           role="radio"
           aria-checked={theme === 'system'}
           aria-label={t('systemMode') || (language === 'ar' ? 'حسب النظام' : 'System Theme')}
@@ -86,7 +96,10 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={() => {
+        triggerHaptic('medium');
+        toggleTheme();
+      }}
       aria-label={
         isDark
           ? (language === 'ar' ? 'تفعيل الثيم الفاتح' : 'Switch to Light Mode')

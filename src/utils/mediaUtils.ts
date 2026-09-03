@@ -118,7 +118,7 @@ export async function extractVideoThumbnail(videoSource: File | string, seekTime
     }
 
     video.addEventListener('loadedmetadata', () => {
-      video.currentTime = Math.min(seekTimeSeconds, (video.duration ? video.duration / 2 : 0.5));
+      video.currentTime = Math.max(0, Math.min(seekTimeSeconds, video.duration ? video.duration - 0.1 : 0.5));
     });
 
     video.addEventListener('seeked', () => {

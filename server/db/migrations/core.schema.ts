@@ -16,10 +16,11 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         size_bytes INT NOT NULL DEFAULT 0,
         sha256_hash TEXT NOT NULL UNIQUE,
         is_public BOOLEAN DEFAULT FALSE,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         blog_article_id INTEGER,
         marketplace_item_id INTEGER,
         metadata JSONB DEFAULT '{}',
+        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -31,7 +32,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password_hash TEXT,
-        role VARCHAR(50) DEFAULT 'user',
+        role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'moderator')),
         status VARCHAR(50) DEFAULT 'active',
         kyc_status VARCHAR(50) DEFAULT 'none',
         kyc_required BOOLEAN DEFAULT false,
@@ -49,8 +50,9 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         provider VARCHAR(50) DEFAULT 'local',
         avatar TEXT,
         avatar_asset_id UUID,
-        referral_code VARCHAR(6),
-        email_notifications BOOLEAN DEFAULT true
+        referral_code VARCHAR(10) UNIQUE,
+        email_notifications BOOLEAN DEFAULT true,
+        media_muted BOOLEAN DEFAULT true
       )`
   },
   {
@@ -58,7 +60,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     query: `CREATE TABLE IF NOT EXISTS password_resets (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) NOT NULL,
-        token VARCHAR(255) NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -67,7 +69,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'chats',
     query: `CREATE TABLE IF NOT EXISTS chats (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title VARCHAR(255) DEFAULT 'New Analysis',
         tool_id VARCHAR(100) DEFAULT 'chat',
         context_summary TEXT,
@@ -81,7 +83,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'messages',
     query: `CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
-        chat_id INTEGER,
+        chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
         role VARCHAR(50) NOT NULL,
         content TEXT NOT NULL,
         tool_id VARCHAR(100),
@@ -162,7 +164,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'support_tickets',
     query: `CREATE TABLE IF NOT EXISTS support_tickets (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         subject VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
         status VARCHAR(20) DEFAULT 'open',
@@ -241,7 +243,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'notifications',
     query: `CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title_en VARCHAR(255) NOT NULL,
         title_ar VARCHAR(255) NOT NULL,
         message_en TEXT NOT NULL,
@@ -250,6 +252,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         is_read BOOLEAN DEFAULT false,
         action_url TEXT,
         metadata JSONB DEFAULT '{}',
+        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -258,7 +261,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'chat_memories',
     query: `CREATE TABLE IF NOT EXISTS chat_memories (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
         fact TEXT NOT NULL,
         source VARCHAR(20) DEFAULT 'ai',
@@ -302,7 +305,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'message_reports',
     query: `CREATE TABLE IF NOT EXISTS message_reports (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         message_id INTEGER,
         reason TEXT,
         status VARCHAR(20) DEFAULT 'pending',
@@ -313,7 +316,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'user_shortcuts',
     query: `CREATE TABLE IF NOT EXISTS user_shortcuts (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title VARCHAR(255) NOT NULL,
         query TEXT NOT NULL,
         category VARCHAR(50) DEFAULT 'general',
@@ -365,6 +368,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         quota_warning_threshold_low INTEGER DEFAULT 50,
         quota_warning_threshold_high INTEGER DEFAULT 80,
         require_2fa_for_economy BOOLEAN DEFAULT false,
+        media_muted_default BOOLEAN DEFAULT true,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   },
@@ -403,7 +407,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'user_files',
     query: `CREATE TABLE IF NOT EXISTS user_files (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         chat_id INTEGER REFERENCES chats(id) ON DELETE SET NULL,
         file_name VARCHAR(255) NOT NULL,
         file_type VARCHAR(100),
@@ -411,7 +415,9 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         file_size INTEGER,
         file_url TEXT,
         file_content TEXT,
+        file_data BYTEA,
         metadata JSONB DEFAULT '{}',
+        file_data BYTEA,
         file_version INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -421,12 +427,13 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'system_logs',
     query: `CREATE TABLE IF NOT EXISTS system_logs (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         action VARCHAR(255),
         type VARCHAR(100) DEFAULT 'info',
         description TEXT,
         details JSONB DEFAULT '{}',
         metadata JSONB DEFAULT '{}',
+        file_data BYTEA,
         ip_address VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -514,8 +521,8 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'video_resources',
     query: `CREATE TABLE IF NOT EXISTS video_resources (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
-        chat_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
         message_id INTEGER,
         file_url TEXT NOT NULL,
         prompt TEXT,
@@ -525,6 +532,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         aspect_ratio VARCHAR(50),
         resolution VARCHAR(50),
         metadata JSONB DEFAULT '{}',
+        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   },
@@ -597,7 +605,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         author_avatar TEXT,
         title VARCHAR(255) NOT NULL,
         description TEXT NOT NULL,
-        image_url TEXT NOT NULL,
+        image_url TEXT,
         whatsapp_number VARCHAR(50),
         target_url TEXT,
         hashtags TEXT DEFAULT '',
@@ -636,6 +644,16 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
   {
     name: 'bulletin_saved_ads',
     query: `CREATE TABLE IF NOT EXISTS bulletin_saved_ads (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        ad_id INTEGER NOT NULL REFERENCES bulletin_ads(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, ad_id)
+      )`
+  },
+  {
+    name: 'bulletin_ad_muted_notifications',
+    query: `CREATE TABLE IF NOT EXISTS bulletin_ad_muted_notifications (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         ad_id INTEGER NOT NULL REFERENCES bulletin_ads(id) ON DELETE CASCADE,
@@ -726,6 +744,17 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
       )`
   },
   {
+    name: 'bulletin_comment_likes',
+    query: `CREATE TABLE IF NOT EXISTS bulletin_comment_likes (
+        id SERIAL PRIMARY KEY,
+        comment_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        reaction VARCHAR(20) DEFAULT 'like',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(comment_id, user_id)
+      )`
+  },
+  {
     name: 'bulletin_ad_messages',
     query: `CREATE TABLE IF NOT EXISTS bulletin_ad_messages (
         id SERIAL PRIMARY KEY,
@@ -787,7 +816,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'user_recommendation_interactions',
     query: `CREATE TABLE IF NOT EXISTS user_recommendation_interactions (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         item_type VARCHAR(50) NOT NULL,
         item_id INTEGER,
         item_key VARCHAR(255),
@@ -812,7 +841,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'recommendation_feedback',
     query: `CREATE TABLE IF NOT EXISTS recommendation_feedback (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         item_type VARCHAR(50) NOT NULL,
         item_id INTEGER,
         item_key VARCHAR(255),
@@ -824,7 +853,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'user_sessions',
     query: `CREATE TABLE IF NOT EXISTS user_sessions (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         session_token TEXT UNIQUE NOT NULL,
         ip_address VARCHAR(100),
         user_agent TEXT,
@@ -838,7 +867,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'model_cost_audit_logs',
     query: `CREATE TABLE IF NOT EXISTS model_cost_audit_logs (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         tool_id VARCHAR(50),
         provider VARCHAR(50),
         model VARCHAR(100),
@@ -936,7 +965,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     kyc_required: { type: 'BOOLEAN', default: false },
     kyc_rejection_reason: { type: 'TEXT' },
     kyc_submitted_at: { type: 'TIMESTAMP' },
-    avatar_asset_id: { type: 'UUID' }
+    avatar_asset_id: { type: 'UUID' },
+    media_muted: { type: 'BOOLEAN', default: 'true' }
   });
 
   await ensureColumnsBulk(targetPool, 'chats', {
@@ -1022,7 +1052,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     enable_stripe_payments: { type: 'BOOLEAN', default: true },
     min_deposit_amount: { type: 'DECIMAL(10,2)', default: 10 },
     max_deposit_amount: { type: 'DECIMAL(10,2)', default: 10000 },
-    referral_reward_amount: { type: 'DECIMAL(10,2)', default: 5 }
+    referral_reward_amount: { type: 'DECIMAL(10,2)', default: 5 },
+    media_muted_default: { type: 'BOOLEAN', default: 'true' }
   });
 
   await ensureColumnsBulk(targetPool, 'bulletin_ads', {
@@ -1041,7 +1072,21 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     badge_color: { type: 'VARCHAR(50)' },
     aspect_ratio: { type: 'VARCHAR(50)', default: "'16:9'" },
     tags: { type: 'TEXT[]', default: "'{}'" },
-    metadata: { type: 'JSONB', default: "'{}'" }
+    metadata: { type: 'JSONB', default: "'{}'" },
+    meta_title_en: { type: 'VARCHAR(255)' },
+    meta_title_ar: { type: 'VARCHAR(255)' },
+    meta_description_en: { type: 'TEXT' },
+    meta_description_ar: { type: 'TEXT' },
+    keywords_en: { type: 'TEXT' },
+    keywords_ar: { type: 'TEXT' },
+    og_image_url: { type: 'TEXT' },
+    who_can_comment: { type: 'VARCHAR(50)', default: "'anyone'" },
+    allow_translation: { type: 'BOOLEAN', default: true },
+    partnership_code: { type: 'VARCHAR(100)' },
+    is_partnership: { type: 'BOOLEAN', default: false },
+    partnership_brand: { type: 'VARCHAR(255)' },
+    deleted_at: { type: 'TIMESTAMP' },
+    archived_at: { type: 'TIMESTAMP' }
   });
 
   await ensureColumnsBulk(targetPool, 'bulletin_pages', {
@@ -1059,6 +1104,12 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     parent_id: { type: 'INTEGER' },
     like_count: { type: 'INTEGER', default: 0 },
     is_pinned: { type: 'BOOLEAN', default: false }
+  });
+
+  await ensureColumnsBulk(targetPool, 'bulletin_comment_likes', {
+    comment_id: { type: 'INTEGER' },
+    user_id: { type: 'INTEGER' },
+    reaction: { type: 'VARCHAR(20)', default: `'like'` }
   });
 
   await ensureColumnsBulk(targetPool, 'bulletin_ad_likes', {
@@ -1121,6 +1172,7 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
   await ensureColumnsBulk(targetPool, 'marketplace_items', {
     seller_id: { type: 'INTEGER' },
     title: { type: 'VARCHAR(255)' },
+    slug: { type: 'VARCHAR(255)' },
     description: { type: 'TEXT' },
     category: { type: 'VARCHAR(50)' },
     price_credits: { type: 'INTEGER', default: 0 },
@@ -1131,7 +1183,14 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     rating: { type: 'DECIMAL(3,2)', default: 5.0 },
     sales_count: { type: 'INTEGER', default: 0 },
     is_published: { type: 'BOOLEAN', default: true },
-    metadata: { type: 'JSONB', default: "'{}'" }
+    metadata: { type: 'JSONB', default: "'{}'" },
+    meta_title_en: { type: 'VARCHAR(255)' },
+    meta_title_ar: { type: 'VARCHAR(255)' },
+    meta_description_en: { type: 'TEXT' },
+    meta_description_ar: { type: 'TEXT' },
+    keywords_en: { type: 'TEXT' },
+    keywords_ar: { type: 'TEXT' },
+    og_image_url: { type: 'TEXT' }
   });
 
   await ensureColumnsBulk(targetPool, 'marketplace_purchases', {

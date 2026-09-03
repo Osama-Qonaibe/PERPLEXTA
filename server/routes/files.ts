@@ -149,6 +149,16 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     });
 
     const fileUrl = `/uploads/${finalFilename}`;
+    try {
+      if (true /* try-catch will handle */) {
+        const fileBuf = await fs.readFile(currentFilePath);
+        await pool.query('UPDATE user_files SET file_data = $1 WHERE id = $2', [fileBuf, file.id]);
+        console.log(`[File Router] File data saved to PostgreSQL for ${finalFilename}`);
+      }
+    } catch (dbErr: any) {
+      console.error('[File Router] Failed to save file data to DB:', dbErr.message);
+    }
+    
     const thumbnailUrl = videoMetadata.thumbnailUrl || '';
     res.status(201).json({ 
       success: true, 

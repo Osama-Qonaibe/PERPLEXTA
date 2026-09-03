@@ -40,6 +40,18 @@ app.use(compression({
     if (req.headers['x-no-compression']) {
       return false;
     }
+    // Disable compression for range requests to prevent breaking video streaming
+    if (req.headers.range) {
+      return false;
+    }
+    // Disable compression for uploads and media files
+    const isMedia = req.path && (
+      req.path.startsWith('/uploads/') ||
+      /\.(mp4|webm|mov|ogg|mp3|wav|m4a|aac|flac|png|jpg|jpeg|gif|webp)$/i.test(req.path)
+    );
+    if (isMedia) {
+      return false;
+    }
     return compression.filter(req, res);
   }
 }));
@@ -353,8 +365,87 @@ const serveStaticResource = (fileName: string, fallbackFileName?: string) => {
   };
 };
 
-app.get('/manifest.json', serveStaticResource('manifest.json', 'manifest.webmanifest'));
-app.get('/manifest.webmanifest', serveStaticResource('manifest.webmanifest', 'manifest.json'));
+app.get(['/manifest.json', '/manifest.webmanifest'], async (req, res) => {
+  res.type('application/manifest+json');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  try {
+    const settings = await getSystemSettings();
+    const manifestPath = path.join(process.cwd(), 'public', 'manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      const raw = fs.readFileSync(manifestPath, 'utf8');
+      const manifestObj = JSON.parse(raw);
+      if (settings) {
+        const activeNameEn = settings.site_name_en || settings.site_name || 'Perplexta';
+        const activeNameAr = settings.site_name_ar || 'بيربليكستا';
+        manifestObj.name = `${activeNameAr} - ${activeNameEn}`;
+        manifestObj.short_name = activeNameEn;
+
+        const activeIcon = settings.favicon_url || settings.logo_url || '/uploads/system_logo.webp';
+        if (activeIcon) {
+          const iconType = activeIcon.endsWith('.webp') ? 'image/webp' : (activeIcon.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
+          manifestObj.icons = [
+            {
+              src: activeIcon,
+              sizes: '192x192 512x512',
+              type: iconType,
+              purpose: 'any'
+            },
+            {
+              src: activeIcon,
+              sizes: '192x192 512x512',
+              type: iconType,
+              purpose: 'maskable'
+            }
+          ];
+        }
+      }
+      return res.json(manifestObj);
+    }
+  } catch (err) {
+    console.warn('[Manifest] Dynamic manifest processing fallback:', err);
+  }
+  return serveStaticResource('manifest.json', 'manifest.webmanifest')(req, res);
+});
+
+app.get(['/favicon.ico', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png', '/favicon.png'], async (req, res) => {
+  try {
+    const settings = await getSystemSettings();
+    const candidate = settings?.favicon_url || settings?.logo_url || '/uploads/system_logo.webp';
+
+    if (candidate) {
+      if (candidate.startsWith('data:image/')) {
+        const match = candidate.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+        if (match) {
+          const rawType = match[1].toLowerCase();
+          const mime = rawType === 'svg+xml' ? 'image/svg+xml' : `image/${rawType}`;
+          res.type(mime);
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return res.send(Buffer.from(match[2], 'base64'));
+        }
+      }
+
+      const cleanPath = candidate.startsWith('/') ? candidate.slice(1) : candidate;
+      const localDiskPath = path.join(process.cwd(), cleanPath);
+      if (fs.existsSync(localDiskPath)) {
+        const ext = path.extname(localDiskPath).toLowerCase();
+        const mime = ext === '.webp' ? 'image/webp' : (ext === '.svg' ? 'image/svg+xml' : (ext === '.ico' ? 'image/x-icon' : 'image/png'));
+        res.type(mime);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.sendFile(localDiskPath);
+      }
+    }
+  } catch (err) {
+    console.warn('[MobileIcon] Error resolving dynamic mobile icon:', err);
+  }
+
+  const svgFallback = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="22" fill="#000000"/><path d="M50 20 L80 40 L80 70 L50 90 L20 70 L20 40 Z" fill="none" stroke="#10b981" stroke-width="6"/><circle cx="50" cy="55" r="12" fill="#10b981"/></svg>`;
+  res.type('image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  return res.send(svgFallback);
+});
+
 app.get('/sw.js', serveStaticResource('sw.js'));
 app.get('/version.json', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -535,7 +626,6 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
       path.join(uploadsPath, cleanPathOnly),
       path.join(uploadsPath, filename),
       path.join(process.cwd(), 'public', 'uploads', filename),
-      path.join(process.cwd(), 'public', 'app-assets', filename),
       path.join(process.cwd(), 'public', filename),
     ];
 
@@ -565,9 +655,7 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
         path.join(uploadsPath, `${cleanBaseName}.gif`),
         path.join(uploadsPath, `${cleanBaseName}.svg`),
         path.join(uploadsPath, `${nameWithoutExt}.png`),
-        path.join(uploadsPath, `${nameWithoutExt}.jpg`),
-        path.join(process.cwd(), 'public', 'app-assets', 'icon.png'),
-        path.join(process.cwd(), 'public', 'app-assets', 'og-image.png')
+        path.join(uploadsPath, `${nameWithoutExt}.jpg`)
       ]));
 
       for (const cand of candidates) {
@@ -579,18 +667,34 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
       }
 
       if (!foundFile) {
-        // If it's an image or logo request, send the default app icon fallback rather than breaking the UI
-        const defaultAppIcon = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
-        const isImageReq = /\.(webp|png|jpg|jpeg|gif|svg|ico)$/i.test(filename) || filename.includes('_opt') || filename.includes('logo') || filename.includes('avatar') || filename.includes('thumb');
-        
-        if (isImageReq && fs.existsSync(defaultAppIcon)) {
-          resolvedPath = defaultAppIcon;
-          foundFile = true;
-        } else {
-          console.warn(`[Uploads] File not found: ${filename}`);
-          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-          return res.status(404).json({ error: 'File not found' });
+        console.warn(`[Uploads] File not found on disk: ${filename}. Checking database fallback...`);
+        try {
+          if (pool) {
+            let dbRes = await pool.query(
+              'SELECT file_data FROM user_files WHERE file_url = $1 AND file_data IS NOT NULL LIMIT 1',
+              [filename]
+            );
+            if (dbRes.rows.length === 0) {
+              dbRes = await pool.query(
+                'SELECT file_data FROM media_assets WHERE original_filename = $1 AND file_data IS NOT NULL LIMIT 1',
+                [filename]
+              );
+            }
+            if (dbRes.rows.length > 0 && dbRes.rows[0].file_data) {
+              const fileData = dbRes.rows[0].file_data;
+              const fallbackExt = path.extname(filename).toLowerCase();
+              const mimeType = mediaMimeTypes[fallbackExt] || 'application/octet-stream';
+              res.setHeader('Content-Type', mimeType);
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+              return res.send(fileData);
+            }
+          }
+        } catch (dbErr) {
+          console.error('[Uploads] DB Fallback error:', dbErr);
         }
+        
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        return res.status(404).json({ error: 'File not found' });
       }
     }
 
@@ -653,9 +757,71 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
       if (range && isVideoOrAudio) {
         const parts = range.replace(/bytes=/, '').split('-');
         const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        
+        // Dynamic network-aware chunk size calculation
+        const calculateDynamicChunkSize = (): number => {
+          const DEFAULT_CHUNK = 1024 * 1024; // 1MB baseline default
+          const MIN_CHUNK = 256 * 1024;      // 256KB for 2G / Save-Data
+          const MAX_CHUNK = 3 * 1024 * 1024; // 3MB for high-speed connections
 
-        if (start >= fileSize || end >= fileSize || start > end) {
+          // 1. Client Save-Data Header
+          const saveData = req.headers['save-data'];
+          if (saveData === 'on' || saveData === 'true') {
+            return MIN_CHUNK;
+          }
+
+          // 2. ECT (Effective Connection Type: 'slow-2g', '2g', '3g', '4g')
+          const ect = (req.headers['ect'] || '').toString().toLowerCase();
+          if (ect === 'slow-2g' || ect === '2g') {
+            return MIN_CHUNK;
+          } else if (ect === '3g') {
+            return 512 * 1024;
+          }
+
+          // 3. Downlink Speed Hint (Mbps)
+          const downlinkHeader = req.headers['downlink'];
+          if (downlinkHeader) {
+            const downlink = parseFloat(downlinkHeader.toString());
+            if (!isNaN(downlink)) {
+              if (downlink < 1.0) return MIN_CHUNK;
+              if (downlink < 3.0) return 512 * 1024;
+              if (downlink < 8.0) return 1024 * 1024;
+              if (downlink < 20.0) return 2 * 1024 * 1024;
+              return MAX_CHUNK;
+            }
+          }
+
+          // 4. Custom Quality / Speed hints
+          const speedHint = (req.query.net_quality || req.headers['x-network-quality'] || '').toString().toLowerCase();
+          if (speedHint === 'low' || speedHint === 'saver') return MIN_CHUNK;
+          if (speedHint === 'medium') return 512 * 1024;
+          if (speedHint === 'high') return 1536 * 1024;
+          if (speedHint === 'ultra') return MAX_CHUNK;
+
+          // 5. Round Trip Time (RTT)
+          const rttHeader = req.headers['rtt'];
+          if (rttHeader) {
+            const rtt = parseInt(rttHeader.toString(), 10);
+            if (!isNaN(rtt) && rtt > 600) {
+              return MIN_CHUNK;
+            }
+          }
+
+          return DEFAULT_CHUNK;
+        };
+
+        let end: number;
+        if (parts[1] && parts[1].trim() !== '') {
+          end = parseInt(parts[1], 10);
+        } else {
+          end = fileSize - 1;
+        }
+
+        if (end >= fileSize) {
+          end = fileSize - 1;
+        }
+
+        if (isNaN(start) || start < 0 || start >= fileSize || end < start) {
           res.status(416).setHeader('Content-Range', `bytes */${fileSize}`);
           return res.end();
         }
@@ -664,8 +830,15 @@ app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: 
         res.status(206);
         res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
         res.setHeader('Content-Length', chunksize);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
 
         const fileStream = fs.createReadStream(pathToSend, { start, end });
+        req.on('close', () => {
+          try {
+            fileStream.destroy();
+          } catch (_) {}
+        });
         fileStream.on('error', (err) => {
           console.error(`[Uploads] Stream range error for ${pathToSend}:`, err);
           if (!res.headersSent) res.status(500).json({ error: 'Streaming range error' });
@@ -1212,20 +1385,20 @@ async function injectSEOTags(
   let currentKeywords = defaultKeywords;
   let currentSiteName = defaultSiteName;
   
-  const DEFAULT_OG_IMAGE = '/app-assets/og-image.png';
-  let imageUrl = settings.seo_image_url || DEFAULT_OG_IMAGE;
+  const DEFAULT_OG_IMAGE = '';
+  let imageUrl = settings.seo_image_url || '';
 
-  /** Validates local image existence and returns a fallback if missing, handles external URLs */
+  /** Validates local image existence, handles external URLs */
   const validateImageUrl = (url: string): string => {
-    if (!url) return DEFAULT_OG_IMAGE;
+    if (!url) return '';
 
     if (url.startsWith('/')) {
       if (url.startsWith('/uploads/')) {
         const localPath = path.join(process.cwd(), url);
-        if (!fs.existsSync(localPath)) return DEFAULT_OG_IMAGE;
-      } else if (url.startsWith('/app-assets/') || url.startsWith('/images/')) {
+        if (!fs.existsSync(localPath)) return '';
+      } else if (url.startsWith('/images/')) {
         const publicPath = path.join(process.cwd(), 'public', url);
-        if (!fs.existsSync(publicPath)) return DEFAULT_OG_IMAGE;
+        if (!fs.existsSync(publicPath)) return '';
       }
       return url;
     }
@@ -1624,7 +1797,7 @@ async function injectSEOTags(
     imageType = 'image/svg+xml';
   }
 
-  let faviconUrl = settings.favicon_url || '/app-assets/icon.png';
+  let faviconUrl = settings?.favicon_url || settings?.logo_url || '/apple-touch-icon.png';
   if (faviconUrl && !faviconUrl.startsWith('http') && !faviconUrl.startsWith('data:')) {
     faviconUrl = `${baseUrl}${faviconUrl.startsWith('/') ? faviconUrl : `/${faviconUrl}`}`;
   }

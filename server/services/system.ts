@@ -53,12 +53,7 @@ export async function ensurePersistentSystemAssets(settings: any) {
         const cleanName = path.basename(val.split('?')[0]);
         const targetPath = path.join(uploadsDir, cleanName);
         if (!fs.existsSync(targetPath)) {
-          console.warn(`[SystemAssets] Asset file missing from disk: ${cleanName}, restoring persistent fallback...`);
-          const defaultAppIcon = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
-          if (fs.existsSync(defaultAppIcon)) {
-            await fs.promises.copyFile(defaultAppIcon, targetPath).catch(() => {});
-            console.log(`[SystemAssets] Created persistent disk fallback for missing asset: ${cleanName}`);
-          }
+          console.warn(`[SystemAssets] Asset file missing from disk for ${field.key}: ${cleanName}`);
         }
       }
     }
@@ -348,9 +343,6 @@ export async function repairSystemAssetsDiagnostic() {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  const defaultIconPath = path.join(process.cwd(), 'public', 'app-assets', 'icon.png');
-  const fallbackIconExists = fs.existsSync(defaultIconPath);
-
   const assetsToCheck = [
     { key: 'logo_url', defaultName: 'system_logo.png' },
     { key: 'logo_light_url', defaultName: 'system_logo_light.png' },
@@ -377,18 +369,7 @@ export async function repairSystemAssetsDiagnostic() {
       }
 
       if (!fileExists) {
-        if (fallbackIconExists) {
-          await fs.promises.copyFile(defaultIconPath, absPath).catch(() => {});
-          console.log(`[AssetRepair] Restored missing disk file for ${item.key}: ${cleanPath}`);
-          repairedCount++;
-        } else {
-          const newPath = `/uploads/${item.defaultName}`;
-          const newAbs = path.join(uploadsDir, item.defaultName);
-          const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-          await fs.promises.writeFile(newAbs, tinyPng).catch(() => {});
-          updates[item.key] = newPath;
-          repairedCount++;
-        }
+        console.warn(`[AssetRepair] Asset file missing from disk for ${item.key}: ${cleanPath}`);
       }
     } else if (url.startsWith('data:image/')) {
       const match = url.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);

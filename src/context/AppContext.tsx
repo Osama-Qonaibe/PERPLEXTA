@@ -28,6 +28,7 @@ export interface User {
   referral_code?: string;
   memory?: string;
   email_notifications?: boolean;
+  media_muted?: boolean;
   subscription?: {
     plan_id: string;
     status: string;
@@ -2808,7 +2809,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(title || 'Alert', {
             body: msg || '',
-            icon: '/favicon.ico'
+            icon: siteSettings?.faviconBase64 ? resolveImageUrl(siteSettings.faviconBase64, 'general') : undefined
           });
         }
       } catch (err) {
@@ -3314,7 +3315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    const resolvedSeoImg = resolveImageUrl(siteSettings.seoImageUrl || '/app-assets/og-image.png', 'general');
+    const resolvedSeoImg = siteSettings.seoImageUrl ? resolveImageUrl(siteSettings.seoImageUrl, 'general') : '';
     ogImage.setAttribute('content', resolvedSeoImg);
 
     let twitterTitle = document.querySelector('meta[name="twitter:title"]');

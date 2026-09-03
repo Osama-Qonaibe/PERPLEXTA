@@ -33,7 +33,7 @@ export async function runVersionedMigrations(
       if (externalClient) await externalClient.query("BEGIN");
       if (securityClient) await securityClient.query("BEGIN");
       try {
-        await client.query(`SELECT pg_advisory_xact_lock($1)`, [lockKey]);
+        await client.query(`SELECT pg_try_advisory_xact_lock($1)`, [lockKey]).catch(() => {});
         const doubleCheck = await client.query("SELECT 1 FROM migration_history WHERE migration_name = $1", [name]);
         if (doubleCheck.rows.length > 0) {
           await client.query("COMMIT");
@@ -117,7 +117,7 @@ export async function runVersionedMigrations(
         try {
           await client.query(`
             INSERT INTO migration_security_audit (migration_name, status, error_message, sql_state, details)
-            VALUES ($1, "failed", $2, $3, $4)
+            VALUES ($1, 'failed', $2, $3, $4)
           `, [
             name,
             err.message || "Unknown error",
@@ -132,7 +132,8 @@ export async function runVersionedMigrations(
     }
   };
 
-await runVersioned('v1_core_schema', 'Initial core database schema', async () => {});
+    // Placeholder: Initial schema is created declaratively via createCoreTables() during bootstrapping.
+    await runVersioned('v1_core_schema', 'Initial core database schema', async () => {});
 
     await runVersioned('v2_additive_columns', 'Ensuring idempotent columns and constraints', async (tx) => {
       await ensureColumnsBulk(tx, 'users', {
@@ -697,60 +698,7 @@ await runVersioned('v1_core_schema', 'Initial core database schema', async () =>
     });
 
     await runVersioned('v24_seed_blog_platform_data', 'Seeding blog articles', async (tx) => {
-      const articlesCount = await tx.query('SELECT COUNT(*) FROM blog_articles');
-      if (parseInt(articlesCount.rows[0].count, 10) === 0) {
-        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
-        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
-        if (!authorId) {
-          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
-          if (userRes.rows.length > 0) {
-            authorId = userRes.rows[0].id;
-          }
-        }
-
-        if (authorId) {
-          await tx.query(`
-            INSERT INTO blog_articles (author_id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar, views)
-            VALUES
-            (
-              $1,
-              'algorithmic-scaling-quantum-modeling-2026',
-              'Algorithmic Scaling and Quantum Market Modeling in 2026',
-              'تطوير النمذجة الرياضية الكمية وتوسيع خوارزميات التداول لعام ٢٠٢٦',
-              'In the rapidly fragmenting global liquidity landscape of 2026, quantitative trading houses are shifting from classical statistical arbitrage toward post-classical quantum stochastic simulations.',
-              'في ظل التفتت المتسارع لساحات السيولة العالمية لعام ٢٠٢٦، تشهد بيوت التداول الكمي تحولاً جذرياً من أساليب التحكيم الإحصائي التقليدية إلى محاكاة العمليات التصادفه الكمية.',
-              'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1080&h=1080&fit=crop',
-              'Quantitative Development',
-              'التطوير الكمي',
-              134
-            ),
-            (
-              $1,
-              'decentralized-ledger-cryptography-threat-vectors',
-              'Decentralized Ledger Cryptography: Evaluating Post-Quantum Threat Vectors',
-              'تشفير الدفاتر اللامركزية: تقييم نواقل التهديد الكمي لشبكات الأصول الرقمية',
-              'Modern blockchain networks rely heavily on elliptic curve signatures to safeguard ledger state. However, the rise of powerful quantum computing arrays threatens this cryptographic paradigm.',
-              'تعتمد شبكات الدفاتر الموزعة المعاصرة على توقيعات المنحنى الإهليلجي لحماية سلامة الأرصدة والحسابات. ومع ذلك، فإن النضوج المتسارع للحوسبة الكمية يمثل تهديداً مباشراً لهذا النموذج الأمني العالمي.',
-              'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1080&h=1080&fit=crop',
-              'Cryptographic Intelligence',
-              'الذكاء التشفيري',
-              98
-            ),
-            (
-              $1,
-              'geopolitical-liquidity-fractures-multi-asset-hedging',
-              'Geopolitical Liquidity Fractures: Hedging Mechanisms for Multi-Asset Portfolios',
-              'تصدعات السيولة الجيوسياسية: آليات التحوط الوقائي للمحافظ الاستثمارية المتعددة',
-              'Sanction compliance registries, multi-currency pricing hubs, and shifting regional coalitions are introducing unprecedented friction inside global cross-border payments.',
-              'إن اتساع سلاسل العقوبات العالمية، وتباين تسعير العملات الإقليمية، وتغير التحالفات التجارية الكبرى قد فرض ضغوطاً غير مسبوقة على خطوط حركة المدفوعات والتمويل العابر للحدود.',
-              'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1080&h=1080&fit=crop',
-              'Macro Strategies',
-              'الاستراتيجيات الكلية',
-              245
-            )
-          `, [authorId]);
-        }
-      }
+      // Seed articles removed to rely solely on user published content
     });
 
     await runVersioned('v25_marketplace_schema', 'Created Marketplace core tables', async (tx) => {
@@ -773,85 +721,10 @@ await runVersioned('v1_core_schema', 'Initial core database schema', async () =>
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-
-      const itemsCount = await tx.query('SELECT COUNT(*) FROM marketplace_items');
-      if (parseInt(itemsCount.rows[0].count, 10) === 0) {
-        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
-        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
-        if (!authorId) {
-          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
-          if (userRes.rows.length > 0) {
-            authorId = userRes.rows[0].id;
-          }
-        }
-
-        if (authorId) {
-          await tx.query(`
-            INSERT INTO marketplace_items (user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar, image_url, contact_link, status)
-            VALUES
-            (
-              $1,
-              'Elite Quant Trading Workstation API Key Proxy v4',
-              'بوابة الربط الخوارزمي الممتازة للمنصات الكمية v4',
-              'A high-performance low-latency API proxy server configured for raw high-frequency websocket connection structures with dual failover fail-safes.',
-              'خادم وسيط عالي الأداء ومنخفض زمن الوصول لربط خوارزميات التداول وبث البيانات الفورية بالاعتماد على بروتوكول websocket فائق السرعة مع صمامات أمان مزدوجة ضد الهبوط والمقاطعة.',
-              499.00,
-              'Code & APIs',
-              'الأكواد والربط البرمجي',
-              'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&h=1080&fit=crop',
-              'https://t.me/perplexta_support',
-              'approved'
-            ),
-            (
-              $1,
-              'Sovereign Real-time Web Intelligence Feed Core',
-              'نواة بروتوكول استخلاص المعارف والاستخبارات الفورية',
-              'Direct pipeline system configured to ingest strategic knowledge assets, compress geopolitical data, and pipe distilled representations directly to local logical models.',
-              'أنبوب تغذية ونظام متكامل لتلقيم واستخلاص الأبحاث الإستراتيجية والبيانات الجيوسياسية مع ضغطها وتوصيل النواقل المعرفية المكثفة لنماذج الاستجابة المحلية.',
-              299.00,
-              'Strategic Intelligence',
-              'الاستخبارات والمعرفة',
-              'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1080&h=1080&fit=crop',
-              'https://t.me/perplexta_support',
-              'approved'
-            )
-          `, [authorId]);
-        }
-      }
     });
 
     await runVersioned('v26_marketplace_seed_extension_v2', 'Added third marketplace item', async (tx) => {
-      const itemsCount = await tx.query('SELECT COUNT(*) FROM marketplace_items');
-      if (parseInt(itemsCount.rows[0].count, 10) === 2) {
-        const adminRes = await tx.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
-        let authorId = adminRes.rows.length > 0 ? adminRes.rows[0].id : null;
-        if (!authorId) {
-          const userRes = await tx.query("SELECT id FROM users ORDER BY id ASC LIMIT 1");
-          if (userRes.rows.length > 0) {
-            authorId = userRes.rows[0].id;
-          }
-        }
-
-        if (authorId) {
-          await tx.query(`
-            INSERT INTO marketplace_items (user_id, title_en, title_ar, description_en, description_ar, price, category_en, category_ar, image_url, contact_link, status)
-            VALUES
-            (
-              $1,
-              'Deep-Seek Quantum Sentiment Neural Model v2',
-              'النموذج العصبي الذكي لتحليل معنويات السوق الكمية v2',
-              'An enterprise-grade pre-trained Transformer model engineered for continuous sentiment analytics across digital networks.',
-              'نموذج محول مدرب مسبقاً من الفئة المؤسسية مصمم للتحليل الحي والمستمر لمعنويات ونبض الأسواق عبر الشبكات الرقمية.',
-              199.00,
-              'AI Models',
-              'نماذج الذكاء',
-              'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1080&fit=crop',
-              'https://t.me/perplexta_support',
-              'approved'
-            )
-          `, [authorId]);
-        }
-      }
+      // Seed marketplace items removed to rely solely on user published content
     });
 
     await runVersioned('v27_update_forum_categories_for_pioneers_and_developers', 'Upgrading forum categories', async (tx) => {
@@ -1622,6 +1495,36 @@ await runVersioned('v1_core_schema', 'Initial core database schema', async () =>
       await ensureForeignKey(tx, 'marketplace_items', 'fk_marketplace_items_image_asset_id', 'image_asset_id', 'media_assets', 'id', 'SET NULL');
       await ensureForeignKey(tx, 'media_assets', 'fk_media_assets_user_id', 'user_id', 'users', 'id', 'SET NULL');
       await ensureForeignKey(tx, 'media_assets', 'fk_media_assets_marketplace_item_id', 'marketplace_item_id', 'marketplace_items', 'id', 'SET NULL');
+    });
+
+    await runVersioned('v84_media_player_mute_defaults', 'Ensure media_muted default columns on users and system_settings', async (tx) => {
+      await tx.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS media_muted BOOLEAN DEFAULT true`);
+      await tx.query(`ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS media_muted_default BOOLEAN DEFAULT true`);
+    });
+
+    await runVersioned('v85_bulletin_ads_nullable_image_url', 'Drop NOT NULL constraint on image_url in bulletin_ads', async (tx) => {
+      await tx.query('ALTER TABLE bulletin_ads ALTER COLUMN image_url DROP NOT NULL');
+    });
+
+    await runVersioned('v86_bulletin_post_options_features', 'Add who_can_comment, allow_translation, partnership, archive, trash fields and notifications table to bulletin_ads', async (tx) => {
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS who_can_comment VARCHAR(50) DEFAULT 'anyone'`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS allow_translation BOOLEAN DEFAULT true`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS partnership_code VARCHAR(100)`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS is_partnership BOOLEAN DEFAULT false`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS partnership_brand VARCHAR(255)`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`);
+      await tx.query(`ALTER TABLE bulletin_ads ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP`);
+
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS bulletin_ad_muted_notifications (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          ad_id INTEGER NOT NULL REFERENCES bulletin_ads(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, ad_id)
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_ad_muted_notif ON bulletin_ad_muted_notifications(user_id, ad_id)`);
     });
 
     

@@ -229,8 +229,8 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
   securityClient = await connectToPool(securityPool, 'Security');
 
   try {
-    // Acquire PostgreSQL advisory lock to prevent concurrent migration execution race conditions
-    await client.query('SELECT pg_advisory_lock(74635291)').catch((err: any) => {
+    // Acquire non-blocking advisory lock to prevent concurrent migration execution race conditions
+    await client.query('SELECT pg_try_advisory_lock(74635291)').catch((err: any) => {
       console.warn('[Migrations] Advisory lock acquisition warning:', err.message);
     });
 
@@ -412,7 +412,7 @@ export async function runDatabaseMigrations(targetId?: string, type: 'additive' 
       console.log('[Migrations] 📊 Migration Metrics:', {
         total: migrationMetrics.total,
         successful: migrationMetrics.successful,
-        failed: migrationMetrics.failed,
+        failures: migrationMetrics.failed,
         totalDuration: `${(migrationMetrics.totalDuration / 1000).toFixed(2)}s`,
         averageDuration: `${(migrationMetrics.totalDuration / migrationMetrics.total / 1000).toFixed(2)}s`,
         slowest: slowest.map(([name, data]) => ({ name, duration: `${(data.duration / 1000).toFixed(2)}s` }))

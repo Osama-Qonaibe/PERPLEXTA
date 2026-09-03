@@ -138,16 +138,6 @@ export const broadcastLimiter = rateLimit({
   handler: createRateLimitHandler('broadcast')
 });
 
-export const forumLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 80 * limitMultiplier,
-  keyGenerator: resolveClientKey,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many post or comment requests. Please wait a minute.' },
-  handler: createRateLimitHandler('forum')
-});
-
 import { pool } from '../db/index.js';
 import { checkUserQuota } from '../services/quota.js';
 import { checkUserAffordability } from '../services/billing.js';

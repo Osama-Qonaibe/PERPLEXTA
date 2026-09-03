@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
 import { useSwipeToClose, useSwipeNavigation } from '../utils/swipe';
 import { FloatingPopover } from './FloatingPopover';
+import { triggerHaptic } from '../utils/haptics';
 const sidebarTransition = SIDEBAR_TRANSITION;
 const sidebarSpring = SIDEBAR_MOTION_TRANSITION;
 const elasticSpring = SIDEBAR_TRANSITION;
@@ -385,6 +386,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     key={`nav-${item.path}-${index}`}
                     to={item.path}
                     onClick={() => {
+                      triggerHaptic('selection');
                       if (isMobile) {
                         setIsSidebarOpen(false);
                       }

@@ -329,7 +329,7 @@ export async function getUserProfile(userId: string) {
   if (!pool) throw new Error('Database initializing');
   
   const result = await pool.query(`
-    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code,
+    SELECT u.id, u.name, u.email, u.role, u.avatar, u.status, u.language, u.theme, u.custom_instructions, u.kyc_status, u.created_at, u.referral_code, u.media_muted,
            s.plan_id, s.status as sub_status, s.current_period_end, p.name_en as plan_name_en, p.name_ar as plan_name_ar, p.color as plan_color, p.limits
     FROM users u
     LEFT JOIN subscriptions s ON u.id = s.user_id
@@ -372,6 +372,7 @@ export async function getUserProfile(userId: string) {
     kyc_status: row.kyc_status,
     created_at: row.created_at,
     referral_code: row.referral_code,
+    media_muted: row.media_muted !== undefined && row.media_muted !== null ? !!row.media_muted : true,
     custom_limits: {},
     subscription,
     balance: wallet.balance,
@@ -383,7 +384,7 @@ export async function getUserProfile(userId: string) {
 export async function updateUserProfile(userId: string | number, data: any) {
   if (!pool) throw new Error('Database initializing');
   
-  const { name, avatar, language, theme, custom_instructions, password, email, email_notifications } = data;
+  const { name, avatar, language, theme, custom_instructions, password, email, email_notifications, media_muted } = data;
   const updates: string[] = [];
   const values: any[] = [];
   let idx = 1;
@@ -392,6 +393,12 @@ export async function updateUserProfile(userId: string | number, data: any) {
     if (typeof email_notifications !== 'boolean') throw new Error('Email notifications must be a boolean');
     updates.push(`email_notifications = $${idx++}`);
     values.push(email_notifications);
+  }
+
+  if (media_muted !== undefined) {
+    if (typeof media_muted !== 'boolean') throw new Error('Media muted preference must be a boolean');
+    updates.push(`media_muted = $${idx++}`);
+    values.push(media_muted);
   }
 
   if (name !== undefined) {

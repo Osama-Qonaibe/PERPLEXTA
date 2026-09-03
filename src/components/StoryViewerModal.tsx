@@ -5,6 +5,7 @@ import { getMediaUrl } from '../utils/mediaUtils';
 import { BulletinAvatar } from './BulletinAvatar';
 import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
+import { triggerHaptic } from '../utils/haptics';
 
 interface Story {
   id: number;
@@ -240,7 +241,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
       resetZoom();
       return;
     }
-    if ("vibrate" in navigator) navigator.vibrate(50);
+    triggerHaptic('light');
     const { clientX } = e;
     const { innerWidth } = window;
     if (clientX < innerWidth / 3) {

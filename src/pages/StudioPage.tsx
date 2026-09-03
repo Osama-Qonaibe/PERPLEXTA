@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
 import { ShieldCheck, BookOpen, Cpu, CreditCard, Lock, FileText, Zap } from 'lucide-react';
-import { DefaultLogo } from '../components/DefaultLogo';
 import { resolveImageUrl } from '../utils/imageResolver';
 
 export const StudioPage = () => {
@@ -18,7 +17,9 @@ export const StudioPage = () => {
             {logo ? (
               <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-8 h-8 rounded-[12px] object-cover" />
             ) : (
-              <DefaultLogo className="w-8 h-8" iconClassName="w-5 h-5" />
+              <div className="w-8 h-8 rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center">
+                <Cpu className="w-4 h-4 text-accent" />
+              </div>
             )}
             <h1 className="text-xl font-black text-[var(--text-primary)] uppercase tracking-widest">
               {language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio'}

@@ -182,7 +182,42 @@ async function purgeExpiredStories() {
   }
 }
 
+async function purgeExpiredTrashAds() {
+  try {
+    const res = await pool.query(
+      `DELETE FROM bulletin_ads 
+       WHERE status = 'trash' 
+       AND deleted_at IS NOT NULL 
+       AND deleted_at < NOW() - INTERVAL '30 days'`
+    );
+    if (res.rowCount && res.rowCount > 0) {
+      console.log(`[Cron] Purged ${res.rowCount} expired ads from trash (older than 30 days).`);
+    }
+  } catch (err: any) {
+    console.error('[Cron] Trashed ads purge failed:', err.message);
+  }
+}
+
 export function initCronJobs() {
+  // Bi-weekly Database Media Optimization (Runs every 15th and 30th of the month)
+  cron.schedule('0 4 15,30 * *', async () => {
+    console.log('[Cron] 🗜️ Running Database Media Compression & Optimization Cycle...');
+    try {
+      // 1. Vacuum analyze the database to reclaim space
+      await pool.query('VACUUM ANALYZE user_files');
+      await pool.query('VACUUM ANALYZE media_assets');
+      
+      // 2. We can implement a streaming downscaler here if needed.
+      // Currently, assets are optimized aggressively ON UPLOAD (via sharp/ffmpeg). 
+      // This step ensures any orphaned cached files on ephemeral disk are purged.
+      await cleanupOrphanedPhysicalFiles();
+      
+      console.log('[Cron] ✅ Media Optimization Cycle Completed.');
+    } catch (err: any) {
+      console.error('[Cron] ❌ Media Optimization Cycle failed:', err);
+    }
+  });
+
   cron.schedule('0 3 * * *', async () => {
     console.log('[Cron] 🕒 Running daily system maintenance...');
     cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'running', error: null };
@@ -193,6 +228,7 @@ export function initCronJobs() {
       
       await purgeGeneratedFilesOlderThan24Hours();
       await purgeExpiredStories();
+      await purgeExpiredTrashAds();
 
       await cleanupOrphanedPhysicalFiles();
       cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'success', error: null };

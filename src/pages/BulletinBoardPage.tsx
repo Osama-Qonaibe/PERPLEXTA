@@ -8,13 +8,13 @@ import {
   UserCheck, UserPlus, Inbox, ArrowRight, ArrowLeft, ShieldCheck, Camera,
   Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
   Radio, Clapperboard, Bell, Menu, SlidersHorizontal, Trash2, Ban, Volume2, VolumeX,
-  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, ShoppingBag, Edit2,
+  Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, ShoppingBag, Edit2, Upload,
   AtSign, Hash
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { BulletinAd, BulletinAdComment, BulletinPage } from '../../server/db/types';
+import { BulletinAd, BulletinAdComment, BulletinPage, MediaGalleryItem } from '../../server/db/types';
 import { UserAdAnalyticsView } from '../components/UserAdAnalyticsView';
 import { PostFeed } from '../components/PostFeed';
 import { AdMessengerHub } from '../components/AdMessengerHub';
@@ -24,13 +24,16 @@ import { MediaFormatPlayer } from '../components/MediaFormatPlayer';
 import { VideoTrimmerModal } from '../components/VideoTrimmerModal';
 import { VideoPreviewer } from '../components/VideoPreviewer';
 import { ReelsFeed } from '../components/ReelsFeed';
-import { ReelUploadModal } from '../components/ReelUploadModal';
 import { StoryUploadModal } from '../components/StoryUploadModal';
 import { StoryViewerModal } from '../components/StoryViewerModal';
 import { VideoFrameCapture } from '../components/VideoFrameCapture';
+import { MediaManagerModal } from '../components/MediaManagerModal';
+import { ComposerMediaPreview } from '../components/ComposerMediaPreview';
+import { MediaLightboxModal, LightboxMediaItem } from '../components/MediaLightboxModal';
+import { triggerHaptic } from '../utils/haptics';
 import { BulletinAvatar } from '../components/BulletinAvatar';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
-import { stopAllMedia } from '../utils/mediaCoordinator';
+import { stopAllMedia, getGlobalMuteState, setGlobalMuteState } from '../utils/mediaCoordinator';
 import { SOCIAL_COLORS } from '../constants/socialColors';
 
 const PALESTINE_CITIES = [
@@ -195,7 +198,6 @@ export const BulletinBoardPage: React.FC = () => {
     } catch (e) {}
   }, [activeTab]);
   const [activeReelModalId, setActiveReelModalId] = useState<number | null>(null);
-  const [isReelUploadModalOpen, setIsReelUploadModalOpen] = useState<boolean>(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   const [messagingAdId, setMessagingAdId] = useState<number | null>(null);
@@ -230,6 +232,17 @@ export const BulletinBoardPage: React.FC = () => {
 
   const [mousePos, setMousePos] = useState<{ x: number; y: number; isInside: boolean }>({ x: 0, y: 0, isInside: false });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({ x: 0, y: 0, isOpen: false });
+
+  // Unified reactive collection of all available video ads for seamless Reels viewing
+  const combinedReelsAds = useMemo(() => {
+    const map = new Map<number, BulletinAd>();
+    [...ads, ...myAds, ...savedAds].forEach(a => {
+      if (a && a.id && a.video_url) {
+        map.set(Number(a.id), a);
+      }
+    });
+    return Array.from(map.values());
+  }, [ads, myAds, savedAds]);
 
   useEffect(() => {
     if (!locationSearchQuery || locationSearchQuery.trim().length < 2) {
@@ -514,7 +527,19 @@ export const BulletinBoardPage: React.FC = () => {
   const [isLiveStreamOpen, setIsLiveStreamOpen] = useState<boolean>(false);
   const [isStreamSetupOpen, setIsStreamSetupOpen] = useState<boolean>(false);
   const [streamTitleInput, setStreamTitleInput] = useState<string>('');
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(() => getGlobalMuteState());
+
+  // Synchronize mute state across all media and live streams
+  useEffect(() => {
+    const handleMuteChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ muted: boolean }>;
+      if (typeof customEvent.detail?.muted === 'boolean') {
+        setIsMuted(customEvent.detail.muted);
+      }
+    };
+    window.addEventListener('perplexta:mute_change', handleMuteChange);
+    return () => window.removeEventListener('perplexta:mute_change', handleMuteChange);
+  }, []);
   const [currentFeedIndex, setCurrentFeedIndex] = useState<number>(0);
   const [liveComments, setLiveComments] = useState<{id: string, user: string, text: string}[]>([]);
   const [liveLikes, setLiveLikes] = useState<number>(0);
@@ -681,6 +706,7 @@ export const BulletinBoardPage: React.FC = () => {
     description: '',
     image_url: '',
     video_url: '',
+    media_gallery: [] as MediaGalleryItem[],
     whatsapp_number: '',
     phone_number: '',
     target_url: '',
@@ -694,8 +720,11 @@ export const BulletinBoardPage: React.FC = () => {
     has_whatsapp_button: false,
     audience: 'public' as 'public' | 'friends' | 'only_me',
     ad_format: 'post' as 'post' | 'reel' | 'story',
-    quick_questions: ['', '', ''] as string[]
+    quick_questions: ['', '', ''] as string[],
+    aspect_ratio: 'grid' as string
   });
+
+  const [isMediaManagerOpen, setIsMediaManagerOpen] = useState(false);
 
   const [isTrimmerModalOpen, setIsTrimmerModalOpen] = useState(false);
   const [trimmerVideoUrl, setTrimmerVideoUrl] = useState('');
@@ -715,6 +744,66 @@ export const BulletinBoardPage: React.FC = () => {
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [selectedComposerCountry, setSelectedComposerCountry] = useState<string>('فلسطين');
   const [customLocationSearch, setCustomLocationSearch] = useState<string>('');
+
+  const openReelUploadModal = () => {
+    setAdFormData({
+      title: '',
+      description: '',
+      image_url: '',
+      video_url: '',
+      media_gallery: [],
+      whatsapp_number: (user as any)?.phone || '',
+      phone_number: '',
+      target_url: '',
+      hashtags: '',
+      page_id: '' as string | number,
+      location_city: 'القدس الشريف',
+      location_radius: '10',
+      feeling: '',
+      is_ai_generated: false,
+      tagged_users: [] as string[],
+      has_whatsapp_button: false,
+      audience: 'public' as 'public' | 'friends' | 'only_me',
+      ad_format: 'reel',
+      quick_questions: ['', '', ''] as string[],
+      aspect_ratio: 'grid'
+    });
+    setVideoMetadataInfo({ processingStage: 'done' });
+    setIsEditMode(false);
+    setEditingAdId(null);
+    setComposerView('main');
+    setIsAdModalOpen(true);
+  };
+
+  const openPostUploadModal = () => {
+    setAdFormData({
+      title: '',
+      description: '',
+      image_url: '',
+      video_url: '',
+      media_gallery: [],
+      whatsapp_number: (user as any)?.phone || '',
+      phone_number: '',
+      target_url: '',
+      hashtags: '',
+      page_id: '' as string | number,
+      location_city: 'القدس الشريف',
+      location_radius: '10',
+      feeling: '',
+      is_ai_generated: false,
+      tagged_users: [] as string[],
+      has_whatsapp_button: false,
+      audience: 'public' as 'public' | 'friends' | 'only_me',
+      ad_format: 'post',
+      quick_questions: ['', '', ''] as string[],
+      aspect_ratio: 'grid'
+    });
+    setVideoMetadataInfo({ processingStage: 'done' });
+    setIsEditMode(false);
+    setEditingAdId(null);
+    setComposerView('main');
+    setIsAdModalOpen(true);
+  };
 
 
   useEffect(() => {
@@ -765,7 +854,73 @@ export const BulletinBoardPage: React.FC = () => {
   const [newCommentText, setNewCommentText] = useState<string>('');
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null);
 
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxState, setLightboxState] = useState<{
+    isOpen: boolean;
+    items: LightboxMediaItem[];
+    initialIndex: number;
+    postTitle?: string;
+    authorName?: string;
+    ad?: BulletinAd | null;
+  }>({
+    isOpen: false,
+    items: [],
+    initialIndex: 0,
+    ad: null
+  });
+
+  const updateUrlWithPost = (postId: number | null) => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (postId) {
+        url.searchParams.set('post', String(postId));
+      } else {
+        url.searchParams.delete('post');
+      }
+      window.history.pushState(null, '', url.toString());
+    }
+  };
+
+  const handleOpenLightbox = (url: string, items?: any[], index = 0, postTitle?: string, authorName?: string, ad?: BulletinAd) => {
+    let resolvedItems: LightboxMediaItem[] = [];
+    if (items && Array.isArray(items) && items.length > 0) {
+      resolvedItems = items.map((it: any, i: number) => {
+        if (typeof it === 'string') {
+          return { id: `item-${i}`, url: it, type: 'image' };
+        }
+        return {
+          id: it.id || `item-${i}`,
+          url: it.url,
+          type: it.type || (it.url?.endsWith('.mp4') ? 'video' : 'image'),
+          caption: it.caption || '',
+          thumbnailUrl: it.thumbnailUrl
+        };
+      });
+    } else {
+      resolvedItems = [{ id: 'item-0', url, type: url?.endsWith('.mp4') ? 'video' : 'image' }];
+    }
+
+    setLightboxState({
+      isOpen: true,
+      items: resolvedItems,
+      initialIndex: index,
+      postTitle,
+      authorName,
+      ad: ad || undefined
+    });
+    
+    if (ad && ad.id) {
+      updateUrlWithPost(ad.id);
+    }
+  };
+
+  const setLightboxImage = (url: string | null) => {
+    if (!url) {
+      setLightboxState(prev => ({ ...prev, isOpen: false }));
+      updateUrlWithPost(null);
+    } else {
+      handleOpenLightbox(url);
+    }
+  };
   const [isAddToPostModalOpen, setIsAddToPostModalOpen] = useState<boolean>(false);
 
   const [boostingAd, setBoostingAd] = useState<BulletinAd | null>(null);
@@ -787,6 +942,44 @@ export const BulletinBoardPage: React.FC = () => {
     fetchAds(1, false);
     fetchWallet();
   };
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const postIdStr = urlParams.get('post');
+    const postId = parseInt(postIdStr || '', 10);
+    
+    if (!isNaN(postId) && postId > 0) {
+      const fetchDirectPost = async () => {
+        try {
+          const res = await fetch(`/api/bulletin/ads/${postId}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          if (data.success && data.ad) {
+            const ad = data.ad;
+            const mediaUrl = getMediaUrl(ad.video_url || ad.image_url);
+            handleOpenLightbox(mediaUrl, ad.media_gallery, 0, ad.title, ad.author_name, ad);
+
+            // Fetch comments for this direct post to preserve session state on refresh
+            try {
+              const cRes = await fetch(`/api/bulletin/ads/${postId}/comments`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+              });
+              const cData = await cRes.json();
+              if (cData.success) {
+                setCommentsMap(prev => ({ ...prev, [postId]: cData.comments || [] }));
+              }
+            } catch (cErr) {
+              console.error('Failed to fetch direct post comments:', cErr);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch direct post:', e);
+        }
+      };
+      fetchDirectPost();
+    }
+  }, [token]); // token as dependency so it fetches with auth if available
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1223,6 +1416,39 @@ export const BulletinBoardPage: React.FC = () => {
     setSelectedPageDetail(null);
   };
 
+  const handleToggleCommentLike = async (adId: number, commentId: number, reaction: string = 'like') => {
+    if (!token) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setCommentsMap((prev) => ({
+      ...prev,
+      [adId]: (prev[adId] || []).map((c) => {
+        if (c.id === commentId) {
+          const isRemoving = c.user_reaction === reaction;
+          return {
+            ...c,
+            user_reaction: isRemoving ? null : reaction,
+            like_count: Math.max(0, (c.like_count || 0) + (isRemoving ? -1 : (c.user_reaction ? 0 : 1))),
+          };
+        }
+        return c;
+      })
+    }));
+
+    try {
+      await fetch(`/api/bulletin/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reaction })
+      });
+    } catch (e) {}
+  };
+
   const toggleComments = async (adId: number) => {
     if (expandedAdId === adId) {
       setExpandedAdId(null);
@@ -1440,11 +1666,38 @@ export const BulletinBoardPage: React.FC = () => {
   };
 
   const handleEditAd = (ad: BulletinAd) => {
+    const synthesizedGallery: MediaGalleryItem[] = [];
+    if (ad.media_gallery && Array.isArray(ad.media_gallery) && ad.media_gallery.length > 0) {
+      synthesizedGallery.push(...ad.media_gallery);
+    } else {
+      if (ad.image_url) {
+        const urls = ad.image_url.split(',').map(u => u.trim()).filter(Boolean);
+        urls.forEach((url, i) => {
+          synthesizedGallery.push({
+            id: `img-${i}-${Date.now()}`,
+            url,
+            type: 'image',
+            caption: ''
+          });
+        });
+      }
+      if (ad.video_url) {
+        synthesizedGallery.push({
+          id: `vid-0-${Date.now()}`,
+          url: ad.video_url,
+          type: 'video',
+          caption: '',
+          thumbnailUrl: ad.image_url ? ad.image_url.split(',')[0].trim() : undefined
+        });
+      }
+    }
+
     setAdFormData({
       title: ad.title,
       description: ad.description,
       image_url: ad.image_url || '',
       video_url: ad.video_url || '',
+      media_gallery: synthesizedGallery,
       whatsapp_number: ad.whatsapp_number || '',
       phone_number: ad.phone_number || '',
       target_url: ad.target_url || '',
@@ -1458,7 +1711,8 @@ export const BulletinBoardPage: React.FC = () => {
       has_whatsapp_button: !!ad.whatsapp_number,
       audience: (ad.audience as any) || 'public',
       ad_format: (ad.ad_format as any) || 'post',
-      quick_questions: Array.isArray(ad.quick_questions) ? ad.quick_questions : ['', '', '']
+      quick_questions: Array.isArray(ad.quick_questions) ? ad.quick_questions : ['', '', ''],
+      aspect_ratio: (ad as any).aspect_ratio || 'grid'
     });
     setEditingAdId(ad.id);
     setIsEditMode(true);
@@ -1499,6 +1753,14 @@ export const BulletinBoardPage: React.FC = () => {
     e.preventDefault();
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
+      return;
+    }
+
+    const totalMediaCount = (adFormData.media_gallery && adFormData.media_gallery.length > 0)
+      ? adFormData.media_gallery.length
+      : (adFormData.image_url ? adFormData.image_url.split(',').map(u => u.trim()).filter(Boolean).length : 0);
+    if (totalMediaCount > 20) {
+      toast.error(isRtl ? 'الحد الأقصى المسموح به هو 20 وسيطة فقط' : 'The maximum limit allowed is only 20 media items');
       return;
     }
 
@@ -1546,6 +1808,7 @@ export const BulletinBoardPage: React.FC = () => {
           description: '',
           image_url: '',
           video_url: '',
+          media_gallery: [],
           whatsapp_number: '',
           phone_number: '',
           target_url: '',
@@ -1559,7 +1822,8 @@ export const BulletinBoardPage: React.FC = () => {
           has_whatsapp_button: false,
           audience: 'public',
           ad_format: 'post',
-          quick_questions: ['', '', '']
+          quick_questions: ['', '', ''],
+          aspect_ratio: 'grid'
         });
         fetchMyAds();
         fetchAds();
@@ -1578,69 +1842,156 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | File[] } }) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد الأقصى 25MB)' : 'Image file is too large (max 25MB)');
+  const handleMixedMediaUpload = async (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | File[] } }) => {
+    const filesList = e.target.files;
+    if (!filesList || filesList.length === 0) return;
+
+    setIsAdModalOpen(true);
+    const filesArray = Array.from(filesList);
+
+    const currentGallery = adFormData.media_gallery || [];
+    const maxLimit = 20;
+
+    if (currentGallery.length >= maxLimit) {
+      toast.error(isRtl ? `الحد الأقصى هو ${maxLimit} وسيطة للمنشور الواحد` : `Cannot upload more than ${maxLimit} media items per post`);
       return;
     }
 
-    setIsAdModalOpen(true);
+    let filesToUpload = filesArray;
+    if (currentGallery.length + filesArray.length > maxLimit) {
+      const allowedCount = maxLimit - currentGallery.length;
+      toast.warning(
+        isRtl 
+          ? `الحد الأقصى هو ${maxLimit} عنصر. سيتم رفع أول ${allowedCount} وسائط إضافية فقط.` 
+          : `Maximum limit is ${maxLimit} items. Only the first ${allowedCount} items will be uploaded.`
+      );
+      filesToUpload = filesArray.slice(0, allowedCount);
+    }
+
     const toastId = toast.loading(
-      isRtl ? 'جاري تقليص وتحسين أبعاد الصورة للإعلان...' : 'Optimizing and resizing ad image...'
+      isRtl 
+        ? `جاري معالجة ورفع الوسائط (${filesToUpload.length} عنصر)...` 
+        : `Processing and uploading media (${filesToUpload.length} items)...`
     );
 
     try {
-      const compressed = await compressAndResizeImage(file, {
-        format: (adFormData as any).format || 'sidebar',
-        quality: 0.88,
-        mimeType: 'image/webp'
-      });
-
-      const uploadFile = compressed.file;
-
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', uploadFile);
-
       const authToken = token || localStorage.getItem('app_token') || '';
-      const res = await fetch('/api/files/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        },
-        body: formDataUpload
-      });
+      const newItems: MediaGalleryItem[] = [];
+      let imagesUploaded = 0;
+      let videosUploaded = 0;
 
-      if (res.ok) {
-        const data = await res.json();
-        const rawUrl = data.fileUrl || data.file?.url || data.file?.file_url || data.url || data.path;
-        const fileUrl = getMediaUrl(rawUrl);
-        if (fileUrl) {
-          setAdFormData(prev => ({ ...prev, image_url: fileUrl }));
-          toast.dismiss(toastId);
-          
-          const origKb = (compressed.originalSize / 1024).toFixed(0);
-          const compKb = (compressed.compressedSize / 1024).toFixed(0);
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const isVideo = file.type.startsWith('video/');
+        const isImage = file.type.startsWith('image/');
 
-          if (compressed.compressedSize < compressed.originalSize) {
-            toast.success(
-              isRtl
-                ? `تم تقليص ورفع الصورة بنجاح! (${compKb}KB بدلاً من ${origKb}KB)`
-                : `Image optimized & uploaded! (${compKb}KB down from ${origKb}KB)`
-            );
-          } else {
-            toast.success(isRtl ? 'تم رفع الصورة بنجاح!' : 'Image uploaded successfully!');
+        if (!isVideo && !isImage) {
+          toast.error(isRtl ? `الملف ${file.name} ليس مدعوماً (صور أو فيديو فقط)` : `File ${file.name} is not supported`);
+          continue;
+        }
+
+        if (isVideo) {
+          if (file.size > 100 * 1024 * 1024) {
+            toast.error(isRtl ? `حجم الفيديو ${file.name} يتجاوز 100MB` : `Video ${file.name} exceeds 100MB`);
+            continue;
           }
-          return;
+
+          let thumbUrl: string | undefined;
+          try {
+            thumbUrl = await extractVideoThumbnail(file);
+          } catch (_) {}
+
+          const formDataUpload = new FormData();
+          formDataUpload.append('file', file);
+
+          const res = await fetch('/api/files/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${authToken}` },
+            body: formDataUpload
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const rawUrl = data.fileUrl || data.file?.url || data.file?.file_url || data.url || data.path;
+            const fileUrl = getMediaUrl(rawUrl);
+            if (fileUrl) {
+              newItems.push({
+                id: `vid-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                url: fileUrl,
+                type: 'video',
+                caption: '',
+                thumbnailUrl: thumbUrl
+              });
+              videosUploaded++;
+            }
+          }
+        } else {
+          // Image
+          if (file.size > 25 * 1024 * 1024) {
+            toast.error(isRtl ? `حجم الصورة ${file.name} يتجاوز 25MB` : `Image ${file.name} exceeds 25MB`);
+            continue;
+          }
+
+          const compressed = await compressAndResizeImage(file, {
+            format: 'feed',
+            quality: 0.88,
+            mimeType: 'image/webp'
+          });
+
+          const formDataUpload = new FormData();
+          formDataUpload.append('file', compressed.file);
+
+          const res = await fetch('/api/files/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${authToken}` },
+            body: formDataUpload
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const rawUrl = data.fileUrl || data.file?.url || data.file?.file_url || data.url || data.path;
+            const fileUrl = getMediaUrl(rawUrl);
+            if (fileUrl) {
+              newItems.push({
+                id: `img-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                url: fileUrl,
+                type: 'image',
+                caption: ''
+              });
+              imagesUploaded++;
+            }
+          }
         }
       }
-      throw new Error('Upload endpoint failed');
-    } catch (err: any) {
+
+      if (newItems.length > 0) {
+        setAdFormData(prev => {
+          const combinedGallery = [...(prev.media_gallery || []), ...newItems];
+          const allImages = combinedGallery.filter(m => m.type === 'image').map(m => m.url);
+          const firstVideo = combinedGallery.find(m => m.type === 'video');
+
+          return {
+            ...prev,
+            media_gallery: combinedGallery,
+            image_url: allImages.join(','),
+            video_url: firstVideo ? firstVideo.url : prev.video_url
+          };
+        });
+        toast.dismiss(toastId);
+        const msg = isRtl
+          ? `تم رفع الوسائط بنجاح (${imagesUploaded} صور، ${videosUploaded} فيديو)!`
+          : `Successfully uploaded ${imagesUploaded} images & ${videosUploaded} videos!`;
+        toast.success(msg);
+      } else {
+        throw new Error('No files uploaded');
+      }
+    } catch (err) {
       toast.dismiss(toastId);
-      toast.error(isRtl ? 'فشل رفع الصورة إلى الخادم، يرجى المحاولة لاحقاً' : 'Image upload failed, please try again.');
+      toast.error(isRtl ? 'حدث خطأ أثناء رفع الوسائط، يرجى المحاولة لاحقاً' : 'Error uploading media files, please try again.');
     }
   };
+
+  const handleImageFileUpload = (e: any) => handleMixedMediaUpload(e);
 
   const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1703,11 +2054,23 @@ export const BulletinBoardPage: React.FC = () => {
           const rawUrl = data.fileUrl || data.file?.file_url || data.file?.url || data.url || data.path;
           const fileUrl = getMediaUrl(rawUrl);
           if (fileUrl) {
-            setAdFormData(prev => ({
-              ...prev,
-              video_url: fileUrl,
-              ad_format: (prev.ad_format as string) === 'banner' ? 'post' : (prev.ad_format || 'post')
-            }));
+            setAdFormData(prev => {
+              const gallery = [...(prev.media_gallery || [])];
+              if (!gallery.some(m => m.url === fileUrl)) {
+                gallery.push({
+                  id: `vid-${Date.now()}`,
+                  url: fileUrl,
+                  type: 'video',
+                  caption: ''
+                });
+              }
+              return {
+                ...prev,
+                video_url: fileUrl,
+                media_gallery: gallery,
+                ad_format: (prev.ad_format as string) === 'banner' ? 'post' : (prev.ad_format || 'post')
+              };
+            });
             
             setVideoMetadataInfo(prev => ({
               ...prev,
@@ -1852,7 +2215,6 @@ export const BulletinBoardPage: React.FC = () => {
 
   const handleShareAd = async (ad: BulletinAd) => {
     const shareUrl = `${window.location.origin}/bulletin?ad=${ad.id}`;
-    const text = `${ad.title}\n${ad.description}\n${shareUrl}`;
 
     try {
       await fetch(`/api/bulletin/ads/${ad.id}/share`, {
@@ -1865,6 +2227,7 @@ export const BulletinBoardPage: React.FC = () => {
       });
     } catch (e) {}
 
+    // 1. If native system share sheet is supported, invoke it cleanly without conflicting toasts
     if (navigator.share) {
       try {
         await navigator.share({
@@ -1872,13 +2235,31 @@ export const BulletinBoardPage: React.FC = () => {
           text: ad.description,
           url: shareUrl
         });
-        toast.success(isRtl ? 'تمت المشاركة بنجاح' : 'Shared successfully');
         return;
-      } catch (e) {}
+      } catch (e: any) {
+        // Dismissed / cancelled by user - stop cleanly without showing conflicting notifications
+        if (e?.name === 'AbortError') {
+          return;
+        }
+      }
     }
 
-    navigator.clipboard.writeText(text);
-    toast.success(isRtl ? 'تم نسخ رابط ونص الترويج!' : 'Link copied to clipboard!');
+    // 2. Fallback only if native share is not available on this platform
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      toast.success(isRtl ? 'تم نسخ رابط المنشور بنجاح' : 'Post link copied to clipboard');
+    } catch (err) {}
   };
 
   const handleWhatsAppClick = (ad: BulletinAd, e: React.MouseEvent) => {
@@ -2195,14 +2576,6 @@ export const BulletinBoardPage: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => { navigate('/marketplace'); setIsMobileSidebarOpen(false); }}
-                      className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
-                    >
-                      <ShoppingBag size={16} className="text-gray-400 group-hover:text-accent" />
-                      <span>{isRtl ? 'السوق (Marketplace)' : 'Marketplace'}</span>
-                    </button>
-
-                    <button
                       onClick={() => { navigate('/blog'); setIsMobileSidebarOpen(false); }}
                       className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
                     >
@@ -2351,7 +2724,7 @@ export const BulletinBoardPage: React.FC = () => {
           <div className="w-full h-full">
             {/* Reels Feed Component */}
             <ReelsFeed
-              ads={ads}
+              ads={combinedReelsAds.length > 0 ? combinedReelsAds : ads}
               isRtl={isRtl}
               token={token}
               user={user}
@@ -2365,9 +2738,10 @@ export const BulletinBoardPage: React.FC = () => {
               onEditReel={handleEditAd}
               onOpenPageDetail={handleOpenPageDetail}
               onClose={() => setActiveTab('board')}
-              onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
-              onUploadReelClick={() => setIsReelUploadModalOpen(true)}
+              onOpenUploadReels={openReelUploadModal}
+              onUploadReelClick={openReelUploadModal}
               initialAdId={activeReelModalId || undefined}
+              isLoading={loading}
             />
           </div>
         ) : activeTab === 'pages' && !selectedPageDetail ? (
@@ -3157,7 +3531,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto w-full">
                           {selectedPageDetail.ads.map((ad, adIdx) => (
                             <div key={`page-ad-${ad.id}-${adIdx}`} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 space-y-2.5">
-                              <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}>
+                              <div className="relative aspect-square rounded-xl overflow-hidden cursor-pointer" onClick={() => handleOpenLightbox(getMediaUrl(ad.image_url), ad.media_gallery, 0, ad.title, ad.author_name, ad)}>
                                 <img
                                   src={getMediaUrl(ad.image_url)}
                                   alt={ad.title || 'Ad thumbnail'}
@@ -3253,7 +3627,7 @@ export const BulletinBoardPage: React.FC = () => {
                         {selectedPageDetail.ads.map((ad, gIdx) => (
                           <div
                             key={`page-gallery-ad-${ad.id}-${gIdx}`}
-                            onClick={() => setLightboxImage(getMediaUrl(ad.image_url))}
+                            onClick={() => handleOpenLightbox(getMediaUrl(ad.image_url), ad.media_gallery, 0, ad.title, ad.author_name, ad)}
                             className="aspect-square rounded-2xl overflow-hidden cursor-pointer relative group bg-gray-100 dark:bg-gray-900"
                           >
                             <img
@@ -3359,30 +3733,34 @@ export const BulletinBoardPage: React.FC = () => {
                             }
                             setIsStoryModalOpen(true);
                           }}
-                          className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-white dark:bg-[#1c1c1e] border border-gray-200 dark:border-zinc-800 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-center items-center"
+                          className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-2xl overflow-hidden bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-zinc-800 shrink-0 cursor-pointer group shadow-sm hover:shadow-md transition-all duration-300 flex flex-col"
                         >
-                          <div className="relative w-full h-full overflow-hidden bg-gray-100 dark:bg-zinc-900 flex flex-col justify-center items-center">
-                            <img
-                              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                              alt={user?.name || 'User'}
-                              className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500 opacity-60"
-                            />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none z-10" />
-                            
-                            <div className="absolute top-2.5 start-2.5 z-20 pointer-events-auto">
-                              <div className="w-9 h-9 rounded-full bg-blue-600 text-white border-[2px] border-white dark:border-[#1c1c1e] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                          <div className="relative w-full h-[65%] bg-gray-100 dark:bg-zinc-800 flex justify-center items-center overflow-hidden">
+                            {user?.avatar?.includes('dicebear') ? (
+                               <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-zinc-700 dark:to-zinc-800 flex justify-center items-center">
+                                  <BulletinAvatar src={user?.avatar} alt={user?.name} size="lg" className="shadow-md scale-110" />
+                               </div>
+                            ) : (
+                               <img
+                                  src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                                  alt={user?.name || 'User'}
+                                  className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                               />
+                            )}
+                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors pointer-events-none z-10" />
+                          </div>
+                          
+                          <div className="relative w-full h-[35%] bg-white dark:bg-[#1a1a1c] flex flex-col items-center justify-end pb-2 sm:pb-3">
+                            <div className="absolute -top-4 sm:-top-5 z-20">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white border-2 sm:border-[3px] border-white dark:border-[#1a1a1c] flex items-center justify-center shadow-md transition-transform group-hover:scale-110">
                                 <Plus size={18} className="stroke-[3]" />
                               </div>
                             </div>
-
-                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 pointer-events-none flex flex-col justify-end items-center">
-                               <span className="text-[11px] font-black text-white drop-shadow-lg text-center">
-                                  {isRtl ? 'إنشاء قصة' : 'Create Story'}
-                               </span>
-                            </div>
+                            <span className="text-[11px] sm:text-xs font-black text-gray-800 dark:text-gray-200 text-center px-1">
+                               {isRtl ? 'إنشاء قصة' : 'Create Story'}
+                            </span>
                           </div>
                         </div>
-
                         {/* User & Merchant Stories */}
                         {representativeStories.map((story: any, sIdx: number) => {
                           // Find index in orderedStories for the viewer
@@ -3506,28 +3884,20 @@ export const BulletinBoardPage: React.FC = () => {
                           <span>{isRtl ? 'بث مباشر' : 'Live Stream'}</span>
                         </button>
 
-                        <label className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-blue-500/10 hover:text-blue-500 font-bold transition-theme text-blue-500 whitespace-nowrap cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!token) {
+                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
+                              return;
+                            }
+                            openPostUploadModal();
+                          }}
+                          className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-blue-500/10 hover:text-blue-500 font-bold transition-theme text-blue-500 whitespace-nowrap cursor-pointer"
+                        >
                           <Video size={15} className="text-blue-500 shrink-0" />
                           <span>{isRtl ? 'فيديو أو صورة' : 'Photo/Video'}</span>
-                          <input 
-                            type="file" 
-                            accept="image/*,video/*" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (!token) {
-                                toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                                return;
-                              }
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.type.startsWith('image/')) handleImageFileUpload(e);
-                                else handleVideoFileUpload(e);
-                                setAdFormData(prev => ({ ...prev, ad_format: 'post' }));
-                                setIsAdModalOpen(true);
-                              }
-                            }} 
-                          />
-                        </label>
+                        </button>
 
                         <button
                           type="button"
@@ -3536,7 +3906,7 @@ export const BulletinBoardPage: React.FC = () => {
                               toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
                               return;
                             }
-                            setIsReelUploadModalOpen(true);
+                            openReelUploadModal();
                           }}
                           className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl hover:bg-purple-500/10 hover:text-purple-500 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer"
                         >
@@ -3554,8 +3924,11 @@ export const BulletinBoardPage: React.FC = () => {
                       loadingMore={loadingMoreAds}
                       onLoadMore={handleLoadMoreAds}
                       onOpenReelFeed={(adId) => {
-                        if (adId) setActiveReelModalId(adId);
-                        setActiveTab('reels');
+                        if (adId) {
+                          setActiveReelModalId(adId);
+                        } else {
+                          setActiveTab('reels');
+                        }
                       }}
                       isRtl={isRtl}
                       token={token}
@@ -3564,6 +3937,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onReportAd={handleReportAd}
                       onToggleLike={handleToggleLike}
                       onToggleComments={toggleComments}
+                      onToggleCommentLike={handleToggleCommentLike}
                       expandedAdId={expandedAdId}
                       commentsMap={commentsMap}
                       loadingCommentsAdId={loadingCommentsAdId}
@@ -3578,66 +3952,29 @@ export const BulletinBoardPage: React.FC = () => {
                       onWhatsApp={handleWhatsAppClick}
                       onShare={handleShareAd}
                       onOpenPageDetail={handleOpenPageDetail}
-                      onOpenLightbox={setLightboxImage}
-                      onCreateAdClick={() => {
-                        setIsEditMode(false);
-                        setEditingAdId(null);
-                        setAdFormData({
-                          title: '',
-                          description: '',
-                          image_url: '',
-                          video_url: '',
-                          whatsapp_number: '',
-                          phone_number: '',
-                          target_url: '',
-                          hashtags: '',
-                          page_id: '',
-                          location_city: 'القدس الشريف',
-                          location_radius: '10',
-                          feeling: '',
-                          is_ai_generated: false,
-                          tagged_users: [],
-                          has_whatsapp_button: false,
-                          audience: 'public',
-                          ad_format: 'post',
-                          quick_questions: ['', '', '']
-                        });
-                        setIsAdModalOpen(true);
-                      }}
+                      onOpenLightbox={handleOpenLightbox}
+                      onCreateAdClick={openPostUploadModal}
                       onBoostAd={handleOpenBoostModal}
                       onEditAd={handleEditAd}
                       onDeleteAd={handleDeleteAd}
                       onToggleSave={handleToggleSave}
+                      onArchiveAd={(archivedAd) => {
+                        setAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                        setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                      }}
+                      onTrashAd={(trashedAd) => {
+                        setAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                        setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                      }}
+                      onUpdateAd={(updatedAd) => {
+                        setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                        setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                      }}
                     />
                   </div>
                 )}
 
-                {/* ========================================================== */}
-                {/* TAB: REELS & VERTICAL SHORT VIDEOS (9:16 FULL-SCREEN FEED) */}
-                {/* ========================================================== */}
-                {(activeTab as string) === 'reels' && (
-                  <div className="fixed inset-0 z-[9999] bg-black w-screen h-[100dvh]">
-                    <ReelsFeed
-                      ads={ads}
-                      isRtl={isRtl}
-                      token={token}
-                      user={user}
-                      onToggleLike={handleToggleLike}
-                      onMessageAdvertiser={handleMessageAdvertiser}
-                      onShare={handleShareAd}
-                      onDeleteReel={(id) => {
-                        const ad = ads.find(a => a.id === id);
-                        if (ad) handleDeleteAd(ad);
-                      }}
-                      onEditReel={handleEditAd}
-                      onOpenPageDetail={handleOpenPageDetail}
-                      onOpenUploadReels={() => setIsReelUploadModalOpen(true)}
-                      onUploadReelClick={() => setIsReelUploadModalOpen(true)}
-                      initialAdId={activeReelModalId || undefined}
-                      onClose={() => setActiveTab('board')}
-                    />
-                  </div>
-                )}
+
 
                 {/* ========================================================== */}
                 {/* TAB: SAVED POSTS                                          */}
@@ -3679,6 +4016,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onReportAd={handleReportAd}
                       onToggleLike={handleToggleLike}
                       onToggleComments={toggleComments}
+                      onToggleCommentLike={handleToggleCommentLike}
                       expandedAdId={expandedAdId}
                       commentsMap={commentsMap}
                       loadingCommentsAdId={loadingCommentsAdId}
@@ -3693,36 +4031,24 @@ export const BulletinBoardPage: React.FC = () => {
                       onWhatsApp={handleWhatsAppClick}
                       onShare={handleShareAd}
                       onOpenPageDetail={handleOpenPageDetail}
-                      onOpenLightbox={setLightboxImage}
-                      onCreateAdClick={() => {
-                        setIsEditMode(false);
-                        setEditingAdId(null);
-                        setAdFormData({
-                          title: '',
-                          description: '',
-                          image_url: '',
-                          video_url: '',
-                          whatsapp_number: '',
-                          phone_number: '',
-                          target_url: '',
-                          hashtags: '',
-                          page_id: '',
-                          location_city: 'القدس الشريف',
-                          location_radius: '10',
-                          feeling: '',
-                          is_ai_generated: false,
-                          tagged_users: [],
-                          has_whatsapp_button: false,
-                          audience: 'public',
-                          ad_format: 'post',
-                          quick_questions: ['', '', '']
-                        });
-                        setIsAdModalOpen(true);
-                      }}
+                      onOpenLightbox={handleOpenLightbox}
+                      onCreateAdClick={openPostUploadModal}
                       onBoostAd={handleOpenBoostModal}
                       onEditAd={handleEditAd}
                       onDeleteAd={handleDeleteAd}
                       onToggleSave={handleToggleSave}
+                      onArchiveAd={(archivedAd) => {
+                        setAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                        setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                      }}
+                      onTrashAd={(trashedAd) => {
+                        setAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                        setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                      }}
+                      onUpdateAd={(updatedAd) => {
+                        setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                        setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                      }}
                     />
                   </div>
                 )}
@@ -3876,7 +4202,11 @@ export const BulletinBoardPage: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => setIsMuted(!isMuted)}
+                    onClick={() => {
+                      const nextMuted = !isMuted;
+                      setIsMuted(nextMuted);
+                      setGlobalMuteState(nextMuted);
+                    }}
                     className="w-9 h-9 rounded-[4px] bg-black/60 hover:bg-black/80 backdrop-blur-md flex items-center justify-center text-white transition-theme border border-white/10 shadow-xl"
                     title={isMuted ? (isRtl ? 'تفعيل الصوت' : 'Unmute') : (isRtl ? 'كتم الصوت' : 'Mute')}
                   >
@@ -4243,6 +4573,27 @@ export const BulletinBoardPage: React.FC = () => {
                             )}
                             <ChevronDown size={10} className="text-gray-400" />
                           </button>
+
+                          {/* Format Selector Pill (Standard Post / Reels / Story) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdFormData(prev => ({
+                                ...prev,
+                                ad_format: prev.ad_format === 'post' ? 'reel' : prev.ad_format === 'reel' ? 'story' : 'post'
+                              }));
+                            }}
+                            className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2 rounded-md bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                            title={isRtl ? 'تغيير شكل وتنسيق المنشور' : 'Change post format'}
+                          >
+                            <Clapperboard size={10} className="shrink-0 text-indigo-500" />
+                            <span>
+                              {adFormData.ad_format === 'reel' ? (isRtl ? 'ريلز (9:16)' : 'Reel (9:16)') :
+                               adFormData.ad_format === 'story' ? (isRtl ? 'قصة (9:16)' : 'Story (9:16)') :
+                               (isRtl ? 'منشور عادي' : 'Standard Post')}
+                            </span>
+                            <ChevronDown size={10} className="text-gray-400" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -4263,45 +4614,96 @@ export const BulletinBoardPage: React.FC = () => {
                       />
                     </div>
 
-                    {/* Media Attachments Preview Grid & Attached Action Card */}
-                    {(adFormData.image_url || adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
-                      <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700/70 bg-black/5 dark:bg-black/40 mb-2 sm:mb-3 shadow-inner">
-                        {/* Circular Delete Button */}
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setAdFormData(prev => ({ ...prev, image_url: '', video_url: '' }));
+                    {/* If no media is selected yet, show a beautiful, high-fidelity drag-and-drop media upload card */}
+                    {!(
+                      (adFormData.media_gallery && adFormData.media_gallery.length > 0) ||
+                      adFormData.image_url ||
+                      adFormData.video_url ||
+                      videoMetadataInfo.localVideoUrl
+                    ) && (
+                      <div className="border border-dashed border-gray-300 dark:border-zinc-700 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-2xl p-6 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-zinc-800/10 hover:bg-indigo-500/5 dark:hover:bg-indigo-400/5 transition-all group relative cursor-pointer min-h-[120px]">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,video/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                          onChange={handleMixedMediaUpload}
+                        />
+                        <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <Upload size={20} />
+                        </div>
+                        <p className="mt-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
+                          {isRtl ? 'انقر أو اسحب ميديا (صور أو فيديوهات) هنا للرفع' : 'Click or drag media (photos or videos) here to upload'}
+                        </p>
+                        <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500 text-center">
+                          {isRtl ? 'يدعم رفع عشوائي لعدة صور وفيديوهات معاً (حتى 20 وسيطة)' : 'Supports mixed photos & videos with captions (up to 20 items)'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Media Attachments Preview Grid (Facebook Collage with 'Edit All' Button) */}
+                    {(
+                      (adFormData.media_gallery && adFormData.media_gallery.length > 0) ||
+                      adFormData.image_url ||
+                      adFormData.video_url ||
+                      videoMetadataInfo.localVideoUrl
+                    ) && (
+                      <div className="mb-2 sm:mb-3">
+                        <ComposerMediaPreview
+                          mediaItems={
+                            adFormData.media_gallery && adFormData.media_gallery.length > 0
+                              ? adFormData.media_gallery
+                              : [
+                                  ...(adFormData.image_url
+                                    ? adFormData.image_url.split(',').map((u, i) => ({
+                                        id: `img-${i}`,
+                                        url: u.trim(),
+                                        type: 'image' as const,
+                                        caption: ''
+                                      }))
+                                    : []),
+                                  ...(adFormData.video_url
+                                    ? [
+                                        {
+                                          id: 'vid-0',
+                                          url: adFormData.video_url,
+                                          type: 'video' as const,
+                                          caption: ''
+                                        }
+                                      ]
+                                    : [])
+                                ]
+                          }
+                          onOpenMediaManager={() => setIsMediaManagerOpen(true)}
+                          onClearAll={() => {
+                            setAdFormData(prev => ({
+                              ...prev,
+                              image_url: '',
+                              video_url: '',
+                              media_gallery: []
+                            }));
                             setVideoMetadataInfo({ processingStage: 'done' });
                           }}
-                          className="absolute top-2 right-2 rtl:right-auto rtl:left-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/75 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-lg z-20 cursor-pointer"
-                          title={isRtl ? 'إزالة الوسائط' : 'Remove media'}
-                        >
-                          <X size={14} />
-                        </button>
+                          onAddMoreClick={() => {
+                            const input = document.getElementById('composer-mixed-media-input') as HTMLInputElement;
+                            if (input) input.click();
+                          }}
+                          isRtl={isRtl}
+                        />
 
-                        {/* Video or Image Preview */}
-                        {adFormData.image_url && !adFormData.video_url && !videoMetadataInfo.localVideoUrl && (
-                          <div className="relative w-full max-h-[220px] sm:max-h-[380px] bg-black/90 flex items-center justify-center overflow-hidden">
-                            <img src={getMediaUrl(adFormData.image_url)} alt="Attachment" className="w-full max-h-[220px] sm:max-h-[380px] object-contain" />
-                          </div>
-                        )}
-
-                        {(adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
-                          <div className="relative w-full max-h-[220px] sm:max-h-[380px] bg-black flex items-center justify-center overflow-hidden">
-                            <MediaFormatPlayer
-                              url={adFormData.video_url || videoMetadataInfo.localVideoUrl || ''}
-                              adFormat={adFormData.ad_format || 'feed'}
-                              posterUrl={adFormData.image_url}
-                              title={adFormData.title}
-                              isRtl={isRtl}
-                              className={adFormData.ad_format === 'reel' || adFormData.ad_format === 'story' ? 'max-h-[220px] sm:max-h-[360px] mx-auto' : ''}
-                            />
-                          </div>
-                        )}
+                        {/* Hidden input for adding more media to the gallery */}
+                        <input
+                          id="composer-mixed-media-input"
+                          type="file"
+                          multiple
+                          accept="image/*,video/*"
+                          className="hidden"
+                          onChange={handleMixedMediaUpload}
+                        />
 
                         {/* Attached Action Banner (Facebook WhatsApp CTA Card Preview) */}
                         {adFormData.has_whatsapp_button && (
-                          <div className="p-2 sm:p-3 bg-gray-50 dark:bg-zinc-800/90 border-t border-gray-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-2 sm:gap-3">
+                          <div className="mt-2 p-2 sm:p-3 bg-gray-50 dark:bg-zinc-800/90 rounded-xl border border-gray-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-2 sm:gap-3">
                             <div className="flex items-center gap-2 min-w-0">
                               <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
                                 <MessageCircle size={16} className="text-[#25D366] sm:size-5" />
@@ -4324,7 +4726,7 @@ export const BulletinBoardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setAdFormData(prev => ({ ...prev, has_whatsapp_button: false }))}
-                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-200 dark:bg-zinc-700 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-200 dark:bg-zinc-700 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors cursor-pointer"
                                 title={isRtl ? 'إزالة زر الواتساب' : 'Remove WhatsApp CTA'}
                               >
                                 <X size={11} />
@@ -4379,15 +4781,10 @@ export const BulletinBoardPage: React.FC = () => {
                           <ImageIcon size={17} className="sm:size-[22px]" />
                           <input 
                             type="file" 
+                            multiple
                             accept="image/*,video/*" 
                             className="hidden" 
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.type.startsWith('image/')) handleImageFileUpload(e);
-                                else handleVideoFileUpload(e);
-                              }
-                            }} 
+                            onChange={handleMixedMediaUpload} 
                           />
                         </label>
 
@@ -5033,8 +5430,15 @@ export const BulletinBoardPage: React.FC = () => {
                     <span className="text-xs font-bold text-gray-100">{isRtl ? 'صورة/فيديو' : 'Photo/Video'}</span>
                     <span className="text-[9px] text-gray-400">{isRtl ? 'إرفاق وسائط' : 'Attach media'}</span>
                   </div>
-                  <input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => {
-                    handleImageFileUpload(e);
+                  <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      if (files[0].type.startsWith('image/')) {
+                        handleImageFileUpload(e);
+                      } else {
+                        handleVideoFileUpload(e);
+                      }
+                    }
                     setIsAddToPostModalOpen(false);
                   }} />
                 </label>
@@ -5409,33 +5813,6 @@ export const BulletinBoardPage: React.FC = () => {
           onSuccess={handleBoostSuccess}
         />
       )}
-
-      {/* LIGHTBOX MODAL */}
-      <AnimatePresence>
-        {lightboxImage && (
-          <div
-            onClick={() => setLightboxImage(null)}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md cursor-pointer"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-2xl max-h-[90vh]"
-            >
-              <img src={getMediaUrl(lightboxImage)} alt="Ad detail" className="w-full h-full object-contain rounded-2xl shadow-2xl" />
-              <button
-                onClick={() => setLightboxImage(null)}
-                className="absolute top-3 end-3 p-2 rounded-full bg-black/70 text-white hover:bg-black"
-              >
-                <X size={20} />
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-
 
       {/* STREAM SETUP MODAL */}
       <AnimatePresence>
@@ -5854,7 +6231,12 @@ export const BulletinBoardPage: React.FC = () => {
         {/* Tab 1: Home / Feed */}
         <button
           type="button"
-          onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          onClick={() => {
+            triggerHaptic('selection');
+            setSelectedPageDetail(null);
+            setActiveTab('board');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
             activeTab === 'board' && !selectedPageDetail
               ? 'text-accent'
@@ -5876,6 +6258,7 @@ export const BulletinBoardPage: React.FC = () => {
         <button
           type="button"
           onClick={() => {
+            triggerHaptic('selection');
             if (!token) { setIsAuthModalOpen(true); return; }
             setSelectedPageDetail(null);
             setActiveTab('inquiries');
@@ -5907,6 +6290,7 @@ export const BulletinBoardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              triggerHaptic('medium');
               if (!token) { setIsAuthModalOpen(true); return; }
               setIsAdModalOpen(true);
             }}
@@ -5920,7 +6304,11 @@ export const BulletinBoardPage: React.FC = () => {
         {/* Tab 4: Pages */}
         <button
           type="button"
-          onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
+          onClick={() => {
+            triggerHaptic('selection');
+            setSelectedPageDetail(null);
+            setActiveTab('pages');
+          }}
           className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
             activeTab === 'pages'
               ? 'text-accent'
@@ -5941,7 +6329,10 @@ export const BulletinBoardPage: React.FC = () => {
         {/* Tab 5: Menu */}
         <button
           type="button"
-          onClick={() => setIsMobileSidebarOpen(true)}
+          onClick={() => {
+            triggerHaptic('medium');
+            setIsMobileSidebarOpen(true);
+          }}
           className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
             isMobileSidebarOpen
               ? 'text-accent'
@@ -5960,17 +6351,7 @@ export const BulletinBoardPage: React.FC = () => {
         </button>
       </nav>
 
-      {/* Specialized 9:16 Reel Upload Modal */}
-      <ReelUploadModal
-        isOpen={isReelUploadModalOpen}
-        onClose={() => setIsReelUploadModalOpen(false)}
-        isRtl={isRtl}
-        token={token}
-        onUploadSuccess={(newReel) => {
-          fetchAds();
-          if (activeTab === 'my_ads') fetchMyAds();
-        }}
-      />
+
 
       {/* Story Upload Modal */}
       <StoryUploadModal
@@ -6015,12 +6396,64 @@ export const BulletinBoardPage: React.FC = () => {
         }}
       />
 
+      {/* Media Manager Modal (Edit All, Captions & Reordering) */}
+      <MediaManagerModal
+        isOpen={isMediaManagerOpen}
+        onClose={() => setIsMediaManagerOpen(false)}
+        mediaItems={adFormData.media_gallery || []}
+        onChangeMediaItems={(updatedMedia) => {
+          setAdFormData(prev => {
+            const allImages = updatedMedia.filter(m => m.type === 'image').map(m => m.url);
+            const firstVideo = updatedMedia.find(m => m.type === 'video');
+            return {
+              ...prev,
+              media_gallery: updatedMedia,
+              image_url: allImages.join(','),
+              video_url: firstVideo ? firstVideo.url : ''
+            };
+          });
+        }}
+        onAddMoreFiles={handleMixedMediaUpload}
+        isRtl={isRtl}
+      />
+
+      {/* Media Lightbox Modal (Full-Screen Viewer for Images & Videos with Facebook-style edge tools) */}
+      <MediaLightboxModal
+        isOpen={lightboxState.isOpen}
+        onClose={() => {
+          setLightboxState(prev => ({ ...prev, isOpen: false }));
+          updateUrlWithPost(null);
+        }}
+        items={lightboxState.items}
+        initialIndex={lightboxState.initialIndex}
+        onToggleCommentLike={handleToggleCommentLike}
+        isRtl={isRtl}
+        postTitle={lightboxState.postTitle}
+        authorName={lightboxState.authorName}
+        ad={lightboxState.ad}
+        comments={lightboxState.ad ? commentsMap[lightboxState.ad.id] : undefined}
+        loadingComments={lightboxState.ad ? loadingCommentsAdId === lightboxState.ad.id : false}
+        onToggleLike={handleToggleLike}
+        onAddComment={handleAddComment}
+        onShare={handleShareAd}
+        onBoostAd={handleOpenBoostModal}
+        onEditAd={handleEditAd}
+        onViewPost={(adId) => {
+          setLightboxState(prev => ({ ...prev, isOpen: false }));
+          updateUrlWithPost(null);
+          const el = document.getElementById(`bulletin-ad-${adId}`);
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        user={user}
+        token={token}
+      />
+
       {/* FULL-SCREEN REELS MODAL OVERLAY WHEN CLICKED FROM FEED */}
       <AnimatePresence>
         {activeReelModalId !== null && (
           <div className="fixed inset-0 z-[9999] bg-black w-screen h-[100dvh]">
             <ReelsFeed
-              ads={ads}
+              ads={combinedReelsAds.length > 0 ? combinedReelsAds : ads}
               initialAdId={activeReelModalId}
               isRtl={isRtl}
               token={token}
@@ -6036,16 +6469,17 @@ export const BulletinBoardPage: React.FC = () => {
               onOpenPageDetail={handleOpenPageDetail}
               onOpenUploadReels={() => {
                 stopAllMedia('reel_upload_preview');
-                setIsReelUploadModalOpen(true);
+                openReelUploadModal();
               }}
               onUploadReelClick={() => {
                 stopAllMedia('reel_upload_preview');
-                setIsReelUploadModalOpen(true);
+                openReelUploadModal();
               }}
               onClose={() => {
                 stopAllMedia();
                 setActiveReelModalId(null);
               }}
+              isLoading={loading}
             />
           </div>
         )}

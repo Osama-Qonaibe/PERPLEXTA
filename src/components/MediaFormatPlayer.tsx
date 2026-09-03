@@ -34,7 +34,7 @@ export const MediaFormatPlayer: React.FC<MediaFormatPlayerProps> = ({
   posterUrl,
   title,
   autoPlay = false,
-  muted = true,
+  muted = false,
   className = '',
   isRtl = true,
   showControls = true,

@@ -22,6 +22,7 @@ import { trackGAEvent } from '../components/GoogleAnalytics';
 import { getCSPNonce, applyNonce } from '../utils/csp';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { triggerHaptic } from '../utils/haptics';
 import { encrypt } from '../utils/browserCrypto';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
@@ -5575,6 +5576,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleSendOrStop = async (overrideQuery?: string, overrideMessages?: Message[]) => {
+    triggerHaptic('medium');
     if (isGeneratingRef.current || isGenerating) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();

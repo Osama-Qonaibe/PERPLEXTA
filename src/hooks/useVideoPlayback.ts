@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVideoResource, ProgressData } from '../context/VideoResourceContext';
+import { getGlobalMuteState, setGlobalMuteState } from '../utils/mediaCoordinator';
 
 export interface UseVideoPlaybackProps {
   src?: string;
@@ -28,14 +29,14 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState<boolean>(() => getGlobalMuteState());
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const [isPreviewMuted, setIsPreviewMuted] = useState(true);
+  const [isPreviewMuted, setIsPreviewMuted] = useState<boolean>(() => getGlobalMuteState());
   const [previewProgress, setPreviewProgress] = useState(0);
   const [previewTime, setPreviewTime] = useState(0);
   const [previewDur, setPreviewDur] = useState(0);
@@ -212,12 +213,53 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
     }
   }, [isPlaying]);
 
+  // Synchronize mute state globally across clips on page
+  useEffect(() => {
+    const handleMuteChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ muted: boolean }>;
+      if (typeof customEvent.detail?.muted === 'boolean') {
+        const newMuted = customEvent.detail.muted;
+        setIsMuted(newMuted);
+        setIsPreviewMuted(newMuted);
+        if (videoRef.current) {
+          try {
+            if (newMuted) {
+              videoRef.current.muted = true;
+            } else {
+              videoRef.current.muted = videoRef.current.paused;
+            }
+          } catch (_) {}
+        }
+        if (previewVideoRef.current) {
+          try {
+            if (newMuted) {
+              previewVideoRef.current.muted = true;
+            } else {
+              previewVideoRef.current.muted = previewVideoRef.current.paused;
+            }
+          } catch (_) {}
+        }
+      }
+    };
+
+    window.addEventListener('perplexta:mute_change', handleMuteChange);
+    return () => {
+      window.removeEventListener('perplexta:mute_change', handleMuteChange);
+    };
+  }, []);
+
   const toggleMute = useCallback((e?: any) => {
     if (e && e.stopPropagation) e.stopPropagation();
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    setIsPreviewMuted(newMuted);
+    setGlobalMuteState(newMuted);
     const vid = videoRef.current;
-    if (!vid) return;
-    vid.muted = !isMuted;
-    setIsMuted(!isMuted);
+    if (vid) {
+      try {
+        vid.muted = newMuted;
+      } catch (_) {}
+    }
   }, [isMuted]);
 
   const handleTimeUpdate = useCallback(() => {
@@ -259,10 +301,16 @@ export const useVideoPlayback = ({ src = '', messageId, dir = 'ltr' }: UseVideoP
 
   const togglePreviewMute = useCallback((e?: any) => {
     if (e && e.stopPropagation) e.stopPropagation();
+    const newMuted = !isPreviewMuted;
+    setIsPreviewMuted(newMuted);
+    setIsMuted(newMuted);
+    setGlobalMuteState(newMuted);
     const vid = previewVideoRef.current;
-    if (!vid) return;
-    vid.muted = !isPreviewMuted;
-    setIsPreviewMuted(!isPreviewMuted);
+    if (vid) {
+      try {
+        vid.muted = newMuted;
+      } catch (_) {}
+    }
   }, [isPreviewMuted]);
 
   const handlePreviewSeek = useCallback((e: any) => {

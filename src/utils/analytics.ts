@@ -102,3 +102,26 @@ export const trackCreditPurchaseEvent = (
     timestamp: new Date().toISOString(),
   });
 };
+
+/**
+ * Triggers GTM dataLayer events for media engagement, retention, drop-offs and loop cycles.
+ */
+export const trackMediaEvent = (
+  event_type: 'play' | 'pause' | 'loop' | 'drop_off' | 'like',
+  playerId: string,
+  currentTime: number,
+  duration: number,
+  metadata?: Record<string, any>
+) => {
+  const percentage = duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
+  pushToDataLayer({
+    event: `media_${event_type}`,
+    playerId,
+    currentTime: Number(currentTime.toFixed(2)),
+    duration: Number(duration.toFixed(2)),
+    completionPercentage: percentage,
+    ...metadata,
+    timestamp: new Date().toISOString(),
+  });
+};
+

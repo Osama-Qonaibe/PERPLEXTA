@@ -10,6 +10,7 @@ export interface CustomVideoPlayerProps {
   title?: string;
   autoPlay?: boolean;
   muted?: boolean;
+  loop?: boolean;
   aspectRatio?: MediaAspectRatio;
   resourceId?: string | number;
   onEnded?: () => void;
@@ -23,6 +24,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   title,
   autoPlay = false,
   muted = false,
+  loop = false,
   aspectRatio = 'auto',
   resourceId,
   onEnded
@@ -42,6 +44,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       title={title}
       autoPlay={autoPlay}
       muted={muted}
+      loop={loop}
       aspectRatio={initialRatio}
       isRtl={isRtl}
       className={className}

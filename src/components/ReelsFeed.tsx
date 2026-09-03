@@ -35,14 +35,28 @@ import {
   PauseCircle,
   Film,
   Trash2,
-  Edit2
+  Edit2,
+  MoreHorizontal,
+  Globe,
+  Megaphone,
+  ThumbsUp,
+  Smile,
+  Camera,
+  Image as ImageIcon,
+  Users
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
 import { getMediaUrl } from '../utils/mediaUtils';
+import { triggerHaptic as utilsTriggerHaptic } from '../utils/haptics';
 import { BulletinAvatar } from './BulletinAvatar';
 import { useAppContext } from '../context/AppContext';
-import { notifyMediaPlaying, stopAllMedia } from '../utils/mediaCoordinator';
+import {
+  notifyMediaPlaying,
+  stopAllMedia,
+  getGlobalMuteState,
+  setGlobalMuteState
+} from '../utils/mediaCoordinator';
 
 function formatCompactCount(count: number): string {
   if (!count || isNaN(count)) return '0';
@@ -53,6 +67,13 @@ function formatCompactCount(count: number): string {
     return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
   }
   return String(count);
+}
+
+function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return '00:00';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
 export interface ReelItemData {
@@ -90,6 +111,7 @@ export interface ReelsFeedProps {
   onToggleLike?: (adId: number) => void;
   onToggleSave?: (adId: number) => void;
   onAddComment?: (adId: number, text: string) => Promise<void>;
+  onToggleCommentLike?: (adId: number, commentId: number, reaction?: string) => void;
   commentsMap?: Record<number, BulletinAdComment[]>;
   onClose?: () => void;
   onOpenUploadReels?: () => void;
@@ -101,7 +123,10 @@ export interface ReelsFeedProps {
   onEditReel?: (ad: BulletinAd) => void;
   initialReelId?: number;
   initialAdId?: number;
+  isLoading?: boolean;
 }
+
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '👏', '😮', '🎉', '💯', '🚀', '😍', '✨', '🙏'];
 
 export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   ads = [],
@@ -111,6 +136,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   onToggleLike,
   onToggleSave,
   onAddComment,
+  onToggleCommentLike,
   commentsMap = {},
   onClose,
   onOpenUploadReels,
@@ -121,7 +147,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   onDeleteReel,
   onEditReel,
   initialReelId,
-  initialAdId
+  initialAdId,
+  isLoading = false
 }) => {
   const { socket } = useAppContext();
   const startId = initialAdId || initialReelId;
@@ -158,8 +185,9 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
   // Session Persistence & Active Reel Index Initialization
   const [activeIndex, setActiveIndex] = useState<number>(() => {
-    if (startId) {
-      const idx = reelsList.findIndex((r) => r.id === startId);
+    if (startId !== undefined && startId !== null) {
+      const targetId = Number(startId);
+      const idx = reelsList.findIndex((r) => Number(r.id) === targetId);
       if (idx >= 0) return idx;
     }
     try {
@@ -167,12 +195,12 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         const searchParams = new URLSearchParams(window.location.search);
         const urlReelId = searchParams.get('reel');
         if (urlReelId) {
-          const idx = reelsList.findIndex((r) => String(r.id) === urlReelId);
+          const idx = reelsList.findIndex((r) => Number(r.id) === Number(urlReelId));
           if (idx >= 0) return idx;
         }
         const savedReelId = sessionStorage.getItem('perplexta_active_reel_id');
         if (savedReelId) {
-          const idx = reelsList.findIndex((r) => String(r.id) === savedReelId);
+          const idx = reelsList.findIndex((r) => Number(r.id) === Number(savedReelId));
           if (idx >= 0) return idx;
         }
         const savedIndex = sessionStorage.getItem('perplexta_active_reel_index');
@@ -190,13 +218,14 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   });
 
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
-  const [isMuted, setIsMuted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('reels_muted');
-      return saved === 'true';
-    }
-    return false;
-  });
+  const [isMuted, setIsMuted] = useState<boolean>(() => getGlobalMuteState());
+  const isTogglingMuteRef = useRef<boolean>(false);
+  const isAutoplayFallbackRef = useRef<boolean>(false);
+  const wasAutoplayMutedFallbackRef = useRef<boolean>(false);
+  // Mute / Unmute Visual Feedback Overlay
+  const [muteFeedback, setMuteFeedback] = useState<{ show: boolean; isMuted: boolean } | null>(null);
+  const muteTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [playingState, setPlayingState] = useState<Record<number, boolean>>({});
   const [likesState, setLikesState] = useState<Record<number, { count: number; liked: boolean }>>(() => {
     const initial: Record<number, { count: number; liked: boolean }> = {};
@@ -254,19 +283,56 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   // Smart Auto-Pause on Scroll state
   const [autoPauseEnabled, setAutoPauseEnabled] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [reelsHoverMeta, setReelsHoverMeta] = useState<{
+    reelId: number;
+    percent: number;
+    time: number;
+    duration: number;
+    width?: number;
+    height?: number;
+    qualityLabel?: string;
+  } | null>(null);
   const isScrollingRef = useRef(false);
   const scrollDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasPlayingBeforeScrollRef = useRef<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const isInitialScrollSettledRef = useRef(false);
+
   useEffect(() => {
-    if (startId) {
-      const idx = reelsList.findIndex((r) => r.id === startId);
-      if (idx >= 0 && idx !== activeIndex) {
-        setActiveIndex(idx);
-        setTimeout(() => { const container = containerRef.current; if (container) { const targetItem = container.querySelector(`[data-reel-index="${idx}"]`); if (targetItem) { targetItem.scrollIntoView({ behavior: "auto" }); } } }, 100);
+    if (startId !== undefined && startId !== null) {
+      const targetId = Number(startId);
+      const idx = reelsList.findIndex((r) => Number(r.id) === targetId);
+      if (idx >= 0) {
+        if (idx !== activeIndex) {
+          setActiveIndex(idx);
+        }
+        const scrollTarget = () => {
+          const container = containerRef.current;
+          if (container) {
+            const targetItem = container.querySelector<HTMLElement>(`[data-reel-index="${idx}"]`);
+            if (targetItem) {
+              container.scrollTop = targetItem.offsetTop;
+            }
+          }
+        };
+        scrollTarget();
+        const t1 = setTimeout(scrollTarget, 40);
+        const t2 = setTimeout(scrollTarget, 120);
+        const t3 = setTimeout(() => {
+          isInitialScrollSettledRef.current = true;
+        }, 350);
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+          clearTimeout(t3);
+        };
+      } else {
+        isInitialScrollSettledRef.current = true;
       }
+    } else {
+      isInitialScrollSettledRef.current = true;
     }
   }, [startId, reelsList]);
 
@@ -383,12 +449,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   }, []);
 
   const triggerHaptic = (pattern: number | number[] = 30) => {
-    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate(pattern);
-      } catch {
-      }
-    }
+    utilsTriggerHaptic(pattern);
   };
 
   const preloadVideoChunk = useCallback((videoUrl: string) => {
@@ -470,15 +531,87 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     }
   }, []);
 
-  // Cleanup and stop all media when unmounting or external media events occur
+  // Centralized playback trigger with browser autoplay policy fallback
+  const playActiveVideo = useCallback((videoEl: HTMLVideoElement, reelId: number, targetMuted: boolean) => {
+    videoEl.muted = targetMuted;
+
+    notifyMediaPlaying(`reels_feed_${reelId}`);
+    const playPromise = videoEl.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setPlayingState((prev) => ({ ...prev, [reelId]: true }));
+          wasAutoplayMutedFallbackRef.current = false; // Successfully played with target muted setting
+        })
+        .catch((err) => {
+          console.warn('[ReelsFeed] Autoplay restricted by browser policy:', err);
+          if (!targetMuted) {
+            wasAutoplayMutedFallbackRef.current = true; // Flag that we had to fallback to muted play due to policy
+            isAutoplayFallbackRef.current = true;
+            videoEl.muted = true;
+            videoEl
+              .play()
+              .then(() => {
+                setPlayingState((prev) => ({ ...prev, [reelId]: true }));
+              })
+              .catch(() => {
+                setPlayingState((prev) => ({ ...prev, [reelId]: false }));
+              })
+              .finally(() => {
+                setTimeout(() => {
+                  isAutoplayFallbackRef.current = false;
+                }, 400);
+              });
+          } else {
+            setPlayingState((prev) => ({ ...prev, [reelId]: false }));
+          }
+        });
+    }
+  }, []);
+
+  // Auto-unmute on first user interaction if the browser forced a muted autoplay fallback
   useEffect(() => {
-    // Force stop any background feed/page media immediately upon opening Reels
-    stopAllMedia('reels_feed_' + (reelsList[activeIndex]?.id || ''));
+    const handleFirstInteraction = () => {
+      if (wasAutoplayMutedFallbackRef.current) {
+        wasAutoplayMutedFallbackRef.current = false;
+        
+        const currentReel = reelsList[activeIndex];
+        if (currentReel) {
+          const activeVideo = videoRefs.current[currentReel.id];
+          if (activeVideo) {
+            try {
+              // Gracefully transition to unmuted since user interacted with the document
+              activeVideo.muted = false;
+              setIsMuted(false);
+              setGlobalMuteState(false);
+            } catch (err) {
+              console.warn('[ReelsFeed] Failed to auto-unmute on interaction:', err);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('click', handleFirstInteraction, { once: true, capture: true });
+    window.addEventListener('touchstart', handleFirstInteraction, { once: true, capture: true });
+
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction, { capture: true });
+      window.removeEventListener('touchstart', handleFirstInteraction, { capture: true });
+    };
+  }, [activeIndex, reelsList]);
+
+  // Sync media coordinator events while active in Reels view
+  useEffect(() => {
+    const activeId = reelsList[activeIndex]?.id;
+    if (activeId !== undefined) {
+      stopAllMedia('reels_feed_' + activeId);
+    }
 
     const handleStopMedia = (e: Event) => {
       const customEvent = e as CustomEvent<{ exceptMediaId?: string }>;
-      const activeId = reelsList[activeIndex]?.id;
-      if (customEvent.detail?.exceptMediaId !== `reels_feed_${activeId}`) {
+      const currentId = reelsList[activeIndex]?.id;
+      if (customEvent.detail?.exceptMediaId !== `reels_feed_${currentId}`) {
         Object.values(videoRefs.current).forEach((v) => {
           if (v && !v.paused) {
             try {
@@ -492,8 +625,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
     const handleMediaPlaying = (e: Event) => {
       const customEvent = e as CustomEvent<{ mediaId: string }>;
-      const activeId = reelsList[activeIndex]?.id;
-      if (customEvent.detail?.mediaId !== `reels_feed_${activeId}`) {
+      const currentId = reelsList[activeIndex]?.id;
+      if (customEvent.detail?.mediaId !== `reels_feed_${currentId}`) {
         Object.values(videoRefs.current).forEach((v) => {
           if (v && !v.paused) {
             try {
@@ -511,6 +644,12 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     return () => {
       window.removeEventListener('perplexta:stop_all_media', handleStopMedia);
       window.removeEventListener('perplexta:media_playing', handleMediaPlaying);
+    };
+  }, [activeIndex, reelsList]);
+
+  // Pause all videos when ReelsFeed completely unmounts
+  useEffect(() => {
+    return () => {
       Object.values(videoRefs.current).forEach((v) => {
         if (v) {
           try {
@@ -520,7 +659,137 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
       });
       stopAllMedia();
     };
+  }, []);
+
+  // Prevent background playback when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const activeReel = reelsList[activeIndex];
+        if (activeReel) {
+          const videoEl = videoRefs.current[activeReel.id];
+          if (videoEl && !videoEl.paused) {
+            videoEl.pause();
+            setPlayingState((prev) => ({ ...prev, [activeReel.id]: false }));
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [activeIndex, reelsList]);
+
+  // Synchronize mute state across context switching, feeds, and global media changes
+  useEffect(() => {
+    const handleMuteChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ muted: boolean }>;
+      if (typeof customEvent.detail?.muted === 'boolean') {
+        const newMuted = customEvent.detail.muted;
+        setIsMuted(newMuted);
+        
+        const currentReel = reelsList[activeIndex];
+        Object.values(videoRefs.current).forEach((v) => {
+          if (v) {
+            try {
+              const isThisActive = currentReel && v.dataset.mediaId === `reels_feed_${currentReel.id}`;
+              if (isThisActive) {
+                v.muted = newMuted;
+              } else {
+                v.muted = true; // Non-active videos must always remain muted to comply with browser policy
+              }
+            } catch (_) {}
+          }
+        });
+      }
+    };
+
+    window.addEventListener('perplexta:mute_change', handleMuteChange);
+    return () => {
+      window.removeEventListener('perplexta:mute_change', handleMuteChange);
+    };
+  }, [activeIndex, reelsList]);
+
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const nextMuted = !isMuted;
+    isTogglingMuteRef.current = true;
+    setTimeout(() => {
+      isTogglingMuteRef.current = false;
+    }, 400);
+
+    setIsMuted(nextMuted);
+    setGlobalMuteState(nextMuted);
+
+    if (muteTimerRef.current) {
+      clearTimeout(muteTimerRef.current);
+    }
+    setMuteFeedback({ show: true, isMuted: nextMuted });
+    muteTimerRef.current = setTimeout(() => {
+      setMuteFeedback(null);
+    }, 1100);
+
+    const currentReel = reelsList[activeIndex];
+    Object.values(videoRefs.current).forEach((videoEl) => {
+      if (videoEl) {
+        try {
+          // Only unmute the active video element to prevent browser media conflict and automatic pauses
+          const isThisActive = currentReel && videoEl.dataset.mediaId === `reels_feed_${currentReel.id}`;
+          if (isThisActive) {
+            videoEl.muted = nextMuted;
+          } else {
+            videoEl.muted = true;
+          }
+        } catch (_) {}
+      }
+    });
+
+    if (currentReel) {
+      const activeVideo = videoRefs.current[currentReel.id];
+      if (activeVideo) {
+        try {
+          activeVideo.muted = nextMuted;
+          
+          const isReelPlaying = playingState[currentReel.id];
+          if (isReelPlaying || !activeVideo.paused) {
+            // Synchronously trigger play inside the click user gesture. This guarantees
+            // unmuted playback permission from the browser and prevents automatic pauses.
+            const playPromise = activeVideo.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  setPlayingState((prev) => ({ ...prev, [currentReel.id]: true }));
+                })
+                .catch((err) => {
+                  console.warn("[ReelsFeed] Unmuted play failed in user gesture, trying muted fallback:", err);
+                  if (!nextMuted) {
+                    activeVideo.muted = true;
+                    activeVideo.play()
+                      .then(() => {
+                        setPlayingState((prev) => ({ ...prev, [currentReel.id]: true }));
+                      })
+                      .catch(() => {
+                        setPlayingState((prev) => ({ ...prev, [currentReel.id]: false }));
+                      });
+                  } else {
+                    setPlayingState((prev) => ({ ...prev, [currentReel.id]: false }));
+                  }
+                });
+            } else {
+              setPlayingState((prev) => ({ ...prev, [currentReel.id]: true }));
+            }
+          }
+        } catch (err) {
+          console.error("[ReelsFeed] Error in toggleMute active video handler:", err);
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     reelsList.forEach((reel, index) => {
@@ -528,17 +797,11 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
       if (!videoEl) return;
 
       if (index === activeIndex) {
-        videoEl.muted = isMuted;
         if (prevActiveIndexRef.current !== activeIndex) {
           videoEl.currentTime = 0;
-        }
-        if (!isScrollingRef.current) {
-          notifyMediaPlaying(`reels_feed_${reel.id}`);
-          videoEl.play().then(() => {
-            setPlayingState((prev) => ({ ...prev, [reel.id]: true }));
-          }).catch(() => {
-            setPlayingState((prev) => ({ ...prev, [reel.id]: false }));
-          });
+          playActiveVideo(videoEl, reel.id, isMuted);
+        } else if (videoEl.paused) {
+          playActiveVideo(videoEl, reel.id, isMuted);
         }
       } else {
         videoEl.muted = true;
@@ -552,50 +815,14 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     }
 
     prevActiveIndexRef.current = activeIndex;
-  }, [activeIndex, isMuted, reelsList, hasSwiped]);
+  }, [activeIndex, reelsList, playActiveVideo]);
 
-  // Pause on Scroll Handler: Pauses video immediately during feed scrolling/swiping
+  // Smooth scroll sync: maintains active item in focus without interrupting ongoing playback
   const handleContainerScroll = useCallback(() => {
-    if (!autoPauseEnabled) return;
-
-    if (!isScrollingRef.current) {
-      isScrollingRef.current = true;
-      setIsScrolling(true);
-
-      const activeReel = reelsList[activeIndex];
-      if (activeReel) {
-        const videoEl = videoRefs.current[activeReel.id];
-        if (videoEl && !videoEl.paused) {
-          wasPlayingBeforeScrollRef.current = true;
-          videoEl.pause();
-          setPlayingState((prev) => ({ ...prev, [activeReel.id]: false }));
-        } else {
-          wasPlayingBeforeScrollRef.current = false;
-        }
-      }
-    }
-
     if (scrollDebounceTimerRef.current) {
       clearTimeout(scrollDebounceTimerRef.current);
     }
-
-    // When scrolling finishes and snaps, resume playing the active reel
-    scrollDebounceTimerRef.current = setTimeout(() => {
-      isScrollingRef.current = false;
-      setIsScrolling(false);
-
-      const currentActiveReel = reelsList[activeIndex];
-      if (currentActiveReel) {
-        const currentVideo = videoRefs.current[currentActiveReel.id];
-        if (currentVideo) {
-          currentVideo.muted = isMuted;
-          currentVideo.play().then(() => {
-            setPlayingState((prev) => ({ ...prev, [currentActiveReel.id]: true }));
-          }).catch(() => {});
-        }
-      }
-    }, 180);
-  }, [activeIndex, autoPauseEnabled, isMuted, reelsList]);
+  }, []);
 
   const handleTimeUpdate = (reelId: number) => {
     const video = videoRefs.current[reelId];
@@ -647,14 +874,22 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             }
           }
 
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.8) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.75) {
+            // Guard: during initial mounting and scroll to targetId, do not let index 0 overwrite targetIndex
+            if (!isInitialScrollSettledRef.current && startId !== undefined && startId !== null) {
+              const targetId = Number(startId);
+              const targetIdx = reelsList.findIndex((r) => Number(r.id) === targetId);
+              if (targetIdx >= 0 && idx !== targetIdx) {
+                return;
+              }
+            }
             setActiveIndex(idx);
           }
         });
       },
       {
         root: container,
-        threshold: [0.4, 0.8, 0.95]
+        threshold: [0.4, 0.75, 0.95]
       }
     );
 
@@ -662,7 +897,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     items.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [reelsList, activeIndex]);
+  }, [reelsList, activeIndex, startId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -678,7 +913,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         const currentReel = reelsList[activeIndex];
         if (currentReel) togglePlayPause(currentReel.id);
       } else if (e.key === 'm' || e.key === 'M') {
-        setIsMuted((prev) => !prev);
+        toggleMute();
       }
     };
 
@@ -701,14 +936,14 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     if (!video) return;
 
     if (video.paused) {
-      video.play().then(() => {
-        setPlayingState((prev) => ({ ...prev, [reelId]: true }));
-      }).catch(() => {});
+      playActiveVideo(video, reelId, isMuted);
     } else {
       video.pause();
       setPlayingState((prev) => ({ ...prev, [reelId]: false }));
     }
   };
+
+  const lastCardTapRef = useRef<number>(0);
 
   const handleDoubleTap = (e: React.MouseEvent, reelId: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -740,15 +975,13 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
   const handleVideoCardClick = (e: React.MouseEvent, reelId: number) => {
     e.stopPropagation();
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
+    const now = Date.now();
+    if (now - lastCardTapRef.current < 280) {
+      lastCardTapRef.current = 0;
       handleDoubleTap(e, reelId);
     } else {
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        togglePlayPause(reelId);
-      }, 240);
+      lastCardTapRef.current = now;
+      togglePlayPause(reelId);
     }
   };
 
@@ -812,12 +1045,12 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
           text: reel.description,
           url: shareUrl
         });
-        toast.success(isRtl ? 'تمت المشاركة بنجاح' : 'Shared successfully');
-      } catch {
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
       }
-    } else {
-      handleCopyReelLink(reel.id);
     }
+    handleCopyReelLink(reel.id);
   };
 
   const handleLikeClick = (e: React.MouseEvent, reelId: number) => {
@@ -934,7 +1167,9 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     : [];
 
   return (
-    <div className="fixed inset-0 z-[99999] w-screen h-[100dvh] bg-zinc-950 text-white overflow-hidden select-none font-sans m-0 p-0 rounded-none shadow-none border-0">
+    <div className="fixed inset-0 z-[99999] w-screen h-[100dvh] bg-zinc-950 text-white overflow-hidden select-none font-sans m-0 p-0 rounded-none shadow-none border-0 flex flex-row">
+      {/* Main Video Feed Area (Right in RTL, Left in LTR) */}
+      <div className="flex-1 relative h-full flex flex-col min-w-0 bg-black">
       {/* Ambient Blurred Backdrop for Desktop */}
       <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none z-0 select-none">
         {reelsList[activeIndex]?.video_url ? (
@@ -1013,11 +1248,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             title={isRtl ? 'رفع مقطع ريلز جديد' : 'Upload New Reel'}
           >
             <Plus size={24} className="drop-shadow-lg" />
-            
           </button>
 
           <button
-            onClick={() => setIsMuted((prev) => !prev)}
+            onClick={toggleMute}
             className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer"
             title={isMuted ? (isRtl ? 'تشغيل الصوت (M)' : 'Unmute (M)') : (isRtl ? 'كتم الصوت (M)' : 'Mute (M)')}
           >
@@ -1066,26 +1300,22 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         onScroll={handleContainerScroll}
         className="w-full h-full pt-14 md:pt-16 pb-2 md:pb-6 overflow-y-scroll overflow-x-hidden snap-y snap-mandatory scrollbar-none relative z-10"
       >
-        {reelsList.length === 0 ? (
-          <div className="w-full h-[calc(100dvh-80px)] flex flex-col items-center justify-center p-6 text-center select-none">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600/20 to-indigo-600/20 border border-purple-500/30 flex items-center justify-center mb-6 shadow-2xl backdrop-blur-xl animate-pulse">
-              <Film size={38} className="text-purple-400" />
+        {isLoading ? (
+          <div className="w-full h-[calc(100dvh-80px)] flex items-center justify-center bg-black" />
+        ) : reelsList.length === 0 ? (
+          <div className="w-full h-[calc(100dvh-80px)] flex items-center justify-center p-4 text-center select-none bg-black/40">
+            <div className="flex flex-col sm:flex-row items-center gap-3 px-4 py-2.5 rounded-full bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-md max-w-sm shadow-lg">
+              <span className="text-[11px] font-bold text-zinc-300">
+                {isRtl ? 'لا توجد مقاطع ريلز منشورة حالياً' : 'No published reels available.'}
+              </span>
+              <button
+                onClick={handleUploadReelClick}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md"
+              >
+                <Plus size={12} className="stroke-[3]" />
+                <span>{isRtl ? 'إضافة مقطع' : 'Add Reel'}</span>
+              </button>
             </div>
-            <h3 className="text-xl sm:text-2xl font-black text-white mb-2">
-              {isRtl ? 'لا توجد مقاطع ريلز منشورة حالياً' : 'No Published Reels Available'}
-            </h3>
-            <p className="text-sm text-gray-400 max-w-md mb-6 leading-relaxed">
-              {isRtl
-                ? 'كن أول من ينشر مقطع ريلز تفاعلي عالي الجودة أو شارك فيديو إبداعي لمشروعك ومحتواك مع الجمهور مباشرة.'
-                : 'Be the first to publish high quality reels or share creative video content directly with the audience.'}
-            </p>
-            <button
-              onClick={handleUploadReelClick}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm flex items-center gap-2 shadow-xl shadow-purple-600/30 border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <Plus size={18} className="stroke-[3]" />
-              <span>{isRtl ? 'إنشاء ونشر أول ريلز' : 'Create & Publish First Reel'}</span>
-            </button>
           </div>
         ) : (
           reelsList.filter((reel) => !hiddenReelIds[reel.id]).map((reel, index) => {
@@ -1124,8 +1354,52 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                       loop
                       muted={isMuted}
                       playsInline
+                      autoPlay={index === activeIndex}
                       preload={Math.abs(index - activeIndex) <= 1 ? 'auto' : 'metadata'}
+                      onLoadedMetadata={(e) => {
+                        if (index === activeIndex) {
+                          playActiveVideo(e.currentTarget, reel.id, isMuted);
+                        }
+                      }}
+                      onCanPlay={(e) => {
+                        if (index === activeIndex && e.currentTarget.paused) {
+                          playActiveVideo(e.currentTarget, reel.id, isMuted);
+                        }
+                      }}
                       onTimeUpdate={() => handleTimeUpdate(reel.id)}
+                      onPlaying={() => {
+                        setPlayingState((prev) => ({ ...prev, [reel.id]: true }));
+                      }}
+                      onPause={(e) => {
+                        const reelId = reel.id;
+                        const v = e.currentTarget;
+
+                        // If it's autoplay fallback, we want to handle the retry
+                        if (isAutoplayFallbackRef.current && index === activeIndex) {
+                          v.play().then(() => {
+                            setPlayingState((prev) => ({ ...prev, [reelId]: true }));
+                          }).catch(() => {
+                            v.muted = true;
+                            v.play().then(() => {
+                              setPlayingState((prev) => ({ ...prev, [reelId]: true }));
+                            }).catch(() => {
+                              setPlayingState((prev) => ({ ...prev, [reelId]: false }));
+                            });
+                          });
+                          return;
+                        }
+
+                        // If we are actively toggling mute, let toggleMute handle playback synchronously inside user gesture.
+                        // Do not trigger pause state immediately to prevent flicker or premature pause states.
+                        if (isTogglingMuteRef.current && index === activeIndex) {
+                          return;
+                        }
+
+                        if (!v.paused) {
+                          return;
+                        }
+                        setPlayingState((prev) => ({ ...prev, [reelId]: false }));
+                      }}
                       className="w-full h-full object-contain pointer-events-none select-none"
                     />
                   </div>
@@ -1143,25 +1417,79 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     </div>
                   </div>
 
-                  {/* Scrolling Pause Feedback Indicator */}
-                  {isScrolling && isCurrentActive && (
-                    <div className="absolute top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
-                      <div className="px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/15 text-[10px] font-black text-amber-300 flex items-center gap-1.5 shadow-xl animate-pulse">
-                        <PauseCircle size={13} className="text-amber-400" />
-                        <span>{isRtl ? 'إيقاف مؤقت أثناء التمرير' : 'Paused on Scroll'}</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Gradient Overlays for Enhanced Readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-black/40 pointer-events-none" />
 
-                  {/* Real-Time Interactive Video Progress Bar at Bottom of Card */}
+                  {/* Real-Time Interactive Video Progress Bar at Bottom of Card with Hover Metadata */}
                   <div
-                    className="absolute bottom-0 inset-x-0 z-30 h-1.5 hover:h-2.5 bg-white/20 backdrop-blur-sm cursor-pointer transition-all duration-150 pointer-events-auto"
+                    className="absolute bottom-0 inset-x-0 z-30 h-2 hover:h-3 bg-white/20 backdrop-blur-sm cursor-pointer transition-all duration-150 pointer-events-auto group/timeline flex items-end"
                     onClick={(e) => handleSeek(e, reel.id)}
+                    onMouseMove={(e) => {
+                      const video = videoRefs.current[reel.id];
+                      const dur = video?.duration || 0;
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (rect.width > 0 && dur > 0) {
+                        const relativeX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                        const percent = (relativeX / rect.width) * 100;
+                        const hoverTime = (relativeX / rect.width) * dur;
+                        const naturalWidth = video?.videoWidth || 0;
+                        const naturalHeight = video?.videoHeight || 0;
+                        let qualityLabel = naturalHeight > 0 ? `${naturalHeight}p` : undefined;
+                        if (naturalHeight >= 2160 || naturalWidth >= 3840) qualityLabel = '4K';
+                        else if (naturalHeight >= 1440 || naturalWidth >= 2560) qualityLabel = '2K QHD';
+                        else if (naturalHeight >= 1080 || naturalWidth >= 1920) qualityLabel = '1080p FHD';
+                        else if (naturalHeight >= 720 || naturalWidth >= 1280) qualityLabel = '720p HD';
+                        else if (naturalHeight >= 480) qualityLabel = '480p SD';
+
+                        setReelsHoverMeta({
+                          reelId: reel.id,
+                          percent,
+                          time: hoverTime,
+                          duration: dur,
+                          width: naturalWidth || undefined,
+                          height: naturalHeight || undefined,
+                          qualityLabel
+                        });
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setReelsHoverMeta(null);
+                    }}
                     title={isRtl ? 'انقر للتقديم أو التأخير' : 'Click to seek'}
                   >
+                    {/* Floating Metadata Tooltip on Hover */}
+                    {reelsHoverMeta && reelsHoverMeta.reelId === reel.id && reelsHoverMeta.duration > 0 && (
+                      <div
+                        style={{
+                          left: `${Math.max(10, Math.min(90, reelsHoverMeta.percent))}%`,
+                          transform: 'translateX(-50%)'
+                        }}
+                        className="absolute bottom-full mb-2 z-40 pointer-events-none flex flex-col items-center animate-in fade-in zoom-in-95 duration-150"
+                      >
+                        <div className="px-2.5 py-1.5 rounded-xl bg-zinc-900/95 backdrop-blur-md border border-white/20 shadow-2xl text-white text-[11px] font-mono flex items-center gap-2 whitespace-nowrap">
+                          <span className="font-bold text-accent">
+                            {formatTime(reelsHoverMeta.time)}
+                          </span>
+                          <span className="text-gray-400 text-[10px]">
+                            / {formatTime(reelsHoverMeta.duration)}
+                          </span>
+                          {reelsHoverMeta.qualityLabel && (
+                            <div className="flex items-center gap-1.5 ps-1.5 border-s border-white/20">
+                              <span className="px-1.5 py-0.5 rounded-md bg-accent/20 text-accent font-bold text-[9px] uppercase tracking-wider">
+                                {reelsHoverMeta.qualityLabel}
+                              </span>
+                              {reelsHoverMeta.width && reelsHoverMeta.height && (
+                                <span className="text-gray-400 text-[9px]">
+                                  {reelsHoverMeta.width}×{reelsHoverMeta.height}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="w-2 h-2 rotate-45 bg-zinc-900 border-r border-b border-white/20 -mt-1" />
+                      </div>
+                    )}
+
                     <div
                       className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-teal-400 transition-all duration-75 shadow-[0_0_10px_rgba(236,72,153,0.8)]"
                       style={{ width: `${videoProgress[reel.id] || 0}%` }}
@@ -1175,9 +1503,43 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                         initial={{ scale: 0.5, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.5, opacity: 0 }}
-                        className="absolute z-20 w-16 h-16 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-2xl pointer-events-none"
+                        className="absolute z-20 w-16 h-16 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shadow-2xl pointer-events-auto cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePlayPause(reel.id);
+                        }}
                       >
                         <Play size={32} className="ms-1 fill-white" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Visual Mute / Unmute Indicator Overlay */}
+                  <AnimatePresence>
+                    {muteFeedback?.show && isCurrentActive && (
+                      <motion.div
+                        initial={{ scale: 0.7, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.7, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                        className="absolute z-30 pointer-events-none flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-black/85 backdrop-blur-md border border-white/20 text-white shadow-2xl"
+                      >
+                        {muteFeedback.isMuted ? (
+                          <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                            <VolumeX size={18} />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                            <Volume2 size={18} />
+                          </div>
+                        )}
+                        <div className="flex flex-col text-start">
+                          <span className="text-xs font-bold font-sans select-none tracking-wide">
+                            {muteFeedback.isMuted
+                              ? (isRtl ? 'تم كتم الصوت' : 'Sound Muted')
+                              : (isRtl ? 'تم تشغيل الصوت' : 'Sound Unmuted')}
+                          </span>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -1314,8 +1676,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
                   {/* Captions Overlay at Bottom of Card */}
                   <div
-                    className={`absolute bottom-3 md:bottom-4 z-20 max-w-[76%] md:max-w-[85%] space-y-2 pointer-events-auto ${
-                      isRtl ? 'start-3 md:start-4 text-right' : 'start-3 md:start-4 text-left'
+                    className={`absolute bottom-3 md:hidden z-20 max-w-[76%] space-y-2 pointer-events-auto ${
+                      isRtl ? 'start-3 text-right' : 'start-3 text-left'
                     }`}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1386,224 +1748,6 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     </div>
                   </div>
                 </div>
-
-                {/* DESKTOP ONLY: Side Floating Action Column */}
-                <div
-                  className="hidden md:flex flex-col items-center gap-3.5 self-end pb-4 z-20 select-none shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Creator Avatar with follow badge */}
-                  <div className="relative group mb-1">
-                    <div
-                      onClick={() => reel.page_id && onOpenPageDetail && onOpenPageDetail(reel.page_id)}
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                    >
-                      <BulletinAvatar
-                        src={reel.author_avatar}
-                        alt={reel.author_name}
-                        size="md"
-                        isPage={Boolean(reel.page_id)}
-                      />
-                    </div>
-                    <button
-                      onClick={(e) => handleFollowToggle(e, reel.id, reel.author_name)}
-                      className={`absolute -bottom-1.5 start-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-white shadow-md border-2 border-zinc-950 transition-all ${
-                        isFollowing ? 'bg-emerald-500' : 'bg-purple-600 hover:bg-purple-700 hover:scale-110'
-                      }`}
-                      title={isFollowing ? (isRtl ? 'تتابع بالفعل' : 'Following') : (isRtl ? 'متابعة' : 'Follow')}
-                    >
-                      {isFollowing ? <Check size={11} className="stroke-[3]" /> : <Plus size={12} className="stroke-[3]" />}
-                    </button>
-                  </div>
-
-                  {/* Like Button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={(e) => handleLikeClick(e, reel.id)}
-                      className={`w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer ${
-                        likeData.liked
-                          ? 'text-red-500 drop-shadow-md'
-                          : 'text-white drop-shadow-md hover:scale-110'
-                      }`}
-                      title={likeData.liked ? (isRtl ? 'إلغاء الإعجاب' : 'Unlike') : (isRtl ? 'إعجاب' : 'Like')}
-                    >
-                      <Heart
-                        size={22}
-                        className={likeData.liked ? 'fill-red-500 text-red-500 animate-bounce' : ''}
-                      />
-                    </button>
-                    <span className="text-xs font-black text-white/90 drop-shadow tabular-nums">
-                      {formatCompactCount(likeData.count)}
-                    </span>
-                  </div>
-
-                  {/* Comments Button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (commentsOpen && activeCommentReelId === reel.id) {
-                          setCommentsOpen(false);
-                        } else {
-                          openCommentsDrawer(e, reel.id);
-                        }
-                      }}
-                      className={`w-12 h-12 rounded-full backdrop-blur-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 border shadow-xl cursor-pointer ${
-                        commentsOpen && activeCommentReelId === reel.id
-                          ? 'bg-purple-600 text-white border-purple-400 shadow-purple-500/30'
-                          : 'text-white drop-shadow-md'
-                      }`}
-                      title={isRtl ? 'التعليقات' : 'Comments'}
-                    >
-                      <MessageCircle size={22} />
-                    </button>
-                    <span className="text-xs font-black text-white/90 drop-shadow tabular-nums">
-                      {formatCompactCount(reel.comments_count || (commentsMap[reel.id]?.length || 0))}
-                    </span>
-                  </div>
-
-                  {/* Save / Bookmark Button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={(e) => handleSaveClick(e, reel.id)}
-                      className={`w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer ${
-                        isSaved
-                          ? 'text-amber-400 drop-shadow-md'
-                          : 'text-white drop-shadow-md hover:scale-110'
-                      }`}
-                      title={isSaved ? (isRtl ? 'إزالة من المحفوظات' : 'Saved') : (isRtl ? 'حفظ' : 'Save')}
-                    >
-                      <Bookmark size={22} className={isSaved ? 'fill-amber-400 text-amber-400' : ''} />
-                    </button>
-                    <span className="text-[11px] font-bold text-white/80 drop-shadow">
-                      {isSaved ? (isRtl ? 'محفوظ' : 'Saved') : (isRtl ? 'حفظ' : 'Save')}
-                    </span>
-                  </div>
-
-                  {/* Share Button */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={(e) => openShareSheet(e, reel)}
-                      className="w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer text-white drop-shadow-md"
-                      title={isRtl ? 'مشاركة' : 'Share'}
-                    >
-                      <Share2 size={22} />
-                    </button>
-                    <span className="text-xs font-black text-white/90 drop-shadow tabular-nums">
-                      {formatCompactCount(sharesState[reel.id] ?? reel.shares_count ?? 0)}
-                    </span>
-                  </div>
-
-                  {/* More Options Button (Three Dots Menu) */}
-                  <div className="flex flex-col items-center gap-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMoreMenuReel(reel);
-                      }}
-                      className="w-12 h-12 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer text-white drop-shadow-md"
-                      title={isRtl ? 'المزيد من الخيارات' : 'More options'}
-                    >
-                      <MoreVertical size={22} />
-                    </button>
-                    <span className="text-[11px] font-bold text-white/80 drop-shadow">
-                      {isRtl ? 'المزيد' : 'More'}
-                    </span>
-                  </div>
-
-                  {/* Animated Rotating Music Disc */}
-                  <div className="mt-1 relative w-10 h-10 rounded-full bg-zinc-900 border-2 border-white/30 flex items-center justify-center p-1 shadow-2xl overflow-hidden animate-spin-slow">
-                    <Music size={16} className="text-purple-400" />
-                  </div>
-                </div>
-
-                {/* DESKTOP ONLY: Side Panel for Comments (Side-by-side split view!) */}
-                <AnimatePresence>
-                  {commentsOpen && activeCommentReelId === reel.id && (
-                    <motion.div
-                      initial={{ opacity: 0, x: isRtl ? -30 : 30, width: 0 }}
-                      animate={{ opacity: 1, x: 0, width: 360 }}
-                      exit={{ opacity: 0, x: isRtl ? -30 : 30, width: 0 }}
-                      transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-                      className="hidden md:flex flex-col h-[calc(100dvh-92px)] max-h-[820px] bg-zinc-900/95 backdrop-blur-2xl rounded-3xl border border-white/15 shadow-2xl overflow-hidden z-20 self-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* Side Panel Header */}
-                      <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MessageCircle size={18} className="text-purple-400" />
-                          <h3 className="text-xs font-black text-white">
-                            {isRtl ? 'التعليقات' : 'Comments'} ({activeReelComments.length})
-                          </h3>
-                        </div>
-                        <button
-                          onClick={() => setCommentsOpen(false)}
-                          className="p-1.5 rounded-full hover:bg-zinc-800 text-gray-400 hover:text-white transition-colors cursor-pointer"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-
-                      {/* Comments Scrollable Stream */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-                        {activeReelComments.length === 0 ? (
-                          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 space-y-2">
-                            <Sparkles size={28} className="text-purple-400/60" />
-                            <p className="text-xs font-bold">
-                              {isRtl ? 'لا توجد تعليقات بعد، كن أول من يعلق!' : 'No comments yet. Be the first to comment!'}
-                            </p>
-                          </div>
-                        ) : (
-                          activeReelComments.map((comment, cIdx) => (
-                            <div key={`reel-comment-${comment.id || cIdx}-${cIdx}`} className="flex gap-2.5 items-start">
-                              <BulletinAvatar
-                                src={comment.author_avatar}
-                                alt={comment.author_name}
-                                size="sm"
-                              />
-                              <div className="flex-1 bg-zinc-800/80 rounded-2xl p-2.5 border border-zinc-700/60">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[11px] font-black text-gray-200">
-                                    {comment.author_name}
-                                  </span>
-                                  <span className="text-[9px] text-gray-400 font-mono">
-                                    {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-300 leading-relaxed">
-                                  {comment.content || (comment as any).comment_text || ''}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Side Panel Add Comment Form */}
-                      <form onSubmit={handleSendCommentSubmit} className="p-3 border-t border-zinc-800/80 bg-zinc-950/80 flex items-center gap-2">
-                        <BulletinAvatar
-                          src={user?.avatar}
-                          alt={user?.name || 'User'}
-                          size="sm"
-                        />
-                        <input
-                          type="text"
-                          value={commentInput}
-                          onChange={(e) => setCommentInput(e.target.value)}
-                          placeholder={isRtl ? 'اكتب تعليقاً...' : 'Add a comment...'}
-                          className="flex-1 bg-zinc-800/90 text-xs text-white placeholder-gray-400 rounded-full px-3.5 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 border border-zinc-700"
-                        />
-                        <button
-                          type="submit"
-                          disabled={!commentInput.trim() || isSubmittingComment}
-                          className="p-2 rounded-full bg-accent hover:bg-accent/80 text-white disabled:opacity-40 transition-theme shrink-0 cursor-pointer"
-                        >
-                          <Send size={15} className={isRtl ? 'rotate-180' : ''} />
-                        </button>
-                      </form>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           );
@@ -1634,6 +1778,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         )}
       </AnimatePresence>
 
+      </div>
       {/* MOBILE ONLY: Bottom Sheet Comments Drawer */}
       <AnimatePresence>
         {commentsOpen && (
@@ -1644,82 +1789,313 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
             className="md:hidden absolute inset-x-0 bottom-0 z-50 h-[65%] bg-zinc-900/95 backdrop-blur-xl rounded-t-3xl border-t border-gray-800 flex flex-col shadow-2xl"
           >
-            {/* Header */}
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageCircle size={18} className="text-purple-400" />
-                <h3 className="text-xs font-black text-white">
-                  {isRtl ? 'التعليقات' : 'Comments'} ({activeReelComments.length})
-                </h3>
-              </div>
-              <button
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-800 shrink-0">
+              <h3 className="font-extrabold text-white text-sm">
+                {isRtl ? 'التعليقات' : 'Comments'} 
+                <span className="ms-1.5 text-gray-400 font-medium">
+                  ({reelsList[activeIndex]?.comments_count || (commentsMap[reelsList[activeIndex]?.id]?.length || 0)})
+                </span>
+              </h3>
+              <button 
                 onClick={() => setCommentsOpen(false)}
-                className="p-1.5 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white"
+                className="p-1.5 bg-zinc-800 rounded-full text-gray-400 hover:text-white transition-colors"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
-
-            {/* Comments List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-              {activeReelComments.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 space-y-2">
-                  <Sparkles size={28} className="text-purple-400/60" />
-                  <p className="text-xs font-bold">
-                    {isRtl ? 'لا توجد تعليقات بعد، كن أول من يعلق!' : 'No comments yet. Be the first to comment!'}
-                  </p>
-                </div>
+            
+            {/* Mobile Comments List */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 scrollbar-thin">
+              {(!commentsMap[reelsList[activeIndex]?.id] || commentsMap[reelsList[activeIndex]?.id].length === 0) ? (
+                 <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400 space-y-3">
+                   <div className="w-12 h-12 rounded-full border-2 border-dashed border-gray-700 flex items-center justify-center">
+                     <MessageSquare size={20} className="opacity-50" />
+                   </div>
+                   <p className="text-xs font-bold">{isRtl ? 'لا توجد تعليقات حتى الآن.' : 'No comments yet.'}</p>
+                 </div>
               ) : (
-                activeReelComments.map((comment, cIdx) => (
-                  <div key={`reel-sheet-comment-${comment.id || cIdx}-${cIdx}`} className="flex gap-2.5 items-start">
-                    <BulletinAvatar
-                      src={comment.author_avatar}
-                      alt={comment.author_name}
-                      size="sm"
-                    />
-                    <div className="flex-1 bg-zinc-800/80 rounded-2xl p-2.5 border border-gray-800">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-black text-gray-200">
-                          {comment.author_name}
-                        </span>
-                        <span className="text-[9px] text-gray-400">
-                          {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                commentsMap[reelsList[activeIndex]?.id].map((comment, cIdx) => (
+                  <div key={`mob-comment-${comment.id || cIdx}`} className="flex gap-2 items-start text-[13px] group">
+                    <div className="shrink-0 pt-1">
+                      <BulletinAvatar src={comment.author_avatar} alt={comment.author_name} size="sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col text-white">
+                        <span className="font-extrabold text-[13px]">{comment.author_name}</span>
+                        <p className="text-[13px] leading-relaxed break-words text-gray-200">{comment.content || (comment as any).comment_text || ''}</p>
                       </div>
-                      <p className="text-xs text-gray-300 leading-relaxed">
-                        {comment.content || (comment as any).comment_text || ''}
-                      </p>
+                      <div className="flex items-center gap-2.5 mt-1 text-[11px] text-gray-500 font-bold">
+                        <span>{new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <button type="button" onClick={() => onToggleCommentLike && onToggleCommentLike(reelsList[activeIndex]?.id, comment.id, 'like')} className={`hover:underline transition-colors ${comment.user_reaction ? 'text-accent font-extrabold' : 'hover:text-white'}`}>
+                          {isRtl ? 'إعجاب' : 'Like'}
+                        </button>
+                        <button type="button" onClick={() => { setActiveCommentReelId(reelsList[activeIndex]?.id); setCommentInput(`@${comment.author_name} `); }} className="hover:underline hover:text-white">
+                          {isRtl ? 'رد' : 'Reply'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Bottom Add Comment Bar */}
-            <form onSubmit={handleSendCommentSubmit} className="p-3 border-t border-gray-800 bg-zinc-950 flex items-center gap-2">
-              <BulletinAvatar
-                src={user?.avatar}
-                alt={user?.name || 'User'}
-                size="sm"
-              />
-              <input
-                type="text"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                placeholder={isRtl ? 'اكتب تعليقاً على هذا الريلز...' : 'Add a comment...'}
-                className="flex-1 bg-zinc-800 text-xs text-white placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 border border-gray-700"
-              />
-              <button
-                type="submit"
-                disabled={!commentInput.trim() || isSubmittingComment}
-                className="p-2 rounded-full bg-accent hover:bg-teal-600 text-white disabled:opacity-40 transition-theme shrink-0"
-              >
-                <Send size={15} className={isRtl ? 'rotate-180' : ''} />
-              </button>
-            </form>
+            {/* Mobile Comment Input */}
+            <div className="bg-zinc-950 border-t border-gray-800 pt-2 pb-3 px-3 shrink-0">
+              {/* Quick Emojis Bar */}
+              <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-1 scrollbar-none fade-edges">
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={`mob-emoji-${emoji}`}
+                    type="button"
+                    onClick={() => setCommentInput(prev => prev + emoji)}
+                    className="shrink-0 text-lg hover:scale-110 transition-transform active:scale-95 cursor-pointer"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              <form onSubmit={handleSendCommentSubmit} className="flex items-center gap-2">
+                <BulletinAvatar
+                  src={user?.avatar}
+                  alt={user?.name || 'User'}
+                  size="sm"
+                />
+                <input
+                  type="text"
+                  value={commentInput}
+                  onChange={(e) => {
+                     if (activeCommentReelId !== reelsList[activeIndex]?.id) setActiveCommentReelId(reelsList[activeIndex]?.id);
+                     setCommentInput(e.target.value);
+                  }}
+                  placeholder={isRtl ? 'تعليق باسم ' + (user?.name || 'مستخدم') + '...' : 'Comment as ' + (user?.name || 'user') + '...'}
+                  className="flex-1 bg-zinc-800 text-xs text-white placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 border border-gray-700"
+                />
+                <button
+                  type="submit"
+                  disabled={!commentInput.trim() || isSubmittingComment}
+                  className="p-2 rounded-full bg-accent hover:opacity-90 text-white disabled:opacity-40 transition-theme shrink-0 cursor-pointer"
+                >
+                  <Send size={15} className={isRtl ? 'rotate-180 -ms-0.5' : 'ms-0.5'} />
+                </button>
+              </form>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* DESKTOP ONLY: Static Interactive Sidebar (Left in RTL, Right in LTR) */}
+      <div className="hidden md:flex flex-col w-[360px] xl:w-[400px] h-full bg-[var(--surface-card)] border-s border-[var(--border-main)] z-50 shrink-0 shadow-2xl">
+        {reelsList[activeIndex] && (() => {
+          const activeReel = reelsList[activeIndex];
+          const likeData = likesState[activeReel.id] || { count: activeReel.likes_count, liked: !!activeReel.user_has_liked };
+          
+          const getTimeAgo = (dateString?: string | Date) => {
+            if (!dateString) return '';
+            const diff = Date.now() - new Date(dateString).getTime();
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            if (hours < 1) return isRtl ? 'الآن' : 'Just now';
+            if (hours < 24) return isRtl ? `${hours} ساعة` : `${hours}h`;
+            const days = Math.floor(hours / 24);
+            return isRtl ? `${days} يوم` : `${days}d`;
+          };
+
+          return (
+          <>
+            {/* Header (Top: More Menu, Bottom: Author Info) */}
+            <div className="flex items-center justify-between p-3 border-b border-[var(--border-main)]">
+              <button 
+                onClick={() => activeReel.page_id && onOpenPageDetail && onOpenPageDetail(activeReel.page_id)}
+                className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] px-2.5 py-1 rounded-md transition-colors cursor-pointer"
+              >
+                <ExternalLink size={12} />
+                {isRtl ? 'عرض المنشور' : 'View Post'}
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setMoreMenuReel(activeReel); }}
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 transition-colors rounded-full hover:bg-[var(--surface-subtle)] cursor-pointer"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-[var(--border-main)] relative">
+              <div className="flex items-center gap-3">
+                <div className="cursor-pointer" onClick={() => activeReel.page_id && onOpenPageDetail && onOpenPageDetail(activeReel.page_id)}>
+                  <BulletinAvatar src={activeReel.author_avatar} alt={activeReel.author_name} size="md" isPage={Boolean(activeReel.page_id)} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-extrabold text-[var(--text-primary)] text-[14px] cursor-pointer hover:underline" onClick={() => activeReel.page_id && onOpenPageDetail && onOpenPageDetail(activeReel.page_id)}>
+                    {activeReel.author_name}
+                    {activeReel.page_is_verified && <CheckCircle2 size={12} className="text-blue-500 fill-blue-500 inline-block ms-1" />}
+                  </span>
+                  <div className="flex items-center text-[11px] text-[var(--text-muted)] font-medium gap-1 mt-0.5">
+                    <span>{getTimeAgo(activeReel.created_at)}</span>
+                    <span>•</span>
+                    <Globe size={10} className="opacity-70" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin/Author Action Buttons (Promote / Edit) */}
+              {(user?.role === 'admin' || user?.id === activeReel.author_id) && (
+                <div className="flex gap-2 mt-4 flex-row-reverse">
+                  <button className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-md text-[13px] font-bold transition-colors cursor-pointer">
+                    <Megaphone size={14} /> {isRtl ? 'ترويج المنشور' : 'Promote Post'}
+                  </button>
+                  <button className="flex-1 flex items-center justify-center gap-1.5 bg-[var(--surface-subtle)] hover:bg-[var(--border-main)] border border-[var(--border-main)] text-[var(--text-primary)] py-1.5 rounded-md text-[13px] font-bold transition-colors cursor-pointer">
+                    <Edit2 size={14} /> {isRtl ? 'تعديل' : 'Edit'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Description & Tags */}
+            <div className="p-4 border-b border-[var(--border-main)] flex flex-col gap-2">
+              {activeReel.description && (
+                <p className="text-[14px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap font-medium">
+                  {activeReel.description}
+                </p>
+              )}
+              {activeReel.hashtags && activeReel.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {activeReel.hashtags.map((tag, i) => (
+                    <span key={`side-tag-${i}`} className="text-[13px] font-bold text-blue-500 cursor-pointer hover:underline">
+                      #{tag.replace('#', '')}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Stats Row (Likes, Comments, Shares) */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border-main)] text-[13px] text-[var(--text-secondary)]">
+              <div className="flex items-center gap-3 font-semibold">
+                 <span>{formatCompactCount(activeReel.comments_count || (commentsMap[activeReel.id]?.length || 0))} {isRtl ? 'تعليق' : 'Comments'}</span>
+                 <span>{formatCompactCount(sharesState[activeReel.id] ?? activeReel.shares_count ?? 0)} {isRtl ? 'مشاركة' : 'Shares'}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                 <div className="flex -space-x-1 rtl:space-x-reverse">
+                   <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white ring-2 ring-[var(--surface-card)] z-10"><ThumbsUp size={10} className="fill-current" /></div>
+                   <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white ring-2 ring-[var(--surface-card)]"><Heart size={10} className="fill-current" /></div>
+                 </div>
+                 <span className="font-semibold ms-1 text-[var(--text-primary)]">{formatCompactCount(likeData.count)}</span>
+              </div>
+            </div>
+
+            {/* Action Bar (Like, Comment, Share) */}
+            <div className="flex items-center px-2 py-1 border-b border-[var(--border-main)] relative z-20">
+               {/* Like Button with Hover Emoji Bar */}
+               <div className="flex-1 group relative">
+                 {/* Emoji Hover Popover */}
+                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:flex items-center gap-1 bg-[var(--surface-page)] border border-[var(--border-main)] shadow-xl p-1 rounded-full scale-0 group-hover:scale-100 origin-bottom transition-transform duration-200 ease-out">
+                    {['👍','❤️','😂','😮','😢','😡'].map(emoji => (
+                       <button 
+                         key={emoji} 
+                         onClick={(e) => { e.stopPropagation(); handleLikeClick(e, activeReel.id); }} 
+                         className="w-8 h-8 flex items-center justify-center text-xl hover:scale-125 transition-transform hover:bg-[var(--surface-subtle)] rounded-full cursor-pointer"
+                       >
+                         {emoji}
+                       </button>
+                    ))}
+                 </div>
+                 <button 
+                   onClick={(e) => handleLikeClick(e, activeReel.id)} 
+                   className={`w-full flex items-center justify-center gap-2 py-2 rounded-md hover:bg-[var(--surface-subtle)] font-bold text-[14px] cursor-pointer transition-colors ${likeData.liked ? 'text-blue-500' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                 >
+                   <ThumbsUp size={18} className={likeData.liked ? 'fill-current' : ''} /> {isRtl ? 'أعجبني' : 'Like'}
+                 </button>
+               </div>
+               
+               <button 
+                 onClick={() => { setActiveCommentReelId(activeReel.id); setCommentInput(''); }}
+                 className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-[var(--surface-subtle)] font-bold text-[14px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+               >
+                 <MessageSquare size={18} /> {isRtl ? 'تعليق' : 'Comment'}
+               </button>
+
+               <button 
+                 onClick={(e) => openShareSheet(e, activeReel)}
+                 className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-[var(--surface-subtle)] font-bold text-[14px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+               >
+                 <Share2 size={18} /> {isRtl ? 'مشاركة' : 'Share'}
+               </button>
+            </div>
+
+            {/* Comments List */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 scrollbar-thin">
+              {(!commentsMap[activeReel.id] || commentsMap[activeReel.id].length === 0) ? (
+                 <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[var(--text-muted)] space-y-3">
+                   <div className="w-12 h-12 rounded-full border-2 border-dashed border-[var(--border-main)] flex items-center justify-center">
+                     <MessageSquare size={20} className="opacity-50" />
+                   </div>
+                   <p className="text-xs font-bold">{isRtl ? 'لا توجد تعليقات حتى الآن.' : 'No comments yet.'}</p>
+                 </div>
+              ) : (
+                commentsMap[activeReel.id].map((comment, cIdx) => (
+                  <div key={`ds-comment-${comment.id || cIdx}`} className="flex gap-2 items-start text-[13px] group">
+                    <div className="shrink-0 pt-1">
+                      <BulletinAvatar src={comment.author_avatar} alt={comment.author_name} size="sm" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col text-[var(--text-primary)]">
+                        <span className="font-extrabold text-[13px]">{comment.author_name}</span>
+                        <p className="text-[13px] leading-relaxed break-words">{comment.content || (comment as any).comment_text || ''}</p>
+                      </div>
+                      <div className="flex items-center gap-2.5 mt-1 text-[11px] text-[var(--text-muted)] font-bold">
+                        <span>{getTimeAgo(comment.created_at)}</span>
+                        <button type="button" onClick={() => onToggleCommentLike && onToggleCommentLike(activeReel.id, comment.id, 'like')} className={`hover:underline transition-colors cursor-pointer ${comment.user_reaction ? 'text-blue-500 font-extrabold' : 'hover:text-[var(--text-primary)]'}`}>
+                          {isRtl ? 'إعجاب' : 'Like'}
+                        </button>
+                        <button type="button" onClick={() => { setActiveCommentReelId(activeReel.id); setCommentInput(`@${comment.author_name} `); }} className="hover:underline hover:text-[var(--text-primary)] cursor-pointer">
+                          {isRtl ? 'رد' : 'Reply'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Comment Input (Sticky Bottom) */}
+            <div className="p-3 border-t border-[var(--border-main)] bg-[var(--surface-page)] z-10 flex items-center gap-2">
+              <BulletinAvatar src={user?.avatar} alt={user?.name || 'User'} size="sm" className="shrink-0" />
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!commentInput.trim() || !activeReel.id) return;
+                if (!token) {
+                  toast.error(isRtl ? 'يرجى تسجيل الدخول لإضافة تعليق' : 'Please log in to comment');
+                  return;
+                }
+                setIsSubmittingComment(true);
+                try {
+                  if (onAddComment) await onAddComment(activeReel.id, commentInput.trim());
+                  setCommentInput('');
+                } catch (err) {
+                  toast.error(isRtl ? 'تعذر الإرسال' : 'Failed to send');
+                } finally { setIsSubmittingComment(false); }
+              }} className="flex-1 bg-[var(--surface-subtle)] rounded-full flex items-center px-3 py-1 border border-[var(--border-main)] focus-within:border-blue-500 transition-colors">
+                <input
+                  type="text"
+                  value={commentInput}
+                  onChange={(e) => {
+                     if (activeCommentReelId !== activeReel.id) setActiveCommentReelId(activeReel.id);
+                     setCommentInput(e.target.value);
+                  }}
+                  placeholder={isRtl ? 'تعليق باسم ' + (user?.name || 'مستخدم') + '...' : 'Comment as ' + (user?.name || 'user') + '...'}
+                  className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] text-[13px] focus:outline-none py-1.5"
+                />
+                <div className="flex items-center gap-0.5 text-[var(--text-muted)] shrink-0">
+                  <button type="button" className="p-1 hover:bg-[var(--surface-card)] rounded-full transition-colors cursor-pointer"><Smile size={16} /></button>
+                  <button type="button" className="p-1 hover:bg-[var(--surface-card)] rounded-full transition-colors cursor-pointer"><Camera size={16} /></button>
+                  <button type="button" className="p-1 hover:bg-[var(--surface-card)] rounded-full transition-colors cursor-pointer"><ImageIcon size={16} /></button>
+                </div>
+              </form>
+            </div>
+          </>
+          );
+        })()}
+      </div>
 
       {/* Overflow '...' Options Menu Modal */}
       <AnimatePresence>
@@ -1732,268 +2108,56 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             onClick={() => setMoreMenuReel(null)}
           >
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="w-full sm:max-w-md bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 space-y-3 text-white shadow-2xl"
+              initial={{ y: '100%', scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: '100%', scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[var(--surface-card)] rounded-t-3xl sm:rounded-2xl border border-[var(--border-main)] shadow-2xl flex flex-col overflow-hidden"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <MoreVertical size={18} className="text-purple-400" />
-                  <h3 className="text-xs font-black">{isRtl ? 'خيارات المقطع' : 'Reel Options'}</h3>
-                </div>
-                <button
+              <div className="p-4 border-b border-[var(--border-main)] flex items-center justify-between bg-[var(--surface-page)]">
+                <h3 className="font-extrabold text-[var(--text-primary)]">{isRtl ? 'خيارات المنشور' : 'Post Options'}</h3>
+                <button 
                   onClick={() => setMoreMenuReel(null)}
-                  className="p-1.5 rounded-full hover:bg-zinc-800 text-gray-400 hover:text-white"
+                  className="p-1.5 rounded-full hover:bg-[var(--surface-subtle)] text-[var(--text-secondary)] transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
-
-              <div className="space-y-1.5 pt-1">
-                {/* Smart Auto-Pause Toggle */}
-                <button
+              <div className="flex flex-col py-2">
+                <button 
                   onClick={() => {
-                    setAutoPauseEnabled((prev) => {
-                      const next = !prev;
-                      toast.success(
-                        isRtl
-                          ? next
-                            ? 'تم تفعيل نمط الإيقاف التلقائي أثناء التمرير ⏸️'
-                            : 'تم تعطيل نمط الإيقاف التلقائي'
-                          : next
-                            ? 'Auto-pause on scroll enabled ⏸️'
-                            : 'Auto-pause disabled'
-                      );
-                      return next;
-                    });
+                    handleSaveClick({ stopPropagation: () => {} } as any, moreMenuReel.id);
                     setMoreMenuReel(null);
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-purple-300 cursor-pointer"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--surface-subtle)] transition-colors text-[var(--text-primary)] cursor-pointer"
                 >
-                  <div className="flex items-center gap-3">
-                    <PauseCircle size={18} className="text-purple-400 shrink-0" />
-                    <span>{isRtl ? 'نمط الإيقاف التلقائي (أثناء التمرير)' : 'Smart Auto-Pause (on Scroll)'}</span>
-                  </div>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${autoPauseEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-zinc-800 text-gray-400'}`}>
-                    {autoPauseEnabled ? (isRtl ? 'مُفعّل' : 'ON') : (isRtl ? 'معطل' : 'OFF')}
+                  <Bookmark size={20} className={savesState[moreMenuReel.id] ?? moreMenuReel.user_has_saved ? 'fill-amber-400 text-amber-400' : ''} />
+                  <span className="font-semibold text-sm">
+                    {savesState[moreMenuReel.id] ?? moreMenuReel.user_has_saved 
+                      ? (isRtl ? 'إزالة من المحفوظات' : 'Remove from Saved')
+                      : (isRtl ? 'حفظ المنشور' : 'Save Post')}
                   </span>
                 </button>
-
-                {/* Copy Reel Direct Link */}
-                <button
+                <button 
                   onClick={() => {
-                    handleCopyReelLink(moreMenuReel.id);
+                    handleFollowToggle({ stopPropagation: () => {} } as any, moreMenuReel.id, moreMenuReel.author_name);
                     setMoreMenuReel(null);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-gray-200 cursor-pointer"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--surface-subtle)] transition-colors text-[var(--text-primary)] cursor-pointer"
                 >
-                  <Copy size={18} className="text-indigo-400 shrink-0" />
-                  <span>{isRtl ? 'نسخ رابط المقطع المباشر' : 'Copy Direct Link'}</span>
+                  <Users size={20} />
+                  <span className="font-semibold text-sm">
+                    {followingState[moreMenuReel.id] ?? moreMenuReel.user_has_followed 
+                      ? (isRtl ? `إلغاء متابعة ${moreMenuReel.author_name}` : `Unfollow ${moreMenuReel.author_name}`)
+                      : (isRtl ? `متابعة ${moreMenuReel.author_name}` : `Follow ${moreMenuReel.author_name}`)}
+                  </span>
                 </button>
-
-                {moreMenuReel.page_id && onOpenPageDetail && (
-                  <button
-                    onClick={() => {
-                      const pId = moreMenuReel.page_id!;
-                      setMoreMenuReel(null);
-                      onOpenPageDetail(pId);
-                    }}
-                    className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-gray-200 cursor-pointer"
-                  >
-                    <User size={18} className="text-purple-400 shrink-0" />
-                    <span>{isRtl ? 'عرض حساب الناشر وتفاصيل البيج' : 'View Creator Profile & Page Details'}</span>
-                  </button>
-                )}
-
-                {/* Edit & Delete for Owner */}
-                {user && (moreMenuReel.user_id === user.id || moreMenuReel.author_id === user.id || user.role === 'admin') && (
-                  <>
-                    <button
-                      onClick={() => {
-                        if (onEditReel) onEditReel(moreMenuReel as any);
-                        setMoreMenuReel(null);
-                      }}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-blue-400 cursor-pointer"
-                    >
-                      <Edit2 size={18} className="shrink-0" />
-                      <span>{isRtl ? 'تعديل المقطع' : 'Edit Reel'}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (onDeleteReel) onDeleteReel(moreMenuReel.id);
-                        setMoreMenuReel(null);
-                      }}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-red-500 cursor-pointer"
-                    >
-                      <Trash2 size={18} className="shrink-0" />
-                      <span>{isRtl ? 'حذف المقطع' : 'Delete Reel'}</span>
-                    </button>
-                  </>
-                )}
-
-                <button
-                  onClick={() => handleNotInterested(moreMenuReel.id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-zinc-800 text-right transition-colors text-xs font-extrabold text-amber-400 cursor-pointer"
-                >
-                  <EyeOff size={18} className="shrink-0" />
-                  <span>{isRtl ? 'غير مهتم (إخفاء المقطع وتكييف التوصيات)' : 'Not Interested (Hide content)'}</span>
+                <div className="h-px bg-[var(--border-main)] my-1 w-full" />
+                <button className="flex items-center gap-3 px-5 py-3 hover:bg-red-500/10 transition-colors text-red-500 cursor-pointer">
+                  <Flag size={20} />
+                  <span className="font-semibold text-sm">{isRtl ? 'الإبلاغ عن المنشور' : 'Report Post'}</span>
                 </button>
-
-                <div className="h-px bg-zinc-800 my-1" />
-
-                {/* Report Reel (The only official Report action) */}
-                <button
-                  onClick={() => handleReportReel(moreMenuReel)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-red-500/10 hover:text-red-400 text-right transition-colors text-xs font-extrabold text-red-500 cursor-pointer"
-                >
-                  <Flag size={18} className="shrink-0 text-red-500" />
-                  <span>{isRtl ? 'الإبلاغ عن محتوى أو انتهاك' : 'Report Reel'}</span>
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Native-Looking Native Share Bottom Sheet Component */}
-      <AnimatePresence>
-        {shareSheetReel && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center"
-            onClick={() => setShareSheetReel(null)}
-          >
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-              className="w-full bg-zinc-900/98 backdrop-blur-2xl border-t border-zinc-800/80 rounded-t-3xl p-5 space-y-4 text-white shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <Share2 size={18} className="text-purple-400 animate-pulse" />
-                  <h3 className="text-xs font-black">{isRtl ? 'مشاركة مقطع الريلز' : 'Share Reel'}</h3>
-                </div>
-                <button
-                  onClick={() => setShareSheetReel(null)}
-                  className="p-1.5 rounded-full hover:bg-zinc-800 text-gray-400 hover:text-white transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Native System Share Prominent Action Card */}
-              {typeof navigator !== 'undefined' && 'share' in navigator && (
-                <button
-                  onClick={() => {
-                    handleNativeSystemShare(shareSheetReel);
-                    setShareSheetReel(null);
-                  }}
-                  className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-purple-600/30 via-indigo-600/20 to-pink-600/30 border border-purple-500/30 hover:border-purple-400/60 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Share2 size={20} />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-black text-white">{isRtl ? 'مشاركة عبر تطبيقات الجهاز (Web Share)' : 'Share via Native Apps'}</div>
-                      <div className="text-[10px] text-purple-300/80 font-medium">{isRtl ? 'إنستغرام، تيك توك، واتساب وباقي التطبيقات' : 'Instagram, TikTok, WhatsApp & More'}</div>
-                    </div>
-                  </div>
-                  <Sparkles size={18} className="text-purple-400 group-hover:rotate-12 transition-transform" />
-                </button>
-              )}
-
-              {/* Deep Link Calculation Preview Box */}
-              <div className="p-2.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-2">
-                <div className="text-[11px] font-mono text-gray-400 truncate dir-ltr px-2">
-                  {`${window.location.origin}${window.location.pathname}?reel=${shareSheetReel.id}`}
-                </div>
-                <button
-                  onClick={() => {
-                    handleCopyReelLink(shareSheetReel.id);
-                    setShareSheetReel(null);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-extrabold shrink-0 flex items-center gap-1.5 transition-all active:scale-95 shadow-md"
-                >
-                  <Copy size={13} />
-                  <span>{isRtl ? 'نسخ' : 'Copy'}</span>
-                </button>
-              </div>
-
-              {/* Quick Social Action Grid */}
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 py-1">
-                <button
-                  onClick={() => {
-                    handleCopyReelLink(shareSheetReel.id);
-                    setShareSheetReel(null);
-                  }}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow">
-                    <Copy size={20} />
-                  </div>
-                  <span className="text-[10px] font-extrabold text-gray-300">{isRtl ? 'نسخ الرابط' : 'Copy Link'}</span>
-                </button>
-
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareSheetReel.title || 'Perplexta Reel'} - ${window.location.origin}/?reel=${shareSheetReel.id}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setShareSheetReel(null)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow">
-                    <MessageSquare size={20} />
-                  </div>
-                  <span className="text-[10px] font-extrabold text-gray-300">واتساب</span>
-                </a>
-
-                <a
-                  href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}/?reel=${shareSheetReel.id}`)}&text=${encodeURIComponent(shareSheetReel.title || '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setShareSheetReel(null)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow">
-                    <Send size={20} />
-                  </div>
-                  <span className="text-[10px] font-extrabold text-gray-300">تليجرام</span>
-                </a>
-
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${window.location.origin}/?reel=${shareSheetReel.id}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setShareSheetReel(null)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-all group"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow">
-                    <ExternalLink size={20} />
-                  </div>
-                  <span className="text-[10px] font-extrabold text-gray-300">فيسبوك</span>
-                </a>
-
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareSheetReel.title || 'Perplexta Reel'}`)}&url=${encodeURIComponent(`${window.location.origin}/?reel=${shareSheetReel.id}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setShareSheetReel(null)}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-all group hidden sm:flex"
-                >
-                  <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow">
-                    <Sparkles size={20} />
-                  </div>
-                  <span className="text-[10px] font-extrabold text-gray-300">X (تويتر)</span>
-                </a>
               </div>
             </motion.div>
           </motion.div>
@@ -2002,3 +2166,5 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     </div>
   );
 };
+
+export default ReelsFeed;

@@ -158,7 +158,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
 
     const siteName = language === 'ar' ? (siteSettings?.siteNameAr || siteSettings?.siteName) : siteSettings?.siteName;
     const resolvedSiteName = siteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta');
-    const resolvedOGImage = resolveImageUrl(siteSettings?.seoImageUrl || '/app-assets/og-image.png', 'general');
+    const resolvedOGImage = siteSettings?.seoImageUrl ? resolveImageUrl(siteSettings.seoImageUrl, 'general') : '';
     const finalOGImage = resolvedOGImage.startsWith('/') ? `${window.location.origin}${resolvedOGImage}` : resolvedOGImage;
     const currentUrl = window.location.href;
 
