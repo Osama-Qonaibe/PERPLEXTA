@@ -9,7 +9,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         stored_path TEXT NOT NULL UNIQUE,
         original_filename TEXT NOT NULL,
-        context TEXT NOT NULL DEFAULT 'general' CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general')),
+        context TEXT NOT NULL DEFAULT 'general' CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general', 'video')),
         format TEXT NOT NULL DEFAULT 'webp',
         width INT NOT NULL DEFAULT 0,
         height INT NOT NULL DEFAULT 0,
@@ -20,7 +20,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         blog_article_id INTEGER,
         marketplace_item_id INTEGER,
         metadata JSONB DEFAULT '{}',
-        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -252,7 +251,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         is_read BOOLEAN DEFAULT false,
         action_url TEXT,
         metadata JSONB DEFAULT '{}',
-        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
@@ -415,9 +413,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         file_size INTEGER,
         file_url TEXT,
         file_content TEXT,
-        file_data BYTEA,
         metadata JSONB DEFAULT '{}',
-        file_data BYTEA,
         file_version INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -433,7 +429,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         description TEXT,
         details JSONB DEFAULT '{}',
         metadata JSONB DEFAULT '{}',
-        file_data BYTEA,
         ip_address VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -532,7 +527,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         aspect_ratio VARCHAR(50),
         resolution VARCHAR(50),
         metadata JSONB DEFAULT '{}',
-        file_data BYTEA,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   },

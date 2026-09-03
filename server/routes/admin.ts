@@ -15,6 +15,7 @@ import { reconcileAllWallets } from '../services/wallet.js';
 import { getSystemSettings, updateSystemSettings, checkSystemAssetsDiagnostic, repairSystemAssetsDiagnostic, getMissingAssetReport } from '../services/system.js';
 import { syncAllContentSeoMetadata, auditContentSeoItems, syncSingleContentSeoItem, getSmartSeoSuggestion, applySmartSeoSuggestion } from '../services/seoSync.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { checkDiskSpace } from '../middleware/checkDiskSpace.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
 import { optimizeUploadedImage, findOrphanedMediaAssets } from '../services/mediaOptimizationService.js';
 import { adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
@@ -3516,7 +3517,7 @@ router.delete("/missing-assets", authenticateAdmin, async (req, res) => {
   }
 });
 
-router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+router.post("/settings/upload-asset", authenticateAdmin, checkDiskSpace, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded or file invalid' });
@@ -3540,7 +3541,7 @@ router.post("/settings/upload-asset", authenticateAdmin, upload.single('file'), 
   }
 });
 
-router.post("/settings/upload-seo-image", authenticateAdmin, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+router.post("/settings/upload-seo-image", authenticateAdmin, checkDiskSpace, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded or file invalid' });

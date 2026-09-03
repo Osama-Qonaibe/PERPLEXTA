@@ -4,13 +4,14 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { getUserProfile, updateUserProfile, getUserUsage } from '../services/users.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { checkDiskSpace } from '../middleware/checkDiskSpace.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
 import { optimizeUploadedImage, normalizeMediaUrl } from '../services/mediaOptimizationService.js';
 import { walletLoader } from '../db/queries.js';
 
 const router = express.Router();
 
-router.post("/avatar", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+router.post("/avatar", authenticateToken, checkDiskSpace, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
     const optResult = await optimizeUploadedImage(req.file.path, req.file.originalname, 'avatar', true, { userId: req.user.id });

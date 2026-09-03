@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { upload, handleMulterError } from '../middleware/upload.js';
+import { checkDiskSpace } from '../middleware/checkDiskSpace.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
 import { extractTextFromFile, forensicScanPDF } from '../services/extractor.js';
 import { logSystemActivity } from '../services/notifications.js';
@@ -10,11 +11,12 @@ import { processUploadedVideo } from '../services/videoProcessor.js';
 import { optimizeUploadedImage } from '../services/mediaOptimizationService.js';
 import { pool } from '../db/index.js';
 import fs from 'fs/promises';
+import crypto from 'crypto';
 import path from 'path';
 
 const router = express.Router();
 
-router.post("/upload", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+router.post("/upload", authenticateToken, checkDiskSpace, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file attached' });
 
@@ -149,17 +151,43 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
     });
 
     const fileUrl = `/uploads/${finalFilename}`;
+    const thumbnailUrl = videoMetadata.thumbnailUrl || '';
+
     try {
       if (true /* try-catch will handle */) {
         const fileBuf = await fs.readFile(currentFilePath);
         await pool.query('UPDATE user_files SET file_data = $1 WHERE id = $2', [fileBuf, file.id]);
         console.log(`[File Router] File data saved to PostgreSQL for ${finalFilename}`);
+        
+        // Ensure video or unoptimized file is also in media_assets if not already inserted by optimizeUploadedImage
+        if (mimetype.startsWith('video/') || isVideoExtension || mimetype.startsWith('audio/') || mimetype.startsWith('application/pdf')) {
+           const sha256Hash = crypto.createHash('sha256').update(fileBuf).digest('hex');
+           const storedPath = `uploads/${finalFilename}`;
+           let mContext = 'general';
+           if (mimetype.startsWith('video/') || isVideoExtension) mContext = 'video';
+           
+           await pool.query(`
+              INSERT INTO media_assets (
+                stored_path, original_filename, context, format, width, height, size_bytes, sha256_hash, is_public,
+                user_id, metadata, file_data
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              ON CONFLICT (stored_path) DO UPDATE SET
+                 context = EXCLUDED.context,
+                 user_id = COALESCE(EXCLUDED.user_id, media_assets.user_id),
+                 file_data = EXCLUDED.file_data,
+                 updated_at = CURRENT_TIMESTAMP
+           `, [
+              storedPath, originalname, mContext, fileType, 
+              videoMetadata.width || 0, videoMetadata.height || 0, processedFileSize, sha256Hash, isPublicMedia,
+              userId, JSON.stringify(file.metadata), fileBuf
+           ]);
+           console.log(`[File Router] Registered asset in media_assets for ${finalFilename}`);
+        }
       }
     } catch (dbErr: any) {
       console.error('[File Router] Failed to save file data to DB:', dbErr.message);
     }
-    
-    const thumbnailUrl = videoMetadata.thumbnailUrl || '';
+
     res.status(201).json({ 
       success: true, 
       file: { 
@@ -186,7 +214,7 @@ router.post("/upload", authenticateToken, upload.single('file'), handleMulterErr
   }
 });
 
-router.post("/analyze-forensic", authenticateToken, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
+router.post("/analyze-forensic", authenticateToken, checkDiskSpace, upload.single('file'), handleMulterError, uploadValidator, async (req: any, res: any) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No document attached for diagnostic audit.' });

@@ -220,3 +220,6 @@ Dockerfile
 # MISCELLANEOUS PROJECT-SPECIFIC
 # =============================================================================
 # Add your project-specific ignores here
+# Uploads directory
+/uploads/*
+!/uploads/.gitkeep
