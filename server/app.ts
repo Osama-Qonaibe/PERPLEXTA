@@ -803,9 +803,10 @@ app.use('/uploads', express.static(uploadsPath, {
   }
 }));
 
-app.get(['/uploads/:filename', '/uploads/*'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Express 4 and Express 5 compatible route (path-to-regexp v8+ disallows bare wildcard '*')
+app.get(['/uploads/:filename', '/uploads/:filename(.*)'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
-    const rawFilename = (req.params.filename || req.params[0] || '').toString();
+    const rawFilename = (req.params.filename || req.params[0] || (req.params as any).path || '').toString();
     const cleanRaw = rawFilename.replace(/^(\/)?(uploads\/)+/i, '');
     const cleanPathOnly = cleanRaw.split('?')[0];
     const filename = path.basename(cleanPathOnly);
