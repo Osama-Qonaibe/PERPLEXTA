@@ -2340,7 +2340,12 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
-app.get('*', async (req, res, next) => {
+// Catch-all SPA handler: Uses app.use(...) instead of app.get('*', ...) to prevent path-to-regexp PathError across all Express / path-to-regexp versions
+app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Only handle GET and HEAD methods for HTML page delivery
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return next();
+  }
   const isApiOrUploads = req.path.startsWith('/api/') || req.path.startsWith('/uploads/');
   const hasStaticExtension = /\.((js|css|json|webmanifest|ico|png|jpg|jpeg|gif|svg|woff2?|ttf|otf|mp4|webm|mp3|wav))$/i.test(req.path);
   
