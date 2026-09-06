@@ -5,9 +5,7 @@ import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = __dirname;
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 const pwaConfig: any = {
   registerType: 'autoUpdate',
