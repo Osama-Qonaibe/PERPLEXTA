@@ -561,7 +561,175 @@ export async function getCachedAllActiveRouteSeo(): Promise<any[]> {
   }
 }
 
-/** Invalidate entire route SEO cache */
-export function invalidateRouteSeoCache() {
-  seoNodeCache.flushAll();
+/** Get cached Open Graph preview cache for social media / SSR */
+export async function getCachedOgPreview(routePath: string): Promise<any> {
+  const normalized = routePath === '/' ? '/' : routePath.replace(/\/$/, '');
+  const cached = seoNodeCache.get<any>(`og_preview:${normalized}`);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  if (!pool) return null;
+  try {
+    const result = await pool.query(
+      'SELECT title, description, image_url, meta_data FROM og_preview_cache WHERE route_path = $1 LIMIT 1',
+      [normalized]
+    );
+    const data = result.rows[0] || null;
+    seoNodeCache.set(`og_preview:${normalized}`, data);
+    return data;
+  } catch {
+    return null;
+  }
 }
+
+/** Invalidate entire route SEO cache */
+export function invalidateRouteSeoCache(routePath?: string) {
+  if (routePath) {
+    const normalized = routePath === '/' ? '/' : routePath.replace(/\/$/, '');
+    seoNodeCache.del(`route:${normalized}`);
+    seoNodeCache.del(`meta:${normalized}`);
+    seoNodeCache.del(`dynamic_seo:${normalized}`);
+    seoNodeCache.del(`og_preview:${normalized}`);
+  } else {
+    seoNodeCache.flushAll();
+  }
+}
+
+/** Get cached SEO metadata for dynamic routes from seo_metadata table */
+export async function getCachedSeoMetadata(routePath: string): Promise<any> {
+  const normalizedPath = routePath === '/' ? '/' : (routePath || '/').replace(/\/$/, '');
+  const cached = seoNodeCache.get<any>(`dynamic_seo:${normalizedPath}`);
+  if (cached !== undefined) {
+    trackSeoCache(normalizedPath, 'DynamicSeoMetadata', true);
+    return cached;
+  }
+
+  trackSeoCache(normalizedPath, 'DynamicSeoMetadata', false);
+  if (!pool) return null;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM seo_metadata WHERE route_path = $1 AND is_active = true LIMIT 1',
+      [normalizedPath]
+    );
+    const data = result.rows[0] || null;
+    seoNodeCache.set(`dynamic_seo:${normalizedPath}`, data);
+    return data;
+  } catch (err: any) {
+    console.warn('[Queries] getCachedSeoMetadata failed:', err.message);
+    return null;
+  }
+}
+
+/** Upsert dynamic route SEO metadata into seo_metadata table */
+export async function upsertSeoMetadata(data: {
+  route_path: string;
+  entity_type?: string;
+  entity_id?: string;
+  title_en?: string;
+  title_ar?: string;
+  description_en?: string;
+  description_ar?: string;
+  og_image_url?: string;
+  og_image_alt_en?: string;
+  og_image_alt_ar?: string;
+  keywords_en?: string;
+  keywords_ar?: string;
+  canonical_url?: string;
+  structured_data?: any;
+  is_active?: boolean;
+}): Promise<any> {
+  if (!pool) return null;
+  const normalizedPath = data.route_path === '/' ? '/' : (data.route_path || '/').replace(/\/$/, '');
+  try {
+    const result = await pool.query(`
+      INSERT INTO seo_metadata (
+        route_path, entity_type, entity_id,
+        title_en, title_ar, description_en, description_ar,
+        og_image_url, og_image_alt_en, og_image_alt_ar,
+        keywords_en, keywords_ar, canonical_url, structured_data, is_active, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
+      ON CONFLICT (route_path) DO UPDATE SET
+        entity_type = COALESCE(EXCLUDED.entity_type, seo_metadata.entity_type),
+        entity_id = COALESCE(EXCLUDED.entity_id, seo_metadata.entity_id),
+        title_en = COALESCE(EXCLUDED.title_en, seo_metadata.title_en),
+        title_ar = COALESCE(EXCLUDED.title_ar, seo_metadata.title_ar),
+        description_en = COALESCE(EXCLUDED.description_en, seo_metadata.description_en),
+        description_ar = COALESCE(EXCLUDED.description_ar, seo_metadata.description_ar),
+        og_image_url = COALESCE(EXCLUDED.og_image_url, seo_metadata.og_image_url),
+        og_image_alt_en = COALESCE(EXCLUDED.og_image_alt_en, seo_metadata.og_image_alt_en),
+        og_image_alt_ar = COALESCE(EXCLUDED.og_image_alt_ar, seo_metadata.og_image_alt_ar),
+        keywords_en = COALESCE(EXCLUDED.keywords_en, seo_metadata.keywords_en),
+        keywords_ar = COALESCE(EXCLUDED.keywords_ar, seo_metadata.keywords_ar),
+        canonical_url = COALESCE(EXCLUDED.canonical_url, seo_metadata.canonical_url),
+        structured_data = COALESCE(EXCLUDED.structured_data, seo_metadata.structured_data),
+        is_active = COALESCE(EXCLUDED.is_active, seo_metadata.is_active),
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `, [
+      normalizedPath,
+      data.entity_type || 'custom',
+      data.entity_id || null,
+      data.title_en || null,
+      data.title_ar || null,
+      data.description_en || null,
+      data.description_ar || null,
+      data.og_image_url || null,
+      data.og_image_alt_en || null,
+      data.og_image_alt_ar || null,
+      data.keywords_en || null,
+      data.keywords_ar || null,
+      data.canonical_url || null,
+      JSON.stringify(data.structured_data || {}),
+      data.is_active !== false
+    ]);
+    seoNodeCache.del(`dynamic_seo:${normalizedPath}`);
+    return result.rows[0];
+  } catch (err: any) {
+    console.warn('[Queries] upsertSeoMetadata failed:', err.message);
+    return null;
+  }
+}
+
+/** Get list of all dynamic SEO metadata records */
+export async function getAllSeoMetadata(filters?: { entity_type?: string; limit?: number; offset?: number }): Promise<any[]> {
+  if (!pool) return [];
+  try {
+    let query = 'SELECT * FROM seo_metadata';
+    const params: any[] = [];
+    if (filters?.entity_type) {
+      params.push(filters.entity_type);
+      query += ` WHERE entity_type = $${params.length}`;
+    }
+    query += ' ORDER BY updated_at DESC';
+    if (filters?.limit) {
+      params.push(filters.limit);
+      query += ` LIMIT $${params.length}`;
+    }
+    if (filters?.offset) {
+      params.push(filters.offset);
+      query += ` OFFSET $${params.length}`;
+    }
+    const res = await pool.query(query, params);
+    return res.rows;
+  } catch (err: any) {
+    console.warn('[Queries] getAllSeoMetadata failed:', err.message);
+    return [];
+  }
+}
+
+/** Delete a dynamic SEO metadata record */
+export async function deleteSeoMetadata(id: number | string): Promise<boolean> {
+  if (!pool) return false;
+  try {
+    const res = await pool.query('DELETE FROM seo_metadata WHERE id = $1 RETURNING route_path', [id]);
+    if (res.rows[0]?.route_path) {
+      seoNodeCache.del(`dynamic_seo:${res.rows[0].route_path}`);
+    }
+    return (res.rowCount || 0) > 0;
+  } catch (err: any) {
+    console.warn('[Queries] deleteSeoMetadata failed:', err.message);
+    return false;
+  }
+}
+

@@ -61,8 +61,22 @@ import {
   History as HistoryIcon,
   Globe,
   Upload,
+  CreditCard,
+  Gift,
+  Smartphone,
+  Tablet,
+  Monitor,
+  ShoppingBag,
+  Newspaper,
+  Compass,
 } from "lucide-react";
 import { SystemSettingsViewProps } from "./adminTypes";
+import { 
+  isPathBlocked, 
+  isGoogleAuthHidden, 
+  isMobilePwaBannerHidden, 
+  isFeatureBlockedOnMobile 
+} from "../../utils/sectionVisibility";
 
 export const SystemSettingsView = ({
   theme,
@@ -99,6 +113,77 @@ export const SystemSettingsView = ({
   const [blockedPaths, setBlockedPaths] = useState(
     siteSettings.blocked_paths || "",
   );
+
+  const handleToggleSection = (key: string) => {
+    const currentList = (blockedPaths || "").split(',').map(p => p.trim()).filter(Boolean);
+    let isCurrentlyHidden = false;
+
+    if (key === 'hide_google_auth') {
+      isCurrentlyHidden = isGoogleAuthHidden(blockedPaths, false);
+    } else if (key === 'hide_mobile_google_auth') {
+      isCurrentlyHidden = currentList.some(i => ['hide_mobile_google_auth', 'mobile_google_auth', 'hide-mobile-google-auth'].includes(i.toLowerCase().trim().replace(/^\/+/, '')));
+    } else if (key === 'hide_mobile_pwa') {
+      isCurrentlyHidden = isMobilePwaBannerHidden(blockedPaths);
+    } else if (key.startsWith('hide_mobile_')) {
+      const feat = key.replace('hide_mobile_', '');
+      isCurrentlyHidden = currentList.some(i => {
+        const itemClean = i.toLowerCase().trim().replace(/^\/+/, '');
+        return itemClean === key.toLowerCase() || itemClean === `mobile_${feat}` || itemClean === `hide_mobile_${feat}`;
+      });
+    } else {
+      isCurrentlyHidden = isPathBlocked(key, blockedPaths, false);
+    }
+
+    let updatedList: string[];
+    if (isCurrentlyHidden) {
+      const keyClean = key.toLowerCase().replace(/^\/+/, '');
+      updatedList = currentList.filter(item => {
+        const itemClean = item.toLowerCase().replace(/^\/+/, '');
+        if (key === 'hide_google_auth') {
+          return !['hide_google_auth', 'google_auth', 'hide-google-auth'].includes(itemClean);
+        }
+        if (key === 'hide_mobile_google_auth') {
+          return !['hide_mobile_google_auth', 'mobile_google_auth', 'hide-mobile-google-auth'].includes(itemClean);
+        }
+        if (key === 'hide_mobile_pwa') {
+          return !['hide_mobile_pwa', 'mobile_pwa', 'hide_pwa', 'pwa_banner', 'hide_mobile_pwa_banner'].includes(itemClean);
+        }
+        if (keyClean.startsWith('hide_mobile_')) {
+          const feat = keyClean.replace('hide_mobile_', '');
+          return ![`hide_mobile_${feat}`, `mobile_${feat}`].includes(itemClean);
+        }
+        if (keyClean === 'subscription' || keyClean === 'pricing') {
+          return !['subscription', 'pricing', 'subscriptions'].includes(itemClean);
+        }
+        if (keyClean === 'studio') {
+          return itemClean !== 'studio';
+        }
+        if (keyClean === 'google-hub' || keyClean === 'google_hub') {
+          return !['google-hub', 'google_hub', 'google'].includes(itemClean);
+        }
+        if (keyClean === 'bulletin' || keyClean === 'ads') {
+          return !['bulletin', 'ads', 'bulletinboard'].includes(itemClean);
+        }
+        if (keyClean === 'rewards') {
+          return itemClean !== 'rewards';
+        }
+        if (keyClean === 'marketplace' || keyClean === 'market') {
+          return !['marketplace', 'market', 'store'].includes(itemClean);
+        }
+        if (keyClean === 'blog' || keyClean === 'articles') {
+          return !['blog', 'articles', 'posts', 'news'].includes(itemClean);
+        }
+        if (keyClean === 'explore' || keyClean === 'discover') {
+          return !['explore', 'discover'].includes(itemClean);
+        }
+        return itemClean !== keyClean;
+      });
+    } else {
+      updatedList = [...currentList, key];
+    }
+
+    setBlockedPaths(updatedList.join(', '));
+  };
 
   const [logoBase64, setLogoBase64] = useState<string | null>(
     siteSettings.logoBase64,
@@ -693,6 +778,7 @@ export const SystemSettingsView = ({
           logo_url: logoBase64,
           logo_light_url: logoLightBase64,
           favicon_url: faviconBase64,
+          blocked_paths: blockedPaths || "",
         }),
       });
 
@@ -702,8 +788,40 @@ export const SystemSettingsView = ({
           logoBase64,
           logoLightBase64,
           faviconBase64,
+          blocked_paths: blockedPaths || "",
         });
         showToast(t("saveSuccess") || "Visual settings saved", "success");
+      } else {
+        const err = await res.json();
+        showToast(err.error || t("saveFailed") || "Failed", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || t("saveFailed") || "Failed", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveVisibilitySettings = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          blocked_paths: blockedPaths || "",
+        }),
+      });
+
+      if (res.ok) {
+        setSiteSettings({
+          ...siteSettings,
+          blocked_paths: blockedPaths || "",
+        });
+        showToast(dir === "rtl" ? "تم حفظ إعدادات إخفاء الأقسام بنجاح" : "Visibility settings saved successfully", "success");
       } else {
         const err = await res.json();
         showToast(err.error || t("saveFailed") || "Failed", "error");
@@ -1405,6 +1523,380 @@ export const SystemSettingsView = ({
               <Save size={18} />
             )}
             {t("saveSettings") || "Save"}
+          </button>
+        </div>
+      </div>
+
+      {/* Page, Section & Google Auth Visibility Control Panel */}
+      <div
+        className={`p-6 md:p-8 rounded-lg border mb-8 ${
+          theme === "dark"
+            ? "bg-[#111111] border-[var(--border-main)]"
+            : "bg-white border-[var(--border-main)]"
+        }`}
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800/60 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-md bg-purple-500/10 text-purple-500">
+              <EyeOff size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                {dir === "rtl"
+                  ? "لوحة التحكم في إخفاء الأقسام والصفحات وأزرار المصادقة"
+                  : "Pages, Sections & Auth Visibility Control"}
+                <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-full bg-accent/10 text-accent border border-accent/20">
+                  {dir === "rtl" ? "تحكم المتجر" : "App Store Control"}
+                </span>
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                {dir === "rtl"
+                  ? "يمكنك إخفاء أي قسم أو صفحة (الاشتراكات، الاستوديو، مركز قوقل، الإعلانات، والمكافآت) وكذلك إخفاء زر تسجيل الدخول عبر قوقل لحفظ حالة الظهور وتجنب رفض التطبيق في متجر أبل (Apple App Store)."
+                  : "Toggle visibility for site sections (Subscriptions, Studio, Google Hub, Ads, Rewards) and the Google Sign-In button to comply with Apple App Store policies."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* General Visibility Control Cards Grid */}
+        <div className="mb-8">
+          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+            <Monitor size={16} className="text-accent" />
+            <span>{dir === "rtl" ? "1. التحكم العام بالإخفاء (كافة الأجهزة - Desktop & Mobile)" : "1. General Visibility Controls (All Devices)"}</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                key: "/subscription",
+                title: dir === "rtl" ? "صفحة الاشتراكات والأسعار" : "Subscriptions Page",
+                subtitle: dir === "rtl" ? "مسار /subscription و /pricing" : "Route /subscription & /pricing",
+                description: dir === "rtl" ? "إخفاء صفحة وخطط الاشتراكات من القوائم وحظر الوصول المباشر إليها." : "Hide subscriptions page from navigation and block direct access.",
+                icon: <CreditCard size={18} className="text-emerald-500" />
+              },
+              {
+                key: "/studio",
+                title: dir === "rtl" ? "استوديو المطورين" : "Developer Studio",
+                subtitle: dir === "rtl" ? "مسار /studio" : "Route /studio",
+                description: dir === "rtl" ? "إخفاء زر وقسم استوديو الإنشاء من الهيدر والشريط الجانبي." : "Hide Developer Studio button from header and sidebar navigation.",
+                icon: <Cpu size={18} className="text-blue-500" />
+              },
+              {
+                key: "/google-hub",
+                title: dir === "rtl" ? "مركز خدمات قوقل (Google Hub)" : "Google Hub Section",
+                subtitle: dir === "rtl" ? "مسار /google-hub" : "Route /google-hub",
+                description: dir === "rtl" ? "إخفاء قسم منتجات قوقل لتفادي أي تعارض مع سياسات المتجر." : "Hide Google products section to ensure store compliance.",
+                icon: <Globe size={18} className="text-amber-500" />
+              },
+              {
+                key: "/bulletin",
+                title: dir === "rtl" ? "لوحة الإعلانات والنشر (Ads)" : "Ads & Bulletin Board",
+                subtitle: dir === "rtl" ? "مسار /bulletin" : "Route /bulletin",
+                description: dir === "rtl" ? "إخفاء قسم الإعلانات والمنشورات التفاعلية من الهيدر." : "Hide interactive ads & bulletin board section from header.",
+                icon: <Megaphone size={18} className="text-pink-500" />
+              },
+              {
+                key: "/rewards",
+                title: dir === "rtl" ? "برنامج المكافآت" : "Rewards Program",
+                subtitle: dir === "rtl" ? "مسار /rewards" : "Route /rewards",
+                description: dir === "rtl" ? "إخفاء صفحة ونظام المكافآت من القائمة الجانبية." : "Hide rewards page and system from navigation sidebar.",
+                icon: <Gift size={18} className="text-purple-500" />
+              },
+              {
+                key: "/marketplace",
+                title: dir === "rtl" ? "قسم المتجر والسوق (Marketplace)" : "Marketplace Section",
+                subtitle: dir === "rtl" ? "مسار /marketplace" : "Route /marketplace",
+                description: dir === "rtl" ? "إخفاء قسم المتجر وسوق المنتجات البرمجية والخدمات." : "Hide marketplace and software products section from navigation.",
+                icon: <ShoppingBag size={18} className="text-teal-500" />
+              },
+              {
+                key: "/blog",
+                title: dir === "rtl" ? "قسم المقالات والأخبار (Articles & Blog)" : "Articles & Blog Section",
+                subtitle: dir === "rtl" ? "مسار /blog" : "Route /blog",
+                description: dir === "rtl" ? "إخفاء قسم المقالات والأخبار والشروح البرمجية." : "Hide articles, blog, and news section from navigation.",
+                icon: <Newspaper size={18} className="text-orange-500" />
+              },
+              {
+                key: "/explore",
+                title: dir === "rtl" ? "قسم استكشف (Explore)" : "Explore Section",
+                subtitle: dir === "rtl" ? "مسار /explore" : "Route /explore",
+                description: dir === "rtl" ? "إخفاء قسم استكشف والنماذج الشائعة من الشريط الجانبي." : "Hide explore section and trending prompts from sidebar.",
+                icon: <Compass size={18} className="text-indigo-500" />
+              },
+              {
+                key: "hide_google_auth",
+                title: dir === "rtl" ? "زر تسجيل الدخول بواسطة قوقل" : "Google Sign-In Button",
+                subtitle: dir === "rtl" ? "زر Google في نافذة الدخول" : "Google Login in Auth Modal",
+                description: dir === "rtl" ? "إخفاء زر المصادقة عبر قوقل للالتزام بشرط Apple Sign-In." : "Hide Google login button from auth modal for Apple Store rules.",
+                icon: <Key size={18} className="text-red-500" />
+              }
+            ].map((item) => {
+              const isHidden = item.key === 'hide_google_auth' 
+                ? isGoogleAuthHidden(blockedPaths, false)
+                : isPathBlocked(item.key, blockedPaths, false);
+
+              return (
+                <div
+                  key={item.key}
+                  className={`p-4 rounded-lg border transition-all duration-200 flex flex-col justify-between ${
+                    isHidden
+                      ? theme === "dark"
+                        ? "bg-red-500/10 border-red-500/30 text-white"
+                        : "bg-red-50/70 border-red-200 text-gray-900"
+                      : theme === "dark"
+                        ? "bg-[#16171a] border-[var(--border-main)] hover:border-accent/40"
+                        : "bg-[#f9fafb] border-gray-200 hover:border-accent/40"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-md bg-accent/10 shrink-0">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-gray-900 dark:text-white">
+                            {item.title}
+                          </h3>
+                          <p className="text-[10px] text-gray-400 font-mono">
+                            {item.subtitle}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Status Badge */}
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
+                          isHidden
+                            ? "bg-red-500/15 text-red-500 border-red-500/30"
+                            : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                        }`}
+                      >
+                        {isHidden
+                          ? (dir === "rtl" ? "مخفي عام" : "Hidden Globally")
+                          : (dir === "rtl" ? "مرئي" : "Visible")}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* Hide / Show Toggle Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSection(item.key)}
+                    className={`w-full py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-98 ${
+                      isHidden
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40"
+                        : "bg-red-600 hover:bg-red-500 text-white border-red-500/40"
+                    }`}
+                  >
+                    {isHidden ? (
+                      <>
+                        <Eye size={14} />
+                        <span>{dir === "rtl" ? "إظهار / Show" : "Show Section"}</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff size={14} />
+                        <span>{dir === "rtl" ? "إخفاء / Hide" : "Hide Section"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile Version Controls Section */}
+        <div className="mb-6 pt-6 border-t border-gray-100 dark:border-gray-800/60">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <Smartphone size={16} className="text-cyan-500" />
+              <span>{dir === "rtl" ? "2. نموذج التحكم المخصص لنسخة الموبايل والتطبيق (Mobile Version Only)" : "2. Mobile Version Specific Visibility Controls"}</span>
+              <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                {dir === "rtl" ? "نسخة الهواتف" : "Mobile Only"}
+              </span>
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {dir === "rtl" 
+                ? "إعدادات إخفاء مخصصة تظهر تأثيراتها فقط عند التصفح من الهواتف الذكية وتطبيق الموبايل لتلبية متطلبات مراجعة Apple App Store."
+                : "Controls that apply specifically when browsing from smartphone mobile devices or mobile web app."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                key: "hide_mobile_pwa",
+                title: dir === "rtl" ? "شريط تثبيت التطبيق للموبايل" : "Mobile PWA Install Banner",
+                subtitle: dir === "rtl" ? "شريط الحث PWA Banner" : "Mobile Banner PWA",
+                description: dir === "rtl" ? "إخفاء شريط وشاشة تثبيت وحث تنزيل تطبيق PWA على الهواتف الذكية." : "Hide install invitation banner on mobile web browser.",
+                icon: <Smartphone size={18} className="text-cyan-500" />
+              },
+              {
+                key: "hide_mobile_google_auth",
+                title: dir === "rtl" ? "تسجيل دخول قوقل على الهواتف" : "Google Sign-In on Mobile",
+                subtitle: dir === "rtl" ? "زر Google في نافذة الدخول للموبايل" : "Google Auth in Mobile Modal",
+                description: dir === "rtl" ? "إخفاء زر تسجيل الدخول بقوقل على هواتف الموبايل فقط (شرط متجر أبل)." : "Hide Google login button strictly on mobile version.",
+                icon: <Key size={18} className="text-red-500" />
+              },
+              {
+                key: "hide_mobile_subscription",
+                title: dir === "rtl" ? "صفحة الاشتراكات على الموبايل" : "Subscriptions on Mobile",
+                subtitle: dir === "rtl" ? "مسار /subscription على الموبايل" : "Route /subscription on Mobile",
+                description: dir === "rtl" ? "إخفاء وحظر صفحة الاشتراكات على الهواتف الذكية (لتجنب In-App Purchase)." : "Hide subscription page on mobile devices to satisfy App Store IAP rule.",
+                icon: <CreditCard size={18} className="text-emerald-500" />
+              },
+              {
+                key: "hide_mobile_studio",
+                title: dir === "rtl" ? "استوديو المطورين على الموبايل" : "Developer Studio on Mobile",
+                subtitle: dir === "rtl" ? "مسار /studio على الموبايل" : "Route /studio on Mobile",
+                description: dir === "rtl" ? "إخفاء زر وقسم استوديو المطورين في الهيدر والSidebar للهواتف." : "Hide Developer Studio button and page on mobile viewport.",
+                icon: <Cpu size={18} className="text-blue-500" />
+              },
+              {
+                key: "hide_mobile_bulletin",
+                title: dir === "rtl" ? "الإعلانات والنشر على الموبايل" : "Ads & Bulletin on Mobile",
+                subtitle: dir === "rtl" ? "مسار /bulletin على الموبايل" : "Route /bulletin on Mobile",
+                description: dir === "rtl" ? "إخفاء قسم المنشورات والإعلانات التفاعلية على أجهزة الموبايل." : "Hide Ads & bulletin board section on mobile screens.",
+                icon: <Megaphone size={18} className="text-pink-500" />
+              },
+              {
+                key: "hide_mobile_rewards",
+                title: dir === "rtl" ? "برنامج المكافآت على الموبايل" : "Rewards on Mobile",
+                subtitle: dir === "rtl" ? "مسار /rewards على الموبايل" : "Route /rewards on Mobile",
+                description: dir === "rtl" ? "إخفاء صفحة ونظام المكافآت والنقاط في القائمة على الهواتف." : "Hide rewards section on mobile navigation menu.",
+                icon: <Gift size={18} className="text-purple-500" />
+              },
+              {
+                key: "hide_mobile_marketplace",
+                title: dir === "rtl" ? "قسم السوق على الموبايل" : "Marketplace on Mobile",
+                subtitle: dir === "rtl" ? "مسار /marketplace على الموبايل" : "Route /marketplace on Mobile",
+                description: dir === "rtl" ? "إخفاء وحظر قسم المتجر وسوق التطبيقات والخدمات على الهواتف." : "Hide marketplace section on mobile devices.",
+                icon: <ShoppingBag size={18} className="text-teal-500" />
+              },
+              {
+                key: "hide_mobile_blog",
+                title: dir === "rtl" ? "قسم المقالات على الموبايل" : "Articles on Mobile",
+                subtitle: dir === "rtl" ? "مسار /blog على الموبايل" : "Route /blog on Mobile",
+                description: dir === "rtl" ? "إخفاء قسم المقالات والأخبار والشروح على هواتف الموبايل." : "Hide articles and blog section on mobile viewports.",
+                icon: <Newspaper size={18} className="text-orange-500" />
+              },
+              {
+                key: "hide_mobile_explore",
+                title: dir === "rtl" ? "قسم استكشف على الموبايل" : "Explore section on Mobile",
+                subtitle: dir === "rtl" ? "مسار /explore على الموبايل" : "Route /explore on Mobile",
+                description: dir === "rtl" ? "إخفاء قسم استكشف في شريط القائمة السفلي/الجانبي للموبايل." : "Hide explore section on mobile navigation.",
+                icon: <Compass size={18} className="text-indigo-500" />
+              }
+            ].map((item) => {
+              let isHidden = false;
+              if (item.key === 'hide_mobile_pwa') {
+                isHidden = isMobilePwaBannerHidden(blockedPaths);
+              } else if (item.key === 'hide_mobile_google_auth') {
+                isHidden = (blockedPaths || "").split(',').map(p => p.trim().toLowerCase()).includes('hide_mobile_google_auth') ||
+                           (blockedPaths || "").split(',').map(p => p.trim().toLowerCase()).includes('mobile_google_auth');
+              } else {
+                const feat = item.key.replace('hide_mobile_', '');
+                isHidden = isFeatureBlockedOnMobile(feat, blockedPaths);
+              }
+
+              return (
+                <div
+                  key={item.key}
+                  className={`p-4 rounded-lg border transition-all duration-200 flex flex-col justify-between ${
+                    isHidden
+                      ? theme === "dark"
+                        ? "bg-amber-500/10 border-amber-500/30 text-white"
+                        : "bg-amber-50/70 border-amber-200 text-gray-900"
+                      : theme === "dark"
+                        ? "bg-[#16171a] border-[var(--border-main)] hover:border-accent/40"
+                        : "bg-[#f9fafb] border-gray-200 hover:border-accent/40"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-md bg-cyan-500/10 shrink-0">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-gray-900 dark:text-white">
+                            {item.title}
+                          </h3>
+                          <p className="text-[10px] text-gray-400 font-mono">
+                            {item.subtitle}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Status Badge */}
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
+                          isHidden
+                            ? "bg-amber-500/15 text-amber-500 border-amber-500/30"
+                            : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                        }`}
+                      >
+                        {isHidden
+                          ? (dir === "rtl" ? "مخفي للموبايل" : "Mobile Hidden")
+                          : (dir === "rtl" ? "مرئي" : "Visible")}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* Hide / Show Toggle Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSection(item.key)}
+                    className={`w-full py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-98 ${
+                      isHidden
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40"
+                        : "bg-amber-600 hover:bg-amber-500 text-white border-amber-500/40"
+                    }`}
+                  >
+                    {isHidden ? (
+                      <>
+                        <Eye size={14} />
+                        <span>{dir === "rtl" ? "إظهار للموبايل" : "Show on Mobile"}</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff size={14} />
+                        <span>{dir === "rtl" ? "إخفاء للموبايل" : "Hide on Mobile"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Save Notice & Button */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800/60">
+          <p className="text-xs text-gray-400 flex items-center gap-1.5">
+            <Info size={14} className="text-accent shrink-0" />
+            <span>
+              {dir === "rtl" 
+                ? "يتم حفظ أزرار الإخفاء وتحديث حالة الظهور عند الضغط على زر حفظ الإعدادات بالأسفل." 
+                : "Changes to section visibility will be saved when clicking Save Settings below."}
+            </span>
+          </p>
+          <button
+            onClick={handleSaveVisibilitySettings}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2 rounded-[var(--radius)] transition-theme text-xs font-bold shadow-sm disabled:opacity-50"
+          >
+            {isSaving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
+            <span>{dir === "rtl" ? "حفظ التغييرات الآن" : "Save Visibility Settings"}</span>
           </button>
         </div>
       </div>

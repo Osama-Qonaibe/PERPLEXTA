@@ -382,9 +382,13 @@ router.get('/articles/:id/user-rating', authenticateToken, async (req: any, res)
   }
 });
 
+let isBlogSeedEnsured = false;
+
 export async function ensureBlogSeedData() {
+  if (isBlogSeedEnsured) return;
   try {
     const extTarget = getExternalPool();
+    if (!extTarget) return;
     await extTarget.query(`
       CREATE TABLE IF NOT EXISTS blog_articles (
         id SERIAL PRIMARY KEY,
@@ -556,6 +560,7 @@ How large language models transform breaking central bank statements, macroecono
 
       console.log(`[Blog Seed] Successfully seeded ${articles.length} rich articles into blog_articles.`);
     }
+    isBlogSeedEnsured = true;
   } catch (err: any) {
     console.error('[Blog Seed] Failed to ensure blog seed data:', err.message);
   }

@@ -248,12 +248,12 @@ export const SettingsPage: React.FC = () => {
   }, [token, fetchMemories, getAuthHeaders, handleApiError]);
 
   const tabs = [
-    { id: 'account', icon: <UserIcon size={18} />, label: t('profile') },
-    { id: 'usage', icon: <Activity size={18} />, label: t('consumption') },
-    { id: 'wallet', icon: <Wallet size={18} />, label: t('wallet') },
-    { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'سوق المنصة' : 'Marketplace Hub' },
-    { id: 'memory', icon: <BrainCircuit size={18} />, label: t('memoryCenter') },
-    { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'بوابة المطورين والوكلاء' : 'Developer & Bot Portal' },
+    { id: 'account', icon: <UserIcon size={18} />, label: language === 'ar' ? 'الحساب' : 'Account' },
+    { id: 'usage', icon: <Activity size={18} />, label: language === 'ar' ? 'الاستهلاك' : 'Usage' },
+    { id: 'wallet', icon: <Wallet size={18} />, label: language === 'ar' ? 'المحفظة' : 'Wallet' },
+    { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'السوق' : 'Market' },
+    { id: 'memory', icon: <BrainCircuit size={18} />, label: language === 'ar' ? 'الذاكرة' : 'Memory' },
+    { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'المطورين' : 'Devs' },
   ];
 
   if (!user) return null;
@@ -261,8 +261,35 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className={`h-screen w-full flex flex-col md:flex-row overflow-hidden bg-[var(--bg-base)] text-[var(--text-primary)]`}>
       
-      {/* Sidebar Navigation - Elite Standard */}
-      <div className={`w-full md:w-60 border-b md:border-b-0 border-[var(--border)] flex flex-col h-[280px] md:h-screen relative ${
+      {/* Mobile Top Header - Native App Style */}
+      <div className="flex md:hidden sticky top-0 z-40 w-full h-14 px-4 items-center justify-between border-b backdrop-blur-xl bg-[var(--bg-base)]/95 border-[var(--border)]/60 shrink-0 select-none">
+        <div className="flex items-center gap-2.5">
+          <button 
+            onClick={() => navigate('/chat')} 
+            className="h-9 px-2.5 flex items-center gap-1 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-primary)] hover:text-accent transition-theme active:scale-95 cursor-pointer"
+          >
+            {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            <span className="text-xs font-black">{dir === 'rtl' ? 'رجوع' : 'Back'}</span>
+          </button>
+          <div className="flex flex-col">
+            <h1 className="text-sm font-black tracking-tight uppercase leading-none">{t('settings')}</h1>
+            <span className="text-[9px] font-bold text-accent tracking-wider">{tabs.find(t => t.id === activeTab)?.label}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={() => logout()}
+            className="p-2 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 active:scale-95 transition-theme cursor-pointer"
+            title={t('logout')}
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar Navigation - Elite Standard */}
+      <div className={`hidden md:flex md:w-60 md:h-screen flex-col border-b md:border-b-0 border-[var(--border)] relative shrink-0 ${
         dir === 'rtl' ? 'md:border-l' : 'md:border-r'
       } border-[var(--border)] bg-[var(--bg-secondary)]`}>
         
@@ -270,8 +297,8 @@ export const SettingsPage: React.FC = () => {
         <div className="h-20 px-6 border-b border-[var(--border)]/50 flex items-center">
            <div className="flex items-center gap-3">
               <button 
-                onClick={() => navigate('/')} 
-                className="w-10 h-10 flex items-center justify-center rounded-[var(--radius)] bg-transparent border border-transparent hover:bg-accent/10 text-[var(--text-muted)] hover:text-accent transition-theme group"
+                onClick={() => navigate('/chat')} 
+                className="w-8 h-8 flex items-center justify-center rounded-[8px] bg-transparent border border-transparent hover:bg-accent/10 text-[var(--text-muted)] hover:text-accent transition-theme group cursor-pointer"
               >
                 {dir === 'rtl' ? <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> : <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />}
               </button>
@@ -285,7 +312,7 @@ export const SettingsPage: React.FC = () => {
             <button
               key={`settings-tab-${tab.id}-${tabIdx}`}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-theme group relative overflow-hidden ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] transition-theme group relative overflow-hidden cursor-pointer ${
                 activeTab === tab.id 
                   ? 'text-accent'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
@@ -320,7 +347,7 @@ export const SettingsPage: React.FC = () => {
         <div className="p-4 border-t border-[var(--border)]/50">
           <button 
             onClick={() => logout()}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20 group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-red-500 hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20 group cursor-pointer"
           >
             <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
             <span className="font-bold text-sm tracking-tight">{t('logout')}</span>
@@ -329,9 +356,9 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Content Area - With Sticky Header */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Sticky Page Header */}
-        <div className="sticky top-0 z-30 w-full h-20 px-6 md:px-12 flex items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
+      <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
+        {/* Sticky Desktop Page Header */}
+        <div className="hidden md:flex sticky top-0 z-30 w-full h-20 px-6 md:px-12 items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(156,163,175,0.15)]">
                {tabs.find(t => t.id === activeTab)?.icon}
@@ -343,7 +370,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-6 md:p-12`}>
+        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-3 sm:p-6 md:p-12 pb-[calc(var(--safe-area-spacing)+24px+env(safe-area-inset-bottom,0px))] md:pb-12`}>
           <div className="max-w-5xl mx-auto w-full">
             <AnimatePresence>
               <motion.div
@@ -352,11 +379,11 @@ export const SettingsPage: React.FC = () => {
                 animate="animate"
                 exit="exit"
                 variants={perplextaPageTransition}
-                className="space-y-12 pb-12 w-full"
+                className="space-y-6 md:space-y-12 pb-8 w-full"
               >
               {/* Account Tab */}
               {activeTab === 'account' && localUser && (
-                <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-2xl">
+                <div className="p-3.5 sm:p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-xl">
                   <AccountSettings 
                     user={localUser} 
                     onUpdate={handleUpdateProfile} 
@@ -400,7 +427,7 @@ export const SettingsPage: React.FC = () => {
 
               {/* Developer & Bot Portal Tab */}
               {activeTab === 'developer' && (
-                <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-2xl">
+                <div className="p-3.5 sm:p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-xl">
                   <DeveloperAgentPortal />
                 </div>
               )}
@@ -409,6 +436,40 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar - Native App Footer matching BlogPage */}
+      <nav 
+        dir={dir}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-around pt-2 pb-[calc(20px+env(safe-area-inset-bottom,0px))] px-3 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none"
+      >
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={`settings-mobile-nav-${tab.id}`}
+              type="button"
+              onClick={() => handleTabChange(tab.id)}
+              className={`flex flex-col items-center justify-center flex-1 h-8 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+                isActive
+                  ? 'text-accent'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              <span className={`transition-transform duration-200 stroke-[2.2] ${isActive ? 'scale-110 text-accent' : ''}`}>
+                {tab.icon}
+              </span>
+              <span className="text-[8.5px] font-bold tracking-tight leading-tight">{tab.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="settings-mobile-nav-indicator"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
       <AnimatePresence>
         {toast && (
@@ -423,7 +484,7 @@ export const SettingsPage: React.FC = () => {
             }`}
             style={{ boxShadow: (toast as any).type === 'success' ? '0 10px 30px rgba(156,163,175,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
           >
-            <span className={`w-2 h-2 rounded-full ${(toast as any).type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
+            <span className={`w-2 h-2 rounded-[4px] ${(toast as any).type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
             <span className="font-bold text-sm tracking-tight">
               {typeof (toast as any).message === 'string' ? (toast as any).message.replace(/[<>]/g, '') : (toast as any).message}
             </span>

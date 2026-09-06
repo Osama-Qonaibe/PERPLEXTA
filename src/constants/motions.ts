@@ -19,7 +19,17 @@ export const UNIFIED_TRANSITION: Transition = {
 
 // Aliases for backward compatibility
 export const PERPLEXTA_TRANSITION = UNIFIED_TRANSITION;
-export const SIDEBAR_TRANSITION = UNIFIED_TRANSITION;
+
+// Google Material Design Standard Easing (Emphasized Decelerate)
+export const GOOGLE_MATERIAL_EASE: [number, number, number, number] = [0.2, 0, 0, 1];
+
+// Dedicated Sidebar Transition (Optimized for premium calmness, smooth and stable feel)
+export const SIDEBAR_DURATION = 0.85;
+export const SIDEBAR_TRANSITION: Transition = {
+  type: 'tween',
+  duration: SIDEBAR_DURATION,
+  ease: GOOGLE_MATERIAL_EASE,
+};
 
 // ============================================================
 // 3. حركات متنوعة (Motions)
@@ -149,15 +159,6 @@ export const PAGE_TRANSITION: Variants = {
     opacity: 1,
     transition: { duration: 0.05 }
   },
-};
-
-/**
- * حركة الانتقال للـ Sidebar
- */
-export const SIDEBAR_MOTION_TRANSITION = {
-  width: UNIFIED_TRANSITION,
-  x: UNIFIED_TRANSITION,
-  opacity: UNIFIED_TRANSITION,
 };
 
 // ============================================================

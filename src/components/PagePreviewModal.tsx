@@ -12,7 +12,7 @@ export const PagePreviewModal: React.FC<PagePreviewModalProps> = ({ url, onClose
       <div className="bg-white dark:bg-[#111111] w-full max-w-sm h-[80vh] rounded-2xl overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800">
           <span className="text-xs font-mono font-bold uppercase text-gray-500 truncate">{url}</span>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={onClose} className="p-1 rounded-[4px] hover:bg-gray-100 dark:hover:bg-gray-800">
             <X size={16} />
           </button>
         </div>

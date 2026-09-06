@@ -15,9 +15,9 @@ export const StudioPage = () => {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {logo ? (
-              <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-8 h-8 rounded-[12px] object-cover" />
+              <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-8 h-8 rounded-[8px] object-cover" />
             ) : (
-              <div className="w-8 h-8 rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[8px] bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center">
                 <Cpu className="w-4 h-4 text-accent" />
               </div>
             )}

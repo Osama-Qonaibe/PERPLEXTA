@@ -14,6 +14,8 @@ import {
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
 import { getEconomySettings } from '../wallet.js';
+import { getCachedGpuProviders } from '../gpuVaultService.js';
+import { dispatchGpuTask } from '../gpu/gpuTaskDispatcher.js';
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
 const RUNWAY_API_VERSION = '2024-11-06';
@@ -100,6 +102,14 @@ async function executeDynamicVideoProtocol(
     calculatedRatio = protocol.ratio_1_1 || '768:768';
   } else if (aspectRatio === '16:9') {
     calculatedRatio = protocol.ratio_16_9 || '1280:768';
+  } else if (aspectRatio === '4:3') {
+    calculatedRatio = protocol.ratio_4_3 || '1024:768';
+  } else if (aspectRatio === '3:4') {
+    calculatedRatio = protocol.ratio_3_4 || '768:1024';
+  } else if (aspectRatio === '3:2') {
+    calculatedRatio = protocol.ratio_3_2 || '1152:768';
+  } else if (aspectRatio === '2:3') {
+    calculatedRatio = protocol.ratio_2_3 || '768:1152';
   }
 
   let body: any;
@@ -240,11 +250,17 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
   // Build the fallback chain routing targets array
   const targets = [
-    { provider: route.primary_provider, model: route.primary_model, label: 'primary' },
-    { provider: route.fallback_1_provider, model: route.fallback_1_model, label: 'fallback_1' },
-    { provider: route.fallback_2_provider, model: route.fallback_2_model, label: 'fallback_2' },
-    { provider: route.fallback_3_provider, model: route.fallback_3_model, label: 'fallback_3' }
-  ].filter(t => t.provider && t.model);
+    { provider: route.primary_provider, model: route.primary_model || '', label: 'primary' },
+    { provider: route.fallback_1_provider, model: route.fallback_1_model || '', label: 'fallback_1' },
+    { provider: route.fallback_2_provider, model: route.fallback_2_model || '', label: 'fallback_2' },
+    { provider: route.fallback_3_provider, model: route.fallback_3_model || '', label: 'fallback_3' }
+  ].filter(t => t.provider && t.provider.trim().length > 0);
+
+  if (targets.length === 0) {
+    throw new Error(
+      'خدمة توليد الفيديو معطلة مؤقتاً: لم يتم ربط نقطة نهاية أو خادم فيديو مخصص. يرجى التحقق من توجيه الأداة في لوحة التحكم.'
+    );
+  }
 
   // Pre-load all candidate provider settings from database in one consolidated query
   const vaultMap = new Map<string, any>();
@@ -264,12 +280,75 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
     }
   }
 
-  // Construct actual prompt with visual styles
+  // Auto-translate Arabic prompts to descriptive English using Gemini API
   let actualPrompt = finalPrompt;
+  const containsArabic = /[\u0600-\u06FF]/.test(finalPrompt);
+  if (containsArabic && process.env.GEMINI_API_KEY) {
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      let modelToUse = process.env.GEMINI_MODEL_ID;
+      try {
+        const { getCachedOrchestratorConfig } = await import('../../db/queries.js');
+        const fastOrch = (await getCachedOrchestratorConfig('chat_fast')) || (await getCachedOrchestratorConfig('chat'));
+        if (fastOrch?.primary_model) {
+          modelToUse = fastOrch.primary_model;
+        } else {
+          const vaultRes = await pool.query("SELECT models FROM api_keys_vault WHERE provider IN ('google', 'gemini') AND is_active = true LIMIT 1");
+          if (vaultRes.rows.length > 0) {
+            const models = vaultRes.rows[0].models;
+            if (Array.isArray(models) && models.length > 0) {
+              const firstModel = models[0];
+              modelToUse = typeof firstModel === 'string' ? firstModel : (firstModel.id || firstModel.name);
+            }
+          }
+        }
+        if (modelToUse && modelToUse.startsWith('models/')) modelToUse = modelToUse.substring(7);
+      } catch (vaultErr) {
+        console.warn('[Video Prompt Translator] Model lookup failed.');
+      }
+
+      if (modelToUse) {
+        const aiObj = new GoogleGenAI({
+          apiKey: process.env.GEMINI_API_KEY!,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build'
+            }
+          }
+        });
+        const translationResponse = await withTimeout(
+          () => aiObj.models.generateContent({
+            model: modelToUse,
+            contents: `You are an expert video prompt translator and cinema director. 
+Translate the following Arabic video prompt into a highly descriptive, cinematic English prompt optimized for state-of-the-art AI video generation models (like Google Veo, Runway Gen-3, Luma Dream Machine, Kling, or Wan2.1).
+Focus on motion, camera angles, lighting, mood, color palette, and dynamic movement.
+Do not add conversational text, commentary, or intro. Return ONLY the translated/enhanced English prompt.
+
+Arabic Prompt: "${finalPrompt}"`,
+            config: {
+              maxOutputTokens: 250,
+              temperature: 0.2
+            }
+          }),
+          4500,
+          'VideoPromptTranslation'
+        );
+        const resultText = translationResponse.text?.trim();
+        if (resultText) {
+          console.log(`[Video Prompt Translator] Translated: "${finalPrompt}" -> "${resultText}"`);
+          actualPrompt = resultText;
+        }
+      }
+    } catch (err: any) {
+      console.warn('[Video Prompt Translator] Failed to translate prompt:', err.message);
+    }
+  }
+
+  // Construct actual prompt with visual styles
   if (video_settings?.style && video_settings.style !== 'Cinematic') {
-    actualPrompt = `${finalPrompt}, styled in ${video_settings.style} aesthetic`;
+    actualPrompt = `${actualPrompt}, styled in ${video_settings.style} aesthetic`;
   } else if (video_settings?.style) {
-    actualPrompt = `${finalPrompt}, high-fidelity cinematic styling`;
+    actualPrompt = `${actualPrompt}, high-fidelity cinematic styling`;
   }
 
   let videoUrl = '';
@@ -286,6 +365,43 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
           const modelName = target.model || '';
 
           console.log(`[Video Orchestrator] Trying Target Path [${target.label}]: ${providerId} - ${modelName}`);
+
+          // Intercept and route if target is a sovereign GPU Infrastructure node
+          const gpuMap = await getCachedGpuProviders();
+          const isGpuProvider = gpuMap.has(providerId) || Array.from(gpuMap.keys()).some(k => k.toLowerCase() === providerId);
+
+          if (isGpuProvider) {
+            console.log(`[Video Orchestrator] Routing target to Unified GpuTaskDispatcher: ${providerId} - ${modelName}`);
+            try {
+              const rawImages = reqBody.attached_images || reqBody.images || reqBody.image_urls || (reqBody.image_url ? [reqBody.image_url] : []);
+              const attachedImages = Array.isArray(rawImages) ? rawImages : (rawImages ? [rawImages] : []);
+
+              const gpuRes = await dispatchGpuTask({
+                userId,
+                taskType: 'video_gen',
+                prompt: actualPrompt,
+                imageUrls: attachedImages,
+                videoSettings: {
+                  duration: requestedDuration,
+                  resolution: video_settings?.resolution || '1080p',
+                  fps,
+                  aspectRatio: video_settings?.aspect_ratio || video_settings?.aspectRatio || '9:16'
+                },
+                preferredProviderId: providerId,
+                preferredModelId: modelName,
+                timeoutSeconds: 300
+              });
+              if (gpuRes.mediaUrl) {
+                videoUrl = gpuRes.mediaUrl;
+                successfulProvider = gpuRes.providerId;
+                successfulModel = gpuRes.modelId;
+                break;
+              }
+            } catch (gpuErr: any) {
+              console.warn(`[Video Orchestrator] GPU task dispatch failed for ${providerId}:`, gpuErr.message);
+              continue;
+            }
+          }
 
           const vaultConfig = vaultMap.get(providerId);
 
@@ -458,10 +574,12 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
               }
             } else if (providerId === 'runway') {
               let calculatedRatio = '1280:768';
-              if (video_settings?.aspectRatio === '9:16') {
+              if (video_settings?.aspectRatio === '9:16' || video_settings?.aspectRatio === '2:3' || video_settings?.aspectRatio === '3:4') {
                 calculatedRatio = '768:1280';
               } else if (video_settings?.aspectRatio === '1:1') {
                 calculatedRatio = '768:768';
+              } else if (video_settings?.aspectRatio === '16:9' || video_settings?.aspectRatio === '3:2' || video_settings?.aspectRatio === '4:3') {
+                calculatedRatio = '1280:768';
               }
 
               const res = await withTimeout(
@@ -611,20 +729,18 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
               videoUrl = uri;
             } else {
-              const finalEndpoint = vaultConfig?.url_key;
-              if (!finalEndpoint) {
-                throw new Error(`Orchestration routing check: Dynamic provider '${target.provider}' is missing a registered custom endpoint URL (url_key) in the vault.`);
-              }
+              // Universal Dynamic REST Fallback for any model/provider saved in the orchestrator
+              const finalEndpoint = vaultConfig?.url_key || `https://api.${providerId}.com/v1/videos`;
               
-              console.log(`[Video Task] Executing generic endpoint generation for provider: ${providerId} on endpoint: ${finalEndpoint}`);
+              console.log(`[Video Task] Executing universal dynamic generation for provider: ${providerId} model: ${modelName} on endpoint: ${finalEndpoint}`);
               
               if (io) {
                 io.to(`user_${userId}`).emit('video_progress', {
                   progress: 25,
                   renderedFrames: Math.round(totalFrames * 0.25),
                   totalFrames,
-                  phase: `Initiating connection request with dynamic endpoint on ${target.provider}...`,
-                  phase_ar: `بدء إرسال طلب التوليد للواجهة البرمجية التابعة لـ ${target.provider}...`,
+                  phase: `Initiating connection request with dynamic model [${modelName}] on ${target.provider}...`,
+                  phase_ar: `بدء إرسال طلب التوليد للنموذج [${modelName}] عبر مزود الخدمة ${target.provider}...`,
                   fps: 0,
                   currentStep: 3,
                   totalSteps: 120
@@ -642,7 +758,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
                   resolution: video_settings?.resolution || "1080p",
                   style: video_settings?.style || "Cinematic"
                 },
-                'generic-video-generation',
+                'universal-dynamic-video-generation',
                 target.provider
               );
             }
@@ -672,7 +788,7 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
 
     // If no video URL was generated after trying all targets
     if (!videoUrl) {
-      throw new Error('All configured video generation providers failed or returned empty results.');
+      throw new Error('All configured video generation providers failed or returned empty results. Please ensure a dedicated Video GPU node or provider endpoint is online.');
     }
 
     // Emit final progress milestone
@@ -706,17 +822,16 @@ export async function executeVideoTask(ctx: TaskExecutionContext): Promise<{ res
     });
 
     let savedLocalUrl = videoUrl;
-    try {
-      if (videoUrl && !videoUrl.startsWith('/uploads/')) {
-        console.log(`[Video Storage] Registering and saving video locally to disk/ledger for user ${userId}...`);
-        const customHeaders: Record<string, string> = {};
-        if (successfulProvider === 'google' || successfulProvider === 'gemini' || successfulProvider.includes('veo')) {
-          customHeaders['x-goog-api-key'] = successfulApiKey;
-        }
-        savedLocalUrl = await saveGeneratedVideoToDisk(String(userId), videoUrl, customHeaders);
+    if (videoUrl && !videoUrl.startsWith('/uploads/')) {
+      const customHeaders: Record<string, string> = {};
+      if (successfulProvider === 'google' || successfulProvider === 'gemini' || successfulProvider.includes('veo')) {
+        customHeaders['x-goog-api-key'] = successfulApiKey;
       }
-    } catch (saveErr: any) {
-      console.warn('[Video Task] Silent warning: failed to save video locally, fallback to original URL.', saveErr.message);
+      try {
+        savedLocalUrl = await saveGeneratedVideoToDisk(String(userId), videoUrl, customHeaders);
+      } catch (saveErr: any) {
+        console.warn('[Video Task] Local video save warning:', saveErr.message);
+      }
     }
 
     // Save to video_resources database

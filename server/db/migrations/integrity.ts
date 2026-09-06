@@ -258,6 +258,28 @@ export async function verifySchemaIntegrity() {
       route_seo_metadata: {
         columns: ['route_path', 'title_ar', 'title_en', 'description_ar', 'description_en', 'og_image_url', 'updated_at']
       },
+      seo_metadata: {
+        columns: ['id', 'route_path', 'entity_type', 'entity_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'og_image_url', 'og_image_alt_en', 'og_image_alt_ar', 'keywords_en', 'keywords_ar', 'canonical_url', 'structured_data', 'is_active', 'created_at', 'updated_at'],
+        repairCols: {
+          route_path: { type: 'VARCHAR(255)' },
+          entity_type: { type: 'VARCHAR(50)' },
+          entity_id: { type: 'VARCHAR(100)' },
+          title_en: { type: 'VARCHAR(255)' },
+          title_ar: { type: 'VARCHAR(255)' },
+          description_en: { type: 'TEXT' },
+          description_ar: { type: 'TEXT' },
+          og_image_url: { type: 'TEXT' },
+          og_image_alt_en: { type: 'TEXT' },
+          og_image_alt_ar: { type: 'TEXT' },
+          keywords_en: { type: 'TEXT' },
+          keywords_ar: { type: 'TEXT' },
+          canonical_url: { type: 'TEXT' },
+          structured_data: { type: 'JSONB', default: "'{}'" },
+          is_active: { type: 'BOOLEAN', default: true },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
+      },
       asset_metadata: {
         columns: ['id', 'file_url', 'asset_name', 'mime_type', 'file_size', 'alt_text_ar', 'alt_text_en', 'og_title_ar', 'og_title_en', 'og_description_ar', 'og_description_en', 'keywords_ar', 'keywords_en', 'visual_summary', 'ai_analysis_raw', 'created_at', 'updated_at']
       },
@@ -339,6 +361,9 @@ export async function verifySchemaIntegrity() {
       user_recommendation_preferences: {
         columns: ['user_id', 'preferred_categories', 'preferred_price_range', 'excluded_item_types', 'explicit_interests', 'updated_at']
       },
+      user_media_preferences: {
+        columns: ['id', 'user_id', 'media_type', 'aspect_ratio', 'settings', 'updated_at']
+      },
       recommendation_feedback: {
         columns: ['id', 'user_id', 'item_type', 'item_id', 'item_key', 'feedback_type', 'created_at']
       },
@@ -365,6 +390,68 @@ export async function verifySchemaIntegrity() {
       },
       db_connections_registry: {
         columns: ['id', 'provider', 'type', 'host', 'port', 'db_name', 'username', 'password', 'connection_string', 'ssl_mode', 'pool_size', 'is_active', 'status', 'last_checked_at', 'created_at', 'updated_at']
+      },
+      gpu_providers: {
+        columns: ['id', 'provider_id', 'name', 'provider_type', 'endpoint_id', 'base_url', 'api_url', 'encrypted_api_key', 'current_load_capacity', 'status', 'metadata', 'health_status', 'latency_ms', 'capabilities', 'daily_budget', 'used_today', 'last_reset_date', 'config', 'is_active', 'created_at', 'updated_at'],
+        repairCols: {
+          provider_id: { type: 'VARCHAR(100)' },
+          name: { type: 'VARCHAR(255)' },
+          provider_type: { type: 'VARCHAR(100)' },
+          endpoint_id: { type: 'VARCHAR(150)' },
+          base_url: { type: 'TEXT' },
+          api_url: { type: 'TEXT' },
+          encrypted_api_key: { type: 'TEXT' },
+          current_load_capacity: { type: 'INTEGER', default: 100 },
+          status: { type: 'VARCHAR(50)', default: "'active'" },
+          metadata: { type: 'JSONB', default: "'{}'" },
+          health_status: { type: 'VARCHAR(50)', default: "'offline'" },
+          latency_ms: { type: 'INTEGER', default: 0 },
+          capabilities: { type: 'TEXT[]' },
+          daily_budget: { type: 'NUMERIC(15, 4)', default: 0 },
+          used_today: { type: 'NUMERIC(15, 4)', default: 0 },
+          last_reset_date: { type: 'DATE', default: 'CURRENT_DATE' },
+          config: { type: 'JSONB', default: "'{}'" },
+          is_active: { type: 'BOOLEAN', default: true },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
+      },
+      gpu_provider_models: {
+        columns: ['id', 'provider_id', 'model_id', 'name', 'task_type', 'context_window', 'max_output_tokens', 'is_active', 'metadata', 'created_at'],
+        repairCols: {
+          provider_id: { type: 'INTEGER' },
+          model_id: { type: 'VARCHAR(255)' },
+          name: { type: 'VARCHAR(255)' },
+          task_type: { type: 'VARCHAR(100)' },
+          context_window: { type: 'INTEGER', default: 32768 },
+          max_output_tokens: { type: 'INTEGER', default: 4096 },
+          is_active: { type: 'BOOLEAN', default: true },
+          metadata: { type: 'JSONB', default: "'{}'" },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+        }
+      },
+      gpu_execution_jobs: {
+        columns: ['id', 'job_id', 'user_id', 'provider_id', 'model_id', 'task_type', 'status', 'prompt', 'parameters', 'remote_job_id', 'result_url', 'result_data', 'latency_ms', 'error_message', 'attempts', 'failover_count', 'cost_charged', 'created_at', 'completed_at'],
+        repairCols: {
+          job_id: { type: 'VARCHAR(120)' },
+          user_id: { type: 'INTEGER' },
+          provider_id: { type: 'INTEGER' },
+          model_id: { type: 'VARCHAR(255)' },
+          task_type: { type: 'VARCHAR(100)' },
+          status: { type: 'VARCHAR(50)', default: "'pending'" },
+          prompt: { type: 'TEXT' },
+          parameters: { type: 'JSONB', default: "'{}'" },
+          remote_job_id: { type: 'VARCHAR(255)' },
+          result_url: { type: 'TEXT' },
+          result_data: { type: 'JSONB', default: "'{}'" },
+          latency_ms: { type: 'INTEGER', default: 0 },
+          error_message: { type: 'TEXT' },
+          attempts: { type: 'INTEGER', default: 1 },
+          failover_count: { type: 'INTEGER', default: 0 },
+          cost_charged: { type: 'NUMERIC(15, 4)', default: 0 },
+          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+          completed_at: { type: 'TIMESTAMP' }
+        }
       }
     },
     ledger: {

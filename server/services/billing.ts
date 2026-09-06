@@ -344,10 +344,12 @@ export async function executeWithBillingMiddleware(
   } catch (err: any) {
     if (holdPointsResult) {
       try {
-        await reconcileHold(userIdNum, toolId, holdPointsResult.heldPoints,
-          inputTokens, estimateTokens(outerAccumulatedOutput));
+        await refundExecutionHold(userIdNum, toolId, holdPointsResult.heldPoints);
         io?.to(`user_${userIdNum}`).emit('user_profile_updated');
-      } catch (recErr) { console.error('[Billing] Failure reconcile failed:', recErr); }
+        io?.to(`user_${userIdNum}`).emit('wallet_charge_notice', {
+          toolId, charged: 'points', amount: holdPointsResult.heldPoints, isRefund: true,
+        });
+      } catch (recErr) { console.error('[Billing] Failure refund failed:', recErr); }
     }
     if (err.message?.includes('OUT_OF_POINTS_BUDGET_HALT')) {
       throw new Error(JSON.stringify({

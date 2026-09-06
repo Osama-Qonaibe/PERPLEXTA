@@ -15,7 +15,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeEngineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('perplexta_theme') as Theme) || 'system';
+      return (localStorage.getItem('perplexta_theme') as Theme) || (localStorage.getItem('theme') as Theme) || 'system';
     } catch {
       return 'system';
     }
@@ -43,28 +43,28 @@ export const ThemeEngineProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   useEffect(() => {
-    setThemeTransitioning(true);
-    ThemeSync.apply(theme);
-    setResolvedTheme(ThemeSync.resolve(theme));
-
-    const timeout = setTimeout(() => {
-      setThemeTransitioning(false);
-    }, 300);
-
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
     const handleChange = () => {
       if (theme === 'system') {
-        setThemeTransitioning(true);
         const res = ThemeSync.resolve('system');
         setResolvedTheme(res);
         ThemeSync.apply('system');
-        setTimeout(() => setThemeTransitioning(false), 300);
       }
     };
-    mediaQuery.addEventListener('change', handleChange);
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else {
+      (mediaQuery as any).addListener(handleChange);
+    }
+
     return () => {
-      clearTimeout(timeout);
-      mediaQuery.removeEventListener('change', handleChange);
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        (mediaQuery as any).removeListener(handleChange);
+      }
     };
   }, [theme]);
 
@@ -77,9 +77,8 @@ export const ThemeEngineProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within a ThemeEngineProvider');
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeEngineProvider');
+  }
   return context;
 };
-
-export { useResolvedTheme } from '../hooks/useResolvedTheme';
-

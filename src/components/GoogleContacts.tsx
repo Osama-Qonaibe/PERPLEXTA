@@ -442,7 +442,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
         <div className="p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-500/10 via-transparent to-transparent pointer-events-none" />
           
-          <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-6 shadow-[0_0_20px_rgba(156,163,175,0.15)] animate-pulse">
+          <div className="w-16 h-16 rounded-[4px] bg-accent/10 flex items-center justify-center text-accent mb-6 shadow-[0_0_20px_rgba(156,163,175,0.15)] animate-pulse">
             <Users size={32} />
           </div>
 
@@ -504,11 +504,11 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                 <img 
                   src={googleUser.photoURL} 
                   alt="Avatar" 
-                  className="w-10 h-10 rounded-full border border-accent/20 shadow-md"
+                  className="w-10 h-10 rounded-[4px] border border-accent/20 shadow-md"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
+                <div className="w-10 h-10 rounded-[4px] bg-accent/10 flex items-center justify-center text-accent border border-accent/20">
                   <UserCheck size={18} />
                 </div>
               )}
@@ -650,11 +650,11 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                             <img 
                               src={contact.photoUrl} 
                               alt="Profile" 
-                              className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-800"
+                              className="w-8 h-8 rounded-[4px] border border-gray-200 dark:border-gray-800"
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-[4px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                               <span className="text-xs font-bold uppercase">{contact.name.substring(0, 2)}</span>
                             </div>
                           )}
@@ -715,11 +715,11 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
                           <img 
                             src={selectedContact.photoUrl} 
                             alt="Contact Profile" 
-                            className="w-16 h-16 rounded-full border-2 border-accent/20 shadow-lg object-cover"
+                            className="w-16 h-16 rounded-[4px] border-2 border-accent/20 shadow-lg object-cover"
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-full bg-accent/10 border-2 border-accent/20 text-accent flex items-center justify-center text-xl font-bold shadow-md uppercase">
+                          <div className="w-16 h-16 rounded-[4px] bg-accent/10 border-2 border-accent/20 text-accent flex items-center justify-center text-xl font-bold shadow-md uppercase">
                             {selectedContact.name.substring(0, 2)}
                           </div>
                         )}
@@ -992,7 +992,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <div className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
                 theme === 'dark' ? 'bg-[#1a1a1c] border-[#27272a] text-gray-100' : 'bg-white border-gray-150 text-gray-900'
               }`}>
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4">
+                <div className="w-10 h-10 rounded-[4px] bg-accent/10 flex items-center justify-center text-accent mb-4">
                   <ShieldCheck size={20} />
                 </div>
 
@@ -1043,7 +1043,7 @@ export const GoogleContacts: React.FC<GoogleContactsProps> = ({ dir, theme }) =>
               <div className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
                 theme === 'dark' ? 'bg-[#1a1a1c] border-[#27272a] text-gray-100' : 'bg-white border-gray-150 text-gray-900'
               }`}>
-                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-4">
+                <div className="w-10 h-10 rounded-[4px] bg-red-500/10 flex items-center justify-center text-red-500 mb-4">
                   <AlertCircle size={20} />
                 </div>
 

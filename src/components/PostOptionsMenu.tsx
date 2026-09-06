@@ -465,7 +465,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                     : (isRtl ? 'إضافة هذا إلى عناصرك المحفوظة' : 'Add this to your saved items')}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                 <Bookmark size={18} className={isSaved ? 'text-blue-500 fill-blue-500' : ''} />
               </div>
             </button>
@@ -489,7 +489,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'من الذي يمكنه التعليق على منشورك؟' : 'Who can comment on your post?'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                     <MessageSquare size={18} />
                   </div>
                 </button>
@@ -508,7 +508,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'تعديل المنشور' : 'Edit post'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                     <Edit3 size={18} />
                   </div>
                 </button>
@@ -527,7 +527,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'تعديل الجمهور' : 'Edit audience'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                     <Settings size={18} />
                   </div>
                 </button>
@@ -547,7 +547,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                     : (isRtl ? 'إيقاف تشغيل الإشعارات لهذا المنشور' : 'Turn off notifications for this post')}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                 {isMuted ? <Bell size={18} className="text-blue-500" /> : <BellOff size={18} />}
               </div>
             </button>
@@ -567,7 +567,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                     {isRtl ? 'مشاركة رمز إعلان الشراكة' : 'Share partnership ad code'}
                   </span>
                 </div>
-                <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                   <Handshake size={18} />
                 </div>
               </button>
@@ -586,7 +586,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                     : (isRtl ? 'تشغيل الترجمة' : 'Turn on translation')}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                 <Languages size={18} />
               </div>
             </button>
@@ -605,7 +605,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                   {isRtl ? 'محتوى ذكاء اصطناعي' : 'AI content'}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                 <Info size={18} />
               </div>
             </button>
@@ -625,7 +625,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                     {isRtl ? 'تعديل التاريخ' : 'Edit date'}
                   </span>
                 </div>
-                <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                   <Calendar size={18} />
                 </div>
               </button>
@@ -645,7 +645,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                   {isRtl ? 'تضمين' : 'Embed'}
                 </span>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                 <Code size={18} />
               </div>
             </button>
@@ -669,7 +669,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'نقل إلى الأرشيف' : 'Move to archive'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                     <Archive size={18} />
                   </div>
                 </button>
@@ -693,7 +693,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                           : 'Items in your trash are deleted after 30 days.'}
                       </span>
                     </div>
-                    <div className="w-9 h-9 rounded-full bg-white dark:bg-zinc-700/80 flex items-center justify-center text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors shrink-0">
+                    <div className="w-9 h-9 rounded-[4px] bg-white dark:bg-zinc-700/80 flex items-center justify-center text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors shrink-0">
                       <Trash2 size={18} />
                     </div>
                   </div>
@@ -715,7 +715,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'إخفاء هذا المنشور' : 'Hide this post'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-zinc-700 transition-colors shrink-0">
                     <EyeOff size={18} />
                   </div>
                 </button>
@@ -734,7 +734,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                       {isRtl ? 'إبلاغ عن محتوى غير لائق' : 'Report inappropriate content'}
                     </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-red-100/50 dark:bg-red-900/30 flex items-center justify-center text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors shrink-0">
+                  <div className="w-9 h-9 rounded-[4px] bg-red-100/50 dark:bg-red-900/30 flex items-center justify-center text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-900/50 transition-colors shrink-0">
                     <Flag size={18} />
                   </div>
                 </button>
@@ -772,7 +772,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 </h3>
                 <button
                   onClick={() => setActiveModal(null)}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  className="w-8 h-8 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -848,7 +848,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0">
+                          <div className="w-10 h-10 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-700 dark:text-gray-300 shrink-0">
                             <IconComp size={18} />
                           </div>
                           <div>
@@ -976,7 +976,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                         className="w-5 h-5 accent-blue-600 rounded cursor-pointer"
                       />
                     ) : (
-                      <span className="font-bold text-xs px-2.5 py-1 rounded-full bg-gray-200 dark:bg-zinc-700">
+                      <span className="font-bold text-xs px-2.5 py-1 rounded-[4px] bg-gray-200 dark:bg-zinc-700">
                         {isAiGenerated ? (isRtl ? 'مُفعّل' : 'Active') : (isRtl ? 'غير مفعل' : 'Inactive')}
                       </span>
                     )}

@@ -133,11 +133,57 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
   const commentInputRef = useRef<HTMLInputElement>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Share Modal & Menu State
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [shareText, setShareText] = useState('');
+  // Share Menu State
   const [isCopiedLink, setIsCopiedLink] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+
+  const handleDirectShare = async () => {
+    if (!ad) return;
+    if (onShare) {
+      onShare(ad);
+      return;
+    }
+    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
+    try {
+      fetch(`/api/bulletin/ads/${ad.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: user?.id,
+          sharer_name: user?.name || user?.email,
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: ad.title || postTitle || (isRtl ? 'منشور ببربليكستا' : 'Perplexta Post'),
+          text: ad.description || (isRtl ? 'شاهد هذا المنشور' : 'Check out this post'),
+          url: shareUrl
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      toast.success(isRtl ? 'تم نسخ رابط المنشور بنجاح' : 'Post link copied to clipboard');
+    } catch (err) {}
+  };
 
   // Sync index and ad data when modal opens
   useEffect(() => {
@@ -261,11 +307,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
       }
 
       if (e.key === 'Escape') {
-        if (isShareModalOpen) {
-          setIsShareModalOpen(false);
-        } else {
-          onClose();
-        }
+        onClose();
       } else if (e.key === 'ArrowRight') {
         if (isRtl) handlePrev();
         else handleNext();
@@ -290,7 +332,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isRtl, handleNext, handlePrev, onClose, isShareModalOpen, totalCount, isSlideshowPlaying]);
+  }, [isOpen, isRtl, handleNext, handlePrev, onClose, totalCount, isSlideshowPlaying]);
 
   // Mouse pan handlers for zoom
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -538,7 +580,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               e.stopPropagation();
               setShowOptionsMenu((prev) => !prev);
             }}
-            className="w-8 h-8 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-800 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-[8px] hover:bg-gray-200 dark:hover:bg-zinc-800 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors cursor-pointer"
             title={isRtl ? 'المزيد من الخيارات' : 'More options'}
           >
             <MoreHorizontal size={18} />
@@ -704,9 +746,9 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
       <div className="px-4 py-2.5 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="flex -space-x-1 rtl:space-x-reverse items-center">
-            <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] flex items-center justify-center">👍</span>
-            <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center">❤️</span>
-            <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] flex items-center justify-center">🥰</span>
+            <span className="w-4 h-4 rounded-[4px] bg-blue-500 text-white text-[9px] flex items-center justify-center">👍</span>
+            <span className="w-4 h-4 rounded-[4px] bg-red-500 text-white text-[9px] flex items-center justify-center">❤️</span>
+            <span className="w-4 h-4 rounded-[4px] bg-amber-500 text-white text-[9px] flex items-center justify-center">🥰</span>
           </div>
           <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">{likesCount}</span>
         </div>
@@ -744,7 +786,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.88 }}
                   transition={{ duration: 0.16, ease: 'easeOut' }}
-                  className="flex items-center gap-1 sm:gap-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-full border border-gray-200/90 dark:border-zinc-700/90 shadow-2xl ring-1 ring-black/5 select-none"
+                  className="flex items-center gap-1 sm:gap-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-[8px] border border-gray-200/90 dark:border-zinc-700/90 shadow-2xl ring-1 ring-black/5 select-none"
                   onMouseEnter={handleLikeMouseEnter}
                   onMouseLeave={handleLikeMouseLeave}
                 >
@@ -762,12 +804,12 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                         setHoveredReactionId(reac.id);
                       }}
                       onMouseLeave={() => setHoveredReactionId(null)}
-                      className="relative group/reac text-xl sm:text-2xl hover:scale-130 active:scale-95 transition-transform duration-150 p-1 sm:p-1.5 cursor-pointer focus:outline-none select-none rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
+                      className="relative group/reac text-xl sm:text-2xl hover:scale-130 active:scale-95 transition-transform duration-150 p-1 sm:p-1.5 cursor-pointer focus:outline-none select-none rounded-[8px] hover:bg-gray-100 dark:hover:bg-zinc-800"
                       title={isRtl ? reac.labelAr : reac.labelEn}
                     >
                       <span className="block transform-gpu">{reac.emoji}</span>
                       {hoveredReactionId === reac.id && (
-                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white text-[10px] font-bold py-0.5 px-2 rounded-full whitespace-nowrap pointer-events-none shadow-md z-50">
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white text-[10px] font-bold py-0.5 px-2 rounded-[6px] whitespace-nowrap pointer-events-none shadow-md z-50">
                           {isRtl ? reac.labelAr : reac.labelEn}
                         </span>
                       )}
@@ -819,13 +861,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
         {/* Share Button */}
         <button
           type="button"
-          onClick={() => {
-            if (onShare && ad) {
-              onShare(ad);
-            } else {
-              setIsShareModalOpen(true);
-            }
-          }}
+          onClick={handleDirectShare}
           className="flex-1 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center gap-1.5 font-bold text-xs transition-colors cursor-pointer"
         >
           <Share2 size={15} />
@@ -962,7 +998,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               fallbackText={user?.name || user?.email}
             />
 
-            <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-zinc-800 focus-within:ring-2 focus-within:ring-accent border border-transparent dark:border-zinc-700 transition-all">
+            <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-gray-100 dark:bg-zinc-800 focus-within:ring-2 focus-within:ring-accent border border-transparent dark:border-zinc-700 transition-all">
               <input
                 ref={commentInputRef}
                 type="text"
@@ -1007,7 +1043,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 type="button"
                 onClick={handleSendComment}
                 disabled={!newCommentText.trim() || isSubmittingComment}
-                className="w-7 h-7 rounded-full bg-accent hover:bg-accent/90 disabled:opacity-30 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
+                className="w-7 h-7 rounded-[8px] bg-accent hover:bg-accent/90 disabled:opacity-30 text-white flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
                 title={isRtl ? 'إرسال (Enter)' : 'Send (Enter)'}
               >
                 {isSubmittingComment ? (
@@ -1026,29 +1062,29 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-[500] flex bg-black/95 select-none overflow-hidden"
+        className="fixed inset-0 z-[500] flex bg-white/95 dark:bg-black/95 select-none overflow-hidden"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
         {/* ========================================================================= */}
         {/* 1. MAIN STAGE: PHOTO / VIDEO DISPLAY AREA                                 */}
         {/* ========================================================================= */}
         <div
-          className="flex-1 h-full min-w-0 flex flex-col items-center justify-center relative overflow-hidden bg-black/95"
+          className="flex-1 h-full min-w-0 flex flex-col items-center justify-center relative overflow-hidden bg-white/95 dark:bg-black/95"
           onClick={onClose}
         >
           {/* Floating Top Bar (Controls & Tools) */}
           <div
-            className="absolute top-0 inset-x-0 z-40 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-auto"
+            className="absolute top-0 inset-x-0 z-40 flex items-center justify-between p-3 sm:p-4 bg-gradient-to-b from-white/90 via-white/50 dark:from-black/80 dark:via-black/40 to-transparent pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left Section (Controls) */}
-            <div className="flex items-center gap-1.5 sm:gap-2 text-white">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-900 dark:text-white">
               {/* Zoom Out (-) */}
               <button
                 type="button"
                 onClick={handleZoomOut}
                 disabled={zoom <= 1}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-30 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'تصغير (-)' : 'Zoom out (-)'}
               >
                 <ZoomOut size={17} />
@@ -1058,7 +1094,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="px-2.5 py-1 rounded-full bg-black/50 hover:bg-white/20 text-white text-xs font-mono font-bold flex items-center gap-1 border border-white/10 transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white text-xs font-mono font-bold flex items-center gap-1 border border-gray-200 dark:border-white/10 transition-colors cursor-pointer shadow-sm"
                 title={isRtl ? 'إعادة ضبط الحجم (0)' : 'Reset zoom (0)'}
               >
                 <RotateCcw size={12} />
@@ -1070,7 +1106,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 type="button"
                 onClick={handleZoomIn}
                 disabled={zoom >= 3}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-30 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'تكبير (+)' : 'Zoom in (+)'}
               >
                 <ZoomIn size={17} />
@@ -1080,7 +1116,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={handleRotate}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'تدوير الصورة 90° (R)' : 'Rotate 90° (R)'}
               >
                 <RotateCw size={16} />
@@ -1091,10 +1127,10 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 <button
                   type="button"
                   onClick={toggleSlideshow}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer border ${
+                  className={`w-9 h-9 rounded-[8px] flex items-center justify-center transition-colors cursor-pointer border shadow-sm ${
                     isSlideshowPlaying
-                      ? 'bg-amber-500/30 text-amber-300 border-amber-500/50'
-                      : 'bg-black/50 hover:bg-white/20 text-white border-white/10'
+                      ? 'bg-amber-500/30 text-amber-600 dark:text-amber-300 border-amber-500/50'
+                      : 'bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white border-gray-200 dark:border-white/10'
                   }`}
                   title={
                     isSlideshowPlaying
@@ -1110,7 +1146,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={() => toast.info(isRtl ? 'أداة الإشارة إلى الصور نشطة 🏷️' : 'Photo tag tool active 🏷️')}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'الإشارة إلى الأشخاص' : 'Tag photo'}
               >
                 <Tag size={16} />
@@ -1120,7 +1156,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'ملء الشاشة (F)' : 'Fullscreen (F)'}
               >
                 {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -1130,7 +1166,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={handleDownload}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'تنزيل الوسائط' : 'Download'}
               >
                 <Download size={16} />
@@ -1139,7 +1175,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
 
             {/* Center Section: Photo Counter Pill */}
             {totalCount > 1 && (
-              <div className="hidden sm:flex items-center px-3 py-1 rounded-full bg-black/60 text-white text-xs font-mono font-bold backdrop-blur-md border border-white/15 shadow-md">
+              <div className="hidden sm:flex items-center px-3 py-1 rounded-[8px] bg-white/90 dark:bg-black/60 text-gray-900 dark:text-white text-xs font-mono font-bold backdrop-blur-md border border-gray-200 dark:border-white/15 shadow-md">
                 {currentIndex + 1} / {totalCount}
               </div>
             )}
@@ -1150,7 +1186,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSidebar((prev) => !prev)}
-                className="hidden lg:flex w-9 h-9 rounded-full bg-black/50 hover:bg-white/20 text-white items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="hidden lg:flex w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-gray-100 dark:hover:bg-white/20 text-gray-900 dark:text-white items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={
                   showSidebar
                     ? isRtl ? 'إخفاء الشريط الجانبي' : 'Hide sidebar'
@@ -1168,7 +1204,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-9 h-9 rounded-full bg-black/50 hover:bg-rose-600/80 text-white flex items-center justify-center transition-colors cursor-pointer border border-white/10"
+                className="w-9 h-9 rounded-[8px] bg-white/90 dark:bg-black/50 hover:bg-rose-600/80 text-gray-900 dark:text-white hover:text-white flex items-center justify-center transition-colors cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm"
                 title={isRtl ? 'إغلاق (Esc)' : 'Close (Esc)'}
               >
                 <X size={18} />
@@ -1178,7 +1214,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
 
           {/* Desktop Floating Edge Dock (Exploiting screen margin for dedicated quick tools) */}
           <div
-            className={`hidden lg:flex flex-col items-center gap-1.5 absolute top-1/2 -translate-y-1/2 z-40 p-2 rounded-2xl bg-black/65 backdrop-blur-xl border border-white/15 shadow-2xl pointer-events-auto transition-all ${
+            className={`hidden lg:flex flex-col items-center gap-1.5 absolute top-1/2 -translate-y-1/2 z-40 p-2 rounded-2xl bg-white/90 dark:bg-black/65 backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-2xl pointer-events-auto transition-all ${
               isRtl ? 'right-4 xl:right-6' : 'left-4 xl:left-6'
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -1187,7 +1223,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
             <button
               type="button"
               onClick={handleRotate}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'تدوير الصورة 90 درجة (R)' : 'Rotate 90° (R)'}
             >
               <RotateCw size={17} />
@@ -1200,8 +1236,8 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 onClick={toggleSlideshow}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
                   isSlideshowPlaying
-                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 ring-1 ring-amber-400'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
+                    ? 'bg-amber-500/30 text-amber-600 dark:text-amber-300 border border-amber-500/50 ring-1 ring-amber-400'
+                    : 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white'
                 }`}
                 title={
                   isSlideshowPlaying
@@ -1213,14 +1249,14 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               </button>
             )}
 
-            <div className="w-6 h-px bg-white/15 my-0.5" />
+            <div className="w-6 h-px bg-gray-200 dark:bg-white/15 my-0.5" />
 
             {/* Zoom In (+) */}
             <button
               type="button"
               onClick={handleZoomIn}
               disabled={zoom >= 3}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-30 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'تكبير (+)' : 'Zoom in (+)'}
             >
               <ZoomIn size={17} />
@@ -1230,7 +1266,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
             <button
               type="button"
               onClick={handleResetZoom}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer text-[10px] font-mono font-bold"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer text-[10px] font-mono font-bold"
               title={isRtl ? 'إعادة ضبط الحجم (0)' : 'Reset zoom (0)'}
             >
               <RotateCcw size={13} className="mb-0.5" />
@@ -1242,19 +1278,19 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               type="button"
               onClick={handleZoomOut}
               disabled={zoom <= 1}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-30 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'تصغير (-)' : 'Zoom out (-)'}
             >
               <ZoomOut size={17} />
             </button>
 
-            <div className="w-6 h-px bg-white/15 my-0.5" />
+            <div className="w-6 h-px bg-gray-200 dark:bg-white/15 my-0.5" />
 
             {/* Download */}
             <button
               type="button"
               onClick={handleDownload}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'تنزيل الوسائط' : 'Download media'}
             >
               <Download size={17} />
@@ -1263,11 +1299,8 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
             {/* Share */}
             <button
               type="button"
-              onClick={() => {
-                if (ad && onShare) onShare(ad);
-                else setIsShareModalOpen(true);
-              }}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              onClick={handleDirectShare}
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'مشاركة' : 'Share'}
             >
               <Share2 size={17} />
@@ -1277,7 +1310,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title={isRtl ? 'ملء الشاشة (F)' : 'Fullscreen (F)'}
             >
               {isFullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
@@ -1288,7 +1321,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
               type="button"
               onClick={() => setShowSidebar((prev) => !prev)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ${
-                showSidebar ? 'bg-accent text-white shadow-md' : 'bg-white/10 hover:bg-white/20 text-white'
+                showSidebar ? 'bg-accent text-white shadow-md' : 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white'
               }`}
               title={
                 showSidebar
@@ -1313,7 +1346,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 if (isRtl) handleNext();
                 else handlePrev();
               }}
-              className={`absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/20 shadow-2xl pointer-events-auto hover:scale-110 active:scale-95 ${
+              className={`absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-[8px] bg-white/90 dark:bg-black/60 hover:bg-white dark:hover:bg-black/90 text-gray-900 dark:text-white flex items-center justify-center transition-all cursor-pointer border border-gray-200 dark:border-white/20 shadow-2xl pointer-events-auto hover:scale-110 active:scale-95 ${
                 !isRtl ? 'lg:left-22 xl:left-24' : ''
               }`}
               title={isRtl ? 'التالي' : 'Previous'}
@@ -1331,7 +1364,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 if (isRtl) handlePrev();
                 else handleNext();
               }}
-              className={`absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition-all cursor-pointer border border-white/20 shadow-2xl pointer-events-auto hover:scale-110 active:scale-95 ${
+              className={`absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-[8px] bg-white/90 dark:bg-black/60 hover:bg-white dark:hover:bg-black/90 text-gray-900 dark:text-white flex items-center justify-center transition-all cursor-pointer border border-gray-200 dark:border-white/20 shadow-2xl pointer-events-auto hover:scale-110 active:scale-95 ${
                 isRtl ? 'lg:right-22 xl:right-24' : ''
               }`}
               title={isRtl ? 'السابق' : 'Next'}
@@ -1438,11 +1471,11 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
             <button
               type="button"
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="px-4 py-2 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-2xl flex items-center gap-2 cursor-pointer transition-transform active:scale-95"
+              className="px-4 py-2 rounded-[8px] bg-black/80 hover:bg-black text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-2xl flex items-center gap-2 cursor-pointer transition-transform active:scale-95"
             >
               <MessageSquare size={15} />
               <span>{isRtl ? 'التعليقات والتفاصيل' : 'Comments & Details'}</span>
-              <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-mono">
+              <span className="px-1.5 py-0.5 rounded-[6px] bg-white/20 text-[10px] font-mono">
                 {commentsCount}
               </span>
             </button>
@@ -1479,158 +1512,12 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Pull handle */}
-                <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-zinc-700 mx-auto mt-2.5 mb-1 shrink-0" />
+                <div className="w-12 h-1.5 rounded-[4px] bg-gray-300 dark:bg-zinc-700 mx-auto mt-2.5 mb-1 shrink-0" />
                 <div className="flex-1 min-h-0 overflow-hidden">
                   {renderSidebarContent()}
                 </div>
               </motion.div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ========================================================================= */}
-        {/* 4. FACEBOOK SHARE MODAL (As shown in video at 00:50)                      */}
-        {/* ========================================================================= */}
-        <AnimatePresence>
-          {isShareModalOpen && (
-            <div
-              className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
-              onClick={() => setIsShareModalOpen(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-2xl overflow-hidden text-gray-900 dark:text-gray-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header */}
-                <div className="px-4 py-3.5 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm">{isRtl ? 'مشاركة المنشور' : 'Share Post'}</h3>
-                  <button
-                    type="button"
-                    onClick={() => setIsShareModalOpen(false)}
-                    className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center text-gray-500 cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="p-4 space-y-3.5">
-                  {/* User Profile info */}
-                  <div className="flex items-center gap-2.5">
-                    <BulletinAvatar
-                      src={user?.avatar}
-                      alt={user?.name || ''}
-                      size="sm"
-                      fallbackText={user?.name || user?.email}
-                    />
-                    <div>
-                      <span className="font-bold text-xs block text-gray-900 dark:text-white">
-                        {user?.name || (isRtl ? 'المستخدم' : 'User')}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-[10px] text-gray-500 font-medium">
-                        <Globe size={10} />
-                        <span>{isRtl ? 'الموجز • العامة' : 'Feed • Public'}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Input area */}
-                  <textarea
-                    value={shareText}
-                    onChange={(e) => setShareText(e.target.value)}
-                    placeholder={isRtl ? 'قل شيئاً عن هذا المنشور...' : 'Say something about this post...'}
-                    rows={3}
-                    className="w-full p-3 rounded-xl bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 text-xs focus:outline-none focus:ring-2 focus:ring-accent resize-none placeholder:text-gray-400"
-                  />
-
-                  {/* Primary Share Now Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (ad) {
-                        fetch(`/api/bulletin/ads/${ad.id}/share`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            sender_id: user?.id,
-                            sharer_name: user?.name || user?.email,
-                            message: shareText
-                          })
-                        }).catch(() => {});
-                      }
-                      setIsShareModalOpen(false);
-                      setShareText('');
-                      toast.success(isRtl ? 'تمت مشاركة المنشور بنجاح! 🎉' : 'Post shared successfully! 🎉');
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
-                  >
-                    {isRtl ? 'مشاركة الآن' : 'Share Now'}
-                  </button>
-
-                  <div className="border-t border-gray-100 dark:border-zinc-800 pt-3">
-                    <span className="text-[11px] font-bold text-gray-500 block mb-2">
-                      {isRtl ? 'مشاركة عبر التطبيقات:' : 'Share via apps:'}
-                    </span>
-                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium">
-                      {/* WhatsApp */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!ad) return;
-                          const url = encodeURIComponent(`${window.location.origin}/bulletin?ad=${ad.id}`);
-                          window.open(`https://wa.me/?text=${url}`, '_blank');
-                        }}
-                        className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex flex-col items-center gap-1 hover:opacity-85 transition-opacity cursor-pointer"
-                      >
-                        <Share2 size={16} />
-                        <span>واتساب</span>
-                      </button>
-
-                      {/* Facebook */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!ad) return;
-                          const url = encodeURIComponent(`${window.location.origin}/bulletin?ad=${ad.id}`);
-                          window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
-                        }}
-                        className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex flex-col items-center gap-1 hover:opacity-85 transition-opacity cursor-pointer"
-                      >
-                        <Globe size={16} />
-                        <span>فيسبوك</span>
-                      </button>
-
-                      {/* Copy Link */}
-                      <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="p-2.5 rounded-xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 flex flex-col items-center gap-1 hover:opacity-85 transition-opacity cursor-pointer"
-                      >
-                        {isCopiedLink ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                        <span>{isCopiedLink ? (isRtl ? 'تم النسخ' : 'Copied') : (isRtl ? 'نسخ الرابط' : 'Copy link')}</span>
-                      </button>
-
-                      {/* Telegram / Direct */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!ad) return;
-                          const url = encodeURIComponent(`${window.location.origin}/bulletin?ad=${ad.id}`);
-                          window.open(`https://t.me/share/url?url=${url}`, '_blank');
-                        }}
-                        className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 flex flex-col items-center gap-1 hover:opacity-85 transition-opacity cursor-pointer"
-                      >
-                        <Send size={16} />
-                        <span>تيليجرام</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
           )}
         </AnimatePresence>
       </div>

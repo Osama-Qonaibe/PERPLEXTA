@@ -166,7 +166,7 @@ export const MarketplacePortfolio: React.FC = () => {
   if (loading) {
     return (
       <div className="h-64 flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded-full border-t-2 border-accent animate-spin" />
+        <div className="w-8 h-8 rounded-[4px] border-t-2 border-accent animate-spin" />
         <span className="text-xs text-[var(--text-muted)]">
           {isRtl ? 'جاري تحميل المعاملات والمنتجات...' : 'Loading portfolio and affiliate assets...'}
         </span>
@@ -364,7 +364,7 @@ export const MarketplacePortfolio: React.FC = () => {
                     {formatCurrency(affStats.total_earned)}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center text-accent shadow-md">
+                <div className="w-12 h-12 bg-accent/10 rounded-[4px] flex items-center justify-center text-accent shadow-md">
                   <DollarSign size={22} />
                 </div>
               </div>
@@ -378,7 +378,7 @@ export const MarketplacePortfolio: React.FC = () => {
                     {affStats.total_referral_sales || 0}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-400 shadow-md">
+                <div className="w-12 h-12 bg-amber-500/10 rounded-[4px] flex items-center justify-center text-amber-400 shadow-md">
                   <ShoppingBag size={22} />
                 </div>
               </div>

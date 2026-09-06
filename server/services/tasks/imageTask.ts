@@ -14,6 +14,8 @@ import {
 } from './utils.js';
 import { GoogleGenAI } from "@google/genai";
 import { getEconomySettings } from '../wallet.js';
+import { getCachedGpuProviders } from '../gpuVaultService.js';
+import { dispatchGpuTask } from '../gpu/gpuTaskDispatcher.js';
 
 import type { TaskExecutionContext } from '../orchestratorRegistry.js';
 
@@ -184,6 +186,81 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
     });
   }
 
+  // Auto-translate Arabic prompts to descriptive English using Gemini API
+  const containsArabic = /[\u0600-\u06FF]/.test(finalPrompt);
+  if (containsArabic && process.env.GEMINI_API_KEY) {
+    if (io) {
+      io.to(`user_${userId}`).emit('image_progress', {
+        progress: 15,
+        status: 'translating',
+        status_ar: 'جاري ترجمة وتحسين المطلب الفني إلى الإنجليزية بدقة...',
+        status_en: 'Translating and optimizing prompt to descriptive English...'
+      });
+    }
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      
+      // Dynamically resolve translation model from orchestrator or vault
+      let modelToUse = process.env.GEMINI_MODEL_ID;
+      try {
+        const { getCachedOrchestratorConfig } = await import('../../db/queries.js');
+        const fastOrch = (await getCachedOrchestratorConfig('chat_fast')) || (await getCachedOrchestratorConfig('chat'));
+        if (fastOrch?.primary_model) {
+          modelToUse = fastOrch.primary_model;
+        } else {
+          const vaultRes = await pool.query("SELECT models FROM api_keys_vault WHERE provider IN ('google', 'gemini') AND is_active = true LIMIT 1");
+          if (vaultRes.rows.length > 0) {
+            const models = vaultRes.rows[0].models;
+            if (Array.isArray(models) && models.length > 0) {
+              const firstModel = models[0];
+              modelToUse = typeof firstModel === 'string' ? firstModel : (firstModel.id || firstModel.name);
+            }
+          }
+        }
+        if (modelToUse && modelToUse.startsWith('models/')) modelToUse = modelToUse.substring(7);
+      } catch (vaultErr) {
+        console.warn('[Image Prompt Translator] Model lookup failed.');
+      }
+
+      if (!modelToUse) {
+        throw new Error('No active Gemini/Google model found in vault for prompt translation.');
+      }
+
+      const aiObj = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY!,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build'
+          }
+        }
+      });
+      const translationResponse = await withTimeout(
+        () => aiObj.models.generateContent({
+          model: modelToUse,
+          contents: `You are an expert prompt translator and optimizer. 
+Translate the following Arabic image prompt into a highly descriptive, professional English prompt optimized for state-of-the-art image generation models (like Stable Diffusion XL, Midjourney, or Flux).
+Focus on translating the exact core details, lighting, mood, colors, and subject accurately into descriptive English. Ensure the core subject remains intact (for example: if the user asks for scenery, nature, flowers, generate beautiful nature and do not add people or objects not requested).
+Do not add conversational text, commentary, or introduction. Return ONLY the translated/enhanced English prompt.
+
+Arabic Prompt: "${finalPrompt}"`,
+          config: {
+            maxOutputTokens: 250,
+            temperature: 0.2
+          }
+        }),
+        4500,
+        'ImagePromptTranslation'
+      );
+      const resultText = translationResponse.text?.trim();
+      if (resultText) {
+        console.log(`[Image Prompt Translator] Translated: "${finalPrompt}" -> "${resultText}"`);
+        finalPrompt = resultText;
+      }
+    } catch (err: any) {
+      console.warn('[Image Prompt Translator] Failed to translate/optimize prompt:', err.message);
+    }
+  }
+
   const imageSettings = reqBody.image_settings || {};
   const selectedRatio = String(imageSettings.aspectRatio || '1:1');
 
@@ -288,6 +365,33 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
     console.log(`[Image Orchestrator] Processing Route Pathway [${target.label}]: ${providerId} - ${modelToUse}`);
 
+    // Intercept and route if target is a sovereign GPU Infrastructure node
+    const gpuMap = await getCachedGpuProviders();
+    const isGpuProvider = gpuMap.has(providerId) || Array.from(gpuMap.keys()).some(k => k.toLowerCase() === providerId);
+
+    if (isGpuProvider) {
+      console.log(`[Image Orchestrator] Routing target to Unified GpuTaskDispatcher: ${providerId} - ${modelToUse}`);
+      try {
+        const gpuRes = await dispatchGpuTask({
+          userId,
+          taskType: 'image_gen',
+          prompt: finalPrompt,
+          imageSettings,
+          preferredProviderId: providerId,
+          preferredModelId: modelToUse
+        });
+        if (gpuRes.mediaUrl) {
+          imageUrl = gpuRes.mediaUrl;
+          successfulProvider = gpuRes.providerId;
+          successfulModel = gpuRes.modelId;
+          break;
+        }
+      } catch (gpuErr: any) {
+        console.warn(`[Image Orchestrator] GPU task dispatch failed for ${providerId}:`, gpuErr.message);
+        continue;
+      }
+    }
+
     const vaultConfig = vaultMap.get(providerId);
 
     const validation = await validateProviderCapacity(
@@ -339,8 +443,8 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
       } else if (providerId === 'openai') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
         const size =
-          aspectRatio === '16:9' ? '1792x1024' :
-          aspectRatio === '9:16' ? '1024x1792' :
+          (aspectRatio === '16:9' || aspectRatio === '3:2' || aspectRatio === '4:3' || aspectRatio === '21:9') ? '1792x1024' :
+          (aspectRatio === '9:16' || aspectRatio === '2:3' || aspectRatio === '3:4') ? '1024x1792' :
           '1024x1024';
         const quality = imageSettings.quality === 'Ultra' ? 'hd' : 'standard';
         const style = imageSettings.style === 'واقعي' || imageSettings.style === 'Realistic' ? 'natural' : 'vivid';
@@ -444,6 +548,10 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
 
       } else if (providerId === 'google' || providerId === 'gemini') {
         const aspectRatio = imageSettings.aspectRatio || '1:1';
+        let geminiRatio = aspectRatio;
+        if (aspectRatio === '3:2') geminiRatio = '16:9';
+        else if (aspectRatio === '2:3') geminiRatio = '9:16';
+        else if (aspectRatio === '21:9') geminiRatio = '16:9';
         let cleanModel = modelToUse || '';
         
         if (!cleanModel || cleanModel === 'default') {
@@ -470,7 +578,7 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
             config: {
               numberOfImages: 1,
               outputMimeType: 'image/jpeg',
-              aspectRatio: aspectRatio as any
+              aspectRatio: geminiRatio as any
             }
           }),
           IMG_TIMEOUT_MS,
@@ -574,10 +682,17 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
       }
 
       if (imageUrl) {
-        successfulProvider = providerId;
-        successfulModel = modelToUse;
-        console.log(`[Image Orchestrator] Target [${target.label}] (${providerId}) generated successfully!`);
-        break;
+        try {
+          const diskSavedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
+          imageUrl = diskSavedUrl;
+          successfulProvider = providerId;
+          successfulModel = modelToUse;
+          console.log(`[Image Orchestrator] Target [${target.label}] (${providerId}) generated and validated on disk as ${diskSavedUrl}!`);
+          break;
+        } catch (saveErr: any) {
+          console.warn(`[Image Orchestrator] Target [${target.label}] (${providerId}) image payload validation/disk save failed: ${saveErr.message}. Transitioning to next provider...`);
+          imageUrl = '';
+        }
       }
     } catch (err: any) {
       console.warn(`[Image Orchestrator] Target [${target.label}] (${providerId}) failed. Transitioning...`, err.message);
@@ -603,11 +718,6 @@ export async function executeImageTask(ctx: TaskExecutionContext): Promise<{ res
   }
 
   let savedUrl = imageUrl;
-  try {
-    savedUrl = await saveGeneratedImageToDisk(String(userId), imageUrl);
-  } catch (saveErr: any) {
-    console.warn('[Image Task] Silent warning: failed to save image locally, fallback to original or base64 URL.', saveErr.message);
-  }
 
   try {
     const settings = await getEconomySettings();

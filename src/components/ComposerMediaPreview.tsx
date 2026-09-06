@@ -48,7 +48,7 @@ export const ComposerMediaPreview: React.FC<ComposerMediaPreviewProps> = ({
             />
             {/* Play Badge Overlay */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-              <div className="w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-xs border border-white/20 shadow-md">
+              <div className="w-10 h-10 rounded-[4px] bg-black/60 text-white flex items-center justify-center backdrop-blur-xs border border-white/20 shadow-md">
                 <Play size={18} className="fill-white translate-x-0.5" />
               </div>
             </div>
@@ -151,14 +151,14 @@ export const ComposerMediaPreview: React.FC<ComposerMediaPreviewProps> = ({
           <button
             type="button"
             onClick={onOpenMediaManager}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 text-gray-800 dark:text-gray-100 text-xs font-bold shadow-md backdrop-blur-md border border-gray-200/60 dark:border-zinc-700/60 transition-all cursor-pointer hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-white/95 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 text-gray-800 dark:text-gray-100 text-xs font-bold shadow-md backdrop-blur-md border border-gray-200/60 dark:border-zinc-700/60 transition-all cursor-pointer hover:scale-[1.02]"
             title={isRtl ? 'تعديل الصور والفيديوهات وإضافة شرح توضيحي' : 'Edit photos & videos'}
           >
             <Edit3 size={13} className="text-indigo-600 dark:text-indigo-400" />
             <span>{isRtl ? 'تعديل الكل' : 'Edit All'}</span>
           </button>
 
-          <span className="px-2.5 py-1 rounded-full bg-black/60 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
+          <span className="px-2.5 py-1 rounded-[4px] bg-black/60 text-white text-[11px] font-bold backdrop-blur-md shadow-xs">
             {totalCount} {isRtl ? (totalCount === 1 ? 'عنصر' : 'عناصر') : (totalCount === 1 ? 'item' : 'items')}
           </span>
         </div>
@@ -168,7 +168,7 @@ export const ComposerMediaPreview: React.FC<ComposerMediaPreviewProps> = ({
           <button
             type="button"
             onClick={onAddMoreClick}
-            className="p-1.5 rounded-full bg-white/90 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-200 text-xs shadow-md backdrop-blur-md border border-gray-200/60 dark:border-zinc-700/60 transition-all cursor-pointer"
+            className="p-1.5 rounded-[4px] bg-white/90 dark:bg-zinc-900/90 hover:bg-white dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-200 text-xs shadow-md backdrop-blur-md border border-gray-200/60 dark:border-zinc-700/60 transition-all cursor-pointer"
             title={isRtl ? 'إضافة المزيد من الوسائط' : 'Add more media'}
           >
             <Plus size={15} />
@@ -177,7 +177,7 @@ export const ComposerMediaPreview: React.FC<ComposerMediaPreviewProps> = ({
           <button
             type="button"
             onClick={onClearAll}
-            className="p-1.5 rounded-full bg-black/60 hover:bg-red-600 text-white shadow-md backdrop-blur-md transition-all cursor-pointer"
+            className="p-1.5 rounded-[4px] bg-black/60 hover:bg-red-600 text-white shadow-md backdrop-blur-md transition-all cursor-pointer"
             title={isRtl ? 'حذف جميع الوسائط المرفوعة' : 'Clear all media'}
           >
             <X size={15} />

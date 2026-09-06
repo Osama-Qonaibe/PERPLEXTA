@@ -522,7 +522,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                     </td>
 
                     <td className="p-3 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                      <span className={`px-2.5 py-1 rounded-[6px] text-[10px] font-black ${
                         ad.status === 'approved'
                           ? 'bg-accent/10 text-accent'
                           : ad.status === 'pending'

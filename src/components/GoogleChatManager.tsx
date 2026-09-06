@@ -277,7 +277,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
     <div className="space-y-6" dir={dir}>
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-500/10 via-gray-900 to-gray-950 border border-accent/20 p-6 shadow-xl">
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-accent/10 rounded-[4px] blur-3xl pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-inner">
@@ -288,7 +288,7 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
                 <h3 className="text-xl font-bold text-white tracking-wide">
                   {isAr ? 'تكامل Google Chat' : 'Google Chat Integration'}
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/20 text-accent border border-accent/30">
+                <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-semibold bg-accent/20 text-accent border border-accent/30">
                   {isAr ? 'نشط' : 'API Active'}
                 </span>
               </div>
@@ -314,9 +314,9 @@ export const GoogleChatManager: React.FC<GoogleChatProps> = ({ dir, theme }) => 
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/80 border border-gray-700">
                   {googleUser?.photoURL ? (
-                    <img src={googleUser.photoURL} alt="Avatar" className="w-6 h-6 rounded-full object-cover" />
+                    <img src={googleUser.photoURL} alt="Avatar" className="w-6 h-6 rounded-[4px] object-cover" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-bold">
+                    <div className="w-6 h-6 rounded-[4px] bg-accent/20 text-accent flex items-center justify-center text-xs font-bold">
                       {googleUser?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
                   )}

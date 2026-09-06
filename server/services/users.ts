@@ -473,3 +473,76 @@ export async function updateUserProfile(userId: string | number, data: any) {
 
   return await getUserProfile(userIdStr);
 }
+
+export async function getUserMediaPreferences(userId: number | string) {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_media_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        media_type VARCHAR(50) NOT NULL,
+        aspect_ratio VARCHAR(20) NOT NULL DEFAULT '16:9',
+        settings JSONB DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT uq_user_media_preferences UNIQUE (user_id, media_type)
+      )
+    `);
+
+    const res = await pool.query(
+      `SELECT media_type, aspect_ratio, settings, updated_at 
+       FROM user_media_preferences 
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+    const prefs: Record<string, { aspectRatio: string; settings: any; updatedAt: string }> = {};
+    for (const row of res.rows) {
+      prefs[row.media_type] = {
+        aspectRatio: row.aspect_ratio,
+        settings: row.settings || {},
+        updatedAt: row.updated_at
+      };
+    }
+    return prefs;
+  } catch (err: any) {
+    console.error('[getUserMediaPreferences] Error fetching preferences:', err.message);
+    return {};
+  }
+}
+
+export async function saveUserMediaPreference(
+  userId: number | string, 
+  mediaType: string, 
+  aspectRatio: string, 
+  settings: any = {}
+) {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_media_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        media_type VARCHAR(50) NOT NULL,
+        aspect_ratio VARCHAR(20) NOT NULL DEFAULT '16:9',
+        settings JSONB DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT uq_user_media_preferences UNIQUE (user_id, media_type)
+      )
+    `);
+
+    const res = await pool.query(
+      `INSERT INTO user_media_preferences (user_id, media_type, aspect_ratio, settings, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, media_type)
+       DO UPDATE SET 
+         aspect_ratio = EXCLUDED.aspect_ratio,
+         settings = EXCLUDED.settings,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING media_type, aspect_ratio, settings, updated_at`,
+      [userId, mediaType, aspectRatio, typeof settings === 'object' ? JSON.stringify(settings) : '{}']
+    );
+    return res.rows[0];
+  } catch (err: any) {
+    console.error('[saveUserMediaPreference] Error saving media preference:', err.message);
+    throw err;
+  }
+}

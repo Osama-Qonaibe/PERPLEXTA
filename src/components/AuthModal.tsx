@@ -1,15 +1,17 @@
 import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, Loader2, Sparkles } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { usePerplextaRouter } from '../hooks/usePerplextaRouter';
 import { useAppContext } from '../context/AppContext';
+import { isGoogleAuthHidden } from '../utils/sectionVisibility';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSwipeToClose } from '../utils/swipe';
 
 export const AuthModal: React.FC = () => {
-  const { t, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user } = useAppContext();
+  const { t, dir, isAuthModalOpen, setIsAuthModalOpen, loginWithGoogle, login, signup, rememberMe, setRememberMe, user, siteSettings } = useAppContext();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const { navigate } = usePerplextaRouter();
   const ref = searchParams.get('ref') || safeStorageGet('app_ref') || undefined;
   
   const swipeHandlers = useSwipeToClose({
@@ -128,7 +130,7 @@ export const AuthModal: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Background Accent */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent rounded-full" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent rounded-[4px]" />
             
             <button 
               onClick={handleClose}
@@ -144,16 +146,30 @@ export const AuthModal: React.FC = () => {
               </h2>
             </div>
 
-        {error && (
-          <div className="mb-1.5 p-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] md:text-xs text-center">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-1.5 p-1.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[10px] md:text-xs text-center">
-            {success}
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {error && (
+            <motion.div
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginBottom: 6 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+              className="p-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] md:text-xs text-center overflow-hidden"
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence initial={false}>
+          {success && (
+            <motion.div
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginBottom: 6 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+              className="p-1.5 rounded-md bg-accent/10 border border-accent/20 text-accent text-[10px] md:text-xs text-center overflow-hidden"
+            >
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-1.5">
           <div>
@@ -266,7 +282,7 @@ export const AuthModal: React.FC = () => {
               )}
             </motion.button>
 
-            {mode !== 'forgot-password' && (
+            {mode !== 'forgot-password' && !isGoogleAuthHidden(siteSettings?.blocked_paths, typeof window !== 'undefined' && window.innerWidth < 1024) && (
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}

@@ -23,6 +23,13 @@ export interface ApiKeysVaultViewProps {
   showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
+export interface GpuInfrastructureViewProps {
+  theme: string;
+  t: (key: string, replacements?: any) => string;
+  dir: string;
+  showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+}
+
 export interface DatabaseOrchestrationViewProps {
   theme: string;
   t: (key: string, replacements?: any) => string;
@@ -34,8 +41,9 @@ export interface OrchestratorViewProps {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
-  providerModels: Record<string, string[]>;
+  providerModels: Record<string, any[]>;
   showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+  onRefreshModels?: () => Promise<void> | void;
 }
 
 export interface FinanceVaultViewProps {

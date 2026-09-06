@@ -244,14 +244,20 @@ export async function syncProviderModelsInternal(providerId: string, apiKey: str
                 console.error(`[SyncCustom] Error fetching models from ${cleanUrl}:`, err);
             }
         }
-
-        if (models.length === 0) {
-            models = [
-                { id: 'custom-model', name: 'Custom Standard Model' },
-                { id: 'custom-large', name: 'Custom Advanced Model' }
-            ];
-        }
     }
+
+    // Deduplicate models strictly by unique model ID to ensure consistency and prevent duplicates
+    const seenModelIds = new Set<string>();
+    const uniqueModels: any[] = [];
+    for (const m of models) {
+      const modelId = typeof m === 'string' ? m : (m?.id || m?.name || '');
+      if (modelId && !seenModelIds.has(modelId)) {
+        seenModelIds.add(modelId);
+        const modelName = typeof m === 'string' ? m : (m?.name || m?.id || modelId);
+        uniqueModels.push(typeof m === 'string' ? { id: modelId, name: modelName } : { ...m, id: modelId, name: modelName });
+      }
+    }
+    models = uniqueModels;
     count = models.length;
 
     if (count > 0) {
@@ -691,10 +697,19 @@ export async function callAIProvider(
 
   if (cleanModel.includes('/') && !cleanModel.startsWith('models/')) {
     const parts = cleanModel.split('/');
-    if (parts[0].toLowerCase() === normProvider || parts[0].toLowerCase() === 'google' || parts[0].toLowerCase() === 'openai') {
-      cleanModel = parts.slice(1).join('/');
+    if (normProvider === 'google' || normProvider === 'gemini' || normProvider === 'openai' || normProvider === 'anthropic') {
+      if (parts[0].toLowerCase() === normProvider || parts[0].toLowerCase() === 'google' || parts[0].toLowerCase() === 'openai' || parts[0].toLowerCase() === 'anthropic') {
+        cleanModel = parts.slice(1).join('/');
+      }
+    } else if (normProvider === 'groq') {
+      // Groq uses publisher namespace prefixes like openai/gpt-oss-120b or qwen/qwen3.8-27b
+      if (parts[0].toLowerCase() === 'groq' && parts.length === 2 && (parts[1].startsWith('llama3-') || parts[1].startsWith('mixtral-'))) {
+        cleanModel = parts[1];
+      }
     }
   }
+
+  // Dynamic configuration is loaded completely from the database-driven tool orchestrator registry.
 
   const messages: any[] = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
@@ -944,6 +959,8 @@ export async function callAIProvider(
   }
 
   let res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+
+  // Failures or model-not-found errors bubble up naturally to be resolved dynamically by the Orchestrator fallback registry configurations.
 
   if (!res.ok && (normProvider.includes('google') || normProvider.includes('gemini'))) {
     try {

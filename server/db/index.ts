@@ -43,6 +43,13 @@ export let ledgerPool: any;
 export let externalPool: any;
 export let securityPool: any;
 
+export function getDatabasePool(poolName: 'core' | 'ledger' | 'external' | 'security' = 'core') {
+  if (poolName === 'ledger') return ledgerPool || pool;
+  if (poolName === 'external') return externalPool || pool;
+  if (poolName === 'security') return securityPool || pool;
+  return pool;
+}
+
 let currentCoreUrl     = '';
 let currentLedgerUrl   = '';
 let currentExternalUrl = '';
@@ -541,6 +548,21 @@ export async function synchronizePerplextaPoolsFromRegistry() {
       }
     }
 
+    const coreMax     = Number(coreReg?.pool_size)     || envSizes.coreMax;
+    const ledgerMax   = Number(ledgerReg?.pool_size)   || envSizes.ledgerMax;
+    const externalMax = Number(externalReg?.pool_size) || envSizes.externalMax;
+    const securityMax = Number(securityReg?.pool_size) || envSizes.securityMax;
+
+    if (
+      coreUrl     === currentCoreUrl     && ledgerRaw   === currentLedgerUrl   &&
+      externalRaw === currentExternalUrl && securityRaw === currentSecurityUrl &&
+      coreMax     === currentCoreMax     && ledgerMax   === currentLedgerMax   &&
+      externalMax === currentExternalMax && securityMax === currentSecurityMax
+    ) {
+      console.log('[DB] In-memory pools already match active registry configuration.');
+      return;
+    }
+
     const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
       if (!url || url === coreUrl) return coreUrl;
       let p: any = null;
@@ -564,11 +586,6 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     const ledgerUrl   = await testAndResolveUrl('ledger', ledgerRaw, defaultLedger);
     const externalUrl = await testAndResolveUrl('external', externalRaw, defaultExternal);
     const securityUrl = await testAndResolveUrl('security', securityRaw, defaultSecurity);
-
-    const coreMax     = Number(coreReg?.pool_size)     || envSizes.coreMax;
-    const ledgerMax   = Number(ledgerReg?.pool_size)   || envSizes.ledgerMax;
-    const externalMax = Number(externalReg?.pool_size) || envSizes.externalMax;
-    const securityMax = Number(securityReg?.pool_size) || envSizes.securityMax;
 
     if (
       coreUrl     === currentCoreUrl     && ledgerUrl   === currentLedgerUrl   &&
@@ -725,6 +742,76 @@ export async function forceReconnectPool(poolName: 'core' | 'ledger' | 'external
 }
 
 let healthCheckInterval: NodeJS.Timeout | null = null;
+let poolSaturationGuardianInterval: NodeJS.Timeout | null = null;
+
+export async function cleanupAbandonedConnections(poolInstance: any, poolName: string): Promise<number> {
+  if (!poolInstance) return 0;
+  try {
+    // Aggressive stale-connection-reaper for orphaned or idle-in-transaction connections > 60 seconds
+    const res = await poolInstance.query(`
+      SELECT pg_terminate_backend(pid) 
+      FROM pg_stat_activity 
+      WHERE datname = current_database() 
+        AND pid <> pg_backend_pid()
+        AND (
+          state = 'idle in transaction' 
+          OR state = 'idle in transaction (aborted)'
+        )
+        AND state_change < current_timestamp - interval '60 seconds'
+    `).catch(() => null);
+
+    if (res && res.rowCount > 0) {
+      console.warn(`[Stale-Connection-Reaper] ⚡ Terminated ${res.rowCount} orphaned/lingering >60s connections on pool '${poolName}' during high-concurrency spike.`);
+      if (typeof poolInstance.emit === 'function') {
+        poolInstance.emit('pool_saturation_event', {
+          poolName,
+          terminatedCount: res.rowCount,
+          triggeredAt: new Date().toISOString(),
+          metrics: getPoolMetrics(poolInstance, poolName)
+        });
+      }
+      return res.rowCount;
+    }
+    return 0;
+  } catch (err: any) {
+    // Non-fatal if lacking superuser permissions on certain hosted database managed plans
+    return 0;
+  }
+}
+
+export function startPoolSaturationGuardian(intervalMs = 60000) {
+  if (poolSaturationGuardianInterval) return;
+  poolSaturationGuardianInterval = setInterval(async () => {
+    const poolsToCheck: Array<{ name: 'core' | 'ledger' | 'external' | 'security'; poolInstance: any }> = [
+      { name: 'core', poolInstance: pool },
+      { name: 'ledger', poolInstance: ledgerPool },
+      { name: 'external', poolInstance: externalPool },
+      { name: 'security', poolInstance: securityPool },
+    ];
+
+    for (const { name, poolInstance } of poolsToCheck) {
+      if (!poolInstance) continue;
+
+      // 1. Terminate abandoned or hanging connections
+      await cleanupAbandonedConnections(poolInstance, name);
+
+      // 2. Analyze pool metrics for saturation or leaks
+      const metrics = getPoolMetrics(poolInstance, name);
+      if (metrics.waiting > 10 || (metrics.connection_leak_risk && metrics.waiting > 2)) {
+        console.warn(`[Pool Guardian] ⚠️ Pool '${name}' saturation detected (waiting: ${metrics.waiting}, active: ${metrics.active}/${metrics.max}). Initiating emergency pool recycling...`);
+        try {
+          await forceReconnectPool(name);
+        } catch (reconnectErr: any) {
+          console.error(`[Pool Guardian] Failed to recycle pool '${name}':`, reconnectErr?.message || reconnectErr);
+        }
+      }
+    }
+  }, intervalMs);
+
+  if (typeof poolSaturationGuardianInterval.unref === 'function') {
+    poolSaturationGuardianInterval.unref();
+  }
+}
 
 export function startConnectionHealthCheck(intervalMs = 60000) {
   if (healthCheckInterval) return;

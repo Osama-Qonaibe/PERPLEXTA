@@ -58,6 +58,7 @@ export const CORE_TABLES = [
   'ad_pricing_audit',
   'ad_stats',
   'route_seo_metadata',
+  'seo_metadata',
   'db_connections_registry'
 ];
 

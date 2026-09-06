@@ -902,6 +902,11 @@ export const ApiKeysVaultView = ({
                         Trusted
                       </motion.div>
                     )}
+                    {providerModels[provider.id] && providerModels[provider.id].length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-xs bg-sky-500/10 text-sky-500 text-[8px] font-black uppercase tracking-widest border border-sky-500/20">
+                        {providerModels[provider.id].length} {language === "ar" ? "موديل" : "Models"}
+                      </span>
+                    )}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div

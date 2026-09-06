@@ -78,6 +78,8 @@ export const extractFollowUpsClient = (text: string): { cleanText: string; follo
       .replace(FOLLOW_UP_PATTERN, '')
       .replace(/<extracted_memory[^>]*>[\s\S]*?<\/extracted_memory>/gi, '')
       .replace(/<extracted_memory[^>]*>[\s\S]*$/gi, '')
+      .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?تنبيه:?(?:\*\*)?[\s\S]*?(?:48\s*ساعة|48\s*hours)[\s\S]*?(?=\n\n|$)/gi, '')
+      .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?Notice:?(?:\*\*)?[\s\S]*?(?:48\s*hours|48\s*ساعة)[\s\S]*?(?=\n\n|$)/gi, '')
       .trim();
     return { cleanText, followUps: followUps.slice(0, 3) };
   }
@@ -85,6 +87,8 @@ export const extractFollowUpsClient = (text: string): { cleanText: string; follo
     .replace(FOLLOW_UP_PATTERN, '')
     .replace(/<extracted_memory[^>]*>[\s\S]*?<\/extracted_memory>/gi, '')
     .replace(/<extracted_memory[^>]*>[\s\S]*$/gi, '')
+    .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?تنبيه:?(?:\*\*)?[\s\S]*?(?:48\s*ساعة|48\s*hours)[\s\S]*?(?=\n\n|$)/gi, '')
+    .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?Notice:?(?:\*\*)?[\s\S]*?(?:48\s*hours|48\s*ساعة)[\s\S]*?(?=\n\n|$)/gi, '')
     .trim();
   return { cleanText, followUps: [] };
 };
@@ -96,6 +100,8 @@ export const stripProtocolMarkers = (text: string): string => {
     .replace(/<extracted_memory[^>]*>[\s\S]*?<\/extracted_memory>/gi, '')
     .replace(/<extracted_memory[^>]*>[\s\S]*$/gi, '')
     .replace(/\[(?:FOLLOW_?UPS?(?:_START)?|FOLLOW[\s-_]UPS?|أسئلة[_\s-]متابعة|اسئلة[_\s-]متابعة|فوللو[_\s-]?(?:ابس|اب)|فولو[_\s-]?(?:ابس|اب))\][\s\S]*$/i, '')
+    .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?تنبيه:?(?:\*\*)?[\s\S]*?(?:48\s*ساعة|48\s*hours)[\s\S]*?(?=\n\n|$)/gi, '')
+    .replace(/(?:^|\n)\s*>\s*(?:💡\s*)?(?:\*\*)?Notice:?(?:\*\*)?[\s\S]*?(?:48\s*hours|48\s*ساعة)[\s\S]*?(?=\n\n|$)/gi, '')
     .trim();
 };
 

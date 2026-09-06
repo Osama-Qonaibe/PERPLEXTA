@@ -441,6 +441,15 @@ Instruction: You MUST explicitly disclose this forensic audit to the user. Descr
     return res;
   }
 
+  if (toolIdStr === 'vision' || toolIdStr === 'perplexta_vision') {
+    const handler = await OrchestratorRegistry.getHandler('vision');
+    const res = await handler({
+      reqBody, userId, route, quotaCheck, walletCharged, finalPrompt
+    });
+    await onSuccess('');
+    return res;
+  }
+
   let userMemoriesStr = '';
   if (memoryRes?.rows?.length > 0) {
     userMemoriesStr = `\n[MEMORY]: ${memoryRes.rows.map((m: any) => m.fact).join('; ')}\n`;

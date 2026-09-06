@@ -35,6 +35,7 @@ import { BulletinAvatar } from '../components/BulletinAvatar';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { stopAllMedia, getGlobalMuteState, setGlobalMuteState } from '../utils/mediaCoordinator';
 import { SOCIAL_COLORS } from '../constants/socialColors';
+import { isPathBlocked } from '../utils/sectionVisibility';
 
 const PALESTINE_CITIES = [
   'القدس الشريف',
@@ -135,7 +136,7 @@ const FEELINGS = [
 export const BulletinBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { language, user, token, setIsAuthModalOpen, theme } = useAppContext();
+  const { language, user, token, setIsAuthModalOpen, theme, siteSettings, isMobile } = useAppContext();
   const isRtl = language === 'ar';
 
   const [activeTab, setActiveTab] = useState<'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>(() => {
@@ -233,11 +234,11 @@ export const BulletinBoardPage: React.FC = () => {
   const [mousePos, setMousePos] = useState<{ x: number; y: number; isInside: boolean }>({ x: 0, y: 0, isInside: false });
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; isOpen: boolean }>({ x: 0, y: 0, isOpen: false });
 
-  // Unified reactive collection of all available video ads for seamless Reels viewing
+  // Unified reactive collection of all available video ads for seamless Reels viewing (strictly excluding stories)
   const combinedReelsAds = useMemo(() => {
     const map = new Map<number, BulletinAd>();
     [...ads, ...myAds, ...savedAds].forEach(a => {
-      if (a && a.id && a.video_url) {
+      if (a && a.id && a.video_url && a.ad_format !== 'story' && !(a as any).is_story) {
         map.set(Number(a.id), a);
       }
     });
@@ -981,6 +982,37 @@ export const BulletinBoardPage: React.FC = () => {
     }
   }, [token]); // token as dependency so it fetches with auth if available
 
+  // DIRECT REEL DEEP-LINKING (e.g. ?tab=reels&reel=1)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reelIdStr = urlParams.get('reel');
+    const reelId = parseInt(reelIdStr || '', 10);
+    
+    if (!isNaN(reelId) && reelId > 0) {
+      const fetchDirectReel = async () => {
+        try {
+          const res = await fetch(`/api/bulletin/ads/${reelId}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          if (data.success && data.ad && data.ad.video_url) {
+            // Inject reel into ads so it exists for the ReelsFeed
+            setAds(prev => {
+              const exists = prev.some(a => a.id === data.ad.id);
+              if (exists) return prev;
+              return [data.ad, ...prev];
+            });
+            setActiveReelModalId(reelId);
+            setActiveTab('reels');
+          }
+        } catch (e) {
+          console.error('Failed to fetch direct reel:', e);
+        }
+      };
+      fetchDirectReel();
+    }
+  }, [token]);
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const boostStatus = urlParams.get('status');
@@ -1041,6 +1073,63 @@ export const BulletinBoardPage: React.FC = () => {
   const [hasMoreAds, setHasMoreAds] = useState<boolean>(true);
   const [loadingMoreAds, setLoadingMoreAds] = useState<boolean>(false);
   const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
+
+  const handleNavigateToPost = async (adId: number) => {
+    if (!adId) return;
+
+    // 1. Close overlays & stop playing media
+    stopAllMedia();
+    setActiveReelModalId(null);
+    setLightboxState(prev => ({ ...prev, isOpen: false }));
+    updateUrlWithPost(null);
+
+    // 2. Switch to main board feed
+    if (activeTab !== 'board') {
+      setActiveTab('board');
+    }
+
+    // 3. Clear restrictive filters so the target post is guaranteed to show
+    setSelectedCategory('all');
+    setSearchQuery('');
+    setSelectedAudienceFilter('all');
+    setSelectedCity('all');
+
+    // 4. Fetch the ad if it is not in the current list
+    let targetAd = ads.find(a => a.id === adId);
+    if (!targetAd) {
+      try {
+        const res = await fetch(`/api/bulletin/ads/${adId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (data.success && data.ad) {
+          targetAd = data.ad;
+          setAds(prev => [data.ad, ...prev.filter(a => a.id !== data.ad.id)]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch target post for navigation:', e);
+      }
+    }
+
+    // 5. Expand post comments/content
+    setExpandedAdId(adId);
+
+    // 6. Smoothly scroll into viewport and flash an attention pulse ring
+    const executeScroll = (attempts = 0) => {
+      const el = document.getElementById(`bulletin-ad-${adId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-4', 'ring-accent', 'ring-offset-4', 'ring-offset-white', 'dark:ring-offset-zinc-900', 'shadow-2xl', 'transition-all', 'duration-500');
+        setTimeout(() => {
+          el.classList.remove('ring-4', 'ring-accent', 'ring-offset-4', 'ring-offset-white', 'dark:ring-offset-zinc-900', 'shadow-2xl');
+        }, 3500);
+      } else if (attempts < 8) {
+        setTimeout(() => executeScroll(attempts + 1), 150);
+      }
+    };
+
+    setTimeout(() => executeScroll(), 120);
+  };
 
 
   const handleStoryViewed = async (storyId: number) => {
@@ -1321,7 +1410,7 @@ export const BulletinBoardPage: React.FC = () => {
     if (activeTab === 'pages') fetchPages();
   };
 
-  const handleToggleLike = async (adId: number) => {
+  const handleToggleLike = async (adId: number, reaction: string = 'like') => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول للتفاعل مع الإعلان' : 'Please log in to like ads');
       return;
@@ -1329,11 +1418,31 @@ export const BulletinBoardPage: React.FC = () => {
 
     setAds(prev => prev.map(ad => {
       if (ad.id === adId) {
-        const hasLiked = ad.user_has_liked;
+        const currentReaction = (ad as any).user_reaction;
+        const isRemoving = currentReaction === reaction;
+        const nextReaction = isRemoving ? null : reaction;
+        const countDelta = isRemoving ? -1 : (currentReaction ? 0 : 1);
         return {
           ...ad,
-          user_has_liked: !hasLiked,
-          likes_count: hasLiked ? Math.max(0, ad.likes_count - 1) : ad.likes_count + 1
+          user_has_liked: Boolean(nextReaction),
+          user_reaction: nextReaction,
+          likes_count: Math.max(0, (ad.likes_count || 0) + countDelta)
+        };
+      }
+      return ad;
+    }));
+
+    setSavedAds(prev => prev.map(ad => {
+      if (ad.id === adId) {
+        const currentReaction = (ad as any).user_reaction;
+        const isRemoving = currentReaction === reaction;
+        const nextReaction = isRemoving ? null : reaction;
+        const countDelta = isRemoving ? -1 : (currentReaction ? 0 : 1);
+        return {
+          ...ad,
+          user_has_liked: Boolean(nextReaction),
+          user_reaction: nextReaction,
+          likes_count: Math.max(0, (ad.likes_count || 0) + countDelta)
         };
       }
       return ad;
@@ -1342,10 +1451,19 @@ export const BulletinBoardPage: React.FC = () => {
     try {
       const res = await fetch(`/api/bulletin/ads/${adId}/like`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ reaction })
       });
       const data = await res.json();
-      if (!data.success) fetchAds();
+      if (data.success && data.user_reaction !== undefined) {
+        setAds(prev => prev.map(ad => ad.id === adId ? { ...ad, user_has_liked: data.isLiked, user_reaction: data.user_reaction, likes_count: data.likesCount } : ad));
+        setSavedAds(prev => prev.map(ad => ad.id === adId ? { ...ad, user_has_liked: data.isLiked, user_reaction: data.user_reaction, likes_count: data.likesCount } : ad));
+      } else if (!data.success) {
+        fetchAds();
+      }
     } catch (e) {
       fetchAds();
     }
@@ -1608,27 +1726,28 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
-  const handleToggleSave = async (ad: BulletinAd) => {
+  const handleToggleSave = async (adOrId: BulletinAd | number) => {
     if (!token) {
       toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
       return;
     }
+    const targetId = typeof adOrId === 'number' ? adOrId : adOrId.id;
 
     try {
-      const res = await fetch(`/api/bulletin/ads/${ad.id}/save`, {
+      const res = await fetch(`/api/bulletin/ads/${targetId}/save`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
         toast.success(data.message);
-        const updateFn = (prev: BulletinAd[]) => prev.map(a => a.id === ad.id ? { ...a, user_has_saved: data.saved } : a);
+        const updateFn = (prev: BulletinAd[]) => prev.map(a => a.id === targetId ? { ...a, user_has_saved: data.saved } : a);
         setAds(updateFn);
         setMyAds(updateFn);
         if (data.saved) {
           fetchSavedAds();
         } else {
-          setSavedAds(prev => prev.filter(a => a.id !== ad.id));
+          setSavedAds(prev => prev.filter(a => a.id !== targetId));
         }
       }
     } catch (e) {
@@ -1769,7 +1888,11 @@ export const BulletinBoardPage: React.FC = () => {
       const desc = adFormData.description || '';
       // Intelligent auto-extraction of hashtags (#tag) and mentions (@user) from natural post text
       const textHashtags = (desc.match(/#[\p{L}\p{N}_]+/gu) || []).map(h => h.replace(/^#/, '').trim());
-      const existingHashtags = adFormData.hashtags ? adFormData.hashtags.split(',').map(h => h.replace(/^#/, '').trim()).filter(Boolean) : [];
+      const existingHashtags = Array.isArray(adFormData.hashtags)
+        ? adFormData.hashtags.map((h: any) => String(h).replace(/^#/, '').trim()).filter(Boolean)
+        : typeof adFormData.hashtags === 'string'
+        ? adFormData.hashtags.split(/[,\s]+/).map(h => h.replace(/^#/, '').trim()).filter(Boolean)
+        : [];
       const mergedHashtags = Array.from(new Set([...existingHashtags, ...textHashtags]));
 
       const textMentions = (desc.match(/@[\p{L}\p{N}_]+/gu) || []).map(m => m.trim());
@@ -2214,7 +2337,7 @@ export const BulletinBoardPage: React.FC = () => {
   };
 
   const handleShareAd = async (ad: BulletinAd) => {
-    const shareUrl = `${window.location.origin}/bulletin?ad=${ad.id}`;
+    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
 
     try {
       await fetch(`/api/bulletin/ads/${ad.id}/share`, {
@@ -2334,20 +2457,21 @@ export const BulletinBoardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme pb-20">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme pb-[calc(var(--safe-area-spacing)+6px+env(safe-area-inset-bottom,0px))]">
       
       {/* MOBILE ADS & SOCIAL HEADER (Facebook Pro Mobile UI Style) */}
-      <div className="block lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] px-3 sm:px-4 py-2 transition-theme">
+      <div className="block lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] px-3 sm:px-4 h-[calc(56px+env(safe-area-inset-top,0px)+6px)] pt-[calc(env(safe-area-inset-top,0px)+6px)] transition-theme flex items-center">
+        <div className="w-full flex justify-between items-center h-[50px]">
         {isMobileSearchOpen ? (
           /* Expandable Mobile Interactive Search Bar */
-          <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }} className="flex items-center gap-2">
+          <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }} className="flex items-center gap-2 w-full">
             <button
               type="button"
               onClick={() => setIsMobileSearchOpen(false)}
-              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-700 dark:text-gray-200 border border-[var(--border-main)] transition-all active:scale-95 shrink-0 shadow-2xs"
+              className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-700 dark:text-gray-200 border border-[var(--border-main)] transition-all active:scale-95 shrink-0 shadow-none"
               title={isRtl ? 'إغلاق البحث' : 'Close search'}
             >
-              {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+              {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
             </button>
             <div className="relative flex-1">
               <input
@@ -2356,36 +2480,36 @@ export const BulletinBoardPage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isRtl ? 'ابحث عن إعلان، صفحة، أو منتج...' : 'Search ad, product, page...'}
                 autoFocus
-                className="w-full ps-9 pe-8 py-2 text-xs font-bold rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
+                className="w-full ps-8 pe-7 h-8 text-[12px] font-bold rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
               />
-              <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <X size={13} />
+                <button type="button" onClick={() => setSearchQuery('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X size={12} />
                 </button>
               )}
             </div>
             <button
               type="submit"
-              className="px-3.5 py-2 rounded-xl bg-accent text-white font-bold text-xs shadow-2xs hover:opacity-90 active:scale-95 transition-all shrink-0"
+              className="h-8 px-2.5 sm:px-3 rounded-[8px] bg-accent text-white font-bold text-[12px] hover:opacity-90 active:scale-95 transition-all shrink-0"
             >
               {isRtl ? 'بحث' : 'Search'}
             </button>
           </form>
         ) : (
           /* Standard Compact Facebook Style Header with Professional Back Button */
-          <div className="flex items-center justify-between gap-2 h-10">
+          <div className="flex items-center justify-between gap-2 w-full">
             {/* Start Side: Professional Back Button + Platform Logo & Title */}
             <div className="flex items-center gap-2 min-w-0">
               {/* Professional Back Button */}
               <button
                 type="button"
                 onClick={handleMobileBack}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-800 dark:text-gray-100 flex items-center justify-center border border-[var(--border-main)] active:scale-95 transition-all shadow-2xs shrink-0"
+                className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-800 dark:text-gray-100 flex items-center justify-center border border-[var(--border-main)] active:scale-95 transition-all shadow-none shrink-0"
                 title={isRtl ? 'رجوع' : 'Back'}
                 aria-label="Back"
               >
-                {isRtl ? <ArrowRight size={18} /> : <ArrowLeft size={18} />}
+                {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
               </button>
 
               {/* Brand Logo & Name */}
@@ -2393,8 +2517,8 @@ export const BulletinBoardPage: React.FC = () => {
                 onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 className="flex items-center gap-2 cursor-pointer transition-theme select-none min-w-0"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20 shrink-0 shadow-2xs">
-                  <Megaphone size={17} />
+                <div className="w-8 h-8 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20 shrink-0">
+                  <Megaphone size={14} />
                 </div>
                 <h2 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5 leading-none text-gray-900 dark:text-gray-100 truncate">
                   <span>{isRtl ? 'بيربليكستا' : 'Perplexta'}</span>
@@ -2404,16 +2528,16 @@ export const BulletinBoardPage: React.FC = () => {
             </div>
 
             {/* End Side: Search + Messages/Inquiries Shortcut */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               {/* Search Toggle Button */}
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(true)}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-accent transition-theme border border-[var(--border-main)] active:scale-95 shadow-2xs"
+                className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-accent transition-theme border border-[var(--border-main)] active:scale-95 shadow-none"
                 title={isRtl ? 'البحث بالمنصة' : 'Search Platform'}
                 aria-label="Search"
               >
-                <Search size={16} />
+                <Search size={14} />
               </button>
 
               {/* Inquiries / Messages Shortcut with unread badge */}
@@ -2424,7 +2548,7 @@ export const BulletinBoardPage: React.FC = () => {
                   setSelectedPageDetail(null);
                   setActiveTab('inquiries');
                 }}
-                className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-theme border border-[var(--border-main)] active:scale-95 shadow-2xs ${
+                className={`relative w-8 h-8 rounded-[8px] flex items-center justify-center transition-theme border border-[var(--border-main)] active:scale-95 shadow-none ${
                   activeTab === 'inquiries' && !selectedPageDetail
                     ? 'bg-accent/10 text-accent border-accent/40'
                     : 'bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-600 dark:text-gray-300 hover:text-accent'
@@ -2432,9 +2556,9 @@ export const BulletinBoardPage: React.FC = () => {
                 title={isRtl ? 'الرسائل والاستفسارات' : 'Messages'}
                 aria-label="Messages"
               >
-                <MessageSquare size={16} />
+                <MessageSquare size={14} />
                 {inquiriesList.length > 0 && (
-                  <span className="absolute -top-1 -end-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
+                  <span className="absolute -top-1 -end-1 min-w-[15px] h-[15px] px-0.5 rounded-[4px] bg-red-500 text-white text-[8px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
                     {inquiriesList.length}
                   </span>
                 )}
@@ -2442,6 +2566,7 @@ export const BulletinBoardPage: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Top Banner / Hero Header Section - Hidden on Mobile and in Analytics/Pages full view */}
@@ -2449,7 +2574,7 @@ export const BulletinBoardPage: React.FC = () => {
         <div className="hidden lg:block relative border-b border-gray-200/80 dark:border-gray-800/80 bg-gradient-to-b from-gray-500/10 via-transparent to-transparent py-8 px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-start max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-accent/10 border border-accent/20 text-accent text-xs font-bold">
                 <Sparkles size={14} className="animate-spin-slow" />
                 <span>{isRtl ? 'منصة الترويج والشبكة التجارية المتكاملة في فلسطين' : 'Palestine Premier Merchant Network'}</span>
               </div>
@@ -2488,16 +2613,16 @@ export const BulletinBoardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsLocationFlyoutOpen(!isLocationFlyoutOpen)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent font-extrabold text-xs border border-accent/30 transition-theme shadow-sm shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 h-8 rounded-[8px] bg-accent/10 hover:bg-accent/20 text-accent dark:text-accent font-bold text-[12px] border border-accent/30 transition-theme shrink-0"
                   title={isRtl ? 'تحديد نطاق تغطية الموقع' : 'Location radius filter'}
                 >
-                  <MapPin size={14} className="text-accent animate-pulse shrink-0" />
+                  <MapPin size={13} className="text-accent animate-pulse shrink-0" />
                   <span className="max-w-[150px] truncate">
                     {selectedCity === 'all' 
                       ? (isRtl ? '📍 كافة المحافظات' : '📍 All Regions') 
                       : `📍 ${selectedCity} (${selectedRadius === 'all' ? (isRtl ? 'الكل' : 'All') : `+${selectedRadius} ${isRtl ? 'كم' : 'km'}`})`}
                   </span>
-                  <ChevronDown size={13} className={`transition-transform duration-200 shrink-0 ${isLocationFlyoutOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 shrink-0 ${isLocationFlyoutOpen ? 'rotate-180' : ''}`} />
                 </button>
               )}
 
@@ -2507,16 +2632,16 @@ export const BulletinBoardPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRtl ? 'ابحث عن منتج، صفحة، أو هاشتاق...' : 'Search product, page, hashtag...'}
-                  className="w-full ps-9 pe-3 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme"
+                  className="w-full ps-8 pe-3 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme"
                 />
-                <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               </form>
 
               {activeTab === 'board' && (
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                  className="px-2.5 py-2 text-xs rounded-xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme shrink-0"
+                  className="px-2.5 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme shrink-0"
                 >
                   <option value="latest">{isRtl ? 'الأحدث' : 'Latest'}</option>
                   <option value="popular">{isRtl ? 'الأكثر تفاعلاً' : 'Popular'}</option>
@@ -2546,16 +2671,16 @@ export const BulletinBoardPage: React.FC = () => {
               >
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">
-                      <SlidersHorizontal size={16} />
+                    <div className="w-8 h-8 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-bold">
+                      <SlidersHorizontal size={14} />
                     </div>
                     <h3 className="text-xs font-extrabold">{isRtl ? 'قائمة الإعلانات والتحكم' : 'Ads Menu & Controls'}</h3>
                   </div>
                   <button
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    className="w-8 h-8 rounded-[8px] border border-[var(--border-main)] flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[var(--surface-subtle)] active:scale-95 transition-theme"
                   >
-                    <X size={18} />
+                    <X size={14} />
                   </button>
                 </div>
 
@@ -2575,13 +2700,15 @@ export const BulletinBoardPage: React.FC = () => {
                       <span>{isRtl ? 'الرئيسية والإعلانات العامة' : 'Global Feed'}</span>
                     </button>
 
-                    <button
-                      onClick={() => { navigate('/blog'); setIsMobileSidebarOpen(false); }}
-                      className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
-                    >
-                      <Edit2 size={16} className="text-gray-400 group-hover:text-accent" />
-                      <span>{isRtl ? 'المقالات والمدونة' : 'Insights & Blog'}</span>
-                    </button>
+                    {!isPathBlocked('/blog', siteSettings?.blocked_paths, isMobile) && (
+                      <button
+                        onClick={() => { navigate('/blog'); setIsMobileSidebarOpen(false); }}
+                        className="group w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 transition-theme bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/60"
+                      >
+                        <Edit2 size={16} className="text-gray-400 group-hover:text-accent" />
+                        <span>{isRtl ? 'المقالات والمدونة' : 'Insights & Blog'}</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); setIsMobileSidebarOpen(false); }}
@@ -2609,7 +2736,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <span>{isRtl ? 'الرسائل والاستفسارات' : 'Inquiries & Messages'}</span>
                         </div>
                         {inquiriesList.length > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-black">
+                          <span className="px-2 py-0.5 rounded-[4px] bg-accent/10 text-accent text-[10px] font-black">
                             {inquiriesList.length}
                           </span>
                         )}
@@ -2728,9 +2855,14 @@ export const BulletinBoardPage: React.FC = () => {
               isRtl={isRtl}
               token={token}
               user={user}
+              commentsMap={commentsMap}
               onToggleLike={handleToggleLike}
+              onToggleSave={handleToggleSave}
+              onAddComment={handleAddComment}
+              onToggleCommentLike={handleToggleCommentLike}
               onMessageAdvertiser={handleMessageAdvertiser}
               onShare={handleShareAd}
+              onBoostAd={handleOpenBoostModal}
               onDeleteReel={(id) => {
                 const ad = ads.find(a => a.id === id);
                 if (ad) handleDeleteAd(ad);
@@ -2740,6 +2872,20 @@ export const BulletinBoardPage: React.FC = () => {
               onClose={() => setActiveTab('board')}
               onOpenUploadReels={openReelUploadModal}
               onUploadReelClick={openReelUploadModal}
+              onViewPost={handleNavigateToPost}
+              onArchiveAd={(archivedAd) => {
+                setAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
+              }}
+              onTrashAd={(trashedAd) => {
+                setAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
+              }}
+              onUpdateAd={(updatedAd) => {
+                setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+              }}
+              onReportAd={handleReportAd}
               initialAdId={activeReelModalId || undefined}
               isLoading={loading}
             />
@@ -2814,7 +2960,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="h-32 sm:h-52 w-full bg-gray-200 dark:bg-gray-800 relative cursor-pointer overflow-hidden rounded-t-3xl" onClick={() => handleOpenPageDetail(page.id)}>
                       <img src={getMediaUrl(page.cover_url)} alt={page.name} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                      <span className="absolute top-3 start-3 px-3 py-1 rounded-full bg-black/60 text-white text-[11px] font-bold backdrop-blur-md">
+                      <span className="absolute top-3 start-3 px-3 py-1 rounded-[4px] bg-black/60 text-white text-[11px] font-bold backdrop-blur-md">
                         {page.category}
                       </span>
                     </div>
@@ -2937,7 +3083,7 @@ export const BulletinBoardPage: React.FC = () => {
                   >
                     <MessageSquare size={18} className="transition-theme" />
                     {inquiriesList.length > 0 && (
-                      <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1a1a1c]">
+                      <span className="absolute -top-1 -end-1 w-4 h-4 rounded-[4px] bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-[#1a1a1c]">
                         {inquiriesList.length}
                       </span>
                     )}
@@ -2971,26 +3117,30 @@ export const BulletinBoardPage: React.FC = () => {
                     <Megaphone size={16} className="text-accent" />
                     <span>{isRtl ? 'خلاصة الإعلانات والمنشورات' : 'Global Feed'}</span>
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                  <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-accent/10 text-accent">
                     {ads.length}
                   </span>
                 </button>
 
-                <button
-                  onClick={() => navigate('/marketplace')}
-                  className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
-                >
-                  <ShoppingBag size={16} className="text-accent" />
-                  <span>{isRtl ? 'السوق والتسوق' : 'Marketplace'}</span>
-                </button>
+                {!isPathBlocked('/marketplace', siteSettings?.blocked_paths, isMobile) && (
+                  <button
+                    onClick={() => navigate('/marketplace')}
+                    className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
+                  >
+                    <ShoppingBag size={16} className="text-accent" />
+                    <span>{isRtl ? 'السوق والتسوق' : 'Marketplace'}</span>
+                  </button>
+                )}
 
-                <button
-                  onClick={() => navigate('/blog')}
-                  className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
-                >
-                  <Edit2 size={16} className="text-accent" />
-                  <span>{isRtl ? 'المقالات والرؤى' : 'Insights & Blog'}</span>
-                </button>
+                {!isPathBlocked('/blog', siteSettings?.blocked_paths, isMobile) && (
+                  <button
+                    onClick={() => navigate('/blog')}
+                    className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 transition-theme"
+                  >
+                    <Edit2 size={16} className="text-accent" />
+                    <span>{isRtl ? 'المقالات والرؤى' : 'Insights & Blog'}</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => { setSelectedPageDetail(null); setActiveTab('pages'); }}
@@ -3004,7 +3154,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <Building2 size={16} className="text-blue-500" />
                     <span>{isRtl ? 'دليل الصفحات التجارية' : 'Merchant Pages'}</span>
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
+                  <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-blue-500/10 text-blue-500">
                     {pagesList.length}
                   </span>
                 </button>
@@ -3023,7 +3173,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <span>{isRtl ? 'الرسائل والاستفسارات' : 'Inquiries'}</span>
                     </span>
                     {inquiriesList.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-extrabold">
+                      <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-amber-500 text-white font-extrabold">
                         {inquiriesList.length}
                       </span>
                     )}
@@ -3044,7 +3194,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <span>{isRtl ? 'المنشورات المحفوظة' : 'Saved Posts'}</span>
                     </span>
                     {savedAds.length > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                      <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-accent/10 text-accent">
                         {savedAds.length}
                       </span>
                     )}
@@ -3064,7 +3214,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <Tag size={16} className="text-accent" />
                       <span>{isRtl ? 'حملاتي وإعلاناتي' : 'My Campaigns'}</span>
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                    <span className="text-[10px] px-2 py-0.5 rounded-[4px] bg-accent/10 text-accent">
                       {myAds.length}
                     </span>
                   </button>
@@ -3318,7 +3468,7 @@ export const BulletinBoardPage: React.FC = () => {
             {/* Subtle Motion-Blurred Pointer Trail Indicator */}
             {mousePos.isInside && (
               <div 
-                className="absolute pointer-events-none z-30 transition-theme ease-out rounded-full bg-accent/20 blur-[2px]"
+                className="absolute pointer-events-none z-30 transition-theme ease-out rounded-[4px] bg-accent/20 blur-[2px]"
                 style={{
                   left: `${mousePos.x}px`,
                   top: `${mousePos.y}px`,
@@ -3328,8 +3478,8 @@ export const BulletinBoardPage: React.FC = () => {
                   boxShadow: '0 0 16px rgba(156,163,175,0.4)',
                 }}
               >
-                <div className="absolute inset-1 rounded-full bg-accent/40 animate-ping opacity-75" />
-                <div className="absolute inset-2 rounded-full bg-accent shadow-[0_0_8px_#334155]" />
+                <div className="absolute inset-1 rounded-[4px] bg-accent/40 animate-ping opacity-75" />
+                <div className="absolute inset-2 rounded-[4px] bg-accent shadow-[0_0_8px_#334155]" />
               </div>
             )}
 
@@ -3345,7 +3495,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   exit={{ opacity: 0, y: -20, scale: 0.8 }}
                   transition={{ type: 'spring', damping: 22, stiffness: 350 }}
-                  className={`absolute -top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-xl backdrop-blur-md transition-theme pointer-events-none ${
+                  className={`absolute -top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-[4px] border shadow-xl backdrop-blur-md transition-theme pointer-events-none ${
                     isRefreshing || pullDistance >= 55
                       ? 'bg-accent/10 dark:bg-accent/40 border-accent/40 text-accent shadow-none'
                       : 'bg-white/90 dark:bg-[#1a1a1c]/90 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'
@@ -3404,7 +3554,7 @@ export const BulletinBoardPage: React.FC = () => {
                     alt={selectedPageDetail.page.name}
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-3 start-3 px-3 py-1 rounded-full bg-black/60 text-white text-xs font-bold backdrop-blur-md">
+                  <span className="absolute top-3 start-3 px-3 py-1 rounded-[4px] bg-black/60 text-white text-xs font-bold backdrop-blur-md">
                     {selectedPageDetail.page.category}
                   </span>
                 </div>
@@ -3667,7 +3817,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsLocationFlyoutOpen(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-800 dark:text-gray-200 hover:text-accent text-[11px] font-extrabold border border-gray-200 dark:border-gray-800 transition-theme shadow-2xs truncate"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-800 dark:text-gray-200 hover:text-accent text-[11px] font-extrabold border border-gray-200 dark:border-gray-800 transition-theme shadow-2xs truncate"
                         >
                           <MapPin size={12} className="text-accent shrink-0" />
                           <span className="truncate">
@@ -3683,7 +3833,7 @@ export const BulletinBoardPage: React.FC = () => {
                             type="button"
                             onClick={handleDetectGpsLocation}
                             disabled={isDetectingGps}
-                            className="px-2.5 py-1.5 rounded-full bg-accent/10 text-accent dark:text-accent hover:bg-accent/20 text-[11px] font-bold flex items-center gap-1 border border-accent/20 transition-theme disabled:opacity-50 shrink-0"
+                            className="px-2.5 py-1.5 rounded-[4px] bg-accent/10 text-accent dark:text-accent hover:bg-accent/20 text-[11px] font-bold flex items-center gap-1 border border-accent/20 transition-theme disabled:opacity-50 shrink-0"
                             title={isRtl ? 'استخدام موقعي الحالي (GPS)' : 'GPS Location'}
                           >
                             {isDetectingGps ? <Loader2 size={12} className="animate-spin text-accent" /> : <Compass size={12} />}
@@ -3694,7 +3844,7 @@ export const BulletinBoardPage: React.FC = () => {
                             type="button"
                             onClick={triggerFeedRefresh}
                             disabled={isRefreshing}
-                            className="px-2.5 py-1.5 rounded-full bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-700 dark:text-gray-300 hover:text-accent text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 transition-theme disabled:opacity-50 shrink-0 shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-[4px] bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-700 dark:text-gray-300 hover:text-accent text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 transition-theme disabled:opacity-50 shrink-0 shadow-2xs"
                             title={isRtl ? 'تحديث خلاصة الإعلانات' : 'Refresh Feed'}
                           >
                             <RefreshCw size={12} className={isRefreshing ? "animate-spin text-accent" : ""} />
@@ -3752,7 +3902,7 @@ export const BulletinBoardPage: React.FC = () => {
                           
                           <div className="relative w-full h-[35%] bg-white dark:bg-[#1a1a1c] flex flex-col items-center justify-end pb-2 sm:pb-3">
                             <div className="absolute -top-4 sm:-top-5 z-20">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white border-2 sm:border-[3px] border-white dark:border-[#1a1a1c] flex items-center justify-center shadow-md transition-transform group-hover:scale-110">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-[8px] bg-accent text-white border-2 sm:border-[3px] border-white dark:border-[#1a1a1c] flex items-center justify-center shadow-md transition-transform group-hover:scale-110">
                                 <Plus size={18} className="stroke-[3]" />
                               </div>
                             </div>
@@ -3795,7 +3945,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 
                                 {/* Video icon if it's a video story */}
                                 {story.video_url && (
-                                  <div className="absolute top-2 end-2 bg-black/40 p-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto z-20">
+                                  <div className="absolute top-2 end-2 bg-black/40 p-1.5 rounded-[8px] backdrop-blur-md border border-white/10 shadow-lg pointer-events-auto z-20">
                                     <Video size={12} className="text-white" />
                                   </div>
                                 )}
@@ -3803,7 +3953,7 @@ export const BulletinBoardPage: React.FC = () => {
                                 {/* Top-Corner Story Ring Avatar */}
                                 <div className="absolute top-2.5 start-2.5 z-20 pointer-events-auto">
                                   <div 
-                                    className="w-9 h-9 rounded-full p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-xl transition-transform group-hover:scale-110"
+                                    className="w-9 h-9 rounded-[8px] p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-xl transition-transform group-hover:scale-110"
                                     onPointerDown={(e) => {
                                       e.stopPropagation();
                                       storyPressTimerRef.current = setTimeout(() => {
@@ -3826,7 +3976,7 @@ export const BulletinBoardPage: React.FC = () => {
                                     <img
                                       src={getMediaUrl(story.author_avatar)}
                                       alt={story.author_name}
-                                      className="w-full h-full rounded-full object-cover border-[2px] border-white dark:border-[#1c1c1e]"
+                                      className="w-full h-full rounded-[4px] object-cover border-[2px] border-white dark:border-[#1c1c1e]"
                                     />
                                   </div>
                                 </div>
@@ -3863,7 +4013,7 @@ export const BulletinBoardPage: React.FC = () => {
                             }
                             setIsAdModalOpen(true);
                           }}
-                          className="flex-1 text-start px-4 py-2 sm:py-2.5 rounded-full bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-200/80 dark:hover:bg-zinc-700/80 text-xs text-gray-500 dark:text-gray-400 font-medium transition-theme border border-transparent hover:border-gray-300 dark:hover:border-gray-700"
+                          className="flex-1 text-start px-4 py-2 sm:py-2.5 rounded-[4px] bg-gray-100 dark:bg-zinc-800/80 hover:bg-gray-200/80 dark:hover:bg-zinc-700/80 text-xs text-gray-500 dark:text-gray-400 font-medium transition-theme border border-transparent hover:border-gray-300 dark:hover:border-gray-700"
                         >
                           {isRtl ? 'بم تفكر اليوم؟' : "What's on your mind?"}
                         </button>
@@ -4104,7 +4254,7 @@ export const BulletinBoardPage: React.FC = () => {
                       </div>
                     ) : inquiriesList.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-24 px-4 bg-white dark:bg-[#1a1a1c] rounded-[24px] border border-gray-100 dark:border-gray-800/60 shadow-sm space-y-5 text-center">
-                        <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-[4px] bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
                           <MessageSquare size={32} className="text-gray-400 dark:text-gray-500" />
                         </div>
                         <div className="space-y-2">
@@ -4196,9 +4346,9 @@ export const BulletinBoardPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-[4px] border border-white/10 shadow-xl">
-                    <Eye size={14} className="text-accent " />
-                    <span className="tabular-nums">{liveViewers + (streamFeed[currentFeedIndex]?.viewers || 0)}</span>
+                  <div className="flex items-center gap-1.5 text-white text-xs font-bold drop-shadow-md">
+                    <Eye size={14} className="text-accent" />
+                    <span className="tabular-nums font-black">{liveViewers + (streamFeed[currentFeedIndex]?.viewers || 0)}</span>
                   </div>
 
                   <button
@@ -4385,7 +4535,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <Gift className="text-yellow-400" size={20} />
                         {isRtl ? 'إرسال هدية للمنشئ' : 'Send Gift to Creator'}
                       </h3>
-                      <button onClick={() => setIsGiftModalOpen(false)} className="text-gray-400 hover:text-white bg-white/5 p-2 rounded-full">
+                      <button onClick={() => setIsGiftModalOpen(false)} className="text-gray-400 hover:text-white bg-white/5 p-2 rounded-[4px]">
                         <X size={20} />
                       </button>
                     </div>
@@ -4425,7 +4575,7 @@ export const BulletinBoardPage: React.FC = () => {
 
               {/* Instructions Hint for Mobile */}
               <div className="absolute left-1/2 bottom-4 -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center opacity-40">
-                <div className="w-1 h-8 rounded-full bg-white/20 relative overflow-hidden">
+                <div className="w-1 h-8 rounded-[4px] bg-white/20 relative overflow-hidden">
                   <motion.div 
                     animate={{ y: [-32, 32] }}
                     transition={{ repeat: Infinity, duration: 1.5 }}
@@ -4444,7 +4594,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* ========================================================== */}
       <AnimatePresence>
         {isAdModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-1.5 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-1.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -4455,7 +4605,7 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="relative flex items-center justify-center p-2.5 sm:p-4 border-b border-gray-100 dark:border-zinc-800">
                 {/* Ready/Upload Status Pill (Facebook style 100% ⬆) */}
                 {(adFormData.image_url || adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
-                  <div className="absolute start-2.5 sm:start-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
+                  <div className="absolute start-2.5 sm:start-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-emerald-500 text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
                     <span>100%</span>
                     <ArrowUp size={11} className="stroke-[3]" />
                   </div>
@@ -4476,7 +4626,7 @@ export const BulletinBoardPage: React.FC = () => {
                     if (composerView === 'main') setIsAdModalOpen(false);
                     else setComposerView('main');
                   }}
-                  className="absolute end-2.5 sm:end-3.5 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors shadow-xs"
+                  className="absolute end-2.5 sm:end-3.5 top-1/2 -translate-y-1/2 w-7 h-7 sm:w-9 sm:h-9 rounded-[4px] bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors shadow-xs"
                 >
                   {composerView === 'main' ? <X size={16} className="sm:size-[18px]" /> : <ArrowLeft size={16} className={`sm:size-[18px] ${isRtl ? 'rotate-180' : ''}`} />}
                 </button>
@@ -4629,7 +4779,7 @@ export const BulletinBoardPage: React.FC = () => {
                           className="absolute inset-0 opacity-0 cursor-pointer z-10"
                           onChange={handleMixedMediaUpload}
                         />
-                        <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <div className="w-10 h-10 rounded-[4px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                           <Upload size={20} />
                         </div>
                         <p className="mt-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
@@ -4705,7 +4855,7 @@ export const BulletinBoardPage: React.FC = () => {
                         {adFormData.has_whatsapp_button && (
                           <div className="mt-2 p-2 sm:p-3 bg-gray-50 dark:bg-zinc-800/90 rounded-xl border border-gray-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-2 sm:gap-3">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
                                 <MessageCircle size={16} className="text-[#25D366] sm:size-5" />
                               </div>
                               <div className="min-w-0">
@@ -4726,7 +4876,7 @@ export const BulletinBoardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setAdFormData(prev => ({ ...prev, has_whatsapp_button: false }))}
-                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-200 dark:bg-zinc-700 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors cursor-pointer"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-[4px] bg-gray-200 dark:bg-zinc-700 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-500 dark:text-gray-300 transition-colors cursor-pointer"
                                 title={isRtl ? 'إزالة زر الواتساب' : 'Remove WhatsApp CTA'}
                               >
                                 <X size={11} />
@@ -4777,7 +4927,7 @@ export const BulletinBoardPage: React.FC = () => {
                       </span>
                       <div className="flex items-center gap-0.5 sm:gap-1">
                         {/* 1. Photo / Video (Emerald) */}
-                        <label className="p-1.5 sm:p-2 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-500 cursor-pointer transition-colors" title={isRtl ? 'صور / فيديو' : 'Photos / Video'}>
+                        <label className="p-1.5 sm:p-2 rounded-[4px] hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-500 cursor-pointer transition-colors" title={isRtl ? 'صور / فيديو' : 'Photos / Video'}>
                           <ImageIcon size={17} className="sm:size-[22px]" />
                           <input 
                             type="file" 
@@ -4792,7 +4942,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <button 
                           type="button" 
                           onClick={() => setComposerView('tagging')} 
-                          className="p-1.5 sm:p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-500 transition-colors" 
+                          className="p-1.5 sm:p-2 rounded-[4px] hover:bg-blue-50 dark:hover:bg-blue-950/30 text-blue-500 transition-colors" 
                           title={isRtl ? 'إشارة إلى أشخاص' : 'Tag people'}
                         >
                           <Users size={17} className="sm:size-[22px]" />
@@ -4811,7 +4961,7 @@ export const BulletinBoardPage: React.FC = () => {
                               toast.success(isRtl ? 'تم إرفاق زر المراسلة عبر واتساب' : 'WhatsApp CTA button attached');
                             }
                           }} 
-                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.has_whatsapp_button ? 'bg-emerald-500/15 text-[#25D366]' : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-[#25D366]'}`}
+                          className={`p-1.5 sm:p-2 rounded-[4px] transition-colors ${adFormData.has_whatsapp_button ? 'bg-emerald-500/15 text-[#25D366]' : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-[#25D366]'}`}
                           title={isRtl ? 'زر مراسلة واتساب' : 'WhatsApp Button'}
                         >
                           <MessageCircle size={17} className="sm:size-[22px]" />
@@ -4821,7 +4971,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <button 
                           type="button" 
                           onClick={() => setComposerView('location')} 
-                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.location_city ? 'bg-rose-500/15 text-rose-500' : 'hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500'}`}
+                          className={`p-1.5 sm:p-2 rounded-[8px] transition-colors ${adFormData.location_city ? 'bg-rose-500/15 text-rose-500' : 'hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-500'}`}
                           title={isRtl ? 'الموقع' : 'Location'}
                         >
                           <MapPin size={17} className="sm:size-[22px]" />
@@ -4831,7 +4981,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <button 
                           type="button" 
                           onClick={() => setComposerView('feelings')} 
-                          className={`p-1.5 sm:p-2 rounded-full transition-colors ${adFormData.feeling ? 'bg-amber-500/15 text-amber-500' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-500'}`}
+                          className={`p-1.5 sm:p-2 rounded-[8px] transition-colors ${adFormData.feeling ? 'bg-amber-500/15 text-amber-500' : 'hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-500'}`}
                           title={isRtl ? 'الشعور / النشاط' : 'Feeling / Activity'}
                         >
                           <Smile size={17} className="sm:size-[22px]" />
@@ -4841,7 +4991,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <button 
                           type="button" 
                           onClick={() => setIsAddToPostModalOpen(true)} 
-                          className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-400 transition-colors" 
+                          className="p-1.5 sm:p-2 rounded-[8px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-400 transition-colors" 
                           title={isRtl ? 'المزيد' : 'More'}
                         >
                           <SlidersHorizontal size={16} className="sm:size-[20px]" />
@@ -4907,7 +5057,7 @@ export const BulletinBoardPage: React.FC = () => {
                         <div>
                           <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                             <span>{isRtl ? 'قائمة تحديد موقع المنشور والتغطية' : 'Post Location & Radius Flyout'}</span>
-                            <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-full font-bold">
+                            <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-[8px] font-bold">
                               {isRtl ? 'مباشر' : 'Live'}
                             </span>
                           </h3>
@@ -4920,7 +5070,7 @@ export const BulletinBoardPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setComposerView('main')}
-                        className="w-7 h-7 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 transition-theme hover:rotate-90"
+                        className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 transition-theme hover:rotate-90"
                         title={isRtl ? 'إغلاق' : 'Close'}
                       >
                         <X size={15} />
@@ -5241,7 +5391,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* Post Audience Selector Modal */}
       <AnimatePresence>
         {isAudienceModalOpen && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5251,7 +5401,7 @@ export const BulletinBoardPage: React.FC = () => {
               {/* Modal Header */}
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-[8px] bg-accent/10 text-accent flex items-center justify-center">
                     <Globe size={18} />
                   </div>
                   <h3 className="text-base font-black text-gray-900 dark:text-gray-100">
@@ -5261,7 +5411,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAudienceModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                  className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -5295,7 +5445,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <div>
                       <h4 className="text-sm font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <span>{isRtl ? 'العامة' : 'Public'}</span>
-                        <span className="text-[10px] bg-accent/10 text-accent dark:text-accent px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] bg-accent/10 text-accent dark:text-accent px-2 py-0.5 rounded-[8px] font-bold">
                           {isRtl ? 'موصى به' : 'Recommended'}
                         </span>
                       </h4>
@@ -5305,7 +5455,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                   </div>
                   {adFormData.audience === 'public' && (
-                    <div className="w-6 h-6 rounded-full bg-accent text-white flex items-center justify-center shadow-xs">
+                    <div className="w-6 h-6 rounded-[6px] bg-accent text-white flex items-center justify-center shadow-xs">
                       <Check size={14} />
                     </div>
                   )}
@@ -5338,7 +5488,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                   </div>
                   {adFormData.audience === 'friends' && (
-                    <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-6 h-6 rounded-[6px] bg-blue-500 text-white flex items-center justify-center shadow-xs">
                       <Check size={14} />
                     </div>
                   )}
@@ -5371,7 +5521,7 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                   </div>
                   {adFormData.audience === 'only_me' && (
-                    <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <div className="w-6 h-6 rounded-[6px] bg-amber-500 text-white flex items-center justify-center shadow-xs">
                       <Check size={14} />
                     </div>
                   )}
@@ -5399,7 +5549,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* Facebook-Style Add To Post Modal / Menu */}
       <AnimatePresence>
         {isAddToPostModalOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -5408,9 +5558,9 @@ export const BulletinBoardPage: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-3 border-b border-gray-700/60">
                 <button 
-                  type="button"
-                  onClick={() => setIsAddToPostModalOpen(false)}
-                  className="p-2 rounded-full hover:bg-gray-800 text-gray-300 transition-colors"
+                  type="button" 
+                  onClick={() => setIsAddToPostModalOpen(false)} 
+                  className="p-2 rounded-[8px] hover:bg-gray-800 text-gray-300 transition-colors"
                 >
                   <ArrowLeft size={20} className={isRtl ? 'rotate-180' : ''} />
                 </button>
@@ -5423,7 +5573,7 @@ export const BulletinBoardPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 py-2">
                 {/* 1. Photo/Video */}
                 <label className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 cursor-pointer transition-theme group">
-                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent transition-theme">
                     <ImageIcon size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5452,7 +5602,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-orange-500/10 flex items-center justify-center text-orange-500 transition-theme">
                     <Smile size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5470,7 +5620,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-blue-500/10 flex items-center justify-center text-blue-500 transition-theme">
                     <Users size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5488,7 +5638,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-red-500/10 flex items-center justify-center text-red-500 transition-theme">
                     <MapPin size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5507,7 +5657,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-500 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-blue-600/10 flex items-center justify-center text-blue-500 transition-theme">
                     <Phone size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5529,7 +5679,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-extrabold text-xs transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-extrabold text-xs transition-theme">
                     GIF
                   </div>
                   <div className="flex flex-col">
@@ -5548,7 +5698,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-red-600/10 flex items-center justify-center text-red-500 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-red-600/10 flex items-center justify-center text-red-500 transition-theme">
                     <Radio size={22} className="animate-pulse" />
                   </div>
                   <div className="flex flex-col">
@@ -5567,7 +5717,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }}
                   className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-800/80 text-left rtl:text-right transition-theme group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-blue-400/10 flex items-center justify-center text-blue-400 transition-theme">
+                  <div className="w-10 h-10 rounded-[8px] bg-blue-400/10 flex items-center justify-center text-blue-400 transition-theme">
                     <Bookmark size={22} />
                   </div>
                   <div className="flex flex-col">
@@ -5594,7 +5744,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* ========================================================== */}
       <AnimatePresence>
         {isPageModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -5719,7 +5869,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* ========================================================== */}
       <AnimatePresence>
         {inquireAd && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -5817,7 +5967,7 @@ export const BulletinBoardPage: React.FC = () => {
       {/* STREAM SETUP MODAL */}
       <AnimatePresence>
         {isStreamSetupOpen && (
-          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -5885,7 +6035,7 @@ export const BulletinBoardPage: React.FC = () => {
       <AnimatePresence>
         {isLocationFlyoutOpen && (
           <div 
-            className="fixed inset-0 z-[200] flex items-start sm:items-center justify-center pt-16 sm:pt-0 p-3 sm:p-4 bg-black/25 dark:bg-black/55 backdrop-blur-[2px] transition-theme"
+            className="fixed inset-0 z-[100000] flex items-start sm:items-center justify-center pt-16 sm:pt-0 p-3 sm:p-4 bg-black/25 dark:bg-black/55 backdrop-blur-[2px] transition-theme"
             onClick={() => setIsLocationFlyoutOpen(false)}
           >
             <motion.div
@@ -5905,7 +6055,7 @@ export const BulletinBoardPage: React.FC = () => {
                   <div>
                     <h3 className="text-xs sm:text-sm font-black text-gray-900 dark:text-gray-100 flex items-center gap-1">
                       <span>{isRtl ? 'قائمة التغطية والموقع السريعة' : 'Instant Location & Radius Flyout'}</span>
-                      <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-full font-bold">
+                      <span className="text-[9px] bg-accent/15 text-accent dark:text-accent px-1.5 py-0.5 rounded-[4px] font-bold">
                         {isRtl ? 'مباشر' : 'Live'}
                       </span>
                     </h3>
@@ -5918,7 +6068,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsLocationFlyoutOpen(false)}
-                  className="w-7 h-7 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 transition-theme hover:rotate-90"
+                  className="w-7 h-7 rounded-[4px] bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center text-gray-500 transition-theme hover:rotate-90"
                 >
                   <X size={15} />
                 </button>
@@ -6217,17 +6367,17 @@ export const BulletinBoardPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="fixed bottom-20 lg:bottom-6 end-6 z-50 px-4 py-3 rounded-full bg-accent hover:bg-accent text-white shadow-xl shadow-none transition-theme flex items-center gap-2 text-xs font-black cursor-pointer"
+            className="fixed bottom-20 lg:bottom-6 end-6 z-50 h-8 px-3 rounded-[8px] bg-accent hover:bg-accent text-white transition-theme flex items-center gap-1.5 text-[12px] font-bold cursor-pointer shadow-none active:scale-95"
             title={isRtl ? 'العودة لأعلى الصفحة' : 'Scroll to top'}
           >
-            <ArrowUp size={16} />
+            <ArrowUp size={14} />
             <span className="hidden sm:inline">{isRtl ? 'أعلى الصفحة' : 'Top'}</span>
           </motion.button>
         )}
       </AnimatePresence>
 
       {/* FIXED BOTTOM NAVIGATION BAR (Professional Mobile UI/UX) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-between py-1.5 px-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-between pt-2 pb-[calc(20px+env(safe-area-inset-bottom,0px))] px-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none">
         {/* Tab 1: Home / Feed */}
         <button
           type="button"
@@ -6237,19 +6387,19 @@ export const BulletinBoardPage: React.FC = () => {
             setActiveTab('board');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
+          className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 cursor-pointer relative ${
             activeTab === 'board' && !selectedPageDetail
               ? 'text-accent'
               : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <div className="relative">
-            <Megaphone size={16} className={activeTab === 'board' && !selectedPageDetail ? 'fill-accent/10' : ''} />
+          <div className="relative flex items-center justify-center">
+            <Megaphone size={14} className={activeTab === 'board' && !selectedPageDetail ? 'fill-accent/10' : ''} />
             {activeTab === 'board' && !selectedPageDetail && (
-              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
             )}
           </div>
-          <span className={`text-[9px] font-bold ${activeTab === 'board' && !selectedPageDetail ? 'opacity-100' : 'opacity-80'}`}>
+          <span className={`text-[8.5px] font-bold leading-tight ${activeTab === 'board' && !selectedPageDetail ? 'opacity-100' : 'opacity-80'}`}>
             {isRtl ? 'الرئيسية' : 'Feed'}
           </span>
         </button>
@@ -6263,24 +6413,24 @@ export const BulletinBoardPage: React.FC = () => {
             setSelectedPageDetail(null);
             setActiveTab('inquiries');
           }}
-          className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
+          className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 cursor-pointer relative ${
             activeTab === 'inquiries'
               ? 'text-accent'
               : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <div className="relative">
-            <MessageSquare size={16} className={activeTab === 'inquiries' ? 'fill-accent/10' : ''} />
+          <div className="relative flex items-center justify-center">
+            <MessageSquare size={14} className={activeTab === 'inquiries' ? 'fill-accent/10' : ''} />
             {inquiriesList.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
+              <span className="absolute -top-1 -right-1.5 min-w-[13px] h-[13px] px-0.5 rounded-[4px] bg-red-500 text-white text-[7.5px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
                 {inquiriesList.length}
               </span>
             )}
             {activeTab === 'inquiries' && (
-              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
             )}
           </div>
-          <span className={`text-[9px] font-bold ${activeTab === 'inquiries' ? 'opacity-100' : 'opacity-80'}`}>
+          <span className={`text-[8.5px] font-bold leading-tight ${activeTab === 'inquiries' ? 'opacity-100' : 'opacity-80'}`}>
             {isRtl ? 'الرسائل' : 'Messages'}
           </span>
         </button>
@@ -6294,10 +6444,10 @@ export const BulletinBoardPage: React.FC = () => {
               if (!token) { setIsAuthModalOpen(true); return; }
               setIsAdModalOpen(true);
             }}
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent text-white shadow-[0_4px_10px_rgba(var(--accent-rgb),0.3)] transition-all duration-300 active:scale-95 hover:brightness-110 border border-white/20 dark:border-white/10"
+            className="flex items-center justify-center w-8 h-8 rounded-[8px] bg-accent text-white transition-all duration-200 active:scale-95 hover:brightness-110 border border-white/20 dark:border-white/10 shadow-sm"
             title={isRtl ? 'إضافة منشور جديد' : 'Create Post'}
           >
-            <Plus size={20} className="stroke-[2.5]" />
+            <Plus size={16} className="stroke-[2.5]" />
           </button>
         </div>
 
@@ -6309,19 +6459,19 @@ export const BulletinBoardPage: React.FC = () => {
             setSelectedPageDetail(null);
             setActiveTab('pages');
           }}
-          className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
+          className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 cursor-pointer relative ${
             activeTab === 'pages'
               ? 'text-accent'
               : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <div className="relative">
-            <Building2 size={16} className={activeTab === 'pages' ? 'fill-accent/10' : ''} />
+          <div className="relative flex items-center justify-center">
+            <Building2 size={14} className={activeTab === 'pages' ? 'fill-accent/10' : ''} />
             {activeTab === 'pages' && (
-              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
             )}
           </div>
-          <span className={`text-[9px] font-bold ${activeTab === 'pages' ? 'opacity-100' : 'opacity-80'}`}>
+          <span className={`text-[8.5px] font-bold leading-tight ${activeTab === 'pages' ? 'opacity-100' : 'opacity-80'}`}>
             {isRtl ? 'الصفحات' : 'Pages'}
           </span>
         </button>
@@ -6333,19 +6483,19 @@ export const BulletinBoardPage: React.FC = () => {
             triggerHaptic('medium');
             setIsMobileSidebarOpen(true);
           }}
-          className={`flex flex-col items-center justify-center w-10 h-10 gap-0.5 transition-all duration-300 active:scale-90 ${
+          className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 cursor-pointer relative ${
             isMobileSidebarOpen
               ? 'text-accent'
               : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <div className="relative">
-            <SlidersHorizontal size={16} />
+          <div className="relative flex items-center justify-center">
+            <SlidersHorizontal size={14} />
             {isMobileSidebarOpen && (
-              <motion.div layoutId="nav-indicator" className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
+              <motion.div layoutId="nav-indicator" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
             )}
           </div>
-          <span className={`text-[9px] font-bold ${isMobileSidebarOpen ? 'opacity-100' : 'opacity-80'}`}>
+          <span className={`text-[8.5px] font-bold leading-tight ${isMobileSidebarOpen ? 'opacity-100' : 'opacity-80'}`}>
             {isRtl ? 'القائمة' : 'Menu'}
           </span>
         </button>
@@ -6438,12 +6588,7 @@ export const BulletinBoardPage: React.FC = () => {
         onShare={handleShareAd}
         onBoostAd={handleOpenBoostModal}
         onEditAd={handleEditAd}
-        onViewPost={(adId) => {
-          setLightboxState(prev => ({ ...prev, isOpen: false }));
-          updateUrlWithPost(null);
-          const el = document.getElementById(`bulletin-ad-${adId}`);
-          el?.scrollIntoView({ behavior: 'smooth' });
-        }}
+        onViewPost={handleNavigateToPost}
         user={user}
         token={token}
       />
@@ -6451,16 +6596,21 @@ export const BulletinBoardPage: React.FC = () => {
       {/* FULL-SCREEN REELS MODAL OVERLAY WHEN CLICKED FROM FEED */}
       <AnimatePresence>
         {activeReelModalId !== null && (
-          <div className="fixed inset-0 z-[9999] bg-black w-screen h-[100dvh]">
+          <div className="fixed inset-0 z-[9999] bg-[var(--surface-page)] text-[var(--text-primary)] w-screen h-[100dvh]">
             <ReelsFeed
               ads={combinedReelsAds.length > 0 ? combinedReelsAds : ads}
               initialAdId={activeReelModalId}
               isRtl={isRtl}
               token={token}
               user={user}
+              commentsMap={commentsMap}
               onToggleLike={handleToggleLike}
+              onToggleSave={handleToggleSave}
+              onAddComment={handleAddComment}
+              onToggleCommentLike={handleToggleCommentLike}
               onMessageAdvertiser={handleMessageAdvertiser}
               onShare={handleShareAd}
+              onBoostAd={handleOpenBoostModal}
               onDeleteReel={(id) => {
                 const ad = ads.find(a => a.id === id);
                 if (ad) handleDeleteAd(ad);
@@ -6479,6 +6629,20 @@ export const BulletinBoardPage: React.FC = () => {
                 stopAllMedia();
                 setActiveReelModalId(null);
               }}
+              onViewPost={handleNavigateToPost}
+              onArchiveAd={(archivedAd) => {
+                setAds(prev => prev.filter(a => a.id !== archivedAd.id));
+                setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
+              }}
+              onTrashAd={(trashedAd) => {
+                setAds(prev => prev.filter(a => a.id !== trashedAd.id));
+                setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
+              }}
+              onUpdateAd={(updatedAd) => {
+                setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+                setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
+              }}
+              onReportAd={handleReportAd}
               isLoading={loading}
             />
           </div>
@@ -6511,7 +6675,7 @@ export const BulletinBoardPage: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               )}
-              <div className="absolute top-4 start-4 flex items-center gap-2 bg-black/20 backdrop-blur-md p-1.5 pr-3 rounded-full">
+              <div className="absolute top-4 start-4 flex items-center gap-2 bg-black/20 backdrop-blur-md p-1.5 pr-3 rounded-[4px]">
                 <BulletinAvatar 
                   src={stories.find(s => s.id === previewingVideoStoryId)?.author_avatar} 
                   alt={stories.find(s => s.id === previewingVideoStoryId)?.author_name}

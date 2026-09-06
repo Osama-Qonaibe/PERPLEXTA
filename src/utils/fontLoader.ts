@@ -69,10 +69,8 @@ export function applyLanguageFont(lang: 'ar' | 'en', config?: FontLoadingConfig 
       }
     }
 
-    // 2. If dynamic font loading is active, omit/remove Space Grotesk (English font) to save memory/bandwidth
-    if (dynamicLoading && spaceGroteskLink && spaceGroteskLink.parentNode) {
-      spaceGroteskLink.parentNode.removeChild(spaceGroteskLink);
-    }
+    // 2. To ensure zero-jitter, instant language swapping, we keep both font stylesheets in DOM memory once loaded.
+    // (Omit dynamic unloading of the alternate font link to bypass any Flash of Unstyled Text)
 
     // 3. Set primary font family variable
     const fontStack = `"${currentConfig.ar.fontFamily}", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
@@ -92,10 +90,8 @@ export function applyLanguageFont(lang: 'ar' | 'en', config?: FontLoadingConfig 
       }
     }
 
-    // 2. If dynamic font loading is active, omit/remove Tajawal (Arabic font) to save memory/bandwidth
-    if (dynamicLoading && tajawalLink && tajawalLink.parentNode) {
-      tajawalLink.parentNode.removeChild(tajawalLink);
-    }
+    // 2. To ensure zero-jitter, instant language swapping, we keep both font stylesheets in DOM memory once loaded.
+    // (Omit dynamic unloading of the alternate font link to bypass any Flash of Unstyled Text)
 
     // 3. Set primary font family variable
     const fontStack = `"${currentConfig.en.fontFamily}", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;

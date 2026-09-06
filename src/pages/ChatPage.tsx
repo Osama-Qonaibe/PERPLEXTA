@@ -14,7 +14,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight, Lock } from 'lucide-react';
+import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight, Lock, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -40,183 +40,359 @@ import { ResponseSkeleton } from '../components/ResponseSkeleton';
 import { VisitorShell } from '../components/VisitorShell';
 import { ASPECT_RATIO_CLASSES } from '../constants/chat';
 
-import { ImageGenerationPlaceholder } from '../components/ImageGenerationPlaceholder';
+const SimpleImageLoadingPlaceholder = ({ dir, aspectRatio = '1:1' }: { dir: 'ltr' | 'rtl'; aspectRatio?: string }) => {
+  const containerAspectClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[440px] sm:max-w-[480px]';
 
-const ShareableImageOutput = ({ src, dir, alt }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
+  return (
+    <div className="w-full flex flex-col my-3 items-start gap-3">
+      {/* Top Assistant Status Message */}
+      <div className="flex items-center gap-2 text-zinc-300 dark:text-zinc-200 text-sm font-medium">
+        <span>{dir === 'rtl' ? 'جارٍ إنشاء صورتك...' : 'Creating your image...'}</span>
+        <motion.span
+          animate={{
+            opacity: [0.35, 1, 0.35],
+            scale: [0.9, 1.15, 0.9],
+            rotate: [0, 8, -8, 0]
+          }}
+          transition={{
+            duration: 2.2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="inline-flex text-accent select-none"
+        >
+          ✨
+        </motion.span>
+      </div>
+
+      {/* Modern Shaded Square Canvas Placeholder */}
+      <div 
+        className={`relative overflow-hidden rounded-2xl border border-zinc-700/50 dark:border-zinc-800/90 bg-[#1e1e21] dark:bg-[#18181b] ${containerAspectClass} w-full shadow-xl flex items-center justify-center`}
+      >
+        {/* Soft breathing center radial aura */}
+        <motion.div 
+          animate={{
+            scale: [0.85, 1.15, 0.85],
+            opacity: [0.2, 0.45, 0.2]
+          }}
+          transition={{
+            duration: 3.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute w-56 h-56 rounded-[4px] bg-gradient-to-tr from-accent/20 via-purple-500/10 to-transparent blur-3xl pointer-events-none"
+        />
+
+        {/* Shimmer sweep effect across the dark card */}
+        <motion.div
+          animate={{
+            x: dir === 'rtl' ? ['150%', '-150%'] : ['-150%', '150%']
+          }}
+          transition={{
+            duration: 2.6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            repeatDelay: 0.4
+          }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-12 pointer-events-none"
+        />
+      </div>
+    </div>
+  );
+};
+
+const SimpleImageErrorPlaceholder = ({ dir, errorMessage, onRetry, aspectRatio = '1:1' }: { dir: 'ltr' | 'rtl'; errorMessage?: string; onRetry?: () => void; aspectRatio?: string }) => {
+  const containerAspectClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-square max-w-[440px] sm:max-w-[480px]';
+
+  return (
+    <div className="w-full flex flex-col my-3 items-start gap-3">
+      <div 
+        className={`relative overflow-hidden rounded-2xl border border-rose-200 dark:border-rose-950/40 bg-rose-50/5 dark:bg-rose-950/10 ${containerAspectClass} w-full shadow-sm flex flex-col items-center justify-center p-6 text-center`}
+      >
+        <AlertTriangle className="text-rose-500 mb-3" size={24} />
+        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+          {dir === 'rtl' ? 'تعذر إنشاء العمل الفني' : 'Synthesis failed'}
+        </span>
+        <span className="text-[10px] text-rose-500 font-medium break-words max-w-full leading-relaxed px-2">
+          {errorMessage || (dir === 'rtl' ? 'خطأ غير معروف.' : 'Unknown generation error.')}
+        </span>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 bg-white dark:bg-zinc-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/10 transition-theme text-[11px] font-black uppercase cursor-pointer"
+          >
+            <RefreshCw size={12} className="animate-spin-slow" />
+            <span>{dir === 'rtl' ? 'إعادة المحاولة' : 'Retry'}</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const loadedImageCache = new Set<string>();
+
+const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: string; alt?: string; [key: string]: any }) => {
+  const { dir: contextDir } = useAppContext();
+  const dir = propDir || contextDir || (document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr');
+  const rawSrc = src || '';
+  const cleanUrl = rawSrc.split('#')[0];
+  const aspectMatch = rawSrc.match(/#aspect=([0-9]+:[0-9]+)/);
+  const selectedRatio = aspectMatch ? aspectMatch[1] : '1:1';
+  const containerAspectClass = ASPECT_RATIO_CLASSES[selectedRatio] || 'aspect-square max-w-[440px] sm:max-w-[480px]';
+
+  const [isImageFocused, setIsImageFocused] = useState(() => loadedImageCache.has(cleanUrl));
+  const [isSaved, setIsSaved] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isCopiedPrompt, setIsCopiedPrompt] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'sharing'>('idle');
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  const srcVal = src || '';
-  let imgAspect = '1:1';
-  if (srcVal.includes('#aspect=')) {
-    imgAspect = srcVal.split('#aspect=')[1] || '1:1';
-  }
+  useEffect(() => {
+    if (!cleanUrl) return;
 
-  const currentRatioClass = ASPECT_RATIO_CLASSES[imgAspect] || 'aspect-square max-w-[240px] sm:max-w-[260px]';
+    if (loadedImageCache.has(cleanUrl) || (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0)) {
+      setIsImageFocused(true);
+      loadedImageCache.add(cleanUrl);
+    }
+
+    const timer = setTimeout(() => {
+      setIsImageFocused(true);
+      if (cleanUrl) loadedImageCache.add(cleanUrl);
+    }, 800);
+
+    try {
+      const savedImages = JSON.parse(localStorage.getItem('saved_ai_images') || '[]');
+      if (savedImages.includes(rawSrc) || savedImages.includes(cleanUrl)) {
+        setIsSaved(true);
+      }
+    } catch (e) {
+      console.warn('LocalStorage list parsing failed', e);
+    }
+
+    return () => clearTimeout(timer);
+  }, [rawSrc, cleanUrl]);
+
+  // Keyboard navigation for the in-page Lightbox
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPreviewOpen(false);
+        setZoomLevel(1);
+      } else if (e.key === '+' || e.key === '=') {
+        setZoomLevel(prev => Math.min(prev + 0.5, 3));
+      } else if (e.key === '-' || e.key === '_') {
+        setZoomLevel(prev => Math.max(prev - 0.5, 1));
+      } else if (e.key === '0') {
+        setZoomLevel(1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewOpen]);
 
   const handleDownload = async () => {
-    if (!srcVal) return;
+    if (!cleanUrl) return;
     try {
-      const cleanUrl = srcVal.split('#')[0];
-      const cleanResponse = await fetch(cleanUrl);
+      const targetUrl = cleanUrl.startsWith('/') ? `${window.location.origin}${cleanUrl}` : cleanUrl;
+      const cleanResponse = await fetch(targetUrl);
       const cleanBlob = await cleanResponse.blob();
       const cleanObjectUrl = window.URL.createObjectURL(cleanBlob);
       const link = document.createElement('a');
       link.href = cleanObjectUrl;
-      link.download = `Perplexta_Gen_${Date.now()}.png`;
+      link.download = `Perplexta_Art_${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(cleanObjectUrl);
+      toast.success(dir === 'rtl' ? 'تم تنزيل الصورة بنجاح!' : 'Image downloaded successfully!');
     } catch (err) {
       const link = document.createElement('a');
-      link.href = srcVal;
-      link.download = `Perplexta_Gen_${Date.now()}.png`;
+      link.href = cleanUrl;
+      link.download = `Perplexta_Art_${Date.now()}.png`;
       link.target = '_blank';
       link.click();
     }
   };
 
-  const copyToClipboard = async (text: string) => {
+  const handleSaveToggle = () => {
+    if (!cleanUrl) return;
     try {
-      await navigator.clipboard.writeText(text);
-      setShareStatus('copied');
-      setTimeout(() => setShareStatus('idle'), 2500);
-    } catch (err) {
+      const savedImages = JSON.parse(localStorage.getItem('saved_ai_images') || '[]');
+      if (isSaved) {
+        const updated = savedImages.filter((item: string) => item !== rawSrc && item !== cleanUrl);
+        localStorage.setItem('saved_ai_images', JSON.stringify(updated));
+        setIsSaved(false);
+        toast.success(dir === 'rtl' ? 'تمت إزالة الصورة من المحفوظات' : 'Image removed from bookmarks');
+      } else {
+        savedImages.push(cleanUrl);
+        localStorage.setItem('saved_ai_images', JSON.stringify(savedImages));
+        setIsSaved(true);
+        toast.success(dir === 'rtl' ? 'تم حفظ الصورة في المحفوظات!' : 'Image saved to bookmarks!');
+      }
+    } catch (e) {
+      setIsSaved(!isSaved);
     }
   };
 
-  const handleShare = async () => {
-    if (!srcVal) return;
-    const cleanUrl = srcVal.split('#')[0];
+  const handleOpenInBrowser = () => {
+    if (!cleanUrl) return;
+    const targetUrl = cleanUrl.startsWith('/') ? `${window.location.origin}${cleanUrl}` : cleanUrl;
+    window.open(targetUrl, '_blank');
+  };
 
+  const handleCopyPrompt = () => {
+    if (!alt) return;
+    navigator.clipboard.writeText(alt);
+    setIsCopiedPrompt(true);
+    toast.success(dir === 'rtl' ? 'تم نسخ البرومبت بنجاح!' : 'Prompt copied to clipboard!');
+    setTimeout(() => setIsCopiedPrompt(false), 2000);
+  };
+
+  const handleShare = async () => {
+    if (!cleanUrl) return;
+    const shareUrl = cleanUrl.startsWith('/') ? `${window.location.origin}${cleanUrl}` : cleanUrl;
     if (navigator.share) {
       try {
         setShareStatus('sharing');
         await navigator.share({
-          title: 'Perplexta AI Art',
-          text: dir === 'rtl' ? 'شاهد هذا العمل الفني الرائع المولد بواسطة منصة بيربليكستا للذكاء الاصطناعي!' : 'Check out this stunning artwork generated with Perplexta AI!',
-          url: cleanUrl,
+          title: 'Perplexta Art 1080p',
+          text: alt || 'Generated with Perplexta AI Studio',
+          url: shareUrl
         });
         setShareStatus('idle');
-      } catch (err) {
+      } catch (e) {
         setShareStatus('idle');
-        if (err && (err as any).name !== 'AbortError') {
-          copyToClipboard(cleanUrl);
-        }
       }
     } else {
-      copyToClipboard(cleanUrl);
+      navigator.clipboard.writeText(shareUrl);
+      setShareStatus('copied');
+      toast.success(dir === 'rtl' ? 'تم نسخ رابط الصورة!' : 'Image link copied to clipboard!');
+      setTimeout(() => setShareStatus('idle'), 2000);
     }
   };
 
-  const resetZoom = () => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-    setIsDragging(false);
-  };
-
-  const toggleZoom = (e: React.MouseEvent<HTMLImageElement>) => {
-    e.stopPropagation();
-    if (scale > 1) {
-      resetZoom();
-    } else {
-      setScale(2.5);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale <= 1) return;
-    e.preventDefault();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || scale <= 1) return;
-    e.preventDefault();
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    if (!isPreviewOpen) return;
-    resetZoom();
-    setIsImageLoaded(false);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsPreviewOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPreviewOpen]);
+  const formattedRatio = selectedRatio === '1:1' ? '1080 × 1080 HD' : `${selectedRatio} Pro Canvas`;
 
   return (
-    <>
-      <div className="w-full flex my-4 justify-start">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(156,163,175,0.22)] hover:border-accent/40 w-full ${currentRatioClass}`}
-        >
-          <img 
-            src={srcVal}
-            alt={alt || "Generated Output"}
-            className="block w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] cursor-pointer" 
-            referrerPolicy="no-referrer" 
-            loading="lazy"
-            onClick={() => setIsPreviewOpen(true)}
+    <div className="w-full flex flex-col my-4 items-start gap-3">
+      {/* Thumbnail Card */}
+      <div 
+        className={`relative group overflow-hidden rounded-2xl border border-zinc-700/40 dark:border-zinc-800/80 bg-[#1e1e21] dark:bg-[#18181b] ${containerAspectClass} w-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer`}
+        onClick={() => setIsPreviewOpen(true)}
+      >
+        {!imageError && (
+          <motion.img 
+            ref={imgRef}
+            initial={isImageFocused ? { filter: "blur(0px)", scale: 1 } : { filter: "blur(20px)", scale: 0.98 }}
+            animate={isImageFocused ? { filter: "blur(0px)", scale: 1 } : { filter: "blur(20px)", scale: 0.98 }}
+            transition={{ duration: 0.8, ease: [0.25, 1, 0.5, 1] }}
+            onLoad={() => {
+              setIsImageFocused(true);
+              if (cleanUrl) loadedImageCache.add(cleanUrl);
+            }}
+            onError={() => {
+              setIsImageFocused(true);
+              setImageError(true);
+            }}
+            src={cleanUrl}
+            alt={alt || "Perplexta Art Output"}
+            className="block w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            referrerPolicy="no-referrer"
           />
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-x-0 bottom-0 p-3.5 bg-gradient-to-t from-black/85 via-black/40 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center items-center backdrop-blur-[2px] z-10"
-          >
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsPreviewOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
-                title={dir === 'rtl' ? 'معاينة' : 'Preview'}
-              >
-                <Maximize2 size={13} />
-              </button>
-              <button 
-                onClick={handleShare}
-                className={`w-8 h-8 rounded-[4px] border flex items-center justify-center cursor-pointer transition-theme shadow-md active:scale-95 ${
-                  shareStatus === 'copied' 
-                    ? 'bg-accent/25 text-accent border-accent/45 hover:bg-accent/35' 
-                    : 'bg-zinc-900 border border-zinc-805 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 text-gray-200'
-                }`}
-                title={dir === 'rtl' ? 'مشاركة' : 'Share'}
-              >
-                <Share2 size={13} className={shareStatus === 'sharing' ? 'animate-pulse text-accent' : ''} />
-              </button>
-              <button 
-                onClick={handleDownload}
-                className="w-8 h-8 rounded-[4px] bg-zinc-900 border border-zinc-805 text-gray-200 hover:text-accent hover:border-accent/35 hover:bg-zinc-800 transition-theme flex items-center justify-center cursor-pointer active:scale-95 shadow-md"
-                title={dir === 'rtl' ? 'تنزيل' : 'Download'}
-              >
-                <Download size={13} />
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
+        )}
+
+        {/* Hover overlay with expand button */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+          <div className="w-11 h-11 rounded-[4px] bg-zinc-950/80 backdrop-blur-md border border-zinc-700/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all duration-300 shadow-xl">
+            <Maximize2 size={18} className="text-accent" />
+          </div>
+        </div>
+
+        {/* Aspect Ratio Badge */}
+        <div className={`absolute top-2.5 ${dir === 'rtl' ? 'right-2.5' : 'left-2.5'} bg-zinc-950/70 backdrop-blur-md px-2 py-0.5 rounded-[4px] border border-white/10 text-[9px] font-mono font-medium text-white/90 pointer-events-none z-10`}>
+          {selectedRatio === '1:1' ? '1080×1080' : selectedRatio}
+        </div>
+
+        {!isImageFocused && !imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/10 backdrop-blur-sm pointer-events-none">
+            <span className="text-[10px] font-mono tracking-widest text-zinc-500 dark:text-zinc-400 uppercase animate-pulse">
+              {dir === 'rtl' ? 'جاري التركيز البصري...' : 'Focusing canvas...'}
+            </span>
+          </div>
+        )}
+
+        {imageError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-rose-500/5 dark:bg-rose-950/20 p-4 text-center">
+            <AlertTriangle className="text-rose-500 mb-2" size={20} />
+            <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+              {dir === 'rtl' ? 'تعذر تحميل الصورة' : 'Failed to load image'}
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Action Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setIsPreviewOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/40 bg-accent/10 hover:bg-accent/20 text-accent transition-theme text-[11px] font-black tracking-wide uppercase cursor-pointer active:scale-95 shadow-sm"
+          title={dir === 'rtl' ? 'عرض الصورة بدقة فائقة 1080×1080' : 'Open 1080×1080 Lightbox'}
+        >
+          <Maximize2 size={13} />
+          <span>{dir === 'rtl' ? 'فتح الصورة' : 'Open'}</span>
+        </button>
+
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:text-accent hover:border-accent/40 dark:hover:text-accent transition-theme text-[11px] font-black tracking-wide uppercase cursor-pointer active:scale-95 shadow-sm"
+          title={dir === 'rtl' ? 'تنزيل الصورة' : 'Download Image'}
+        >
+          <Download size={13} />
+          <span>{dir === 'rtl' ? 'تنزيل' : 'Download'}</span>
+        </button>
+
+        <button
+          onClick={handleSaveToggle}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-theme text-[11px] font-black tracking-wide uppercase cursor-pointer active:scale-95 shadow-sm ${
+            isSaved 
+              ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400' 
+              : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:text-rose-500 hover:border-rose-500/30'
+          }`}
+          title={dir === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
+        >
+          <Bookmark size={13} className={isSaved ? 'fill-current' : ''} />
+          <span>{isSaved ? (dir === 'rtl' ? 'محفوظة' : 'Saved') : (dir === 'rtl' ? 'حفظ' : 'Save')}</span>
+        </button>
+
+        {alt && alt !== 'Generated Image' && alt !== 'Perplexta Art Output' && alt !== 'صورة مولدة' && (
+          <button
+            onClick={handleCopyPrompt}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:text-accent hover:border-accent/40 dark:hover:text-accent transition-theme text-[11px] font-black tracking-wide uppercase cursor-pointer active:scale-95 shadow-sm"
+            title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
+          >
+            {isCopiedPrompt ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            <span>{dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}</span>
+          </button>
+        )}
+      </div>
+
+      {/* 48 Hours Retention Notice */}
+      <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-medium leading-relaxed w-full max-w-[360px] my-1">
+        <Clock size={14} className="shrink-0 text-amber-500 mt-0.5" />
+        <span>
+          {dir === 'rtl' 
+            ? 'ملاحظة: يتم حفظ ملفات الصور والفيديو على الخادم لمدة 48 ساعة فقط. يُرجى تنزيل أو حفظ صورك وفيديوهاتك المهمة على جهازك.' 
+            : 'Notice: Media files are retained on the server for 48 hours only. Please download or save your important media to your device.'}
+        </span>
+      </div>
+
+      {/* In-Page 1080x1080 World-Class Lightbox Modal */}
       {createPortal(
         <AnimatePresence>
           {isPreviewOpen && (
@@ -224,378 +400,333 @@ const ShareableImageOutput = ({ src, dir, alt }: { src?: string; dir?: string; a
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-center select-none"
-              onClick={() => setIsPreviewOpen(false)}
+              className="fixed inset-0 bg-neutral-955/98 backdrop-blur-2xl z-[999999] flex flex-col items-center justify-between select-none p-4 sm:p-6 overflow-hidden"
+              onClick={() => {
+                setIsPreviewOpen(false);
+                setZoomLevel(1);
+              }}
             >
+              {/* Top Header Floating Bar */}
               <div 
-                className="absolute top-0 inset-x-0 h-20 bg-gradient-to-b from-black/90 via-black/45 to-transparent flex items-center justify-between px-6 z-[1000]"
+                className="w-full max-w-7xl flex items-center justify-between gap-4 py-2 px-4 rounded-xl bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/80 shadow-2xl z-30"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[11px] font-bold text-accent/90 tracking-widest uppercase font-mono">
-                    {dir === 'rtl' ? 'مستكشف الدقة الفائقة من بريليكستا' : 'PERPLEXTA HIGH-FIDELITY PREVIEW'}
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-medium font-sans">
-                    {dir === 'rtl' ? 'توليف آمن ومحمي بالكامل لقواعد التصميم الذكية' : 'Strictly audited smart synthesis artifact'}
-                  </span>
+                {/* Brand & Format Badges */}
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent/15 border border-accent/30 text-accent text-[11px] font-mono font-bold uppercase tracking-wider">
+                    <Sparkles size={13} className="text-accent" />
+                    <span>PERPLEXTA ART</span>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[10px] font-mono">
+                    <span className="w-1.5 h-1.5 rounded-[4px] bg-emerald-400 animate-pulse" />
+                    <span>{formattedRatio}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Lightbox Toolbar Actions */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {/* Zoom Controls */}
+                  <div className="hidden md:flex items-center bg-zinc-950/80 rounded-lg border border-zinc-800 p-0.5">
+                    <button
+                      onClick={() => setZoomLevel(prev => Math.max(prev - 0.5, 1))}
+                      disabled={zoomLevel <= 1}
+                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-colors rounded-md hover:bg-zinc-800/80 cursor-pointer"
+                      title={dir === 'rtl' ? 'تصغير (-)' : 'Zoom Out (-)'}
+                    >
+                      <ZoomOut size={14} />
+                    </button>
+                    <button
+                      onClick={() => setZoomLevel(prev => (prev === 1 ? 2 : 1))}
+                      className="px-2 py-1 text-[10px] font-mono text-zinc-300 hover:text-accent transition-colors font-medium cursor-pointer"
+                      title={dir === 'rtl' ? 'إعادة ضبط التكبير (0)' : 'Reset Zoom (0)'}
+                    >
+                      {Math.round(zoomLevel * 100)}%
+                    </button>
+                    <button
+                      onClick={() => setZoomLevel(prev => Math.min(prev + 0.5, 3))}
+                      disabled={zoomLevel >= 3}
+                      className="p-1.5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-colors rounded-md hover:bg-zinc-800/80 cursor-pointer"
+                      title={dir === 'rtl' ? 'تكبير (+)' : 'Zoom In (+)'}
+                    >
+                      <ZoomIn size={14} />
+                    </button>
+                    {zoomLevel > 1 && (
+                      <button
+                        onClick={() => setZoomLevel(1)}
+                        className="p-1.5 text-zinc-400 hover:text-accent transition-colors rounded-md hover:bg-zinc-800/80 cursor-pointer"
+                        title={dir === 'rtl' ? 'إعادة الضبط' : 'Reset'}
+                      >
+                        <RefreshCw size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  {alt && (
+                    <button
+                      onClick={handleCopyPrompt}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800 text-zinc-300 hover:text-accent hover:border-accent/40 transition-theme flex items-center gap-1.5 text-[11px] font-medium cursor-pointer shadow-md active:scale-95"
+                      title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
+                    >
+                      {isCopiedPrompt ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      <span className="hidden lg:inline">{dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleSaveToggle}
+                    className={`p-2 rounded-lg border transition-theme flex items-center justify-center cursor-pointer shadow-md active:scale-95 ${
+                      isSaved 
+                        ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' 
+                        : 'bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:text-rose-400 hover:border-rose-500/40'
+                    }`}
+                    title={isSaved ? (dir === 'rtl' ? 'محفوظة' : 'Saved') : (dir === 'rtl' ? 'حفظ' : 'Save')}
+                  >
+                    <Bookmark size={15} className={isSaved ? 'fill-current' : ''} />
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    className={`p-2 rounded-lg border transition-theme flex items-center justify-center cursor-pointer shadow-md active:scale-95 ${
+                      shareStatus === 'copied'
+                        ? 'bg-accent/25 text-accent border-accent/45'
+                        : 'bg-zinc-950/80 border-zinc-800 text-zinc-300 hover:text-accent hover:border-accent/40'
+                    }`}
+                    title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+                  >
+                    <Share2 size={15} className={shareStatus === 'sharing' ? 'animate-pulse text-accent' : ''} />
+                  </button>
+
                   <button
                     onClick={handleDownload}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
-                    title={dir === 'rtl' ? 'تنزيل' : 'Download'}
+                    className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 text-zinc-300 hover:text-accent hover:border-accent/40 transition-theme flex items-center justify-center cursor-pointer shadow-md active:scale-95"
+                    title={dir === 'rtl' ? 'تنزيل الصورة' : 'Download'}
                   >
                     <Download size={15} />
                   </button>
+
                   <button
-                    onClick={handleShare}
-                    className="w-10 h-10 rounded-[4px] bg-zinc-900/80 border border-zinc-800 text-gray-200 hover:text-accent hover:border-accent/40 hover:bg-zinc-800/90 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
-                    title={dir === 'rtl' ? 'مشاركة' : 'Share'}
+                    onClick={handleOpenInBrowser}
+                    className="p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 text-zinc-300 hover:text-accent hover:border-accent/40 transition-theme flex items-center justify-center cursor-pointer shadow-md active:scale-95"
+                    title={dir === 'rtl' ? 'فتح في علامة تبويب جديدة' : 'Open in New Tab'}
                   >
-                    <Share2 size={15} />
+                    <ExternalLink size={15} />
                   </button>
+
                   <button
-                    onClick={() => setIsPreviewOpen(false)}
-                    className="w-10 h-10 rounded-[4px] bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/45 transition-theme flex items-center justify-center cursor-pointer shadow-lg active:scale-95"
-                    title={dir === 'rtl' ? 'إغلاق' : 'Close'}
+                    onClick={() => {
+                      setIsPreviewOpen(false);
+                      setZoomLevel(1);
+                    }}
+                    className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/50 transition-theme flex items-center justify-center cursor-pointer shadow-md active:scale-95"
+                    title={dir === 'rtl' ? 'إغلاق (Esc)' : 'Close (Esc)'}
                   >
                     <X size={15} />
                   </button>
                 </div>
               </div>
 
+              {/* Main Stage: High-Resolution 1080x1080 Canvas Container */}
               <div 
-                className="w-full h-full flex items-center justify-center overflow-hidden p-6 relative cursor-zoom-out"
-                onClick={() => setIsPreviewOpen(false)}
+                className="w-full flex-1 flex items-center justify-center relative p-2 sm:p-4 overflow-hidden"
+                onClick={() => {
+                  setIsPreviewOpen(false);
+                  setZoomLevel(1);
+                }}
               >
-                {!isImageLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-zinc-950/20 backdrop-blur-sm">
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="w-8 h-8 text-accent animate-spin" />
-                      <span className="text-[10px] font-mono text-accent/80 tracking-wider">
-                        {dir === 'rtl' ? 'تجهيز بكسلات الإطار الفائقة...' : 'INGESTING ULTRA-RES CANVAS...'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 <motion.div
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: isImageLoaded ? 1 : 0 }}
-                  exit={{ scale: 0.95, opacity: 0 }}
-                  transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-                  className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center transition-shadow duration-500 bg-black/40 rounded-[4px]"
-                  style={{
-                    boxShadow: '0 25px 70px -10px rgba(0, 0, 0, 0.85), 0 0 50px rgba(156,163,175,0.06)'
+                  initial={{ scale: 0.92, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.92, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 260 }}
+                  className="relative max-w-[min(92vw,1080px)] max-h-[min(76vh,1080px)] flex items-center justify-center bg-black/90 rounded-2xl border border-zinc-800/90 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.95)] overflow-hidden"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoomLevel(prev => (prev === 1 ? 2 : 1));
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    cursor: zoomLevel > 1 ? 'zoom-out' : 'zoom-in'
+                  }}
                 >
                   <img
-                    src={srcVal}
-                    alt={alt || "Output Preview"}
-                    onLoad={() => setIsImageLoaded(true)}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    onClick={toggleZoom}
-                    className="max-w-[90vw] max-h-[80vh] rounded-[4px] object-contain block select-none border border-zinc-800/80"
+                    src={cleanUrl}
+                    alt={alt || "Perplexta Art High Resolution"}
+                    referrerPolicy="no-referrer"
+                    className="max-w-full max-h-[min(76vh,1080px)] object-contain select-none transition-transform duration-300 ease-out"
                     style={{
-                      transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                      cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in',
-                      transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                      transform: `scale(${zoomLevel})`,
+                      transformOrigin: 'center center'
                     }}
-                    draggable={false}
                   />
+
+                  {/* Corner indicator badge inside canvas */}
+                  <div className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10 text-[9px] font-mono text-zinc-400 pointer-events-none opacity-80 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-[4px] bg-accent" />
+                    <span>{selectedRatio === '1:1' ? '1080 × 1080 PRO' : `${selectedRatio} RES`}</span>
+                  </div>
                 </motion.div>
               </div>
 
+              {/* Bottom Footer Info Strip: Prompt & Retention Notice */}
               <div 
-                className="absolute bottom-8 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 shadow-[0_15px_40px_rgba(0,0,0,0.5)] z-[1000] px-4 py-2.5 rounded-[4px] flex items-center gap-4 text-xs font-mono select-none"
+                className="w-full max-w-4xl flex flex-col items-center gap-2 z-30"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center gap-1.5 border-r border-zinc-700/60 pe-3 text-gray-400">
-                  <span className="text-[10px] uppercase tracking-wider text-accent font-bold">{dir === 'rtl' ? 'التقريب' : 'ZOOM'}:</span>
-                  <span className="text-[11px] font-bold text-gray-200">{(scale * 100).toFixed(0)}%</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      setScale(prev => Math.max(prev - 0.5, 1));
-                      if (scale <= 1.5) setPosition({ x: 0, y: 0 });
-                    }}
-                    disabled={scale <= 1}
-                    className="w-7 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-gray-300 hover:text-white disabled:opacity-45 disabled:pointer-events-none active:scale-95"
-                    title={dir === 'rtl' ? 'تصغير' : 'Zoom Out'}
-                  >
-                    <ZoomOut size={13} />
-                  </button>
-                  <button
-                    onClick={resetZoom}
-                    className="px-2 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-[9px] uppercase font-bold text-accent hover:text-accent active:scale-95"
-                    title={dir === 'rtl' ? 'إعادة ضبط' : 'Reset View'}
-                  >
-                    {dir === 'rtl' ? 'ضبط' : 'Reset'}
-                  </button>
-                  <button
-                    onClick={() => setScale(prev => Math.min(prev + 0.5, 4))}
-                    disabled={scale >= 4}
-                    className="w-7 h-7 rounded-[4px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/60 transition-colors flex items-center justify-center text-gray-300 hover:text-white disabled:opacity-45 disabled:pointer-events-none active:scale-95"
-                    title={dir === 'rtl' ? 'تكبير' : 'Zoom In'}
-                  >
-                    <ZoomIn size={13} />
-                  </button>
-                </div>
-                {scale > 1 && (
-                  <div className="hidden sm:flex text-[9px] text-zinc-400 border-l border-zinc-700/60 ps-3 items-center gap-1.5 animate-pulse">
-                    <span>💡 {dir === 'rtl' ? 'اسحب للتنقل داخل الصورة' : 'Drag inside frame to pan details'}</span>
+                {alt && alt !== 'Generated Image' && alt !== 'Perplexta Art Output' && alt !== 'صورة مولدة' && (
+                  <div className="w-full px-4 py-2.5 rounded-xl bg-zinc-900/90 backdrop-blur-xl border border-zinc-800/90 text-zinc-300 shadow-xl flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold mb-0.5">
+                        {dir === 'rtl' ? 'نص البرومبت' : 'PROMPT'}
+                      </div>
+                      <p className="text-[12px] font-sans text-zinc-200 line-clamp-2 leading-relaxed selection:bg-accent selection:text-white">
+                        {alt}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleCopyPrompt}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700/80 transition-theme text-[11px] font-semibold cursor-pointer active:scale-95"
+                      title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
+                    >
+                      {isCopiedPrompt ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      <span className="hidden sm:inline">{dir === 'rtl' ? 'نسخ' : 'Copy'}</span>
+                    </button>
                   </div>
                 )}
+
+                <div className="flex items-center gap-2 px-3 py-1 rounded-[4px] bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-medium tracking-wide">
+                  <Clock size={12} className="shrink-0 text-amber-400" />
+                  <span>
+                    {dir === 'rtl' 
+                      ? 'يتم حفظ مخرجات الوسائط لمدة 48 ساعة فقط على الخادم. يُرجى حفظ وتنزيل أعمالك.' 
+                      : 'Media outputs are retained on the server for 48 hours only. Please download your work.'}
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>,
         document.body
       )}
-    </>
+    </div>
   );
 };
 
-const VideoGenerationPlaceholder = ({ 
-  dir, 
-  aspectRatio = '16:9', 
-  liveElapsed = 0, 
-  resolution = '720p', 
-  duration = 5,
-  t,
-  isFailed = false,
-  errorMessage = '',
-  onRetry,
-  progressData = null
-}: { 
-  dir: 'ltr' | 'rtl'; 
-  aspectRatio?: string; 
-  liveElapsed?: number; 
-  resolution?: string;
-  duration?: number;
-  t: any;
-  isFailed?: boolean;
-  errorMessage?: string;
-  onRetry?: () => void;
-  progressData?: {
-    progress: number;
-    renderedFrames: number;
-    totalFrames: number;
-    phase: string;
-    phase_ar: string;
-    fps?: number;
-    currentStep?: number;
-    totalSteps?: number;
-  } | null;
-}) => {
-  const currentClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-[16/9] max-w-[320px] sm:max-w-[340px]';
+const MarkdownImg = React.memo((props: any) => {
+  const src = props.src || '';
+  const isVideo = src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.mov') || src.includes('/video/') || (props.alt && (props.alt.includes('فيديو') || props.alt.includes('Video')));
+  if (isVideo) {
+    return <MarkdownVideo {...props} />;
+  }
+  return (
+    <ShareableImageOutput 
+      src={props.src} 
+      alt={props.alt} 
+      {...props} 
+    />
+  );
+});
 
-  const progressValue = isFailed 
-    ? (progressData?.progress || Math.min(99, Math.round(liveElapsed * 4.5)))
-    : (progressData ? progressData.progress : Math.min(99, Math.round(liveElapsed * 4.5)));
+const MarkdownVideo = React.memo((props: any) => (
+  <VideoPlaybackComponent 
+    src={props.src} 
+    alt={props.alt || "Generated Video"}
+    {...props} 
+  />
+));
 
-  const getAIStatusLabel = () => {
-    if (isFailed) {
-      return dir === 'rtl' ? 'تم إيقاف الإنتاج بسبب خطأ' : 'Synthesis halted due to error';
-    }
-    if (progressData) {
-      return dir === 'rtl' ? progressData.phase_ar : progressData.phase;
-    }
-    if (liveElapsed < 4) {
-      return dir === 'rtl' 
-        ? 'بناء الخلايا الشبكية وتهيئة مصفوفة الفيديو...' 
-        : 'Initializing neural grid & allocating keyframe matrices...';
-    } else if (liveElapsed < 8) {
-      return dir === 'rtl' 
-        ? 'حساب وتوليد الإطارات الوسيطة وتتبع تسلسل الحركة...' 
-        : 'Computing flow motion vectors & rendering temporal vectors...';
-    } else if (liveElapsed < 14) {
-      return dir === 'rtl' 
-        ? 'تركيب بيكسلات الصور الحركية ودمج القناتين الفائقتين...' 
-        : 'Executing latent frame synthesis & polishing hyper-resolution...';
-    } else {
-      return dir === 'rtl' 
-        ? 'تنقيح المشاهد النهائية وضبط المؤثرات السينمائية الصورية...' 
-        : 'Finalizing cosmetic filters & structuring master sequence...';
-    }
-  };
+const SimpleVideoLoadingPlaceholder = ({ dir, aspectRatio = '9:16' }: { dir: 'ltr' | 'rtl'; aspectRatio?: string }) => {
+  const containerAspectClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-[9/16] max-w-[280px] sm:max-w-[320px]';
 
   return (
-    <div className="w-full flex justify-start">
-      <div className="flex flex-col gap-3.5 w-full my-4 items-start">
-        <div 
-          className={`relative w-full ${currentClass} rounded-xl border ${isFailed ? 'border-rose-500/20 shadow-[0_0_40px_rgba(244,63,94,0.05)]' : 'border-accent/20 shadow-[0_0_40px_rgba(156,163,175,0.05)]'} bg-zinc-950/60 dark:bg-zinc-950 overflow-hidden transition-theme flex flex-col justify-between`}
+    <div className="w-full flex flex-col my-3 items-start gap-3">
+      {/* Top Assistant Status Message */}
+      <div className="flex items-center gap-2 text-zinc-300 dark:text-zinc-200 text-sm font-medium">
+        <span>{dir === 'rtl' ? 'جارٍ إنشاء الفيديو الخاص بك...' : 'Creating your video...'}</span>
+        <motion.span
+          animate={{
+            opacity: [0.35, 1, 0.35],
+            scale: [0.9, 1.15, 0.9],
+            rotate: [0, 8, -8, 0]
+          }}
+          transition={{
+            duration: 2.2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="inline-flex text-accent select-none"
         >
-          <div className={`absolute inset-0 bg-[linear-gradient(rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(${isFailed ? '244,63,94' : '156,163,175'},0.05)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20`} />
+          ✨
+        </motion.span>
+      </div>
 
-          <div className={`p-3 w-full flex items-center justify-between bg-zinc-950/40 border-b ${isFailed ? 'border-rose-500/10' : 'border-accent/10'} backdrop-blur-sm z-10`}>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                {!isFailed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />}
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isFailed ? 'bg-rose-500' : 'bg-accent'}`} />
-              </span>
-              <span className={`text-[9px] font-mono font-black uppercase ${isFailed ? 'text-rose-400' : 'text-accent'} tracking-wider`}>
-                {isFailed 
-                  ? (dir === 'rtl' ? 'فشل إنتاج الفيديو' : 'VIDEO SYNTHESIS CRITICAL') 
-                  : (dir === 'rtl' ? 'جاري بناء التدفق البصري' : 'AI VIDEO STREAM ACTIVE')}
-              </span>
-            </div>
-            <span className="text-[9px] font-mono text-gray-400 font-bold whitespace-nowrap">
-              {resolution} • {duration}s • {aspectRatio}
-            </span>
-          </div>
+      {/* Modern Shaded Canvas Placeholder */}
+      <div 
+        className={`relative overflow-hidden rounded-2xl border border-zinc-700/50 dark:border-zinc-800/90 bg-[#1e1e21] dark:bg-[#18181b] ${containerAspectClass} w-full shadow-xl flex items-center justify-center`}
+      >
+        {/* Soft breathing center radial aura */}
+        <motion.div 
+          animate={{
+            scale: [0.85, 1.15, 0.85],
+            opacity: [0.2, 0.45, 0.2]
+          }}
+          transition={{
+            duration: 3.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute w-56 h-56 rounded-[4px] bg-gradient-to-tr from-accent/20 via-purple-500/10 to-transparent blur-3xl pointer-events-none"
+        />
 
-          <div className="flex flex-col items-center justify-center p-6 gap-4 select-none text-center z-10 flex-1 w-full">
-            {isFailed ? (
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.15)] mb-1">
-                <AlertTriangle size={22} />
-              </div>
-            ) : (
-              <div className="relative flex items-center justify-center w-12 h-12">
-                <motion.div 
-                  animate={{ scale: [0.95, 1.05, 0.95], opacity: [0.5, 0.9, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-10 h-10 rounded-full border border-accent/30 flex items-center justify-center"
-                />
-                <div className="absolute text-[10px] font-mono font-bold text-accent">
-                  {liveElapsed.toFixed(0)}s
-                </div>
-              </div>
-            )}
-
-            <div className="w-full max-w-[280px] flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className={`font-black tracking-tight ${isFailed ? 'text-rose-400' : 'text-accent'}`}>
-                  {progressValue}%
-                </span>
-                <span className="text-gray-400 max-w-[200px] truncate text-right">
-                  {getAIStatusLabel()}
-                </span>
-              </div>
-
-              <div className={`h-1.5 w-full ${isFailed ? 'bg-rose-950/40 border-rose-900/30' : 'bg-zinc-900 border-zinc-800'} rounded-full overflow-hidden border p-0.5`}>
-                <motion.div 
-                  className={`h-full rounded-full ${isFailed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-accent shadow-[0_0_8px_rgba(156,163,175,0.6)]'}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressValue}%` }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                />
-              </div>
-            </div>
-
-            {isFailed && (
-              <div className="flex flex-col items-center gap-2 max-w-[90%]">
-                <span className="text-[10px] text-rose-400 font-mono bg-rose-950/20 border border-rose-500/10 px-2 py-0.5 rounded-[4px] break-words text-center">
-                  {errorMessage || (dir === 'rtl' ? 'حدث خطأ غير محدد أثناء المعالجة.' : 'Unspecified frame generation fault.')}
-                </span>
-                {onRetry && (
-                  <button 
-                    onClick={onRetry}
-                    aria-label={dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}
-                    className="group flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold text-slate-100 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400/50 rounded-[4px] transition-theme shadow-[0_0_10px_rgba(244,63,94,0.1)] cursor-pointer"
-                  >
-                    <RefreshCw size={10} className="text-rose-400 group-hover:rotate-180 transition-transform duration-500" />
-                    <span>{dir === 'rtl' ? 'إعادة محاولة التوليف' : 'Retry Video Generation'}</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="p-2.5 w-full bg-zinc-950/50 border-t border-zinc-900/40 backdrop-blur-sm z-10 flex items-center justify-between text-[8px] font-mono text-gray-500">
-            <span>{isFailed ? 'STATE: HALTED' : 'PROCESS: SYNCHRONIZED'}</span>
-            <span>{isFailed ? 'FAIL_CODE: 0x2A4' : `TIME_ELAPSED: ${(liveElapsed * 1000).toFixed(0)}MS`}</span>
-          </div>
-        </div>
+        {/* Shimmer sweep effect across the dark card */}
+        <motion.div
+          animate={{
+            x: dir === 'rtl' ? ['150%', '-150%'] : ['-150%', '150%']
+          }}
+          transition={{
+            duration: 2.6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            repeatDelay: 0.4
+          }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-12 pointer-events-none"
+        />
       </div>
     </div>
   );
 };
 
-const UnifiedVideoMessageWidget = ({
-  msg,
-  idx,
-  messages,
-  dir,
-  videoSettings,
-  liveElapsed,
-  isGenerating,
-  t,
-  onRetry
-}: {
-  msg: any;
-  idx: number;
-  messages: any[];
-  dir: 'ltr' | 'rtl';
-  videoSettings: any;
-  liveElapsed: number;
-  isGenerating: boolean;
-  t: any;
-  onRetry: () => void;
-}) => {
-  const { registerProcessingVideo, relinkMessageId } = useVideoResource();
-  const msgId = msg.id || msg.client_id;
-
-  useEffect(() => {
-    const isProcessing = msg.tool === 'video' && 
-      !msg.content.includes('.mp4') && 
-      !msg.content.includes('mixkit') && 
-      !msg.content.includes('/uploads/') && 
-      !msg.content.includes('[Generated Video]') &&
-      !msg.is_video_failed;
-
-    if (isProcessing && msgId) {
-      registerProcessingVideo(msgId);
-    }
-  }, [msgId, msg.content, msg.tool, msg.is_video_failed, registerProcessingVideo]);
-
-  useEffect(() => {
-    if (msg.client_id && msg.id && msg.client_id !== msg.id) {
-      relinkMessageId(msg.client_id, msg.id);
-    }
-  }, [msg.client_id, msg.id, relinkMessageId]);
-
-  const {
-    status,
-    progressData,
-    resolvedUrl,
-    generationError
-  } = useVideoPlayback({ src: msg.content, messageId: msgId, dir });
-
-  if (status === 'ready' && resolvedUrl) {
-    return (
-      <VideoPlaybackComponent 
-        src={resolvedUrl} 
-        dir={dir} 
-        alt="Generated Video"
-      />
-    );
-  }
-
-  const failedState = status === 'error' || !!msg.is_video_failed || (!isGenerating && idx === messages.length - 1 && !msg.content);
+const SimpleVideoErrorPlaceholder = ({ dir, errorMessage, onRetry, aspectRatio = '9:16' }: { dir: 'ltr' | 'rtl'; errorMessage?: string; onRetry?: () => void; aspectRatio?: string }) => {
+  const containerAspectClass = ASPECT_RATIO_CLASSES[aspectRatio] || 'aspect-[9/16] max-w-[280px] sm:max-w-[320px]';
 
   return (
-    <VideoGenerationPlaceholder 
-      dir={dir} 
-      aspectRatio={videoSettings.aspectRatio}
-      liveElapsed={idx === messages.length - 1 ? liveElapsed : 0}
-      resolution={videoSettings.resolution}
-      duration={videoSettings.duration}
-      t={t}
-      isFailed={failedState}
-      errorMessage={generationError || msg.content || (dir === 'rtl' ? 'عذراً، النظام قيد التطوير والتحسين المستمر لضمان أفضل تجربة ذكاء اصطناعي. شكراً لصبرك.' : 'Sorry, the system is under development and continuous improvement to ensure the best AI experience. Thank you for your patience.')}
-      progressData={progressData}
-      onRetry={onRetry}
-    />
+    <div className="w-full flex flex-col my-3 items-start gap-3">
+      <div 
+        className={`relative overflow-hidden rounded-2xl border border-rose-200 dark:border-rose-950/40 bg-rose-50/5 dark:bg-rose-950/10 ${containerAspectClass} w-full shadow-sm flex flex-col items-center justify-center p-6 text-center`}
+      >
+        <AlertTriangle className="text-rose-500 mb-3" size={24} />
+        <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+          {dir === 'rtl' ? 'تعذر إنتاج الفيديو' : 'Video synthesis failed'}
+        </span>
+        <span className="text-[10px] text-rose-500 font-medium break-words max-w-full leading-relaxed px-2">
+          {errorMessage || (dir === 'rtl' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred')}
+        </span>
+        {onRetry && (
+          <button 
+            onClick={onRetry}
+            className="mt-4 px-4 py-1.5 rounded-[4px] bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold tracking-wide flex items-center gap-1.5 hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
+          >
+            <RefreshCw size={12} />
+            {dir === 'rtl' ? 'إعادة المحاولة' : 'RETRY'}
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 
-const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: string; dir?: string; alt?: string; title?: string; [key: string]: any }) => {
+
+const VideoPlaybackComponent = ({ src, dir: propDir, alt, title, ...props }: { src?: string; dir?: string; alt?: string; title?: string; [key: string]: any }) => {
+  const { dir: contextDir } = useAppContext();
+  const dir = propDir || contextDir || (document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr');
   const {
     shareStatus,
     isPreviewOpen,
@@ -642,18 +773,18 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
 
   return (
     <>
-      <div className="w-full flex my-4 justify-start">
+      <div className="w-full flex flex-col my-4 items-start gap-3">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
-          className={`relative group overflow-hidden rounded-xl border border-[var(--border)] shadow-md transition-theme ease-out hover:shadow-[0_0_35px_rgba(156,163,175,0.22)] hover:border-accent/40 w-full ${currentRatioClass} bg-black/40`}
+          className={`relative group overflow-hidden rounded-2xl border border-zinc-700/50 dark:border-zinc-800/90 shadow-xl transition-theme ease-out hover:border-accent/40 w-full ${currentRatioClass} bg-black`}
         >
           {providerMeta.isValid && (
             <div className={`absolute top-3 ${dir === 'rtl' ? 'right-3' : 'left-3'} bg-zinc-950/70 backdrop-blur-md px-2 py-1 rounded-[3px] border border-accent/10 text-[8px] font-mono text-accent z-10 transition-theme hover:border-accent/30 flex items-center gap-1`}>
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-[4px] h-1.5 w-1.5 bg-accent"></span>
               </span>
               <span>{providerMeta.label}</span>
             </div>
@@ -661,6 +792,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
 
           {cleanDisplayUrl && (
             <video 
+              key={cleanDisplayUrl}
               ref={videoRef}
               src={cleanDisplayUrl}
               onTimeUpdate={handleTimeUpdate}
@@ -697,7 +829,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             onClick={togglePlay}
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto cursor-pointer"
           >
-            <div className="w-12 h-12 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-accent/40 flex items-center justify-center text-accent hover:text-accent hover:scale-110 active:scale-95 transition-theme shadow-[0_0_20px_rgba(0,0,0,0.6)]">
+            <div className="w-12 h-12 rounded-[4px] bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 hover:border-accent/40 flex items-center justify-center text-accent hover:text-accent hover:scale-110 active:scale-95 transition-theme shadow-[0_0_20px_rgba(0,0,0,0.6)]">
               {isPlaying ? <Pause size={18} className="fill-accent-400/20" /> : <Play size={18} className="fill-accent-400/20 ml-0.5" />}
             </div>
           </div>
@@ -758,6 +890,15 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
             </div>
           </div>
         </motion.div>
+
+        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-medium leading-relaxed w-full max-w-[360px] my-1">
+          <Clock size={14} className="shrink-0 text-amber-500 mt-0.5" />
+          <span>
+            {dir === 'rtl' 
+              ? 'ملاحظة: يتم حفظ ملفات الصور والفيديو على الخادم لمدة 48 ساعة فقط. يُرجى تنزيل أو حفظ صورك وفيديوهاتك المهمة على جهازك.' 
+              : 'Notice: Media files are retained on the server for 48 hours only. Please download or save your important media to your device.'}
+          </span>
+        </div>
       </div>
 
       {createPortal(
@@ -821,6 +962,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                 >
                   {cleanDisplayUrl && (
                     <video
+                      key={cleanDisplayUrl}
                       ref={previewVideoRef}
                       src={cleanDisplayUrl}
                       onTimeUpdate={handlePreviewTimeUpdate}
@@ -839,7 +981,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
                     onClick={togglePreviewPlay}
                     className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                   >
-                    <div className="w-16 h-16 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-850/80 flex items-center justify-center text-accent shadow-2xl">
+                    <div className="w-16 h-16 rounded-[4px] bg-zinc-950/80 backdrop-blur-md border border-zinc-850/80 flex items-center justify-center text-accent shadow-2xl">
                       {isPreviewPlaying ? <Pause size={24} className="fill-accent-400/25" /> : <Play size={24} className="fill-accent-400/25 ml-1" />}
                     </div>
                   </div>
@@ -870,7 +1012,7 @@ const VideoPlaybackComponent = ({ src, dir, alt, title, ...props }: { src?: stri
 
                 <div 
                   onClick={handlePreviewSeek} 
-                  className="flex-1 h-1.5 bg-zinc-950/80 rounded-full cursor-pointer relative overflow-hidden"
+                  className="flex-1 h-1.5 bg-zinc-950/80 rounded-[4px] cursor-pointer relative overflow-hidden"
                 >
                   <div 
                     className="h-full bg-accent transition-theme shadow-[0_5px_10px_rgba(156,163,175,0.3)]" 
@@ -1282,7 +1424,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
     <div className="relative group mx-auto my-6 w-full max-w-[850px] bg-transparent border border-gray-200/40 dark:border-gray-800/20 rounded-md shadow-sm transition-theme">
       <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-2 bg-gray-50/95 dark:bg-[#141416]/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 rounded-t-md transition-theme">
         <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(156,163,175,0.5)]" />
+          <div className="w-1.5 h-1.5 rounded-[4px] bg-accent shadow-[0_0_8px_rgba(156,163,175,0.5)]" />
           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{lang === 'audio' ? 'Perplexta Audio Slate' : lang}</span>
         </div>
 
@@ -1381,8 +1523,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
           <div className="absolute inset-0 bg-gradient-to-b from-gray-500/10 to-transparent pointer-events-none" />
 
           <div className="relative">
-             <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full" />
-             <div className="relative w-20 h-20 rounded-full bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(156,163,175,0.1)]">
+             <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-[4px]" />
+             <div className="relative w-20 h-20 rounded-[4px] bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shadow-[0_0_30px_rgba(156,163,175,0.1)]">
                   <Volume2 size={32} />
              </div>
           </div>
@@ -1515,8 +1657,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
                         <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 select-none flex items-center justify-between">
                           <span>{dir === 'rtl' ? 'معاينة النتيجة التفاعلية' : 'LIVE COMPONENT INTERFACE'}</span>
                           <span className="flex h-1.5 w-1.5 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-accent opacity-75"></span>
+                            <span className="relative inline-flex rounded-[4px] h-1.5 w-1.5 bg-accent"></span>
                           </span>
                         </div>
                         {iframeSrc ? (
@@ -1576,7 +1718,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
               <div className="w-full p-4 bg-[var(--bg-secondary)] rounded-b-md border-t border-gray-100 dark:border-gray-800/40">
                 {codeContent.includes('.mp3') || codeContent.includes('.wav') || codeContent.includes('.ogg') ? (
                   <div className="flex flex-col items-center gap-4 py-8">
-                    <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                    <div className="w-16 h-16 rounded-[4px] bg-accent/20 flex items-center justify-center text-accent">
                       <Music size={32} />
                     </div>
                     <span className="text-sm font-bold text-accent tracking-widest uppercase">Sonic Draft Ready</span>
@@ -1837,8 +1979,8 @@ const ToolStatusIndicator = ({ tool, isGenerating, dir, t }: { tool?: string, is
           </span>
           {isGenerating && (
             <span className="relative flex h-1.5 w-1.5 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-[4px] h-1.5 w-1.5 bg-accent"></span>
             </span>
           )}
         </div>
@@ -1859,7 +2001,7 @@ const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps']
   return (
     <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3" id="thinking-steps-container">
       <div className="flex items-center gap-2 mb-2 sm:mb-4 opacity-70">
-         <div className="w-1 h-3 sm:w-1.5 sm:h-4 bg-accent/60 rounded-full" />
+         <div className="w-1 h-3 sm:w-1.5 sm:h-4 bg-accent/60 rounded-[4px]" />
          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
            {dir === 'rtl' ? 'مراحل التحليل والبحث' : 'ANALYSIS & RESEARCH PHASES'}
          </span>
@@ -1883,7 +2025,7 @@ const ThinkingSteps = ({ steps, dir, query }: { steps: Message['thinking_steps']
               </div>
             ) : (
               <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-sm bg-[var(--bg-surface)] border border-[var(--border)] flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-[var(--text-muted)]" />
+                <div className="w-1 h-1 rounded-[4px] bg-[var(--text-muted)]" />
               </div>
             )}
             <span className={`text-[10px] sm:text-[12px] font-medium ${step.status === 'completed' ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]/60'} transition-theme truncate`}>
@@ -2138,7 +2280,7 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
     >
       <div className="flex-shrink-0">
         <div 
-          className="w-7 h-7 rounded-full flex items-center justify-center border border-[var(--border-main)]/60 bg-white dark:bg-zinc-900 shadow-sm transition-theme group-hover:scale-105 group-hover:border-accent/20"
+          className="w-7 h-7 rounded-[4px] flex items-center justify-center border border-[var(--border-main)]/60 bg-white dark:bg-zinc-900 shadow-sm transition-theme group-hover:scale-105 group-hover:border-accent/20"
           style={{ color: brand ? brand.color : 'inherit' }}
         >
           {brand ? (
@@ -2156,7 +2298,7 @@ const CitationRow = ({ cite, idx, dir, getCleanUrl, getFavicon, query }: { cite:
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-4 h-4 rounded-full bg-accent/10 flex items-center justify-center text-[9px] font-black text-accent shrink-0 group-hover:bg-accent group-hover:text-white transition-theme">
+          <div className="w-4 h-4 rounded-[4px] bg-accent/10 flex items-center justify-center text-[9px] font-black text-accent shrink-0 group-hover:bg-accent group-hover:text-white transition-theme">
             {cite.index || (idx + 1)}
           </div>
           <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate group-hover:text-accent transition-theme group-hover:">
@@ -2303,13 +2445,13 @@ const MarkdownCitationLink = ({ citation, index }: { citation: any, index: numbe
         rel="noopener noreferrer"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-theme transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-accent/20"
+        className="inline-flex items-center justify-center w-4 h-4 rounded-[4px] transition-theme transform hover:scale-110 cursor-pointer overflow-hidden border border-transparent hover:border-accent/20"
       >
         <span 
           className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-gray-400 group-hover/cite:text-accent group-hover/cite: transition-theme"
           style={{ color: brand ? brand.color : 'inherit' }}
         >
-          {brand ? brand.icon("w-3.5 h-3.5 rounded-full") : <img src={favicon} className="w-3.5 h-3.5 object-contain rounded-full bg-white dark:bg-zinc-805" alt="" />}
+          {brand ? brand.icon("w-3.5 h-3.5 rounded-[4px]") : <img src={favicon} className="w-3.5 h-3.5 object-contain rounded-[4px] bg-white dark:bg-zinc-805" alt="" />}
         </span>
       </a>
 
@@ -2363,7 +2505,7 @@ const Citations = ({ citations, dir, isOpen, onToggle, query }: { citations: Mes
             return (
               <div 
                 key={`cit-prev-${cleanUrl || i}-${i}`} 
-                className="w-5 h-5 rounded-full bg-white dark:bg-zinc-800 border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm z-[10]"
+                className="w-5 h-5 rounded-[4px] bg-white dark:bg-zinc-800 border border-[var(--border)] flex items-center justify-center overflow-hidden shadow-sm z-[10]"
                 style={{ color: brand ? brand.color : 'inherit' }}
               >
                 {brand ? (
@@ -2986,8 +3128,8 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
         {}
         <div className={`absolute top-4 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex flex-col gap-1 z-10`}>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-accent">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest text-accent">
+            <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-ping" />
             {dir === 'rtl' ? styleLabel.ar : styleLabel.en}
           </div>
           <p className="text-[10px] text-gray-400 font-medium px-1">
@@ -3003,9 +3145,9 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="w-20 h-20 rounded-full border-2 border-t-accent-500 border-r-accent-500/30 border-b-accent-500/10 border-l-transparent shadow-[0_0_30px_rgba(156,163,175,0.15)]" 
+                  className="w-20 h-20 rounded-[4px] border-2 border-t-accent-500 border-r-accent-500/30 border-b-accent-500/10 border-l-transparent shadow-[0_0_30px_rgba(156,163,175,0.15)]" 
                 />
-                <div className="absolute w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center backdrop-blur-sm">
+                <div className="absolute w-14 h-14 rounded-[4px] bg-accent/10 border border-accent/20 flex items-center justify-center backdrop-blur-sm">
                   <span className="text-[11px] font-mono font-black text-accent">
                     {progressPercent}%
                   </span>
@@ -3031,7 +3173,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
             <div className="flex flex-col items-center gap-4">
               <button 
                 onClick={handlePlayPause}
-                className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border-2 border-accent/40 hover:border-accent hover:bg-accent/30 text-accent shadow-[0_0_40px_rgba(156,163,175,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
+                className="w-20 h-20 rounded-[4px] bg-accent/20 backdrop-blur-md border-2 border-accent/40 hover:border-accent hover:bg-accent/30 text-accent shadow-[0_0_40px_rgba(156,163,175,0.25)] flex items-center justify-center hover:scale-105 active:scale-95 cursor-pointer transition-theme"
                 title={isPlaying ? (dir === 'rtl' ? 'إيقاف مؤقت' : 'Pause') : (dir === 'rtl' ? 'تشغيل' : 'Play')}
               >
                 {isPlaying ? (
@@ -3066,7 +3208,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={`audio-vis-bar-${i}`}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-accent/70 rounded-full transition-theme shadow-[0_0_8px_rgba(156,163,175,0.4)]"
+                  className="w-1 bg-accent/70 rounded-[4px] transition-theme shadow-[0_0_8px_rgba(156,163,175,0.4)]"
                 />
               );
             } else if (status === 'rendering' || status === 'idle') {
@@ -3083,7 +3225,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                     ease: "easeInOut",
                     delay: i * 0.05 
                   }}
-                  className="w-1 bg-accent/60 rounded-full shadow-[0_0_8px_rgba(156,163,175,0.3)]"
+                  className="w-1 bg-accent/60 rounded-[4px] shadow-[0_0_8px_rgba(156,163,175,0.3)]"
                 />
               );
             } else {
@@ -3093,7 +3235,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
                 <div 
                   key={`audio-vis-idle-${i}`}
                   style={{ height: `${scaleVal}px` }}
-                  className="w-1 bg-accent/40 rounded-full transition-theme shadow-[0_0_4px_rgba(156,163,175,0.1)]"
+                  className="w-1 bg-accent/40 rounded-[4px] transition-theme shadow-[0_0_4px_rgba(156,163,175,0.1)]"
                 />
               );
             }
@@ -3117,16 +3259,16 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
           <div 
             ref={progressBarRef}
             onClick={handleTimelineClick}
-            className="flex-1 h-2 relative rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden cursor-pointer group"
+            className="flex-1 h-2 relative rounded-[4px] bg-gray-200 dark:bg-gray-800 overflow-hidden cursor-pointer group"
           >
             <div 
               style={{ width: `${(currentTime / mixDuration) * 100}%` }}
-              className="absolute left-0 top-0 h-full bg-accent rounded-full shadow-[0_0_10px_rgba(156,163,175,0.7)]"
+              className="absolute left-0 top-0 h-full bg-accent rounded-[4px] shadow-[0_0_10px_rgba(156,163,175,0.7)]"
             />
             {}
             <div 
               style={{ left: `calc(${(currentTime / mixDuration) * 100}% - 4px)` }}
-              className="absolute top-0 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              className="absolute top-0 w-2 h-2 rounded-[4px] bg-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
             />
           </div>
 
@@ -3199,7 +3341,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <span className="absolute inset-0 bg-accent rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <span className="absolute inset-0 bg-accent rounded-[4px] blur-[6px] opacity-15 animate-pulse" />
               <Sliders size={16} className="text-accent relative " />
             </div>
             <div className="flex flex-col">
@@ -3367,7 +3509,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
 
             {}
             <div className="flex items-center gap-2 px-3 py-2 rounded bg-black/5 dark:bg-white/[0.02] border border-gray-200/50 dark:border-gray-800/30 text-[10px] text-[var(--text-muted)] font-medium leading-normal">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse shrink-0" />
               <span>
                 {dir === 'rtl' 
                   ? 'بروتوكول ويب أوديو (Web Audio API) يقوم بدمج المسارين في بث واحد فائق الدقة ٢٤ بت بالوقت الفعلي.' 
@@ -3388,7 +3530,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
         <div className="flex items-center justify-between border-b border-gray-200/65 dark:border-gray-800/45 pb-3">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <span className="absolute inset-0 bg-accent rounded-full blur-[6px] opacity-15 animate-pulse" />
+              <span className="absolute inset-0 bg-accent rounded-[4px] blur-[6px] opacity-15 animate-pulse" />
               <Music size={16} className="text-accent relative " />
             </div>
             <div className="flex flex-col">
@@ -3616,8 +3758,8 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
             }`}>
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-accent rounded-full blur-md opacity-20" />
-                  <div className={`relative w-2 h-8 rounded-full shadow-[0_0_15px_rgba(156,163,175,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-accent'}`} />
+                  <div className="absolute inset-0 bg-accent rounded-[4px] blur-md opacity-20" />
+                  <div className={`relative w-2 h-8 rounded-[4px] shadow-[0_0_15px_rgba(156,163,175,0.4)] ${isPending ? 'bg-amber-500/50 animate-pulse' : 'bg-accent'}`} />
                 </div>
                 <div className="flex flex-col">
                   <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 ${isPending ? 'text-amber-500' : 'text-accent glow-accent'}`}>
@@ -3635,7 +3777,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                      {dir === 'rtl' ? 'حالة العمل' : 'COMPILATION'}
                    </span>
                     <div className="flex items-center gap-2">
-                     <div className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-400' : 'bg-accent'} animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)]`} />
+                     <div className={`w-1.5 h-1.5 rounded-[4px] ${isPending ? 'bg-amber-400' : 'bg-accent'} animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)]`} />
                      <span className={`text-[10px] font-black uppercase ${isPending ? 'text-amber-400' : 'text-accent'}`}>
                        {isPending ? (dir === 'rtl' ? 'في الانتظار' : 'QUEUED') : (dir === 'rtl' ? 'مكتمل' : 'RESOLVED')}
                      </span>
@@ -3669,7 +3811,7 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                           coverImageUrl={coverImageUrl} 
                         />
                         <div className="flex items-center gap-2 text-xs font-bold text-accent animate-pulse justify-center">
-                          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+                          <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-ping" />
                           <span>{dir === 'rtl' ? canon.pendingTextAr : canon.pendingTextEn}</span>
                         </div>
                       </div>
@@ -3719,11 +3861,11 @@ const ProductionSuite = ({ content, dir, theme }: { content: string; dir: 'ltr' 
                         <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-accent/20 shadow-2xl group/video">
                           <img {...props} className="w-full h-full object-cover transition-transform duration-300 group-hover/video:scale-110" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                             <div className="w-20 h-20 rounded-full bg-accent/20 backdrop-blur-md border border-accent/30 flex items-center justify-center text-accent animate-pulse">
+                             <div className="w-20 h-20 rounded-[4px] bg-accent/20 backdrop-blur-md border border-accent/30 flex items-center justify-center text-accent animate-pulse">
                                <Music size={40} />
                              </div>
                           </div>
-                          <div className="absolute top-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest">
+                          <div className="absolute top-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-[4px] border border-white/10 text-[10px] font-bold text-white uppercase tracking-widest">
                             {dir === 'rtl' ? 'عرض فني من بيربليكستا' : 'PERPLEXTA ART VIEW'}
                           </div>
                         </div>
@@ -4285,7 +4427,6 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('last_active_tool', selectedTool);
-    triggerMemoryNotification('startup');
   }, [selectedTool]);
 
   useEffect(() => {
@@ -4396,16 +4537,22 @@ export const ChatPage: React.FC = () => {
     }
   }, [isGenerating, chatId, routeChatId]);
 
-  const [videoSettings, setVideoSettings] = useState({
-    aspectRatio: '16:9',
-    resolution: '720p',
-    duration: 5,
-    style: 'Cinematic'
+  const [videoSettings, setVideoSettings] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('perplexta_video_aspect_ratio') : null;
+    return {
+      aspectRatio: saved || '9:16'
+    };
   });
-  const [imageSettings, setImageSettings] = useState({
-    aspectRatio: '1:1',
-    quality: 'HD',
-    style: 'Cinematic'
+  const [imageSettings, setImageSettings] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('perplexta_image_aspect_ratio') : null;
+    return {
+      aspectRatio: saved || '1:1',
+      quality: 'HD',
+      style: 'Cinematic'
+    };
+  });
+  const [isAspectBarCollapsed, setIsAspectBarCollapsed] = useState(() => {
+    return typeof window !== 'undefined' && localStorage.getItem('perplexta_aspect_bar_collapsed') === 'true';
   });
   const [audioSettings, setAudioSettings] = useState({
     mood: 'Epic',
@@ -4413,9 +4560,71 @@ export const ChatPage: React.FC = () => {
     format: 'wav',
     vocalType: 'Instrumental'
   });
-  const [showVideoSettings, setShowVideoSettings] = useState(true);
-  const [showImageSettings, setShowImageSettings] = useState(true);
-  const [showAudioSettings, setShowAudioSettings] = useState(true);
+
+  // Sync user media preferences from Core Database
+  useEffect(() => {
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('app_token') : null);
+    if (!authToken) return;
+
+    fetch('/api/users/media-preferences', {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.preferences) {
+          if (data.preferences.image?.aspectRatio) {
+            setImageSettings(prev => ({ ...prev, aspectRatio: data.preferences.image.aspectRatio }));
+            localStorage.setItem('perplexta_image_aspect_ratio', data.preferences.image.aspectRatio);
+          }
+          if (data.preferences.video?.aspectRatio) {
+            setVideoSettings(prev => ({ ...prev, aspectRatio: data.preferences.video.aspectRatio }));
+            localStorage.setItem('perplexta_video_aspect_ratio', data.preferences.video.aspectRatio);
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('[MediaPreferences] Failed to fetch saved media preferences:', err.message);
+      });
+  }, [token]);
+
+  // Strict aspect ratio selector with immediate application & persistence
+  const handleSelectAspectRatio = (ratio: string) => {
+    const isVideo = selectedTool === 'video';
+    const mediaType = isVideo ? 'video' : 'image';
+
+    if (isVideo) {
+      setVideoSettings(prev => ({ ...prev, aspectRatio: ratio }));
+      localStorage.setItem('perplexta_video_aspect_ratio', ratio);
+    } else {
+      setImageSettings(prev => ({ ...prev, aspectRatio: ratio }));
+      localStorage.setItem('perplexta_image_aspect_ratio', ratio);
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('app_token') : null);
+    if (authToken) {
+      fetch('/api/users/media-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          mediaType,
+          aspectRatio: ratio,
+          settings: isVideo ? { ...videoSettings, aspectRatio: ratio } : { ...imageSettings, aspectRatio: ratio }
+        })
+      }).catch(err => {
+        console.warn('[MediaPreferences] Failed to save remote media preference:', err.message);
+      });
+    }
+
+    toast.success(
+      dir === 'rtl' 
+        ? `تم تطبيق وحفظ أبعاد ${isVideo ? 'الفيديو' : 'الصورة'}: ${ratio}`
+        : `Applied & saved ${isVideo ? 'video' : 'image'} ratio: ${ratio}`,
+      { duration: 1800, id: 'aspect-ratio-applied' }
+    );
+  };
 
   useEffect(() => {
     const handleInsertToPrompt = (e: Event) => {
@@ -4425,9 +4634,9 @@ export const ChatPage: React.FC = () => {
         resetWriting();
         if (textareaRef.current) {
           textareaRef.current.focus();
-          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = '30px';
 
-          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+          textareaRef.current.style.height = `${Math.max(30, Math.min(textareaRef.current.scrollHeight, 200))}px`;
         }
         toast.success(dir === 'rtl' ? 'تم نسخ البرومبت وتطبيقه في حقل الإدخال' : 'Prompt loaded directly into the input field!');
       }
@@ -4506,6 +4715,18 @@ export const ChatPage: React.FC = () => {
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(() => { const cached = localStorage.getItem(`draft_edit_index_${routeChatId || 'new'}`); return cached ? parseInt(cached, 10) : null; });
   const [editValue, setEditValue] = useState(() => localStorage.getItem(`draft_edit_value_${routeChatId || 'new'}`) || '');
   const [showPinnedModal, setShowPinnedModal] = useState(false);
+  const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
+
+  const handleCopyPrompt = (text: string, index: number) => {
+    const cleanText = stripProtocolMarkers(text) || text;
+    if (!cleanText) return;
+    navigator.clipboard.writeText(cleanText);
+    setCopiedPromptIndex(index);
+    toast.success(dir === 'rtl' ? 'تم نسخ البرومبت بنجاح!' : 'Prompt copied to clipboard!');
+    setTimeout(() => {
+      setCopiedPromptIndex((prev) => (prev === index ? null : prev));
+    }, 2000);
+  };
 
   useEffect(() => {
     if (editingMessageIndex !== null) {
@@ -4566,8 +4787,8 @@ export const ChatPage: React.FC = () => {
             return trimmed + (trimmed ? ' ' : '') + suffix;
           });
           if (textareaRef.current) {
-             textareaRef.current.style.height = 'auto';
-             textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+             textareaRef.current.style.height = '30px';
+             textareaRef.current.style.height = `${Math.max(30, Math.min(textareaRef.current.scrollHeight, 200))}px`;
           }
         }
 
@@ -5309,26 +5530,13 @@ export const ChatPage: React.FC = () => {
       }
     };
 
-    const onMemoryExtracted = (data: any) => {
-      triggerMemoryNotification('success');
-    };
+    const onMemoryExtracted = (_data: any) => {};
 
-    const onMemoryWarning = (data: any) => {
-      triggerMemoryNotification('warning');
-    };
+    const onMemoryWarning = (_data: any) => {};
 
-    const onMemoryCleanup = (data: any) => {
-      triggerMemoryNotification('cleanup');
-    };
+    const onMemoryCleanup = (_data: any) => {};
 
-    const onMemoryConsolidation = (data: any) => {
-      const { consolidated, result } = data;
-      const desc = dir === 'rtl' 
-        ? `بروتوكول التحسين: تم دمج ${consolidated} سجلات قديمة في ${result} حقائق جوهرية لتحرير المساحة.`
-        : `Optimization Protocol: Consolidated ${consolidated} old records into ${result} core facts to free up space.`;
-
-      triggerMemoryNotification('cleanup', desc);
-    };
+    const onMemoryConsolidation = (_data: any) => {};
 
     const getToolFriendlyNameLocal = (toolId: string, lang: 'en' | 'ar'): string => {
       const mapping: Record<string, { en: string; ar: string }> = {
@@ -5566,6 +5774,37 @@ export const ChatPage: React.FC = () => {
     };
   }, [navigate]);
 
+  const chatMarkdownComponents = useMemo(() => ({
+    code: CodeBlock,
+    a: ({ href, children }: any) => {
+      const childrenText = String(children);
+      const isVideoText = childrenText.includes('Generated Video') || childrenText.includes('فيديو');
+      const isVideo = href && (
+        href.endsWith('.mp4') || 
+        href.endsWith('.webm') || 
+        href.endsWith('.mov') || 
+        href.includes('assets.mixkit.co/videos') ||
+        href.includes('/uploads/') ||
+        isVideoText
+      );
+      if (isVideo) {
+        return (
+          <MarkdownVideo src={href} alt="Generated Video" />
+        );
+      }
+      return <MarkdownLink href={href}>{children}</MarkdownLink>;
+    },
+    blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
+    h1: ({ children }: any) => <h1 className="text-xs md:text-sm font-black text-accent mb-3 mt-5 uppercase tracking-wider border-b border-accent/10 pb-1.5">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-[11px] md:text-xs font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
+      <div className="w-0.5 h-3 bg-accent rounded-[4px]" />
+      {children}
+    </h2>,
+    h3: ({ children }: any) => <h3 className="text-[10px] md:text-[11px] font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
+    img: (props: any) => <MarkdownImg dir={dir} {...props} />,
+    video: (props: any) => <MarkdownVideo dir={dir} {...props} />
+  }), [dir]);
+
   const findUserPrompt = (index: number): string => {
     for (let i = index - 1; i >= 0; i--) {
       if (messages[i]?.role === 'user') {
@@ -5610,9 +5849,64 @@ export const ChatPage: React.FC = () => {
         return;
       }
 
-      const toolToUse = selectedFile ? 'perplexta_analysis' : (activeDropdown === 'model' 
+      let toolToUse = selectedFile ? 'perplexta_analysis' : (activeDropdown === 'model' 
         ? (selectedModel === 'fast' ? 'chat_fast' : selectedModel === 'pro' ? 'chat_pro' : selectedModel === 'thinking' ? 'chat_reasoning' : 'chat')
         : selectedTool);
+
+      const lowercaseQuery = currentQuery.toLowerCase().trim();
+      const isImgRequest = lowercaseQuery.includes('generate image') || 
+                           lowercaseQuery.includes('generate an image') || 
+                           lowercaseQuery.includes('create an image') || 
+                           lowercaseQuery.includes('create image') || 
+                           lowercaseQuery.includes('draw a') || 
+                           lowercaseQuery.includes('paint a') || 
+                           lowercaseQuery.includes('show an image') || 
+                           lowercaseQuery.includes('صورة') || 
+                           lowercaseQuery.includes('صمم صورة') || 
+                           lowercaseQuery.includes('ارسم') || 
+                           lowercaseQuery.includes('توليد صورة') ||
+                           lowercaseQuery.includes('صنع صورة') ||
+                           selectedTool === 'image';
+
+      const isVidRequest = lowercaseQuery.includes('generate video') ||
+                           lowercaseQuery.includes('generate a video') ||
+                           lowercaseQuery.includes('create a video') ||
+                           lowercaseQuery.includes('create video') ||
+                           lowercaseQuery.includes('فيديو') ||
+                           lowercaseQuery.includes('توليد فيديو') ||
+                           lowercaseQuery.includes('صنع فيديو') ||
+                           lowercaseQuery.includes('مقطع') ||
+                           selectedTool === 'video';
+
+      if (isVidRequest && toolToUse !== 'perplexta_analysis') {
+        toolToUse = 'video';
+      } else if (isImgRequest && toolToUse !== 'perplexta_analysis') {
+        toolToUse = 'image';
+      }
+
+      // Strict protocol: User's explicitly selected aspect ratio is authoritative
+      let dynamicVideoSettings = { 
+        ...videoSettings, 
+        aspectRatio: videoSettings.aspectRatio || '9:16' 
+      };
+      let dynamicImageSettings = { 
+        ...imageSettings, 
+        aspectRatio: imageSettings.aspectRatio || '1:1' 
+      };
+      
+      // If user typed a direct numeric aspect ratio tag in query (e.g. 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 1:1, 21:9), honor it
+      const aspectMatch = lowercaseQuery.match(/(16:9|9:16|1:1|4:3|3:4|3:2|2:3|21:9)/);
+      if (aspectMatch) {
+         dynamicImageSettings.aspectRatio = aspectMatch[1];
+         dynamicVideoSettings.aspectRatio = aspectMatch[1];
+         if (toolToUse === 'video') {
+           setVideoSettings(prev => ({ ...prev, aspectRatio: aspectMatch[1] }));
+           localStorage.setItem('perplexta_video_aspect_ratio', aspectMatch[1]);
+         } else if (toolToUse === 'image') {
+           setImageSettings(prev => ({ ...prev, aspectRatio: aspectMatch[1] }));
+           localStorage.setItem('perplexta_image_aspect_ratio', aspectMatch[1]);
+         }
+      }
 
       const tempUserMsgId = `cli_${Date.now()}_u`;
       const tempAstMsgId = `cli_${Date.now()}_a`;
@@ -5666,7 +5960,7 @@ export const ChatPage: React.FC = () => {
         socket.emit('typing', { isTyping: false, role: 'user', name: user?.name || 'User' });
       }
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = '30px';
       }
 
       abortControllerRef.current = new AbortController();
@@ -5807,9 +6101,9 @@ export const ChatPage: React.FC = () => {
         mode: 'standard',
         file_data: fileData,
         forensic_mode: forensicMode,
-        video_settings: selectedTool === 'video' ? videoSettings : undefined,
-        image_settings: selectedTool === 'image' ? imageSettings : undefined,
-        audio_settings: selectedTool === 'canvas' ? finalAudioSettings : undefined
+        video_settings: toolToUse === 'video' ? dynamicVideoSettings : undefined,
+        image_settings: toolToUse === 'image' ? dynamicImageSettings : undefined,
+        audio_settings: toolToUse === 'canvas' ? finalAudioSettings : undefined
       });
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -5925,343 +6219,74 @@ export const ChatPage: React.FC = () => {
     { id: 'thinking', label: t('thinking'), icon: <Brain size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
   ];
 
-  const renderImageSettings = () => {
-    if (selectedTool !== 'image' || !showImageSettings) return null;
-
-    const ratios = ['1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
-    const qualities = ['Standard', 'HD', 'Ultra'];
-    const styles = ['Cinematic', 'Realistic', 'Anime', 'Digital Art'];
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, y: 5 }}
-        className="mb-1 w-full pointer-events-auto"
-      >
-        <div className={`flex items-center justify-between px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none gap-3 md:gap-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
-          <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-            <div className="flex items-center gap-2 md:gap-3.5">
-              {ratios.map((r, rIdx) => (
-                <button
-                  key={`img-ratio-${r}-${rIdx}`}
-                  onClick={() => setImageSettings(prev => ({ ...prev, aspectRatio: r }))}
-                  className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
-                    imageSettings.aspectRatio === r 
-                      ? 'text-accent  scale-110' 
-                      : 'text-gray-400/40 hover:text-gray-200'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-
-            <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5" />
-
-            <div className="flex items-center gap-2.5 md:gap-4">
-              {qualities.map((q, qIdx) => (
-                <button
-                  key={`img-quality-${q}-${qIdx}`}
-                  onClick={() => setImageSettings(prev => ({ ...prev, quality: q }))}
-                  className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
-                    imageSettings.quality === q 
-                      ? 'text-accent underline underline-offset-4 decoration-2 scale-105' 
-                      : 'text-[var(--text-muted)]/30 hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
-            <div className={`flex items-center gap-2 md:gap-4 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
-              {styles.map((s, sIdx) => (
-                <button
-                  key={`img-style-${s}-${sIdx}`}
-                  onClick={() => setImageSettings(prev => ({ ...prev, style: s }))}
-                  className={`text-[6.5px] md:text-[8.5px] font-black uppercase tracking-wider transition-theme whitespace-nowrap pointer-events-auto cursor-pointer ${
-                    imageSettings.style === s 
-                      ? 'text-accent  scale-110 font-bold underline underline-offset-4 decoration-2' 
-                      : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  {dir === 'rtl' ? (
-                    s === 'Cinematic' ? 'سينمائي' :
-                    s === 'Realistic' ? 'واقعي' :
-                    s === 'Anime' ? 'أنمي' :
-                    'فن رقمي'
-                  ) : s}
-                </button>
-              ))}
-            </div>
-
-            <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5 mx-1" />
-
-            <button 
-              onClick={() => setShowImageSettings(false)}
-              className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
-              title={dir === 'rtl' ? 'إغلاق' : 'Close'}
-            >
-              <Plus size={10} className="rotate-45" />
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
-  const renderAudioSettings = () => {
-    if (selectedTool !== 'canvas' || !showAudioSettings) return null;
-
-    const moods = [
-      { id: 'Epic', label: dir === 'rtl' ? 'أوركسترا ملحمية' : 'Epic Orchestral' },
-      { id: 'Tarab', label: dir === 'rtl' ? 'طرب ومقام شرقي' : 'Arabic Tarab' },
-      { id: 'EDM', label: dir === 'rtl' ? 'إلكترونك ودي جي' : 'EDM & Techno' },
-      { id: 'Acoustic', label: dir === 'rtl' ? 'غيتار وتخت هادئ' : 'Acoustic & Soft' },
-      { id: 'LoFi', label: dir === 'rtl' ? 'لو-فاي مريح' : 'Chill Lo-Fi' },
-      { id: 'Jazz', label: dir === 'rtl' ? 'جاز بلوز' : 'Jazz & Blues' },
-      { id: 'Pop', label: dir === 'rtl' ? 'بوب حماسي' : 'Energetic Pop' }
-    ];
-
-    const vocalTypes = [
-      { id: 'Instrumental', label: dir === 'rtl' ? 'لحن صامت' : 'Instrumental' },
-      { id: 'Male', label: dir === 'rtl' ? 'صوت رجالي' : 'Male Vocal' },
-      { id: 'Female', label: dir === 'rtl' ? 'صوت نسائي' : 'Female Vocal' },
-      { id: 'Choir', label: dir === 'rtl' ? 'كورال جماعي' : 'Choir Vocal' },
-      { id: 'Vocaloid', label: dir === 'rtl' ? 'مؤثرات أصوات AI' : 'AI Synth Vocal' }
-    ];
-
-    const appendAudioTag = (tagLabel: string) => {
-      setQuery(prev => {
-        const cleanedLabel = tagLabel.trim();
-        if (prev.includes(`[${cleanedLabel}]`)) return prev;
-        const trimmed = prev.trim();
-        if (!trimmed) return `[${cleanedLabel}] `;
-        return `${trimmed} [${cleanedLabel}] `;
-      });
-    };
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, y: 5 }}
-        className="mb-1 w-full pointer-events-auto"
-      >
-        <div className={`flex items-center justify-between px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none gap-3 md:gap-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
-          <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-            <div className="flex items-center gap-2 md:gap-3.5">
-              {moods.map((m, mIdx) => (
-                <button
-                  key={`audio-mood-${m.id}-${mIdx}`}
-                  onClick={() => {
-                    setAudioSettings(prev => ({ ...prev, mood: m.id }));
-                    appendAudioTag(m.label);
-                  }}
-                  className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
-                    audioSettings.mood === m.id 
-                      ? 'text-accent  scale-110 font-bold' 
-                      : 'text-gray-400/40 hover:text-gray-200'
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5" />
-
-            <div className="flex items-center gap-2.5 md:gap-4">
-              {[15, 30, 60, 90].map((d, dIdx) => (
-                <button
-                  key={`audio-dur-${d}-${dIdx}`}
-                  onClick={() => {
-                    setAudioSettings(prev => ({ ...prev, duration: d }));
-                    appendAudioTag(`${d}${dir === 'rtl' ? ' ثواني' : 's'}`);
-                  }}
-                  className={`text-[7px] md:text-[9px] font-bold tracking-widest transition-theme pointer-events-auto cursor-pointer ${
-                    audioSettings.duration === d 
-                      ? 'text-accent underline underline-offset-4 decoration-2 scale-105' 
-                      : 'text-gray-400/30 hover:text-gray-200'
-                  }`}
-                >
-                  {d}{dir === 'rtl' ? 'ث' : 'S'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row'}`}>
-            <div className={`flex items-center gap-2 md:gap-4 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-              {vocalTypes.map((v, vIdx) => (
-                <button
-                  key={`audio-vocal-${v.id}-${vIdx}`}
-                  onClick={() => {
-                    setAudioSettings(prev => ({ ...prev, vocalType: v.id }));
-                    appendAudioTag(v.label);
-                  }}
-                  className={`text-[7px] md:text-[9px] font-bold transition-theme pointer-events-auto cursor-pointer px-1.5 py-0.5 rounded-[var(--radius)] ${
-                    audioSettings.vocalType === v.id 
-                      ? 'bg-accent/10 text-accent border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]' 
-                      : 'text-gray-400/30 hover:text-gray-200'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="w-px h-2 bg-gray-200/5 dark:bg-[var(--bg-secondary)]/5 mx-1" />
-
-            <button 
-              onClick={() => setShowAudioSettings(false)}
-              className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
-              title={dir === 'rtl' ? 'إغلاق' : 'Close'}
-            >
-              <Plus size={10} className="rotate-45" />
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
-  const renderVideoSettings = () => {
-    if (selectedTool !== 'video' || !showVideoSettings) return null;
-
-    const ratios = ['16:9', '9:16', '1:1', '4:3'];
-    const resolutions = ['720p', '1080p'];
-    const styles = ['Cinematic', 'Realistic', '3D Render', 'Anime', 'Cyberpunk'];
-
-    const styleTrans: Record<string, string> = {
-      'Cinematic': dir === 'rtl' ? 'سينمائي' : 'Cinematic',
-      'Realistic': dir === 'rtl' ? 'واقعي' : 'Realistic',
-      '3D Render': dir === 'rtl' ? 'رندر ثلاثي' : '3D Render',
-      'Anime': dir === 'rtl' ? 'أنمي' : 'Anime',
-      'Cyberpunk': dir === 'rtl' ? 'سايبربانك' : 'Cyberpunk'
-    };
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, y: 5 }}
-        className={`mb-1 w-full flex items-center justify-between pointer-events-auto px-1 md:px-8 pb-1 overflow-x-auto scrollbar-none ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}
-      >
-        <div className={`flex items-center gap-3 md:gap-7 shrink-0 ${dir === 'rtl' ? 'flex-row-reverse' : 'flex-row'}`}>
-
-          <div className="flex items-center gap-1.5 md:gap-2">
-            {styles.map((st, stIdx) => (
-              <button
-                key={`vid-style-${st}-${stIdx}`}
-                onClick={() => setVideoSettings(prev => ({ ...prev, style: st }))}
-                className={`text-[7px] md:text-[9px] font-bold px-2 py-0.5 rounded-[4px] border transition-theme pointer-events-auto cursor-pointer ${
-                  videoSettings.style === st
-                    ? 'text-accent border-accent/30 bg-accent/5  scale-105'
-                    : 'text-gray-400/40 border-transparent hover:text-gray-200'
-                }`}
-              >
-                {styleTrans[st]}
-              </button>
-            ))}
-          </div>
-
-          <div className="w-px h-3 bg-zinc-800/80" />
-
-          <div className="flex items-center gap-2 md:gap-3.5">
-            {ratios.map((r, rIdx) => (
-              <button
-                key={`vid-ratio-${r}-${rIdx}`}
-                onClick={() => setVideoSettings(prev => ({ ...prev, aspectRatio: r }))}
-                className={`text-[7px] md:text-[9px] font-black transition-theme pointer-events-auto cursor-pointer ${
-                  videoSettings.aspectRatio === r 
-                    ? 'text-accent  scale-110' 
-                    : 'text-gray-400/40 hover:text-gray-200'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-
-          <div className="w-px h-3 bg-zinc-800/80" />
-
-          <div className="flex items-center gap-2.5 md:gap-4">
-            {resolutions.map((res, resIdx) => (
-              <button
-                key={`vid-res-${res}-${resIdx}`}
-                onClick={() => setVideoSettings(prev => ({ ...prev, resolution: res }))}
-                className={`text-[6px] md:text-[8px] font-black uppercase tracking-widest transition-theme pointer-events-auto cursor-pointer ${
-                  videoSettings.resolution === res 
-                    ? 'text-accent  scale-110' 
-                    : 'text-gray-400/30 hover:text-gray-200'
-                }`}
-              >
-                {res}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={`flex items-center gap-2.5 md:gap-6 shrink-0 ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
-          <button 
-            onClick={() => setShowVideoSettings(false)}
-            className="text-gray-400/10 hover:text-accent transition-theme hover:rotate-90 p-0.5 pointer-events-auto"
-            title="Close Settings"
-          >
-            <Plus size={10} className="rotate-45" />
-          </button>
-
-          <div className={`flex items-center gap-1.5 md:gap-3 min-w-[80px] md:min-w-[150px] ${dir === 'rtl' ? 'flex-row' : 'flex-row-reverse'}`}>
-            <span className="text-[8px] font-black text-accent/80 whitespace-nowrap ">{videoSettings.duration}s</span>
-
-            <div className="relative flex-1 h-3 flex items-center group/slider">
-              <input 
-                type="range" 
-                min="1" 
-                max="15" 
-                value={videoSettings.duration} 
-                onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                className="w-full h-0.5 bg-[var(--bg-overlay)] rounded-full appearance-none cursor-pointer accent-accent hover:accent-accent-400 transition-theme pointer-events-auto"
-              />
-            </div>
-
-            <span className="text-[6px] md:text-[8px] font-bold text-gray-400/30 uppercase tracking-tighter whitespace-nowrap">{t('videoDuration')}</span>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
   const advancedTools = [
-    { id: 'chat', label: t('chat'), icon: <MessageSquare size={18} />, isNew: false },
-    { id: 'code', label: t('code'), icon: <Code size={18} />, isNew: true },
-    { id: 'image', label: t('image'), icon: <ImageIcon size={18} />, isNew: false },
-    { id: 'video', label: t('video'), icon: <Video size={18} />, isNew: true },
-    { id: 'learning', label: t('learning'), icon: <BookOpen size={18} />, isNew: true },
-    { id: 'legal_analysis', label: t('legal_analysis'), icon: <Scale size={18} />, isNew: true },
-    { id: 'perplexta_analysis', label: t('perplexta_analysis'), icon: <Search size={18} />, isNew: true },
-    { id: 'canvas', label: t('canvas'), icon: <Music size={18} />, isNew: true },
-    { id: 'notebook', label: t('notebook'), icon: <Megaphone size={18} />, isNew: true },
-    { id: 'tts', label: t('tts'), icon: <Volume2 size={18} />, isNew: true },
-    { id: 'stt', label: t('stt'), icon: <Mic size={18} />, isNew: true },
-  ].filter(t => !isMobile || (t.id !== 'code' && t.id !== 'notebook'));
+    { id: 'chat', label: t('chat') || (dir === 'rtl' ? 'محادثة' : 'Chat'), icon: <MessageSquare size={16} />, isNew: false },
+    { id: 'code', label: t('code') || (dir === 'rtl' ? 'توليد كود' : 'Code Generation'), icon: <Code size={16} />, isNew: true },
+    { id: 'image', label: t('image') || (dir === 'rtl' ? 'توليد صورة' : 'Image Generation'), icon: <ImageIcon size={16} />, isNew: false },
+    { id: 'video', label: t('video') || (dir === 'rtl' ? 'توليد فيديو' : 'Video Generation'), icon: <Video size={16} />, isNew: true },
+    { id: 'learning', label: t('learning') || (dir === 'rtl' ? 'مساعد التعليم' : 'Learning Assistant'), icon: <BookOpen size={16} />, isNew: true },
+    { id: 'legal_analysis', label: t('legal_analysis') || (dir === 'rtl' ? 'مساعد القانون' : 'Legal Assistant'), icon: <Scale size={16} />, isNew: true },
+    { id: 'perplexta_analysis', label: t('perplexta_analysis') || (dir === 'rtl' ? 'تحليل بيربليكستا' : 'Perplexta Analysis'), icon: <Search size={16} />, isNew: true },
+    { id: 'canvas', label: t('canvas') || (dir === 'rtl' ? 'استوديو الصوت' : 'Audio Studio'), icon: <Music size={16} />, isNew: true },
+    { id: 'notebook', label: t('notebook') || (dir === 'rtl' ? 'المفكرة البحثية' : 'Research Notebook'), icon: <BookOpen size={16} />, isNew: true },
+    { id: 'tts', label: t('tts') || (dir === 'rtl' ? 'تحويل النص إلى صوت' : 'Text to Speech'), icon: <Volume2 size={16} />, isNew: true },
+    { id: 'stt', label: t('stt') || (dir === 'rtl' ? 'تحويل الصوت إلى نص' : 'Speech to Text'), icon: <Mic size={16} />, isNew: true },
+    { id: 'perplexta_music', label: t('perplexta_music') || (dir === 'rtl' ? 'الموسيقى والأغاني' : 'Music & Songs'), icon: <Music size={16} />, isNew: true },
+  ];
 
   const currentModel = models.find(m => m.id === selectedModel) || models[2];
   const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
   const currentPlan = plans?.find((p: any) => p.id?.toString() === user?.subscription?.plan_id?.toString());
 
-  const renderInputArea = () => (
-    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-4xl mx-auto pb-safe">
+  const getToolWelcomeIntro = (toolId: string) => {
+    const isAr = dir === 'rtl';
+    const userName = user?.name || (isAr ? 'مستخدم' : 'User');
+    const greeting = isAr ? `مرحباً، ${userName}` : `Hello, ${userName}`;
+    
+    let promptIntro = '';
+    switch (toolId) {
+      case 'image':
+        promptIntro = isAr ? 'اوصف المظهر بدقة لنبتكر إبداعاً بصرياً فريداً.' : 'Describe the visual precisely to create unique art.';
+        break;
+      case 'video':
+        promptIntro = isAr ? 'اكتب المشهد السينمائي أو الفكرة لتوليدها بدقة.' : 'Describe your cinematic scene to generate it.';
+        break;
+      case 'code':
+        promptIntro = isAr ? 'اطلب الهيكل البرمجي أو الخوارزمية لنكتبها معاً.' : 'Request your structural code or algorithm now.';
+        break;
+      case 'perplexta_music':
+        promptIntro = isAr ? 'حدد النمط أو الحالة المزاجية للتأليف الصوتي.' : 'Specify the style or mood for acoustic composition.';
+        break;
+      case 'canvas':
+        promptIntro = isAr ? 'جاهز لتصميم المقاطع والمؤثرات الصوتية بدقة واحترافية.' : 'Ready to produce acoustic tracks and effects.';
+        break;
+      case 'notebook':
+        promptIntro = isAr ? 'اطرح أسئلتك لنلخص وننظم الأفكار والمعلومات.' : 'Ask your questions to synthesize knowledge and ideas.';
+        break;
+      case 'legal_analysis':
+        promptIntro = isAr ? 'اطرح الاستفسارات للتحليل القانوني والدقيق.' : 'Submit inquiries for precise regulatory analysis.';
+        break;
+      case 'perplexta_analysis':
+        promptIntro = isAr ? 'جاهز للتنقيب الرقمي والتقني العميق والتحليل.' : 'Ready for deep technical scanning and analysis.';
+        break;
+      case 'learning':
+        promptIntro = isAr ? 'اسأل عن أي مفهوم لشرحه خطوة بخطوة.' : 'Ask about any concept for step-by-step guidance.';
+        break;
+      case 'tts':
+        promptIntro = isAr ? 'اكتب النص لنطقه بصوت احترافي واضح.' : 'Type text to synthesize voice professionally.';
+        break;
+      case 'stt':
+        promptIntro = isAr ? 'ارفع ملفك الصوتي أو تحدث للتفريغ الفوري.' : 'Upload or speak for instant transcription.';
+        break;
+      default:
+        promptIntro = isAr ? 'جاهز لتنفيذ طلبك بدقة واحترافية.' : 'Ready to execute your request with precision.';
+        break;
+    }
+    return { greeting, promptIntro };
+  };
 
-      <div className={`transition-all ease-in-out ${isWriting ? 'duration-100 opacity-0 pointer-events-none -translate-y-1' : 'duration-300 opacity-100 pointer-events-auto translate-y-0'}`}>
-        {renderVideoSettings()}
-        {renderImageSettings()}
-        {renderAudioSettings()}
-      </div>
+  const renderInputArea = () => (
+    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-3xl mx-auto pb-safe">
 
       <div className="relative w-full">
 
@@ -6296,6 +6321,93 @@ export const ChatPage: React.FC = () => {
           )}
         </AnimatePresence>
 
+        {/* Collapsible Segmented Aspect Ratio Bar for Video & Image Tools */}
+        {(selectedTool === 'video' || selectedTool === 'image') && (
+          <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5 self-start select-none max-w-full">
+            <AnimatePresence mode="wait">
+              {!isAspectBarCollapsed ? (
+                <motion.div 
+                  key="expanded-ratio-strip"
+                  initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center gap-1 sm:gap-1.5 max-w-full overflow-hidden"
+                >
+                  <div className="inline-flex items-stretch rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] divide-x divide-[var(--border-main)] rtl:divide-x-reverse overflow-x-auto scrollbar-none shadow-xs">
+                    {['16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '1:1'].map((ratio) => {
+                      const currentRatio = selectedTool === 'video'
+                        ? (videoSettings.aspectRatio || '16:9')
+                        : (imageSettings.aspectRatio || '1:1');
+                      const isActive = currentRatio === ratio;
+
+                      const RATIO_TOOLTIPS: Record<string, { ar: string; en: string }> = {
+                        '16:9': { ar: '16:9 - عرضي / يوتيوب وسينما', en: '16:9 - Landscape / Cinema' },
+                        '9:16': { ar: '9:16 - طولي / ريلز وتيك توك وستوري', en: '9:16 - Portrait / Reels & TikTok' },
+                        '4:3':  { ar: '4:3 - كلاسيكي عريض', en: '4:3 - Standard Landscape' },
+                        '3:4':  { ar: '3:4 - كلاسيكي طولي', en: '3:4 - Standard Portrait' },
+                        '3:2':  { ar: '3:2 - فوتوغرافي أفقي', en: '3:2 - Classic Photo Landscape' },
+                        '2:3':  { ar: '2:3 - فوتوغرافي رأسي', en: '2:3 - Classic Photo Portrait' },
+                        '1:1':  { ar: '1:1 - مربع / انستغرام', en: '1:1 - Square' },
+                      };
+
+                      return (
+                        <button
+                          key={ratio}
+                          type="button"
+                          onClick={() => handleSelectAspectRatio(ratio)}
+                          title={dir === 'rtl' ? RATIO_TOOLTIPS[ratio]?.ar : RATIO_TOOLTIPS[ratio]?.en}
+                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1.5 text-[9.5px] sm:text-xs font-mono font-medium sm:font-semibold transition-colors duration-150 whitespace-nowrap ${
+                            isActive
+                              ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)] font-bold shadow-inner'
+                              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]/50'
+                          }`}
+                        >
+                          {ratio}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAspectBarCollapsed(true);
+                      localStorage.setItem('perplexta_aspect_bar_collapsed', 'true');
+                    }}
+                    title={dir === 'rtl' ? 'طي شريط الأبعاد' : 'Collapse ratio bar'}
+                    className="p-1 sm:p-1.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-transparent hover:border-[var(--border-main)] transition-colors shrink-0"
+                  >
+                    <ChevronUp size={13} className="sm:w-3.5 sm:h-3.5" />
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="collapsed-ratio-strip"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  type="button"
+                  onClick={() => {
+                    setIsAspectBarCollapsed(false);
+                    localStorage.setItem('perplexta_aspect_bar_collapsed', 'false');
+                  }}
+                  title={dir === 'rtl' ? 'توسيع شريط الأبعاد' : 'Expand ratio bar'}
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[10px] sm:text-xs font-mono font-semibold text-[var(--text-secondary)] hover:text-accent hover:border-accent/30 hover:bg-[var(--surface-subtle)] transition-all shadow-xs"
+                >
+                  <span>
+                    {selectedTool === 'video'
+                      ? (videoSettings.aspectRatio || '16:9')
+                      : (imageSettings.aspectRatio || '1:1')}
+                  </span>
+                  <ChevronDown size={11} className="sm:w-3.5 sm:h-3.5 text-[var(--text-muted)]" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         <motion.div 
           className={`relative w-full flex flex-col rounded-md border box-border min-w-0 transition-all bg-transparent ${
             isWriting
@@ -6329,8 +6441,8 @@ export const ChatPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-[4px] h-2.5 w-2.5 bg-red-500"></span>
                 </span>
                 <span className="text-xs font-black text-red-500 animate-pulse uppercase tracking-wider">
                   {dir === 'rtl' ? 'جاري الاستماع وتدوين الصوت...' : 'LISTENING & TRANSCRIBING...'}
@@ -6342,7 +6454,7 @@ export const ChatPage: React.FC = () => {
                   {[1, 2, 3, 4, 5].map((i) => (
                     <motion.span
                       key={`chat-sound-wave-${i}`}
-                      className="w-0.5 bg-red-500 rounded-full"
+                      className="w-0.5 bg-red-500 rounded-[4px]"
                       animate={{
                         height: ["4px", "16px", "4px"]
                       }}
@@ -6431,7 +6543,7 @@ export const ChatPage: React.FC = () => {
                   const input = document.getElementById('unified-upload') as HTMLInputElement;
                   if (input) input.value = '';
                 }}
-                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-theme z-10"
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-[4px] flex items-center justify-center shadow-lg hover:bg-red-600 transition-theme z-10"
               >
                 <Plus size={10} className="rotate-45" />
               </button>
@@ -6458,8 +6570,8 @@ export const ChatPage: React.FC = () => {
                       onChange={(e) => setForensicMode(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-full transition-theme ${forensicMode ? 'bg-accent/80 dark:bg-accent/50' : ''}`} />
-                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-accent' : ''}`} />
+                    <div className={`w-8 h-4 bg-gray-200 dark:bg-gray-800 rounded-[4px] transition-theme ${forensicMode ? 'bg-accent/80 dark:bg-accent/50' : ''}`} />
+                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-[4px] bg-white shadow-md transition-transform duration-300 ${forensicMode ? 'transform translate-x-4 bg-accent' : ''}`} />
                   </div>
                   <span className={`text-[10px] font-bold ${forensicMode ? 'text-accent ' : 'text-[var(--text-muted)]'}`}>
                     {dir === 'rtl' ? 'وضع التحقيق الجنائي' : 'Forensic Mode'}
@@ -6470,12 +6582,12 @@ export const ChatPage: React.FC = () => {
           </div>
         )}
 
-        <div className="flex items-end px-1 sm:px-3 py-1 sm:py-3 gap-0.5 sm:gap-2">
+        <div className="flex items-end px-2 sm:px-3 py-1.5 sm:py-2 gap-1 sm:gap-2">
 
           <div className="flex-shrink-0 flex items-center">
             <motion.button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme group shadow-none
+              className={`w-8 h-8 flex items-center justify-center rounded-[8px] transition-theme group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
                   : 'hover:bg-accent/5 hover:border-accent/20 active:scale-95'
@@ -6500,17 +6612,17 @@ export const ChatPage: React.FC = () => {
               } : {}}
             >
               {isGenerating ? (
-                <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10">
-                   <div className="absolute inset-0 rounded-full border-2 border-accent/10 border-t-accent-500 animate-spin w-5 h-5 md:w-7 md:h-7 m-auto" />
-                   <Square size={10} className="md:size-[14px] text-accent relative z-10 " fill="currentColor" />
+                <div className="relative flex items-center justify-center w-7 h-7">
+                   <div className="absolute inset-0 rounded-[4px] border-2 border-accent/10 border-t-accent-500 animate-spin w-4 h-4 m-auto" />
+                   <Square size={9} className="text-accent relative z-10" fill="currentColor" />
                 </div>
               ) : (
                 <div className={`${dir === 'rtl' ? 'transform -scale-x-100' : ''} flex items-center justify-center`}>
                   <Send 
-                    size={18} 
-                    className={`md:w-6 md:h-6 transition-theme ${
+                    size={16} 
+                    className={`transition-theme ${
                       query.trim() 
-                        ? 'text-accent  scale-100' 
+                        ? 'text-accent scale-100' 
                         : 'text-gray-400 group-hover:text-accent'
                     }`} 
                   />
@@ -6526,8 +6638,8 @@ export const ChatPage: React.FC = () => {
               onChange={(e) => {
                 const val = e.target.value;
                 setQuery(val);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                e.target.style.height = '30px';
+                e.target.style.height = `${Math.max(30, Math.min(e.target.scrollHeight, 200))}px`;
                 if (val.trim().length > 0) {
                   startWriting();
                 } else {
@@ -6542,15 +6654,15 @@ export const ChatPage: React.FC = () => {
                   e.preventDefault();
                   resetWriting();
                   handleSendOrStop();
-                  if (textareaRef.current) textareaRef.current.style.height = 'auto'; 
+                  if (textareaRef.current) textareaRef.current.style.height = '30px'; 
                 }
               }}
               disabled={isInputDisabled}
               placeholder={isInputDisabled ? (dir === 'rtl' ? 'يرجى تفعيل باقة اشتراك أو شحن الرصيد للبدء بالاستخدام...' : 'Please activate a subscription plan or top up your balance to start...') : t('askAssistant')}
-              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-[16px] sm:text-[17px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
+              className={`w-full bg-transparent border-none outline-none px-1 py-1 text-[15px] sm:text-[16px] font-medium placeholder:text-[var(--text-secondary)]/50 text-[var(--text-primary)] resize-none scrollbar-none overflow-hidden leading-relaxed ${dir === 'rtl' ? 'text-right' : 'text-left'} ${isInputDisabled ? 'cursor-not-allowed text-gray-400' : ''}`}
               dir="auto"
               rows={1}
-              style={{ minHeight: '32px', maxHeight: '200px', height: '32px' }}
+              style={{ minHeight: '30px', maxHeight: '200px', height: '30px' }}
             />
             {query.length > 500 && (
               <span className={`absolute bottom-[-14px] ${dir === 'rtl' ? 'left-1' : 'right-1'} text-[10px] font-mono select-none pointer-events-none transition-theme ${query.length > 15000 ? 'text-red-500 font-bold drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]' : 'text-gray-400'}`}>
@@ -6576,15 +6688,15 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               disabled={isInputDisabled}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-sm transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(156,163,175,0.1)]'}`}
+              className={`w-8 h-8 flex items-center justify-center rounded-[8px] transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(156,163,175,0.1)]'}`}
             >
-              <Plus size={18} className="md:w-5 md:h-5 text-[var(--text-secondary)] group-hover:hidden transition-theme" />
-              <Paperclip size={18} className="md:w-5 md:h-5 text-accent hidden group-hover:block transition-theme " />
+              <Plus size={16} className="text-[var(--text-secondary)] group-hover:hidden transition-theme" />
+              <Paperclip size={16} className="text-accent hidden group-hover:block transition-theme " />
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-1.5 sm:px-3 py-1.5 sm:py-2.5 border-t border-dashed border-[var(--border-main)] transition-all ease-in-out">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t border-[var(--border-main)]/60 transition-all ease-in-out">
           <div className="flex items-center gap-1 sm:gap-1.5">
             <div ref={toolsMenuRef} className="relative">
               <button 
@@ -6597,7 +6709,7 @@ export const ChatPage: React.FC = () => {
                   }
                 }}
                 disabled={isInputDisabled}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 h-8 rounded-[8px] transition-theme border ${
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'tool'
@@ -6606,18 +6718,18 @@ export const ChatPage: React.FC = () => {
                 }`}
               >
                 <span className={activeDropdown === 'tool' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
-                  {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'md:w-4 md:h-4' })}
+                  {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'w-3.5 h-3.5' })}
                 </span>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentTool.label}</span>
               </button>
 
               {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-56 rounded-lg border shadow-2xl flex flex-col z-[100] overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)]`}>
-                  <div className={`px-4 py-3 text-[10px] font-black tracking-[0.2em] text-[var(--text-muted)] bg-[var(--bg-base)]/30`}>
-                    {t('tools').toUpperCase()}
+                <div className={`absolute bottom-full mb-2 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-52 sm:w-56 rounded-xl border shadow-2xl flex flex-col z-[100] overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)] backdrop-blur-md`}>
+                  <div className={`px-3 py-2 text-[10px] font-black tracking-wider text-[var(--text-muted)] bg-[var(--bg-base)]/30 border-b border-[var(--border-main)]/40`}>
+                    {dir === 'rtl' ? 'الأدوات' : 'TOOLS'}
                   </div>
-                  <div className="p-1.5 flex flex-col gap-0.5 max-h-[50vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.filter(t => t.id !== 'sovereign_search' && t.id !== 'sovereign_memory').map((tool, tIdx) => {
+                  <div className="p-1 flex flex-col gap-0 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {advancedTools.map((tool, tIdx) => {
                       const limit = currentPlan?.limits?.[tool.id];
                       const isHidden = limit?.isHidden === true;
                       const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
@@ -6625,45 +6737,43 @@ export const ChatPage: React.FC = () => {
                       const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
 
                       return (
-                      <button 
-                        key={`adv-tool-${tool.id}-${tIdx}`} 
-                        onClick={() => {
-                          if (isLocked) {
-                            return;
-                          }
-                          setSelectedTool(tool.id);
-                          if (tool.id === 'video') setShowVideoSettings(true);
-                          if (tool.id === 'image') setShowImageSettings(true);
-                          if (tool.id === 'canvas') setShowAudioSettings(true);
-                          setActiveDropdown('tool');
-                          setIsAdvancedToolsOpen(false);
-                        }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-sm transition-theme text-[13px] font-bold ${
-                          isLocked 
-                            ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
-                            : selectedTool === tool.id && activeDropdown === 'tool'
-                              ? 'bg-accent/10 text-accent dark:text-accent' 
-                              : 'hover:bg-[var(--bg-base)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }`}
-                      >
-                        <span className={isLocked ? 'text-[var(--text-muted)] opacity-70' : selectedTool === tool.id && activeDropdown === 'tool' ? 'text-accent ' : 'text-[var(--text-muted)]'}>
-                          {tool.icon}
-                        </span>
-                        <div className="flex items-center justify-between flex-1 min-w-0">
-                          <span className="truncate">{tool.label}</span>
-                          <div className="flex items-center gap-2">
-                            {tool.isNew && !isLocked && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-accent text-[8px] font-black text-white animate-pulse">
-                                NEW
-                              </span>
-                            )}
-                            {isLocked && (
-                              <Lock size={12} className="text-amber-500" />
-                            )}
+                        <button 
+                          key={`adv-tool-${tool.id}-${tIdx}`} 
+                          onClick={() => {
+                            if (isLocked) {
+                              return;
+                            }
+                            setSelectedTool(tool.id);
+                            setActiveDropdown('tool');
+                            setIsAdvancedToolsOpen(false);
+                          }}
+                          className={`${tool.id === 'code' ? 'hidden md:flex' : 'flex'} items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-theme text-[12px] font-bold ${
+                            isLocked 
+                              ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                              : selectedTool === tool.id && activeDropdown === 'tool'
+                                ? 'bg-[var(--bg-base)] text-[var(--text-primary)] font-extrabold shadow-sm' 
+                                : 'hover:bg-[var(--bg-base)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          <span className={isLocked ? 'text-[var(--text-muted)] opacity-70' : selectedTool === tool.id && activeDropdown === 'tool' ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+                            {tool.icon}
+                          </span>
+                          <div className="flex items-center justify-between flex-1 min-w-0">
+                            <span className="truncate">{tool.label}</span>
+                            <div className="flex items-center gap-1.5">
+                              {tool.isNew && !isLocked && (
+                                <span className="px-1.5 py-[1px] rounded-[4px] bg-gray-500/20 text-gray-400 text-[8px] font-black uppercase tracking-wider">
+                                  NEW
+                                </span>
+                              )}
+                              {isLocked && (
+                                <Lock size={12} className="text-amber-500" />
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    )})}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -6682,7 +6792,7 @@ export const ChatPage: React.FC = () => {
                   }
                 }}
                 disabled={isInputDisabled}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1.5 rounded-sm transition-theme border ${
+                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 h-8 rounded-[8px] transition-theme border ${
                   isInputDisabled
                     ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
                     : activeDropdown === 'model'
@@ -6691,7 +6801,7 @@ export const ChatPage: React.FC = () => {
                 }`}
               >
                 <span className={activeDropdown === 'model' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
-                  {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'md:w-4 md:h-4' })}
+                  {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'w-3.5 h-3.5' })}
                 </span>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
               </button>
@@ -6712,7 +6822,7 @@ export const ChatPage: React.FC = () => {
 
                     return (
                     <button 
-                      key={`${model.id}-${idx}`}
+                      key={`${model.id}-${idx}`} 
                       onClick={() => {
                         if (isLocked) {
                           return;
@@ -6722,13 +6832,13 @@ export const ChatPage: React.FC = () => {
                         setActiveDropdown('model');
                         setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-sm transition-theme text-[13px] font-black uppercase tracking-tight ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-[6px] transition-theme text-[12px] font-bold uppercase tracking-tight ${
                         isLocked
                           ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
                           : 'hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white group'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2.5">
                         <span className={`${isLocked ? 'text-gray-400 opacity-60' : model.color} ${isLocked ? '' : 'group-hover:scale-110 transition-transform'}`}>{model.icon}</span>
                         <span>{model.label}</span>
                       </div>
@@ -6737,7 +6847,7 @@ export const ChatPage: React.FC = () => {
                           <Lock size={12} className="text-amber-500" />
                         )}
                         {!isLocked && selectedModel === model.id && activeDropdown === 'model' && (
-                          <div className={`w-1.5 h-1.5 rounded-full ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
+                          <div className={`w-1.5 h-1.5 rounded-[4px] ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
                         )}
                       </div>
                     </button>
@@ -6752,26 +6862,26 @@ export const ChatPage: React.FC = () => {
               onClick={toggleRecording}
               disabled={isInputDisabled}
               title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-transparent border transition-theme relative group active:scale-95 ${
+              className={`w-8 h-8 flex items-center justify-center bg-transparent border transition-theme relative group active:scale-95 rounded-[8px] ${
                 isInputDisabled 
-                  ? 'opacity-30 cursor-not-allowed border-transparent rounded-[4px]' 
+                  ? 'opacity-30 cursor-not-allowed border-transparent' 
                   : isRecording
-                    ? 'rounded-[18px_18px_0px_18px] bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                    : 'rounded-[16px_16px_1px_16px] border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0)] hover:shadow-[0_0_12px_rgba(156,163,175,0.2)]'
+                    ? 'bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                    : 'border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20'
               }`}
             >
               {isRecording ? (
                 <div className="relative flex items-center justify-center">
-                  <MicOff size={18} className="md:w-5 md:h-5 text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                  <MicOff size={16} className="text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-red-500"></span>
                   </span>
                 </div>
               ) : (
                 <Mic 
-                  size={18} 
-                  className="md:w-5 md:h-5 text-gray-400 group-hover:text-accent group-hover: transition-theme" 
+                  size={16} 
+                  className="text-gray-400 group-hover:text-accent transition-theme" 
                 />
               )}
             </button>
@@ -6894,12 +7004,12 @@ export const ChatPage: React.FC = () => {
 
                     {isChatMessagesLoading && (
                       <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-accent/10 overflow-hidden z-40">
-                        <div className="animate-sovereign-progress h-full bg-accent rounded-full animate-pulse" />
+                        <div className="animate-sovereign-progress h-full bg-accent rounded-[4px] animate-pulse" />
                       </div>
                     )}
               <div className="max-w-4xl mx-auto w-full flex items-center justify-between px-8 md:px-6 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)] flex-shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse shadow-[0_0_8px_rgba(156,163,175,0.8)] flex-shrink-0" />
                   <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-accent truncate max-w-[120px] md:max-w-[300px] font-mono">
                     {dir === 'rtl' ? 'نشط' : 'Active'}
                   </h2>
@@ -6912,7 +7022,7 @@ export const ChatPage: React.FC = () => {
                   >
                     <Pin size={18} className={messages.some(m => m.is_pinned) ? "text-accent " : "transition-theme"} />
                     {messages.filter(m => m.is_pinned).length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-accent text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-[0_0_4px_rgba(156,163,175,0.6)]">
+                      <span className="absolute -top-1 -right-1 bg-accent text-black text-[9px] font-black w-4 h-4 rounded-[4px] flex items-center justify-center shadow-[0_0_4px_rgba(156,163,175,0.6)]">
                         {messages.filter(m => m.is_pinned).length}
                       </span>
                     )}
@@ -7097,7 +7207,7 @@ export const ChatPage: React.FC = () => {
                     }}
                   >
 
-                    <div className="w-10 h-10 rounded-full bg-gray-200/20 dark:bg-gray-800/40 shrink-0" />
+                    <div className="w-10 h-10 rounded-[4px] bg-gray-200/20 dark:bg-gray-800/40 shrink-0" />
 
                     <div className="flex-1 space-y-3 pt-1">
                       <div className={`h-2.5 bg-gray-250/50 dark:bg-gray-800/50 rounded ${i === 0 ? 'w-1/4' : i === 1 ? 'w-1/5' : 'w-1/3'}`} />
@@ -7120,22 +7230,41 @@ export const ChatPage: React.FC = () => {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-500/10[0.02] via-transparent to-transparent pointer-events-none select-none" />
 
                 <div className="w-full max-w-4xl px-6 flex flex-col items-center text-center relative z-10">
+                  {selectedTool === 'chat' ? (
+                    <>
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
+                        {dir === 'rtl' 
+                          ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'}`
+                          : `Welcome back, ${user?.name || 'Perplexta Elite Member'}`
+                        }
+                      </h1>
 
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[var(--text-primary)] tracking-tight mb-3">
-                    {dir === 'rtl' 
-                      ? `مرحباً بك، ${user?.name || 'عضو بيربليكستا النخبة'}`
-                      : `Welcome back, ${user?.name || 'Perplexta Elite Member'}`
-                    }
-                  </h1>
+                      <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
+                        {dir === 'rtl'
+                          ? 'ما الذي تود تحليله أو استكشافه اليوم؟'
+                          : 'What would you like to analyze or explore today?'
+                        }
+                      </p>
 
-                  <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-black leading-relaxed max-w-xl mb-4">
-                    {dir === 'rtl'
-                      ? 'ما الذي تود تحليله أو استكشافه اليوم؟'
-                      : 'What would you like to analyze or explore today?'
-                    }
-                  </p>
-
-                  <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
+                      <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gray-500/10 to-transparent" />
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center py-6 px-4 max-w-lg mx-auto w-full">
+                      {(() => {
+                        const { greeting, promptIntro } = getToolWelcomeIntro(selectedTool);
+                        return (
+                          <>
+                            <h2 className="text-lg sm:text-xl font-black text-[var(--text-primary)] tracking-tight mb-2">
+                              {greeting}
+                            </h2>
+                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] font-bold leading-relaxed max-w-md">
+                              {promptIntro}
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ) : (
@@ -7227,13 +7356,24 @@ export const ChatPage: React.FC = () => {
                                   </div>
 
                                   {msg.is_pinned && (
-                                    <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-full border border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.1)] shrink-0 scale-90">
+                                    <div className="flex items-center gap-1 bg-accent/10 px-1.5 py-0.5 rounded-[4px] border border-accent/20 shadow-[0_0_10px_rgba(156,163,175,0.1)] shrink-0 scale-90">
                                       <Pin size={8} className="text-accent" />
                                       <span className="text-[7px] font-black uppercase text-accent/80 tracking-tighter">Pinned</span>
                                     </div>
                                   )}
 
-                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                                  <div className="flex items-center gap-1 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                                    <button 
+                                      onClick={() => handleCopyPrompt(msg.content, idx)}
+                                      className="p-1.5 rounded-md hover:bg-[var(--bg-overlay)] text-gray-400 hover:text-accent transition-theme shrink-0 active:scale-95 cursor-pointer"
+                                      title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
+                                    >
+                                      {copiedPromptIndex === idx ? (
+                                        <Check size={13} className="text-emerald-500" />
+                                      ) : (
+                                        <Copy size={13} />
+                                      )}
+                                    </button>
                                     <button 
                                       onClick={() => handlePinMessage(msg.id!, !msg.is_pinned)}
                                       className={`p-1.5 rounded-md hover:bg-[var(--bg-overlay)] transition-theme shrink-0 ${
@@ -7268,7 +7408,7 @@ export const ChatPage: React.FC = () => {
                         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                         className="markdown-body prose dark:prose-invert max-w-none relative text-[13px] md:text-base leading-relaxed tracking-tight"
                       >
-                        {!msg.is_quota_error && !msg.is_system_inactive && msg.tool !== 'video' && (
+                        {!msg.is_quota_error && !msg.is_system_inactive && msg.tool !== 'video' && msg.tool !== 'image' && (
                           <ToolStatusIndicator 
                             tool={msg.tool} 
                             isGenerating={isGenerating && idx === messages.length - 1} 
@@ -7276,16 +7416,20 @@ export const ChatPage: React.FC = () => {
                             t={t} 
                           />
                         )}
-                        {msg.tool === 'video' ? (
-                          <UnifiedVideoMessageWidget 
-                            msg={msg}
-                            idx={idx}
-                            messages={messages}
-                            dir={dir}
-                            videoSettings={videoSettings}
-                            liveElapsed={liveElapsed}
-                            isGenerating={isGenerating}
-                            t={t}
+                        {isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
+                          msg.tool === 'video' ? (
+                            <SimpleVideoLoadingPlaceholder dir={dir} aspectRatio={videoSettings?.aspectRatio || '9:16'} />
+                          ) :
+                          msg.tool === 'image' ? (
+                            <SimpleImageLoadingPlaceholder dir={dir} aspectRatio={imageSettings?.aspectRatio || '1:1'} />
+                          ) : (
+                            <ResponseSkeleton dir={dir} />
+                          )
+                        ) : msg.is_image_failed ? (
+                          <SimpleImageErrorPlaceholder 
+                            dir={dir} 
+                            errorMessage={msg.content}
+                            aspectRatio={imageSettings?.aspectRatio || '1:1'}
                             onRetry={() => {
                               const userPrompt = findUserPrompt(idx);
                               if (userPrompt) {
@@ -7293,31 +7437,11 @@ export const ChatPage: React.FC = () => {
                               }
                             }}
                           />
-                        ) : isGenerating && idx === messages.length - 1 && msg.content === '' && (!msg.thinking_steps || msg.thinking_steps.length === 0) ? (
-                          msg.tool === 'image' ? (
-                            <ImageGenerationPlaceholder 
-                              dir={dir} 
-                              aspectRatio={imageSettings.aspectRatio}
-                              liveElapsed={liveElapsed}
-                              style={imageSettings.style}
-                              quality={imageSettings.quality}
-                              t={t}
-                              progress={imageProgress?.progress}
-                              statusLabel={imageProgress?.statusLabel}
-                            />
-                          ) : (
-                            <ResponseSkeleton dir={dir} />
-                          )
-                        ) : msg.is_image_failed ? (
-                          <ImageGenerationPlaceholder 
+                        ) : msg.is_video_failed ? (
+                          <SimpleVideoErrorPlaceholder 
                             dir={dir} 
-                            aspectRatio={imageSettings.aspectRatio}
-                            liveElapsed={0}
-                            style={imageSettings.style}
-                            quality={imageSettings.quality}
-                            t={t}
-                            isFailed={true}
                             errorMessage={msg.content}
+                            aspectRatio={videoSettings?.aspectRatio || '9:16'}
                             onRetry={() => {
                               const userPrompt = findUserPrompt(idx);
                               if (userPrompt) {
@@ -7350,30 +7474,7 @@ export const ChatPage: React.FC = () => {
                               <Markdown 
                                 remarkPlugins={[remarkGfm]} 
                                 components={{ 
-                                  code: CodeBlock,
-                                  a: ({ href, children }: any) => {
-                                    const isVideo = href && (
-                                      href.endsWith('.mp4') || 
-                                      href.endsWith('.webm') || 
-                                      href.endsWith('.mov') || 
-                                      href.includes('assets.mixkit.co/videos') ||
-                                      href.includes('/uploads/') ||
-                                      href.includes('.mp4') ||
-                                      href.includes('.webm') ||
-                                      href.includes('.mov')
-                                    );
-                                    if (isVideo) {
-                                      return (
-                                        <VideoPlaybackComponent 
-                                          src={href} 
-                                          dir={dir} 
-                                          alt="Generated Video"
-                                        />
-                                      );
-                                    }
-                                    return <MarkdownLink href={href}>{children}</MarkdownLink>;
-                                  },
-                                  blockquote: ({ children }: any) => <BlockquoteWithActions dir={dir}>{children}</BlockquoteWithActions>,
+                                  ...chatMarkdownComponents,
                                   p: ({ children, node }: any) => {
                                     const isLastMessage = idx === messages.length - 1;
                                     const isStreamingActive = isLastMessage && msg.is_streaming;
@@ -7388,33 +7489,11 @@ export const ChatPage: React.FC = () => {
                                         )}
                                       </div>
                                     );
-                                  },
-                                  h1: ({ children }) => <h1 className="text-xs md:text-sm font-black text-accent mb-3 mt-5 uppercase tracking-wider border-b border-accent/10 pb-1.5">{children}</h1>,
-                                  h2: ({ children }) => <h2 className="text-[11px] md:text-xs font-bold text-[var(--text-primary)] mb-2.5 mt-4 flex items-center gap-2">
-                                    <div className="w-0.5 h-3 bg-accent rounded-full" />
-                                    {children}
-                                  </h2>,
-                                  h3: ({ children }) => <h3 className="text-[10px] md:text-[11px] font-bold text-gray-400 mb-2 mt-3 uppercase tracking-widest">{children}</h3>,
-                              img: ({ node, ...props }) => (
-                                <ShareableImageOutput 
-                                  src={props.src} 
-                                  dir={dir} 
-                                  alt={props.alt} 
-                                  {...props} 
-                                />
-                              ),
-                            video: ({ node, ...props }) => (
-                              <VideoPlaybackComponent 
-                                src={props.src} 
-                                dir={dir} 
-                                alt={(props as any).alt || "Generated Video"}
-                                {...props} 
-                              />
-                            )
-                          }}
-                        >
-                          {stripProtocolMarkers(msg.content)}
-                        </Markdown>
+                                  }
+                                }}
+                              >
+                                {stripProtocolMarkers(msg.content)}
+                              </Markdown>
                       )}
 
                       {(() => {
@@ -7422,7 +7501,7 @@ export const ChatPage: React.FC = () => {
                           ? msg.follow_ups 
                           : (idx === messages.length - 1 && aiSuggestions.length > 0 ? aiSuggestions : extractFollowUpsClient(msg.content).followUps);
                         const hasCitations = !!(msg.citations && msg.citations.length > 0);
-                        const hasFollowUps = !!(messageFollowUps && messageFollowUps.length > 0);
+                        const hasFollowUps = !!(messageFollowUps && messageFollowUps.length > 0) && msg.tool !== 'image' && msg.tool !== 'video';
 
                         if (!hasCitations && !hasFollowUps) return null;
 
@@ -7689,7 +7768,7 @@ export const ChatPage: React.FC = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 px-4 py-2 border rounded-full w-fit bg-accent/5 border-accent/10 text-accent select-none shadow-[0_0_15px_rgba(156,163,175,0.1)] mb-4 shrink-0 transition-theme"
+                    className="flex items-center gap-3 px-4 py-2 border rounded-[4px] w-fit bg-accent/5 border-accent/10 text-accent select-none shadow-[0_0_15px_rgba(156,163,175,0.1)] mb-4 shrink-0 transition-theme"
                   >
                     <div className="flex gap-1 items-center justify-center">
                       <span className="perplexta-dot" />
@@ -7718,7 +7797,7 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-2 sm:pb-4 pt-2 bg-transparent relative">
+      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-[calc(20px+env(safe-area-inset-bottom,0px))] sm:pb-4 pt-2.5 bg-transparent relative">
         <AnimatePresence>
           {showScrollToBottom && (
             <motion.button
@@ -7737,7 +7816,7 @@ export const ChatPage: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <div className="max-w-5xl mx-auto w-full text-[var(--text-primary)]">
+        <div className="max-w-3xl mx-auto w-full text-[var(--text-primary)]">
           {renderInputArea()}
         </div>
       </div>
@@ -7795,15 +7874,27 @@ export const ChatPage: React.FC = () => {
                     <div key={`pinned-msg-${msg.id || pIdx}-${pIdx}`} className="group relative p-4 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/30 transition-theme">
                       <div className="flex items-center justify-between mb-2">
                          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-accent">
-                           {msg.role === 'user' ? (dir === 'rtl' ? 'سؤالك' : 'Your Question') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
+                           {msg.role === 'user' ? (dir === 'rtl' ? 'البرومبت' : 'Your Prompt') : (dir === 'rtl' ? 'إجابة بيربليكستا' : 'Perplexta Answer')}
                          </span>
-                         <button
-                           onClick={() => handlePinMessage(msg.id!, false)}
-                           className="text-gray-400 hover:text-accent transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)]"
-                           title={dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin'}
-                         >
-                           <PinOff size={12} />
-                         </button>
+                         <div className="flex items-center gap-1">
+                           <button
+                             onClick={() => {
+                               navigator.clipboard.writeText(stripProtocolMarkers(msg.content));
+                               toast.success(dir === 'rtl' ? 'تم نسخ النص بنجاح' : 'Copied successfully');
+                             }}
+                             className="text-gray-400 hover:text-accent transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] cursor-pointer"
+                             title={dir === 'rtl' ? 'نسخ' : 'Copy'}
+                           >
+                             <Copy size={12} />
+                           </button>
+                           <button
+                             onClick={() => handlePinMessage(msg.id!, false)}
+                             className="text-gray-400 hover:text-accent transition-theme p-1.5 rounded-sm hover:bg-[var(--bg-overlay)] cursor-pointer"
+                             title={dir === 'rtl' ? 'إلغاء التثبيت' : 'Unpin'}
+                           >
+                             <PinOff size={12} />
+                           </button>
+                         </div>
                       </div>
                       <div className="markdown-body prose dark:prose-invert text-[13px] line-clamp-6 text-gray-700 dark:text-gray-300">
                         <Markdown>{stripProtocolMarkers(msg.content)}</Markdown>
@@ -8177,7 +8268,7 @@ export const ChatPage: React.FC = () => {
                     >
                       {isGeneratingShare ? (
                         <>
-                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-[4px] animate-spin" />
                           <span>{dir === 'rtl' ? 'جاري التوليد...' : 'Generating...'}</span>
                         </>
                       ) : (

@@ -20,6 +20,7 @@ export const cronTracker: Record<string, CronJobInfo> = {
   memoryCompaction: { lastRun: new Date(Date.now() - 12 * 3600000).toISOString(), status: 'success', error: null },
   monthlyLedgerCleanup: { lastRun: new Date(Date.now() - 15 * 24 * 3600000).toISOString(), status: 'success', error: null },
   storyPurge: { lastRun: new Date(Date.now() - 3600000).toISOString(), status: 'success', error: null },
+  mediaCleanup48h: { lastRun: new Date(Date.now() - 3600000).toISOString(), status: 'success', error: null },
 };
 
 async function cleanupOrphanedPhysicalFiles() {
@@ -64,8 +65,8 @@ async function cleanupOrphanedPhysicalFiles() {
   }
 }
 
-async function purgeGeneratedFilesOlderThan24Hours() {
-  console.log('[Cron] ⏰ Starting automated cleanup of files older than 24 hours to prevent disk inflation...');
+async function purgeGeneratedFilesOlderThan48Hours() {
+  console.log('[Cron] ⏰ Starting automated cleanup of media files older than 48 hours to enforce 48h retention policy...');
   try {
     const uploadDir = path.join(process.cwd(), 'uploads');
     
@@ -76,18 +77,12 @@ async function purgeGeneratedFilesOlderThan24Hours() {
       return;
     }
 
+    // 1. Purge database tracked records older than 48 hours
     const result = await pool.query(
-      `SELECT id, file_url FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+      `SELECT id, file_url FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '48 hours'`
     );
 
-    if (result.rows.length === 0) {
-      console.log('[Cron] No database records of files older than 24 hours found.');
-      return;
-    }
-
-    console.log(`[Cron] Found ${result.rows.length} files older than 24 hours to purge.`);
-
-    let purgedCount = 0;
+    let dbPurgedCount = 0;
     for (const row of result.rows) {
       const fileUrl = row.file_url;
       if (!fileUrl) continue;
@@ -101,23 +96,43 @@ async function purgeGeneratedFilesOlderThan24Hours() {
 
       try {
         await fs.unlink(filePath).catch(() => {});
-        purgedCount++;
+        dbPurgedCount++;
       } catch (err: any) {
         console.warn(`[Cron] Could not delete physical file ${filename}:`, err.message);
       }
     }
 
     const deleteFilesCount = await pool.query(
-      `DELETE FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+      `DELETE FROM user_files WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '48 hours'`
     );
     
     const deleteVideosCount = await pool.query(
-      `DELETE FROM video_resources WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'`
+      `DELETE FROM video_resources WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '48 hours'`
     );
 
-    console.log(`[Cron] Purging reports: physically removed ${purgedCount} files. Erased ${deleteFilesCount.rowCount} records from user_files, and ${deleteVideosCount.rowCount} from video_resources.`);
+    // 2. Physical disk scan in /uploads/ for any media file modified over 48 hours ago
+    const filesOnDisk = await fs.readdir(uploadDir);
+    const now = Date.now();
+    const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+    let diskOldFilesPurged = 0;
+
+    for (const filename of filesOnDisk) {
+      if (filename.startsWith('.') || filename.startsWith('system_')) continue;
+      const filePath = path.join(uploadDir, filename);
+      try {
+        const stats = await fs.stat(filePath);
+        if (stats.isFile() && (now - stats.mtimeMs > FORTY_EIGHT_HOURS_MS)) {
+          await fs.unlink(filePath).catch(() => {});
+          diskOldFilesPurged++;
+        }
+      } catch {
+        // file already deleted or inaccessible
+      }
+    }
+
+    console.log(`[Cron] 48h Retention Purge Complete: Removed ${dbPurgedCount} db-linked files and ${diskOldFilesPurged} unlinked 48h+ files. Erased ${deleteFilesCount.rowCount || 0} user_files and ${deleteVideosCount.rowCount || 0} video_resources records.`);
   } catch (err: any) {
-    console.error('[Cron] Automated old files physical & database purge failed:', err.message);
+    console.error('[Cron] Automated 48h media purge failed:', err.message);
   }
 }
 
@@ -207,7 +222,7 @@ export function initCronJobs() {
       await pool.query('UPDATE api_keys_vault SET used_today = 0, last_reset_date = CURRENT_DATE, updated_at = CURRENT_TIMESTAMP');
       console.log('[Cron] API keys usage reset completed.');
       
-      await purgeGeneratedFilesOlderThan24Hours();
+      await purgeGeneratedFilesOlderThan48Hours();
       await purgeExpiredStories();
       await purgeExpiredTrashAds();
 
@@ -216,6 +231,18 @@ export function initCronJobs() {
     } catch (err: any) {
       console.error('[Cron] Maintenance failed:', err);
       cronTracker.dailyMaintenance = { lastRun: new Date().toISOString(), status: 'error', error: err.message || 'Unknown error' };
+    }
+  });
+
+  // Dedicated 48-Hour Media Purge Cron - Runs every 6 hours
+  cron.schedule('0 */6 * * *', async () => {
+    console.log('[Cron] 🧹 Executing 6-hour interval check for 48h media storage cleanup...');
+    cronTracker.mediaCleanup48h = { lastRun: new Date().toISOString(), status: 'running', error: null };
+    try {
+      await purgeGeneratedFilesOlderThan48Hours();
+      cronTracker.mediaCleanup48h = { lastRun: new Date().toISOString(), status: 'success', error: null };
+    } catch (err: any) {
+      cronTracker.mediaCleanup48h = { lastRun: new Date().toISOString(), status: 'error', error: err.message };
     }
   });
 

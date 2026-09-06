@@ -245,7 +245,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   ? (language === 'ar' ? 'تفضيلات الإعلانات المخصصة' : 'Recommended Ads')
                   : (language === 'ar' ? 'توصيات مخصصة لك' : 'Recommended For You'))}
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 shrink-0">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] bg-accent/10 text-accent border border-accent/20 shrink-0">
                 {language === 'ar' ? 'محرك ذكي' : 'Smart AI'}
               </span>
             </h3>
@@ -397,7 +397,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           </span>
                         )}
 
-                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-[6px] flex items-center gap-0.5">
                           <Sparkles size={9} />
                           {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
                         </span>
@@ -457,7 +457,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     </span>
 
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-[6px] flex items-center gap-0.5">
                         <Sparkles size={10} />
                         {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
                       </span>

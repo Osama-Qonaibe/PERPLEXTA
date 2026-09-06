@@ -70,7 +70,7 @@ export const MediaManagerModal: React.FC<MediaManagerModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-zinc-800/80 bg-gray-50/70 dark:bg-zinc-900/50">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[4px] bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                 <Film size={18} />
               </div>
               <div>
@@ -88,7 +88,7 @@ export const MediaManagerModal: React.FC<MediaManagerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 sm:p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-[4px] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title={isRtl ? 'إغلاق' : 'Close'}
             >
               <X size={20} />
@@ -99,7 +99,7 @@ export const MediaManagerModal: React.FC<MediaManagerModalProps> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 max-h-[calc(88vh-130px)]">
             {mediaItems.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-center">
-                <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-400 mb-3">
+                <div className="w-14 h-14 rounded-[4px] bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-400 mb-3">
                   <ImageIcon size={28} />
                 </div>
                 <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
@@ -134,7 +134,7 @@ export const MediaManagerModal: React.FC<MediaManagerModalProps> = ({
                             />
                             {/* Centered Play Indicator */}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
-                              <div className="w-10 h-10 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-xs border border-white/20 shadow-lg">
+                              <div className="w-10 h-10 rounded-[4px] bg-black/60 text-white flex items-center justify-center backdrop-blur-xs border border-white/20 shadow-lg">
                                 <Play size={18} className="fill-white translate-x-0.5" />
                               </div>
                             </div>
@@ -163,7 +163,7 @@ export const MediaManagerModal: React.FC<MediaManagerModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
-                            className="w-7 h-7 rounded-full bg-black/70 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md cursor-pointer"
+                            className="w-7 h-7 rounded-[4px] bg-black/70 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md cursor-pointer"
                             title={isRtl ? 'حذف هذه الوسيطة' : 'Remove this media'}
                           >
                             <Trash2 size={13} />

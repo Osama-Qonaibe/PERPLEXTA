@@ -137,38 +137,38 @@ export const UsageRadar: React.FC = () => {
         </div>
 
         {/* Plan Info Card - Centered as per image */}
-        <div className={`p-10 rounded-[var(--radius)] border border-accent/10 bg-accent/[0.02] flex flex-col items-center relative group`}>
-           {/* Chart Box - Left Aligned */}
-           <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 rounded-[var(--radius)] border border-accent/20 flex items-center justify-center bg-black/20 text-accent group-hover:scale-105 transition-transform duration-300">
-              <BarChart3 size={48} className="" />
+        <div className={`p-4 sm:p-6 md:p-10 rounded-[var(--radius)] border border-accent/10 bg-accent/[0.02] flex flex-col items-center relative group`}>
+           {/* Chart Box - Hidden on very small mobile or positioned safely */}
+           <div className="hidden sm:flex absolute left-4 md:left-10 top-1/2 -translate-y-1/2 w-20 h-20 md:w-32 md:h-32 rounded-[var(--radius)] border border-accent/20 items-center justify-center bg-black/20 text-accent group-hover:scale-105 transition-transform duration-300">
+              <BarChart3 size={36} className="md:w-12 md:h-12" />
            </div>
 
-           <div className="flex flex-col items-center text-center space-y-6">
+           <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 w-full">
               <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] opacity-60">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[var(--text-muted)] opacity-60">
                   {t('activeSubscription') || 'Active Subscription'}
                 </span>
-                <h3 className="text-5xl md:text-8xl font-black transition-theme leading-none select-none" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
+                <h3 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black transition-theme leading-none select-none break-words" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
                   {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
                 </h3>
               </div>
 
                {/* Status Badges Row */}
-               <div className="flex flex-wrap items-center justify-center gap-3">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
                      <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"} />
                      <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"}`}>
                        {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
                      </span>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-muted)]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-muted)]">
                      <Clock size={14} />
                      <span className="text-[9px] font-black uppercase tracking-widest">
                        {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'بدون فترة' : 'None') : (t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period)}
                      </span>
                   </div>
                   {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--bg-accent-muted)] border border-[var(--border-accent)] text-[var(--text-primary)]">
+                    <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--bg-accent-muted)] border border-[var(--border-accent)] text-[var(--text-primary)]">
                        <Calendar size={12} />
                        <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
                     </div>

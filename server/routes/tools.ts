@@ -86,8 +86,15 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
     let targetSocket = socketId ? io?.sockets.sockets.get(socketId) : null;
 
     const onChunk = (chunk: string) => {
-      if (targetSocket) targetSocket.emit("chat_chunk", { chunk });
-      else res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      if (targetSocket) {
+        targetSocket.emit("chat_chunk", { chunk });
+      } else {
+        try {
+          if (!res.writableEnded && !res.finished) {
+            res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+          }
+        } catch (_) {}
+      }
     };
 
     if (!targetSocket) {
@@ -95,6 +102,9 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
+      res.on('error', (err) => {
+        console.info('[Tools SSE] Managed stream write error:', err.message);
+      });
     }
 
     const result = await executeTaskLogic(req.body, userId, req, onChunk, targetSocket);
@@ -103,8 +113,12 @@ router.post("/execute-task", authenticateToken, chatLimiter, verifyBillingFunds,
       targetSocket.emit("chat_response", result);
       res.json({ success: true });
     } else {
-      res.write(`data: ${JSON.stringify({ result })}\n\n`);
-      res.end();
+      try {
+        if (!res.writableEnded && !res.finished) {
+          res.write(`data: ${JSON.stringify({ result })}\n\n`);
+          res.end();
+        }
+      } catch (_) {}
     }
   } catch (error: any) {
     let isSystemInactive = false;
@@ -213,7 +227,7 @@ router.post("/generate-music", authenticateToken, chatLimiter, verifyBillingFund
     const ai = new GoogleGenAI({ apiKey });
 
     let fullPrompt = prompt;
-    if (modelName === 'lyria-3-pro-preview' && userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {
+    if (userLyrics && typeof userLyrics === 'string' && userLyrics.trim()) {
       fullPrompt = `${prompt}\n\nLyrics:\n${userLyrics}`;
     }
 

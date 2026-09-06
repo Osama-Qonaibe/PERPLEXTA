@@ -30,7 +30,7 @@ export const VisitorShell: React.FC<VisitorShellProps> = ({ children }) => {
       </div>
 
       {/* Clean Horizontal Footer Bar */}
-      <footer className="w-full pt-4 pb-2 border-t border-[var(--border-muted)] select-none flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-[11px] text-[var(--text-secondary)] px-1 sm:px-2">
+      <footer className="w-full pt-4 pb-[calc(10px+env(safe-area-inset-bottom,0px))] sm:pb-3 border-t border-[var(--border-muted)] select-none flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-[11px] text-[var(--text-secondary)] px-1 sm:px-2">
         <nav className="flex items-center gap-3 sm:gap-4 font-bold text-accent">
           <button 
             type="button"

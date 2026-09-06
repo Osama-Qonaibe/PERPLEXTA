@@ -1506,7 +1506,7 @@ export const MarketplacePage: React.FC = () => {
           <Monitor size={30} className="text-accent" />
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold mb-3 tracking-wide">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold mb-3 tracking-wide">
           <Code2 size={13} />
           <span>{language === 'ar' ? 'منصة مخصصة لبيئات المطورين' : 'Developer & Workstation Only'}</span>
         </div>
@@ -1583,7 +1583,7 @@ export const MarketplacePage: React.FC = () => {
                   <>
                     <button
                       onClick={() => navigate('/settings?tab=marketplace_purchases')}
-                      className="h-10 px-4 rounded-[4px] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="h-8 px-3 rounded-[var(--radius)] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <ShoppingBag size={14} />
                       <span>{language === 'ar' ? 'حقيبة تنزيلاتي ومشترياتي' : 'My Purchases & Downloads'}</span>
@@ -1595,7 +1595,7 @@ export const MarketplacePage: React.FC = () => {
                           resetForm();
                           setIsCreateOpen(true);
                         }}
-                        className="h-10 px-4 rounded-[4px] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="h-8 px-3 rounded-[var(--radius)] bg-[var(--bg-hover)] hover:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] font-bold transition-theme active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Plus size={14} />
                         <span>{t.listNewAsset}</span>
@@ -1604,12 +1604,12 @@ export const MarketplacePage: React.FC = () => {
 
                     <button
                       onClick={() => setIsCartOpen(true)}
-                      className="w-10 h-10 rounded-[4px] border border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-primary)] flex items-center justify-center relative active:scale-95 cursor-pointer transition-theme hover:bg-[var(--bg-hover)]"
+                      className="w-8 h-8 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-surface)] text-[var(--text-primary)] flex items-center justify-center relative active:scale-95 cursor-pointer transition-theme hover:bg-[var(--bg-hover)]"
                       title={language === 'ar' ? 'سلة المشتريات' : 'Shopping Cart'}
                     >
-                      <ShoppingCart size={16} />
+                      <ShoppingCart size={15} />
                       {cart.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-[var(--text-primary)] text-[var(--bg-primary)] text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
+                        <span className="absolute -top-1 -right-1 bg-[var(--text-primary)] text-[var(--bg-primary)] text-[8px] font-black w-4 h-4 rounded-[var(--radius)] flex items-center justify-center animate-pulse">
                           {cart.length}
                         </span>
                       )}
@@ -1619,11 +1619,11 @@ export const MarketplacePage: React.FC = () => {
                 
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
-                  className={`lg:hidden w-10 h-10 rounded-[4px] border flex items-center justify-center transition-colors ${
+                  className={`lg:hidden w-8 h-8 rounded-[var(--radius)] border flex items-center justify-center transition-colors ${
                     isThemeDark ? 'border-white/5 bg-white/5 text-gray-300 hover:text-white' : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <SlidersHorizontal size={16} />
+                  <SlidersHorizontal size={15} />
                 </button>
               </div>
             </div>
@@ -2515,7 +2515,7 @@ export const MarketplacePage: React.FC = () => {
 
                       {buyingProgress === 'purchasing' ? (
                         <div className="flex flex-col items-center justify-center py-2 text-center space-y-2">
-                          <div className="w-5 h-5 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-[var(--text-primary)] border-t-transparent rounded-[4px] animate-spin" />
                           <span className="text-[9px] text-gray-400 font-bold animate-pulse">{t.purchaseProgress}</span>
                         </div>
                       ) : buyingProgress === 'success' ? (
@@ -2790,9 +2790,9 @@ export const MarketplacePage: React.FC = () => {
                           <div className="w-full max-w-5xl h-full flex flex-col rounded-2xl border border-white/10 bg-[#0c0d10] overflow-hidden shadow-2xl">
                             <div className="h-11 bg-[#121316] border-b border-white/5 px-4 flex items-center justify-between shrink-0">
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                                <div className="w-2.5 h-2.5 rounded-[4px] bg-red-500/80" />
+                                <div className="w-2.5 h-2.5 rounded-[4px] bg-yellow-500/80" />
+                                <div className="w-2.5 h-2.5 rounded-[4px] bg-green-500/80" />
                               </div>
                               
                               <div className="w-1/2 max-w-md h-6 rounded bg-[#1c1d22] border border-white/5 flex items-center justify-center px-4 overflow-hidden">
@@ -2945,7 +2945,7 @@ export const MarketplacePage: React.FC = () => {
 
               {submitSuccess ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-[4px] bg-[var(--bg-hover)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center">
                     <Check size={24} />
                   </div>
                   <h4 className="font-black text-xs">
@@ -3186,7 +3186,7 @@ export const MarketplacePage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setItemImages(prev => prev.filter((_, i) => i !== idx))}
-                                  className="w-5 h-5 bg-gray-800 hover:bg-gray-900 text-white rounded-full flex items-center justify-center transition-theme cursor-pointer shadow"
+                                  className="w-5 h-5 bg-gray-800 hover:bg-gray-900 text-white rounded-[4px] flex items-center justify-center transition-theme cursor-pointer shadow"
                                   title={language === 'ar' ? 'حذف الصورة' : 'Delete photo'}
                                 >
                                   <X size={10} />
@@ -3204,7 +3204,7 @@ export const MarketplacePage: React.FC = () => {
                         
                         {uploadingImage ? (
                           <div className="flex flex-col items-center gap-1">
-                            <div className="w-4 h-4 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-[var(--text-primary)] border-t-transparent rounded-[4px] animate-spin" />
                             <p className="text-[7.5px] font-bold text-[var(--text-primary)]">
                               {language === 'ar' ? 'جاري رفع الصور...' : 'Uploading...'}
                             </p>
@@ -3326,7 +3326,7 @@ export const MarketplacePage: React.FC = () => {
                       className="px-5 h-10 bg-[var(--text-primary)] hover:opacity-90 disabled:opacity-50 text-[var(--bg-primary)] font-extrabold text-xs rounded-[4px] transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                     >
                       {submitting ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-[4px] animate-spin" />
                       ) : (
                         editingProduct ? (language === 'ar' ? 'حفظ التغييرات' : 'Save Changes') : t.publishBtn
                       )}
@@ -3398,7 +3398,7 @@ export const MarketplacePage: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3 select-none">
-                    <div className="w-16 h-16 rounded-full bg-[var(--bg-hover)] border border-[var(--border-main)] flex items-center justify-center text-gray-500">
+                    <div className="w-16 h-16 rounded-[4px] bg-[var(--bg-hover)] border border-[var(--border-main)] flex items-center justify-center text-gray-500">
                       <ShoppingCart size={24} className="opacity-40" />
                     </div>
                     <div className="space-y-1">
@@ -3485,7 +3485,7 @@ export const MarketplacePage: React.FC = () => {
 
                   {buyingProgress === 'purchasing' ? (
                     <div className="flex flex-col items-center justify-center py-4 text-center space-y-2 select-none">
-                      <div className="w-6 h-6 border-2 border-[var(--text-primary)] border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-[var(--text-primary)] border-t-transparent rounded-[4px] animate-spin" />
                       <span className="text-[10px] text-gray-400 font-bold animate-pulse">{t.purchaseProgress}</span>
                     </div>
                   ) : buyingProgress === 'success' ? (

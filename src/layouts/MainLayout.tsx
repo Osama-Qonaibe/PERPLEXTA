@@ -13,7 +13,7 @@ export const MainLayout: React.FC = () => {
   const location = useLocation();
   const isBulletin = location.pathname.startsWith('/bulletin');
 
-  const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 220 : 56);
+  const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 180 : 50);
 
   const onPanEnd = (_: any, info: any) => {
     if (!isMobile) return;
@@ -47,7 +47,7 @@ export const MainLayout: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={SIDEBAR_TRANSITION}
-            className={`fixed ${isBulletin ? 'top-0' : 'top-[64px]'} bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer`}
+            className={`fixed ${isBulletin ? 'top-0' : 'top-[calc(56px+env(safe-area-inset-top,0px)+6px)]'} bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer`}
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -58,10 +58,15 @@ export const MainLayout: React.FC = () => {
         animate={{ paddingInlineStart: sidebarWidth }}
         transition={SIDEBAR_TRANSITION}
         className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden pb-safe"
-        style={{ willChange: 'padding-inline-start' }}
+        style={{ 
+          willChange: 'padding-inline-start',
+          transform: 'translateZ(0)',
+          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: 'hidden'
+        }}
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
-        <main className={`flex-1 overflow-hidden relative ${isBulletin ? 'pt-0 lg:pt-[64px]' : 'pt-[64px]'} bg-[var(--bg-base)] transition-theme flex`}>
+        <main className={`flex-1 overflow-hidden relative ${isBulletin ? 'pt-0 lg:pt-[calc(56px+env(safe-area-inset-top,0px)+6px)]' : 'pt-[calc(56px+env(safe-area-inset-top,0px)+6px)]'} bg-[var(--bg-base)] transition-theme flex h-[calc(100dvh-var(--safe-area-spacing))] lg:h-full`}>
           <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0 touch-pan-y overscroll-y-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Outlet />
           </div>

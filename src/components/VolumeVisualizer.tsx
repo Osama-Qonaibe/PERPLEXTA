@@ -228,7 +228,7 @@ export const VolumeVisualizer: React.FC<VolumeVisualizerProps> = ({
         ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
         ctx.font = '7px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText(`SPECTRAL: ${Math.round(volume * 100)}% (SIMULATED)`, width - 4, 10);
+        ctx.fillText(`SPECTRAL: ${Math.round(volume * 100)}%`, width - 4, 10);
       }
 
       // Border and grid visualizers

@@ -832,6 +832,18 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
       )`
   },
   {
+    name: 'user_media_preferences',
+    query: `CREATE TABLE IF NOT EXISTS user_media_preferences (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        media_type VARCHAR(50) NOT NULL,
+        aspect_ratio VARCHAR(20) NOT NULL DEFAULT '16:9',
+        settings JSONB DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT uq_user_media_preferences UNIQUE (user_id, media_type)
+      )`
+  },
+  {
     name: 'recommendation_feedback',
     query: `CREATE TABLE IF NOT EXISTS recommendation_feedback (
         id SERIAL PRIMARY KEY,
@@ -926,6 +938,29 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
       )`
   },
   {
+    name: 'seo_metadata',
+    query: `CREATE TABLE IF NOT EXISTS seo_metadata (
+        id SERIAL PRIMARY KEY,
+        route_path VARCHAR(255) UNIQUE NOT NULL,
+        entity_type VARCHAR(50),
+        entity_id VARCHAR(100),
+        title_en VARCHAR(255),
+        title_ar VARCHAR(255),
+        description_en TEXT,
+        description_ar TEXT,
+        og_image_url TEXT,
+        og_image_alt_en TEXT,
+        og_image_alt_ar TEXT,
+        keywords_en TEXT,
+        keywords_ar TEXT,
+        canonical_url TEXT,
+        structured_data JSONB DEFAULT '{}',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+  },
+  {
     name: 'db_connections_registry',
     query: `CREATE TABLE IF NOT EXISTS db_connections_registry (
         id VARCHAR(50) PRIMARY KEY,
@@ -944,6 +979,87 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         last_checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+  },
+  {
+    name: 'gpu_providers',
+    query: `CREATE TABLE IF NOT EXISTS gpu_providers (
+        id SERIAL PRIMARY KEY,
+        provider_id VARCHAR(100) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        provider_type VARCHAR(100) NOT NULL,
+        endpoint_id VARCHAR(150),
+        base_url TEXT NOT NULL,
+        api_url TEXT,
+        encrypted_api_key TEXT NOT NULL,
+        current_load_capacity INTEGER DEFAULT 100,
+        status VARCHAR(50) DEFAULT 'active',
+        metadata JSONB DEFAULT '{}',
+        health_status VARCHAR(50) DEFAULT 'offline',
+        latency_ms INTEGER DEFAULT 0,
+        capabilities TEXT[] DEFAULT ARRAY['vision']::TEXT[],
+        daily_budget NUMERIC(15, 4) DEFAULT '0',
+        used_today NUMERIC(15, 4) DEFAULT '0',
+        last_reset_date DATE DEFAULT CURRENT_DATE,
+        config JSONB DEFAULT '{}',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+  },
+  {
+    name: 'gpu_provider_models',
+    query: `CREATE TABLE IF NOT EXISTS gpu_provider_models (
+        id SERIAL PRIMARY KEY,
+        provider_id INTEGER NOT NULL REFERENCES gpu_providers(id) ON DELETE CASCADE,
+        model_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        task_type VARCHAR(100) NOT NULL,
+        context_window INTEGER DEFAULT 32768,
+        max_output_tokens INTEGER DEFAULT 4096,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+  },
+  {
+    name: 'gpu_execution_jobs',
+    query: `CREATE TABLE IF NOT EXISTS gpu_execution_jobs (
+        id SERIAL PRIMARY KEY,
+        job_id VARCHAR(120) UNIQUE NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        provider_id INTEGER REFERENCES gpu_providers(id) ON DELETE SET NULL,
+        model_id VARCHAR(255) NOT NULL,
+        task_type VARCHAR(100) NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        prompt TEXT,
+        parameters JSONB DEFAULT '{}',
+        remote_job_id VARCHAR(255),
+        result_url TEXT,
+        result_data JSONB DEFAULT '{}',
+        latency_ms INTEGER DEFAULT 0,
+        error_message TEXT,
+        attempts INTEGER DEFAULT 1,
+        failover_count INTEGER DEFAULT 0,
+        cost_charged NUMERIC(15, 4) DEFAULT '0',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP
+      )`
+  },
+  {
+    name: 'api_performance_logs',
+    query: `CREATE TABLE IF NOT EXISTS api_performance_logs (
+        id SERIAL PRIMARY KEY,
+        endpoint VARCHAR(255) NOT NULL,
+        method VARCHAR(20) NOT NULL,
+        status_code INTEGER NOT NULL,
+        duration_ms NUMERIC(10, 2) NOT NULL,
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        query_params JSONB DEFAULT '{}',
+        headers_snapshot JSONB DEFAULT '{}',
+        is_slow BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   }
 ];
@@ -1333,6 +1449,26 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
   });
 
+  await ensureColumnsBulk(targetPool, 'seo_metadata', {
+    route_path: { type: 'VARCHAR(255)' },
+    entity_type: { type: 'VARCHAR(50)' },
+    entity_id: { type: 'VARCHAR(100)' },
+    title_en: { type: 'VARCHAR(255)' },
+    title_ar: { type: 'VARCHAR(255)' },
+    description_en: { type: 'TEXT' },
+    description_ar: { type: 'TEXT' },
+    og_image_url: { type: 'TEXT' },
+    og_image_alt_en: { type: 'TEXT' },
+    og_image_alt_ar: { type: 'TEXT' },
+    keywords_en: { type: 'TEXT' },
+    keywords_ar: { type: 'TEXT' },
+    canonical_url: { type: 'TEXT' },
+    structured_data: { type: 'JSONB', default: "'{}'" },
+    is_active: { type: 'BOOLEAN', default: true },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
   await ensureColumnsBulk(targetPool, 'support_tickets', {
     status: { type: 'VARCHAR(50)', default: 'open' },
     priority: { type: 'VARCHAR(50)', default: 'medium' },
@@ -1360,6 +1496,60 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     last_checked_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
     created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
     updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetPool, 'gpu_providers', {
+    provider_id: { type: 'VARCHAR(100)' },
+    name: { type: 'VARCHAR(255)' },
+    provider_type: { type: 'VARCHAR(100)' },
+    endpoint_id: { type: 'VARCHAR(150)' },
+    base_url: { type: 'TEXT' },
+    api_url: { type: 'TEXT' },
+    encrypted_api_key: { type: 'TEXT' },
+    current_load_capacity: { type: 'INTEGER', default: 100 },
+    status: { type: 'VARCHAR(50)', default: "'active'" },
+    metadata: { type: 'JSONB', default: "'{}'" },
+    health_status: { type: 'VARCHAR(50)', default: "'offline'" },
+    latency_ms: { type: 'INTEGER', default: 0 },
+    capabilities: { type: 'TEXT[]' },
+    daily_budget: { type: 'NUMERIC(15, 4)', default: 0 },
+    used_today: { type: 'NUMERIC(15, 4)', default: 0 },
+    last_reset_date: { type: 'DATE', default: 'CURRENT_DATE' },
+    config: { type: 'JSONB', default: "'{}'" },
+    is_active: { type: 'BOOLEAN', default: true },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetPool, 'gpu_provider_models', {
+    provider_id: { type: 'INTEGER' },
+    model_id: { type: 'VARCHAR(255)' },
+    name: { type: 'VARCHAR(255)' },
+    task_type: { type: 'VARCHAR(100)' },
+    context_window: { type: 'INTEGER', default: 32768 },
+    max_output_tokens: { type: 'INTEGER', default: 4096 },
+    is_active: { type: 'BOOLEAN', default: true },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
+  });
+
+  await ensureColumnsBulk(targetPool, 'gpu_execution_jobs', {
+    user_id: { type: 'INTEGER' },
+    provider_id: { type: 'INTEGER' },
+    model_id: { type: 'VARCHAR(255)' },
+    task_type: { type: 'VARCHAR(100)' },
+    status: { type: 'VARCHAR(50)', default: "'pending'" },
+    prompt: { type: 'TEXT' },
+    parameters: { type: 'JSONB', default: "'{}'" },
+    remote_job_id: { type: 'VARCHAR(255)' },
+    result_url: { type: 'TEXT' },
+    result_data: { type: 'JSONB', default: "'{}'" },
+    latency_ms: { type: 'INTEGER', default: 0 },
+    error_message: { type: 'TEXT' },
+    attempts: { type: 'INTEGER', default: 1 },
+    failover_count: { type: 'INTEGER', default: 0 },
+    cost_charged: { type: 'NUMERIC(15, 4)', default: 0 },
+    created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
+    completed_at: { type: 'TIMESTAMP' }
   });
 }
 
@@ -1446,7 +1636,29 @@ export const CORE_INDEXES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_ad_pricing_audit_created_at ON ad_pricing_audit(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_ad_stats_ad_id ON ad_stats(ad_id)`,
   `CREATE INDEX IF NOT EXISTS idx_ad_stats_type ON ad_stats(type)`,
-  `CREATE INDEX IF NOT EXISTS idx_ad_stats_created_at ON ad_stats(created_at)`
+  `CREATE INDEX IF NOT EXISTS idx_ad_stats_created_at ON ad_stats(created_at)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS seo_metadata_pkey ON seo_metadata(id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS seo_metadata_route_path_key ON seo_metadata(route_path)`,
+  `CREATE INDEX IF NOT EXISTS idx_seo_metadata_route_path ON seo_metadata(route_path)`,
+  `CREATE INDEX IF NOT EXISTS idx_seo_metadata_entity ON seo_metadata(entity_type, entity_id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS gpu_providers_pkey ON gpu_providers(id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS gpu_providers_provider_id_key ON gpu_providers(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_providers_status ON gpu_providers(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_providers_is_active ON gpu_providers(is_active)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS gpu_provider_models_pkey ON gpu_provider_models(id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_provider_models_provider_id ON gpu_provider_models(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_provider_models_task_type ON gpu_provider_models(task_type)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS gpu_execution_jobs_pkey ON gpu_execution_jobs(id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS gpu_execution_jobs_job_id_key ON gpu_execution_jobs(job_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_user_id ON gpu_execution_jobs(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_provider_id ON gpu_execution_jobs(provider_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_task_type ON gpu_execution_jobs(task_type)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_status ON gpu_execution_jobs(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_created_at ON gpu_execution_jobs(created_at DESC)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS api_performance_logs_pkey ON api_performance_logs(id)`,
+  `CREATE INDEX IF NOT EXISTS idx_api_performance_logs_created_at ON api_performance_logs(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_api_performance_logs_duration ON api_performance_logs(duration_ms)`,
+  `CREATE INDEX IF NOT EXISTS idx_api_performance_logs_endpoint ON api_performance_logs(endpoint)`
 ];
 
 export const CORE_RELATIONS: ForeignKeyRelation[] = [
@@ -1465,7 +1677,10 @@ export const CORE_RELATIONS: ForeignKeyRelation[] = [
   { table: 'marketplace_items', constraint: 'fk_marketplace_items_image_asset_id', column: 'image_asset_id', ref: 'media_assets', onDelete: 'SET NULL' },
   { table: 'user_sessions', constraint: 'fk_user_sessions_user', column: 'user_id', ref: 'users', onDelete: 'CASCADE' },
   { table: 'admin_approval_queue', constraint: 'fk_admin_approval_queue_requester', column: 'requester_id', ref: 'users', onDelete: 'CASCADE' },
-  { table: 'ad_pricing_audit', constraint: 'fk_ad_pricing_audit_admin', column: 'admin_id', ref: 'users', onDelete: 'CASCADE' }
+  { table: 'ad_pricing_audit', constraint: 'fk_ad_pricing_audit_admin', column: 'admin_id', ref: 'users', onDelete: 'CASCADE' },
+  { table: 'gpu_provider_models', constraint: 'fk_gpu_provider_models_provider', column: 'provider_id', ref: 'gpu_providers', onDelete: 'CASCADE' },
+  { table: 'gpu_execution_jobs', constraint: 'fk_gpu_execution_jobs_user', column: 'user_id', ref: 'users', onDelete: 'SET NULL' },
+  { table: 'gpu_execution_jobs', constraint: 'fk_gpu_execution_jobs_provider', column: 'provider_id', ref: 'gpu_providers', onDelete: 'SET NULL' }
 ];
 
 export async function applyCoreRelations(targetPool: QueryClient) {
@@ -1498,7 +1713,7 @@ export async function seedCoreDatabase(targetPool: QueryClient, targetLedgerPool
     const adminId = newAdmin.rows[0].id;
     if (targetLedgerPool) {
       await targetLedgerPool.query(
-        `INSERT INTO wallets (user_id, balance) VALUES ($1, 10000) ON CONFLICT (user_id) DO NOTHING`,
+        `INSERT INTO wallets (user_id, balance, points) VALUES ($1, 0.0000, 10000) ON CONFLICT (user_id) DO NOTHING`,
         [adminId]
       ).catch(() => {});
     }
@@ -1565,8 +1780,9 @@ export async function seedCoreDatabase(targetPool: QueryClient, targetLedgerPool
       ('notebook', '', '', 'Strategic research workstation and technical knowledge synthesis.', 'محطة عمل الأبحاث الاستراتيجية وتركيب المعرفة التقنية.', 30),
       ('sovereign_memory', '', '', 'Unified sovereign system intelligence and long-term memory synthesis.', 'ذاكرة النظام السيادية الموحدة وتركيب المعارف طويلة الأمد.', 5),
       ('sovereign_search', '', '', 'Global real-time web intelligence and strategic knowledge extraction.', 'البحث الذكي العالمي في الوقت الفعلي واستخراج المعرفة الاستراتيجية.', 10),
-      ('perplexta_music', 'google', 'lyria-3-pro-preview', 'Advanced acoustic composition and structural music synthesis.', 'التأليف الصوتي المتقدم والتركيب الموسيقي الهيكلي.', 50),
-      ('x402_api', 'google', 'gemini-1.5-pro', 'Dynamic high-fidelity artificial intelligence analytics gateway for programmatic developer clients connected via x402 payment protocol.', 'بوابة تحليلات الذكاء الاصطناعي عالية الدقة الديناميكية لعملاء الوكلاء البرمجيين المتصلين ببروتوكول دفع x402.', 15)
+      ('perplexta_music', '', '', 'Advanced acoustic composition and structural music synthesis.', 'التأليف الصوتي المتقدم والتركيب الموسيقي الهيكلي.', 50),
+      ('x402_api', '', '', 'Dynamic high-fidelity artificial intelligence analytics gateway for programmatic developer clients connected via x402 payment protocol.', 'بوابة تحليلات الذكاء الاصطناعي عالية الدقة الديناميكية لعملاء الوكلاء البرمجيين المتصلين ببروتوكول دفع x402.', 15),
+      ('vision', '', '', 'High-performance visual understanding, computer vision and multimodal document analysis.', 'نظام الرؤية الحاسوبية والفهم البصري المتقدم وتحليل الوثائق والصور.', 20)
     ON CONFLICT (tool_id) DO NOTHING
   `);
 }

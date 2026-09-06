@@ -1,4 +1,4 @@
-export type TaskType = 'image' | 'video';
+export type TaskType = 'image' | 'video' | 'vision';
 
 export interface TaskExecutionContext {
   reqBody: any;
@@ -24,6 +24,11 @@ export class OrchestratorRegistry {
     this.loaders.set('video', async () => {
       const module = await import('./tasks/videoTask.js');
       return module.executeVideoTask;
+    });
+
+    this.loaders.set('vision', async () => {
+      const module = await import('./tasks/visionTask.js');
+      return module.executeVisionTask;
     });
   }
 

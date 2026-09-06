@@ -87,7 +87,7 @@ export async function handleChatMessage(socket: any, data: any) {
   const toolId = data.toolId || data.tool_id || 'chat';
   const prompt = data.content || (data.data_p ? decrypt(data.data_p) : '');
 
-  let authenticatedUserId = userId;
+  let authenticatedUserId = userId || data.user?.id;
   if (!authenticatedUserId && token) {
     try {
       const jwtSecret = process.env.JWT_SECRET;
@@ -103,6 +103,23 @@ export async function handleChatMessage(socket: any, data: any) {
   }
 
   if (!authenticatedUserId) return socket.emit('chat_error', { message: 'Unauthorized' });
+
+  // Ensure socket joins user room
+  socket.join(`user_${authenticatedUserId}`);
+
+  let resolvedChatId = chatId;
+  if (!resolvedChatId) {
+    try {
+      const newChat = await pool.query(
+        'INSERT INTO chats (user_id, title, tool_id, tool) VALUES ($1, $2, $3, $4) RETURNING id',
+        [authenticatedUserId, prompt.substring(0, 50) || 'New Conversation', toolId, toolId]
+      );
+      resolvedChatId = newChat.rows[0].id;
+      socket.emit('chat_created', { id: resolvedChatId, title: prompt.substring(0, 50) || 'New Conversation' });
+    } catch (chatCreateErr) {
+      console.error('[Chat] Failed to auto-create chat:', chatCreateErr);
+    }
+  }
 
   // Early client request length audit
   try {
@@ -120,25 +137,26 @@ export async function handleChatMessage(socket: any, data: any) {
   }
 
   let assistantMessageId: number | undefined;
+  let messageSaved = false;
   try {
     if (!pool) throw new Error('Database not ready');
 
-    socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta', chatId });
+    socket.emit('typing', { isTyping: true, role: 'assistant', name: 'Perplexta', chatId: resolvedChatId });
 
     const assistantMsgResult = await pool.query(
       'INSERT INTO messages (chat_id, role, content, tool, tool_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [chatId, 'assistant', '...', toolId, toolId]
+      [resolvedChatId, 'assistant', '...', toolId, toolId]
     );
     assistantMessageId = assistantMsgResult.rows[0].id;
 
     const generationStart = Date.now();
 
     const result = await executeTaskLogic(
-      { tool_id: toolId, prompt, chat_id: chatId, file_data, forensic_mode, image_settings, video_settings, audio_settings }, 
+      { tool_id: toolId, prompt, chat_id: resolvedChatId, file_data, forensic_mode, image_settings, video_settings, audio_settings }, 
       authenticatedUserId, 
       undefined, 
       (chunk) => {
-        socket.emit('chat_chunk', { chunk, chatId, isFinal: false });
+        socket.emit('chat_chunk', { chunk, chatId: resolvedChatId, isFinal: false });
       },
       socket
     );
@@ -152,15 +170,15 @@ export async function handleChatMessage(socket: any, data: any) {
       'UPDATE messages SET content = $1, generation_time = $2, citations = $3, follow_ups = $4 WHERE id = $5',
       [cleanText, generationTimeSeconds, JSON.stringify(result.citations || []), JSON.stringify(finalFollowUps || []), assistantMessageId]
     );
+    messageSaved = true;
 
     if (toolId === 'video' && result.result && assistantMessageId) {
       await VideoResourceProvider.associateMessageWithVideo(assistantMessageId, result.result).catch(() => {});
     }
 
-    await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [chatId]);
-
-    if (chatId) {
-      const chatIdNum = parseInt(String(chatId), 10);
+    if (resolvedChatId) {
+      await pool.query('UPDATE chats SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [resolvedChatId]);
+      const chatIdNum = parseInt(String(resolvedChatId), 10);
       if (chatIdNum > 0) updateChatContextSummary(chatIdNum, authenticatedUserId).catch(() => {});
     }
 
@@ -182,7 +200,7 @@ export async function handleChatMessage(socket: any, data: any) {
 
   } catch (error: any) {
     socket.emit('typing', { isTyping: false, role: 'assistant', name: 'Perplexta' });
-    if (assistantMessageId) {
+    if (assistantMessageId && !messageSaved) {
       pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch(() => {});
     }
     

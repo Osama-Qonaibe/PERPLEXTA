@@ -65,9 +65,9 @@ export const InactivityWarningModal: React.FC = () => {
           <div className="flex flex-col items-center text-center">
             <div className="relative mb-5 flex items-center justify-center">
               {/* Outer pulsing ring */}
-              <div className="absolute inset-0 rounded-full bg-accent/10 dark:bg-accent/5 animate-ping duration-2000" />
+              <div className="absolute inset-0 rounded-[4px] bg-accent/10 dark:bg-accent/5 animate-ping duration-2000" />
               {/* Inner container */}
-              <div className="relative w-14 h-14 rounded-full bg-accent dark:bg-accent/40 flex items-center justify-center border border-accent dark:border-accent/50">
+              <div className="relative w-14 h-14 rounded-[4px] bg-accent dark:bg-accent/40 flex items-center justify-center border border-accent dark:border-accent/50">
                 <ShieldAlert className="w-7 h-7 text-accent" />
               </div>
             </div>
@@ -83,7 +83,7 @@ export const InactivityWarningModal: React.FC = () => {
             </div>
 
             {/* Countdown Slider Progress Visual */}
-            <div className="w-full bg-gray-100 dark:bg-gray-800 h-1 rounded-full overflow-hidden mb-6">
+            <div className="w-full bg-gray-100 dark:bg-gray-800 h-1 rounded-[4px] overflow-hidden mb-6">
               <motion.div
                 initial={{ width: '100%' }}
                 animate={{ width: `${(inactivityCountdown / 60) * 100}%` }}

@@ -36,8 +36,8 @@ export const AdminLayout: React.FC = () => {
             className="flex-1 flex flex-col relative min-w-0 overflow-hidden bg-inherit"
           >
             <Header activeLanguage={language} />
-            <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-none [WebkitOverflowScrolling:touch] bg-inherit">
-              <div className="min-h-full flex flex-col pt-[72px] px-6 md:px-8 pb-12">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-none [WebkitOverflowScrolling:touch] bg-inherit h-[calc(100dvh-var(--safe-area-spacing))] md:h-full">
+              <div className="min-h-full flex flex-col pt-[72px] px-6 md:px-8 pb-[calc(var(--safe-area-spacing)+env(safe-area-inset-bottom,0px))] md:pb-12">
                 <Outlet />
               </div>
             </main>

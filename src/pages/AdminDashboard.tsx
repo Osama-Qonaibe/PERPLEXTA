@@ -119,6 +119,7 @@ import { PagePreviewModal } from "../components/PagePreviewModal";
 
 import { CommandCenterView } from "../components/admin/CommandCenterView";
 import { ApiKeysVaultView } from "../components/admin/ApiKeysVaultView";
+import { GpuInfrastructureView } from "../components/admin/GpuInfrastructureView";
 import { DatabaseOrchestrationView } from "../components/admin/DatabaseOrchestrationView";
 import { OrchestratorView } from "../components/admin/OrchestratorView";
 import { FinanceVaultView } from "../components/admin/FinanceVaultView";
@@ -170,6 +171,7 @@ export const AdminDashboard: React.FC = () => {
     // Block support from sensitive financial/system paths
     const sensitivePaths = [
       "keys",
+      "gpu",
       "databases",
       "finance",
       "settings",
@@ -290,6 +292,8 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar" ? "رادار الأمان" : "Security Radar";
       case "keys":
         return t("aiInfrastructure");
+      case "gpu":
+        return language === "ar" ? "مزودي خوادم الـ GPU" : "GPU Infrastructure & Vault";
       case "databases":
         return t("dbOrchestration");
       case "orchestrator":
@@ -335,6 +339,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "إدارة مفاتيح الوصول والبنية التحتية"
           : "ACCESS KEYS & INFRASTRUCTURE VAULT";
+      case "gpu":
+        return language === "ar"
+          ? "إدارة خوادم الحوسبة الرسومية ومعالجة الوسائط المنفصلة"
+          : "ISOLATED GPU COMPUTE & MEDIA PROCESSING CLUSTERS";
       case "databases":
         return language === "ar"
           ? "تنسيق قواعد البيانات والنسخ الاحتياطي"
@@ -404,6 +412,8 @@ export const AdminDashboard: React.FC = () => {
         return <Activity size={28} className={iconClass} />;
       case "keys":
         return <Key size={28} className={iconClass} />;
+      case "gpu":
+        return <Server size={28} className={iconClass} />;
       case "databases":
         return <Database size={28} className={iconClass} />;
       case "orchestrator":
@@ -716,7 +726,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "gpu", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
             path,
           )
             ? ""
@@ -739,6 +749,13 @@ export const AdminDashboard: React.FC = () => {
               setProviderModels={setProviderModels}
               showToast={showToast}
             />
+          ) : path === "gpu" ? (
+            <GpuInfrastructureView
+              theme={theme}
+              t={t}
+              dir={dir}
+              showToast={showToast}
+            />
           ) : path === "databases" ? (
             <DatabaseOrchestrationView
               theme={theme}
@@ -753,6 +770,7 @@ export const AdminDashboard: React.FC = () => {
               dir={dir}
               providerModels={providerModels}
               showToast={showToast}
+              onRefreshModels={fetchProviderModels}
             />
           ) : path === "finance" ? (
             <FinanceVaultView theme={theme} t={t} dir={dir} showToast={showToast} />

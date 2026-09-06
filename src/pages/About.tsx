@@ -335,20 +335,21 @@ export const About: React.FC = () => {
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="max-w-5xl mx-auto px-6 sm:px-8 pb-32 overflow-y-auto h-full custom-scrollbar"
+      className="max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] lg:pb-16 overflow-y-auto h-full custom-scrollbar"
     >
       {/* Sticky Header */}
-      <div className="sticky -top-0.5 z-20 -mx-6 sm:-mx-8 px-6 sm:px-8 py-4 mb-10 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between">
+      <div className="sticky -top-0.5 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 mb-6 bg-[var(--bg-primary)]/90 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
             id="about-back-btn"
-            className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-theme bg-transparent border border-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-accent hover:"
+            className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-accent hover:border-accent/40 active:scale-95 cursor-pointer"
+            title={dir === "rtl" ? "رجوع" : "Back"}
           >
             {dir === "rtl" ? (
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             ) : (
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             )}
           </button>
           <div>
@@ -369,7 +370,7 @@ export const About: React.FC = () => {
       <div className="space-y-24">
         {/* Hero Section */}
         <section className="text-center space-y-4 pt-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 dark:bg-gray-900/50 border border-gray-250/20 dark:border-gray-800/40 text-gray-800 dark:text-gray-200 text-xs font-bold uppercase tracking-widest">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-[4px] bg-gray-100 dark:bg-gray-900/50 border border-gray-250/20 dark:border-gray-800/40 text-gray-800 dark:text-gray-200 text-xs font-bold uppercase tracking-widest">
             <Info size={14} className="text-accent" />
             {isAr ? "من نحن" : "About Us"}
           </div>
@@ -417,7 +418,7 @@ export const About: React.FC = () => {
 
           <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-gray-50/50 dark:bg-gray-900/30 border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center p-8 shadow-inner">
             <div className="relative z-10 flex flex-col items-center gap-8 w-full">
-              <div className="flex items-center justify-center p-6 rounded-full bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-none transition-theme group">
+              <div className="flex items-center justify-center p-6 rounded-[4px] bg-white dark:bg-gray-950 border border-gray-200/60 dark:border-gray-800/60 shadow-lg hover:shadow-none transition-theme group">
                 <Layers className="w-24 h-24 text-gray-500 dark:text-gray-400 group-hover:text-accent group-hover: transition-theme" />
               </div>
 
@@ -484,7 +485,7 @@ export const About: React.FC = () => {
 
         {/* Why PERPLEXTA */}
         <section className="p-8 md:p-10 rounded-[var(--radius)] border border-accent/20 bg-accent/[0.03] dark:bg-accent/[0.01] dark:border-accent/10 shadow-[0_4px_24px_rgba(156,163,175,0.03)] space-y-6 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl group-hover:bg-accent/10 transition-theme" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-[4px] blur-3xl group-hover:bg-accent/10 transition-theme" />
           <h2 className="text-2xl font-black text-accent ">
             {isAr ? "لماذا بيربليكستا؟" : "Why PERPLEXTA?"}
           </h2>
@@ -549,7 +550,7 @@ export const About: React.FC = () => {
                 </p>
               </div>
               <div>
-                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-full border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]">
+                <span className="inline-block px-3 py-1 text-xs font-bold text-accent bg-accent/10 rounded-[4px] border border-accent/20 shadow-[0_0_8px_rgba(156,163,175,0.2)]">
                   {isAr ? "نشطة" : "ACTIVE"}
                 </span>
               </div>

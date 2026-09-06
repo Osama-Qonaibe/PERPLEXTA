@@ -513,9 +513,9 @@ export const BlogPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedCategory('All')}
-                        className={`px-3 h-9 rounded-[4px] border flex items-center gap-1.5 transition-theme text-xs font-black ${
+                        className={`px-2.5 h-8 rounded-[8px] border flex items-center gap-1.5 transition-theme text-[12px] font-bold ${
                           isThemeDark
-                            ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95 shadow-[0_0_8px_rgba(156,163,175,0.15)]'
+                            ? 'border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95'
                             : 'border-accent/20 bg-accent/5 text-accent hover:bg-accent/10 active:scale-95'
                         }`}
                         title={isRtl ? 'الرجوع للمقالات الرئيسية' : 'Back to main articles'}
@@ -527,7 +527,7 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsMobileSidebarOpen(true)}
-                      className={`w-9 h-9 rounded-[4px] border flex items-center justify-center transition-theme ${
+                      className={`w-8 h-8 rounded-[8px] border flex items-center justify-center transition-theme ${
                         isThemeDark
                           ? 'border-gray-800/80 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-accent hover:border-accent/35 active:scale-95'
                           : 'border-gray-200 bg-transparent text-slate-700 hover:bg-[#fafafa] active:scale-95'
@@ -540,7 +540,7 @@ export const BlogPage: React.FC = () => {
                 </div>
 
                 {/* Desktop Filter and Search Bar */}
-                <div className={`hidden md:flex mt-4 sm:mt-6 p-2 rounded-xl flex-row items-center justify-between gap-3 md:gap-4 border ${
+                <div className={`hidden md:flex mt-4 sm:mt-6 p-1.5 rounded-[10px] flex-row items-center justify-between gap-3 md:gap-4 border ${
                   isThemeDark ? 'bg-[#1a1a1c] border-gray-800/60' : 'bg-[#fafafa] border-gray-200/80'
                 }`}>
                   {/* Desktop Categories List */}
@@ -552,9 +552,9 @@ export const BlogPage: React.FC = () => {
                         <button
                           key={`blog-cat-desk-${cat.id}-${catIdx}`}
                           onClick={() => setSelectedCategory(cat.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-theme ${
+                          className={`h-8 px-2.5 rounded-[8px] text-[12px] font-bold whitespace-nowrap cursor-pointer transition-theme ${
                             isSelected
-                              ? 'bg-accent/10 border border-accent/30 text-accent dark:text-accent dark:font-black'
+                              ? 'bg-accent/10 border border-accent/30 text-accent dark:text-accent'
                               : (isThemeDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-650 hover:text-gray-800')
                           }`}
                         >
@@ -567,20 +567,20 @@ export const BlogPage: React.FC = () => {
                     })}
                   </div>
 
-                  <div className={`flex items-center border rounded-lg px-3 py-1.5 w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
+                  <div className={`flex items-center border rounded-[8px] px-2.5 h-8 w-72 md:w-80 lg:w-96 flex-shrink-0 transition-theme ${
                     isThemeDark ? 'bg-black/40 border-white/10 focus-within:border-accent/35' : 'bg-white border-gray-200 focus-within:border-accent/35'
                   }`}>
-                    <Search size={14} className="text-gray-400 shrink-0" />
+                    <Search size={13} className="text-gray-400 shrink-0" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={isRtl ? 'ابحث عن المقالات والأبحاث...' : 'Search articles & research...'}
-                      className={`flex-1 bg-transparent text-xs placeholder-gray-500 outline-none px-2 ${
+                      className={`flex-1 bg-transparent text-[12px] placeholder-gray-500 outline-none px-2 ${
                         isThemeDark ? 'text-white' : 'text-gray-800'
                       }`}
                     />
-                    <div className="text-[9px] font-mono text-accent font-bold bg-accent/5 px-2 py-0.5 rounded shrink-0 border border-accent/10">
+                    <div className="text-[9px] font-mono text-accent font-bold bg-accent/5 px-1.5 py-0.5 rounded shrink-0 border border-accent/10">
                       {sortedArticles.length}
                     </div>
                   </div>
@@ -589,16 +589,16 @@ export const BlogPage: React.FC = () => {
                 {/* Mobile Native App Bar (Clean & Uncluttered) */}
                 <div id="feed-sec-header" className="md:hidden flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <div className={`flex items-center border rounded-xl px-3 py-2 flex-1 transition-theme shadow-sm ${
+                    <div className={`flex items-center border rounded-[8px] px-2.5 h-8 flex-1 transition-theme ${
                       isThemeDark ? 'bg-zinc-900/80 border-white/10 focus-within:border-accent/40' : 'bg-gray-50/90 border-gray-200 focus-within:border-accent/40'
                     }`}>
-                      <Search size={14} className="text-gray-400 shrink-0" />
+                      <Search size={13} className="text-gray-400 shrink-0" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={isRtl ? 'ابحث في المقالات...' : 'Search articles...'}
-                        className={`flex-1 bg-transparent text-xs placeholder-gray-500 outline-none px-2 ${
+                        className={`flex-1 bg-transparent text-[12px] placeholder-gray-500 outline-none px-2 ${
                           isThemeDark ? 'text-white' : 'text-gray-800'
                         }`}
                       />
@@ -608,7 +608,7 @@ export const BlogPage: React.FC = () => {
                           onClick={() => setSearchQuery('')}
                           className="p-1 text-gray-400 hover:text-gray-200 cursor-pointer"
                         >
-                          <X size={13} />
+                          <X size={12} />
                         </button>
                       )}
                       <div className="text-[9px] font-mono text-accent font-bold bg-accent/10 px-1.5 py-0.5 rounded shrink-0 border border-accent/15">
@@ -619,21 +619,21 @@ export const BlogPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsMobileSidebarOpen(true)}
-                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-theme shrink-0 active:scale-95 cursor-pointer ${
+                      className={`w-8 h-8 rounded-[8px] border flex items-center justify-center transition-theme shrink-0 active:scale-95 cursor-pointer ${
                         isThemeDark
                           ? 'border-gray-800/80 bg-zinc-900/80 text-gray-300 hover:text-accent hover:border-accent/30'
-                          : 'border-gray-200 bg-white text-slate-700 hover:text-accent shadow-sm'
+                          : 'border-gray-200 bg-white text-slate-700 hover:text-accent'
                       }`}
                       title={isRtl ? 'تصفية وترتيب الأقسام' : 'Filter & Sort'}
                     >
-                      <SlidersHorizontal size={15} />
+                      <SlidersHorizontal size={14} />
                     </button>
                   </div>
 
                   {/* Active Category Filter Tag on Mobile if filtered */}
                   {selectedCategory !== 'All' && (
                     <div className="flex items-center justify-between pt-0.5 animate-fade-in">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent">
                         <span style={{ color: categoryColors[selectedCategory] || '#334155' }}>
                           {getCategoryIcon(selectedCategory, "w-3 h-3")}
                         </span>
@@ -645,7 +645,7 @@ export const BlogPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setSelectedCategory('All')}
-                          className="p-0.5 hover:bg-accent/20 rounded-full cursor-pointer ml-1"
+                          className="p-0.5 hover:bg-accent/20 rounded-[4px] cursor-pointer ml-1"
                         >
                           <X size={11} />
                         </button>
@@ -750,7 +750,7 @@ export const BlogPage: React.FC = () => {
                           <div className="space-y-2 pt-2 border-t border-gray-100/5 dark:border-gray-800/15">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-full bg-gray-200/10 dark:bg-gray-800/10" />
+                                <div className="w-5 h-5 rounded-[4px] bg-gray-200/10 dark:bg-gray-800/10" />
                                 <div className="h-3 bg-gray-200/10 dark:bg-gray-800/10 rounded-sm w-16" />
                               </div>
                               <div className="w-8 h-3 bg-gray-200/10 dark:bg-gray-800/10 rounded-sm" />
@@ -813,7 +813,7 @@ export const BlogPage: React.FC = () => {
                                   <div className="flex items-center gap-2 text-[9px] font-mono text-gray-500 dark:text-gray-400 mb-1.5 select-none">
                                     <Calendar size={10} />
                                     <span>{new Date(article.created_at).toLocaleDateString(isRtl ? 'ar-EG' : 'en-US')}</span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-800" />
+                                    <span className="w-1.5 h-1.5 rounded-[4px] bg-gray-300 dark:bg-gray-800" />
                                     <div className="flex items-center gap-0.5">
                                       <Eye size={10} />
                                       <span>{article.views} {isRtl ? 'مشاهدة' : 'views'}</span>
@@ -831,9 +831,9 @@ export const BlogPage: React.FC = () => {
                                   <div className="flex items-center justify-between select-none">
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       {article.author_avatar ? (
-                                        <img src={article.author_avatar} alt={article.author_name} className="w-5 h-5 rounded-full border border-[var(--border-main)] shrink-0" />
+                                        <img src={article.author_avatar} alt={article.author_name} className="w-5 h-5 rounded-[4px] border border-[var(--border-main)] shrink-0" />
                                       ) : (
-                                        <div className="w-5 h-5 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                                        <div className="w-5 h-5 rounded-[4px] bg-accent/15 text-accent flex items-center justify-center shrink-0">
                                           <User size={10} />
                                         </div>
                                       )}
@@ -1009,7 +1009,7 @@ export const BlogPage: React.FC = () => {
               </button>
               
               <div className="text-[9px] font-mono tracking-widest text-slate-500 dark:text-zinc-500 font-bold uppercase select-none flex items-center gap-1.5 font-sans">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse" />
                 <span>{isRtl ? 'منظور التقرير البحثي المحمي' : 'SECURE INTEL RESEARCH SPECIFICATION'}</span>
               </div>
             </div>
@@ -1038,9 +1038,9 @@ export const BlogPage: React.FC = () => {
                 <div className={`p-5 md:p-6 rounded-xl border shrink-0 ${isThemeDark ? 'bg-zinc-950/80 border-white/5' : 'bg-white border-gray-150'} shadow-sm space-y-4`}>
                   <div className="flex items-center gap-3">
                     {selectedArticle.author_avatar ? (
-                      <img src={selectedArticle.author_avatar} alt={selectedArticle.author_name} className="w-10 h-10 rounded-full border border-slate-100 dark:border-white/5 object-cover" />
+                      <img src={selectedArticle.author_avatar} alt={selectedArticle.author_name} className="w-10 h-10 rounded-[4px] border border-slate-100 dark:border-white/5 object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center font-bold text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-[4px] bg-accent/15 text-accent flex items-center justify-center font-bold text-sm shrink-0">
                         {selectedArticle.author_name[0]}
                       </div>
                     )}
@@ -1164,7 +1164,7 @@ export const BlogPage: React.FC = () => {
                     <span className="bg-accent/10 border border-accent/20 text-accent text-[8.5px] font-black tracking-wider uppercase px-2 py-0.5 rounded">
                       {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
                     </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse" />
                     <span className="text-[9px] font-mono font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">
                       {isRtl ? 'تحليلات مستقلة عالية الدقة' : 'PERPLEXTA INDEPENDENT INTEL'}
                     </span>
@@ -1184,16 +1184,16 @@ export const BlogPage: React.FC = () => {
                   <div className={`p-4 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150/80'} shadow-sm`}>
                     <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-2">
                       <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse" />
                         <span>{isRtl ? 'مؤشر تقدم القراءة التحليلية' : 'Reading Progress Indicator'}</span>
                       </span>
                       <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
                         {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
+                    <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-[4px] overflow-hidden relative">
                       <div 
-                        className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
+                        className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-[4px]"
                         style={{ width: `${readingProgress}%` }}
                       />
                     </div>
@@ -1242,7 +1242,7 @@ export const BlogPage: React.FC = () => {
                             className="flex items-center gap-1 px-3 h-8 rounded-[4px] bg-accent hover:bg-accent disabled:opacity-40 disabled:hover:bg-accent font-bold text-white text-xs transition-theme shadow-sm uppercase shrink-0 cursor-pointer"
                           >
                             {submittingComment ? (
-                              <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-[4px] animate-spin" />
                             ) : (
                               <>
                                 <Send size={11} className={isRtl ? 'rotate-180' : ''} />
@@ -1267,7 +1267,7 @@ export const BlogPage: React.FC = () => {
                       <div className="space-y-3.5 animate-pulse">
                         {[1, 2].map(i => (
                           <div key={`blog-comment-skel-${i}`} className="flex gap-3 p-3 border-b border-slate-100 dark:border-white/5">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-800" />
+                            <div className="w-8 h-8 rounded-[4px] bg-slate-200 dark:bg-zinc-800" />
                             <div className="flex-1 space-y-1.5">
                               <div className="h-3.5 bg-slate-200 dark:bg-zinc-800 rounded w-1/4" />
                               <div className="h-3 bg-slate-200 dark:bg-zinc-800 rounded w-3/4" />
@@ -1286,9 +1286,9 @@ export const BlogPage: React.FC = () => {
                             className="group/item flex gap-2.5 p-3.5 bg-slate-50/50 dark:bg-zinc-950/30 border border-slate-100 dark:border-white/5 rounded-xl hover:border-accent/10 transition-theme"
                           >
                             {comment.author_avatar ? (
-                              <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-full border border-slate-100 dark:border-white/5 shrink-0" />
+                              <img src={comment.author_avatar} alt={comment.author_name} className="w-7 h-7 rounded-[4px] border border-slate-100 dark:border-white/5 shrink-0" />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 flex items-center justify-center shrink-0">
+                              <div className="w-7 h-7 rounded-[4px] bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 flex items-center justify-center shrink-0">
                                 <User size={12} />
                               </div>
                             )}
@@ -1339,7 +1339,7 @@ export const BlogPage: React.FC = () => {
             <div 
               ref={mobileArticleScrollRef}
               onScroll={handleScrollProgress}
-              className="md:hidden flex flex-col flex-1 overflow-y-auto pb-20 scrollbar-none" 
+              className="md:hidden flex flex-col flex-1 overflow-y-auto pb-[calc(var(--safe-area-spacing)+6px+env(safe-area-inset-bottom,0px))] scrollbar-none" 
               dir={isRtl ? 'rtl' : 'ltr'}
             >
               {/* Cover Image & Primary Info Banner */}
@@ -1384,7 +1384,7 @@ export const BlogPage: React.FC = () => {
                   
                   {/* Float Category Badge */}
                   <div className="absolute top-3 right-3 select-none">
-                    <span className="text-[8px] bg-accent text-white font-black px-2.5 py-1 rounded-full uppercase shadow-lg">
+                    <span className="text-[8px] bg-accent text-white font-black px-2.5 py-1 rounded-[4px] uppercase shadow-lg">
                       {isRtl ? selectedArticle.category_ar : selectedArticle.category_en}
                     </span>
                   </div>
@@ -1402,9 +1402,9 @@ export const BlogPage: React.FC = () => {
                 }`}>
                   <div className="flex items-center gap-2.5 min-w-0">
                     {selectedArticle.author_avatar ? (
-                      <img src={selectedArticle.author_avatar} alt="" className="w-6 h-6 rounded-full border border-white/10" />
+                      <img src={selectedArticle.author_avatar} alt="" className="w-6 h-6 rounded-[4px] border border-white/10" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
+                      <div className="w-6 h-6 rounded-[4px] bg-accent/10 text-accent flex items-center justify-center text-[10px] font-black">{selectedArticle.author_name[0]}</div>
                     )}
                     <div className="min-w-0">
                       <div className="text-[10px] font-black text-slate-900 dark:text-white truncate leading-none font-sans">{selectedArticle.author_name}</div>
@@ -1429,16 +1429,16 @@ export const BlogPage: React.FC = () => {
                 <div className={`mx-4 mt-4 p-3.5 rounded-xl border select-none ${isThemeDark ? 'bg-zinc-950/40 border-white/5' : 'bg-white border-gray-150'} shadow-sm`}>
                   <div className="flex items-center justify-between text-[9px] font-mono text-accent dark:text-accent font-bold mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-[4px] bg-accent animate-pulse" />
                       <span>{isRtl ? 'مؤشر تقدم القراءة' : 'Reading Progress'}</span>
                     </span>
                     <span className="bg-accent/10 px-2 py-0.5 rounded text-accent font-bold">
                       {Math.round(readingProgress)}% {isRtl ? 'مكتمل' : 'Completed'}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden relative">
+                  <div className="w-full bg-gray-200 dark:bg-zinc-800 h-1.5 rounded-[4px] overflow-hidden relative">
                     <div 
-                      className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-full"
+                      className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.85)] transition-theme rounded-[4px]"
                       style={{ width: `${readingProgress}%` }}
                     />
                   </div>
@@ -1913,7 +1913,7 @@ export const BlogPage: React.FC = () => {
       {/* Mobile Bottom Navigation Bar (Articles Section Navigation with Scroll-Spy) */}
       <nav 
         dir={isRtl ? 'rtl' : 'ltr'}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-around py-1.5 px-2 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-around pt-2 pb-[calc(20px+env(safe-area-inset-bottom,0px))] px-3 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none"
       >
         {selectedArticle ? (
           <>
@@ -1924,18 +1924,18 @@ export const BlogPage: React.FC = () => {
                 triggerHaptic('selection');
                 articleSpy.scrollToSection('art-sec-overview');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 articleSpy.activeSection === 'art-sec-overview'
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <BookOpen size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المقدمة' : 'Intro'}</span>
+              <BookOpen size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'المقدمة' : 'Intro'}</span>
               {articleSpy.activeSection === 'art-sec-overview' && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -1948,18 +1948,18 @@ export const BlogPage: React.FC = () => {
                 triggerHaptic('selection');
                 articleSpy.scrollToSection('art-sec-content');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 articleSpy.activeSection === 'art-sec-content'
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <AlignLeft size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المحتوى' : 'Text'}</span>
+              <AlignLeft size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'المحتوى' : 'Text'}</span>
               {articleSpy.activeSection === 'art-sec-content' && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -1972,18 +1972,18 @@ export const BlogPage: React.FC = () => {
                 triggerHaptic('selection');
                 articleSpy.scrollToSection('art-sec-rating');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 articleSpy.activeSection === 'art-sec-rating'
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <Star size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'التقييم' : 'Rating'}</span>
+              <Star size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'التقييم' : 'Rating'}</span>
               {articleSpy.activeSection === 'art-sec-rating' && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -1997,18 +1997,18 @@ export const BlogPage: React.FC = () => {
                 setIsCommentsOpenOnMobile(true);
                 articleSpy.scrollToSection('art-sec-comments');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 articleSpy.activeSection === 'art-sec-comments' || isCommentsOpenOnMobile
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <MessageSquare size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'التعليقات' : 'Debates'}</span>
+              <MessageSquare size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'التعليقات' : 'Debates'}</span>
               {(articleSpy.activeSection === 'art-sec-comments' || isCommentsOpenOnMobile) && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -2021,10 +2021,10 @@ export const BlogPage: React.FC = () => {
                 triggerHaptic('light');
                 handleBackToList();
               }}
-              className="flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer text-gray-400 hover:text-accent"
+              className="flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer text-gray-400 hover:text-accent"
             >
-              <ArrowLeft size={16} className={`stroke-[2.2] ${isRtl ? 'rotate-180' : ''}`} />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'العودة' : 'Back'}</span>
+              <ArrowLeft size={14} className={`stroke-[2.2] ${isRtl ? 'rotate-180' : ''}`} />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'العودة' : 'Back'}</span>
             </button>
           </>
         ) : (
@@ -2038,18 +2038,18 @@ export const BlogPage: React.FC = () => {
                 setIsMobileSidebarOpen(false);
                 feedSpy.scrollToSection('feed-sec-header');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 (feedSpy.activeSection === 'feed-sec-header' || selectedCategory === 'All') && !isMobileSidebarOpen
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <Grid size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الكل' : 'All'}</span>
+              <Grid size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'الكل' : 'All'}</span>
               {(feedSpy.activeSection === 'feed-sec-header' || selectedCategory === 'All') && !isMobileSidebarOpen && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -2064,18 +2064,18 @@ export const BlogPage: React.FC = () => {
                 setIsMobileSidebarOpen(false);
                 feedSpy.scrollToSection('feed-sec-featured');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 (feedSpy.activeSection === 'feed-sec-featured' || selectedCategory === 'News') && !isMobileSidebarOpen
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <Newspaper size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الأخبار' : 'News'}</span>
+              <Newspaper size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'الأخبار' : 'News'}</span>
               {(feedSpy.activeSection === 'feed-sec-featured' || selectedCategory === 'News') && !isMobileSidebarOpen && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -2090,18 +2090,18 @@ export const BlogPage: React.FC = () => {
                 setIsMobileSidebarOpen(false);
                 feedSpy.scrollToSection('feed-sec-grid');
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 (feedSpy.activeSection === 'feed-sec-grid' || selectedCategory === 'AI') && !isMobileSidebarOpen
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <Brain size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الذكاء' : 'AI'}</span>
+              <Brain size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'الذكاء' : 'AI'}</span>
               {(feedSpy.activeSection === 'feed-sec-grid' || selectedCategory === 'AI') && !isMobileSidebarOpen && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -2115,18 +2115,18 @@ export const BlogPage: React.FC = () => {
                 setSelectedCategory('Developers');
                 setIsMobileSidebarOpen(false);
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 selectedCategory === 'Developers' && !isMobileSidebarOpen
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <Code size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'المطورين' : 'Devs'}</span>
+              <Code size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'المطورين' : 'Devs'}</span>
               {selectedCategory === 'Developers' && !isMobileSidebarOpen && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -2139,18 +2139,18 @@ export const BlogPage: React.FC = () => {
                 triggerHaptic('medium');
                 setIsMobileSidebarOpen(true);
               }}
-              className={`flex flex-col items-center justify-center w-12 h-10 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
+              className={`flex flex-col items-center justify-center w-9 h-8 rounded-[8px] gap-0.5 transition-all duration-200 active:scale-95 relative cursor-pointer ${
                 isMobileSidebarOpen || (selectedCategory !== 'All' && selectedCategory !== 'News' && selectedCategory !== 'AI' && selectedCategory !== 'Developers')
                   ? 'text-accent'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
-              <SlidersHorizontal size={16} className="stroke-[2.2]" />
-              <span className="text-[9px] font-bold tracking-tight">{isRtl ? 'الأقسام' : 'Sections'}</span>
+              <SlidersHorizontal size={14} className="stroke-[2.2]" />
+              <span className="text-[8.5px] font-bold leading-tight tracking-tight">{isRtl ? 'الأقسام' : 'Sections'}</span>
               {(isMobileSidebarOpen || (selectedCategory !== 'All' && selectedCategory !== 'News' && selectedCategory !== 'AI' && selectedCategory !== 'Developers')) && (
                 <motion.div
                   layoutId="blog-mobile-nav-indicator"
-                  className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}

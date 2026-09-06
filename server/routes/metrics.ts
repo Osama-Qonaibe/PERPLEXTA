@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateAdmin } from '../middleware/auth.js';
+import { pool } from '../db/index.js';
 
 const router = express.Router();
 
@@ -66,6 +67,39 @@ router.get('/render', authenticateAdmin, (req, res) => {
       }
     }
     res.json({ success: true, metrics: data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Admin GET endpoint to retrieve slow API performance logs from the dedicated database table
+ */
+router.get('/slow-requests', authenticateAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const thresholdMs = Number(req.query.threshold) || 500;
+
+    if (!pool) {
+      return res.json({ success: true, count: 0, thresholdMs, logs: [] });
+    }
+
+    const result = await pool.query(
+      `SELECT id, endpoint, method, status_code, duration_ms, ip_address, user_id, is_slow, query_params, created_at
+       FROM api_performance_logs
+       WHERE duration_ms >= $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [thresholdMs, limit, offset]
+    );
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      thresholdMs,
+      logs: result.rows
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }

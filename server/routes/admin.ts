@@ -977,11 +977,176 @@ router.get("/orchestrator/models", authenticateAdmin, async (req, res) => {
     const result = await pool.query('SELECT provider, models FROM api_keys_vault');
     const models: any = {};
     result.rows.forEach((row: any) => {
-      models[row.provider] = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
+      let parsed = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
+      if (Array.isArray(parsed)) {
+        const seen = new Set<string>();
+        parsed = parsed.filter((m: any) => {
+          const val = typeof m === 'string' ? m : (m?.id || m?.name || '');
+          if (!val || seen.has(val)) return false;
+          seen.add(val);
+          return true;
+        });
+      }
+      models[row.provider] = parsed || [];
     });
-    res.json({ providerModels: models });
+
+    const gpuModelsResult = await pool.query(`
+      SELECT m.*, p.name as provider_name, p.provider_id as provider_slug, p.provider_id as provider_code, p.id as provider_pk, p.health_status, p.latency_ms
+      FROM gpu_provider_models m
+      JOIN gpu_providers p ON m.provider_id = p.id
+      WHERE m.is_active = true AND p.is_active = true
+      ORDER BY m.name ASC
+    `);
+
+    const { getGpuDiscoveryStatus } = await import('../services/gpu/gpuDiscoveryService.js');
+
+    res.json({ 
+      providerModels: models,
+      gpuModels: gpuModelsResult.rows || [],
+      discoveryStatus: getGpuDiscoveryStatus()
+    });
   } catch {
     res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.get("/orchestrator/sync-status", authenticateAdmin, async (req, res) => {
+  try {
+    const statusQuery = await pool.query(`
+      SELECT 
+        GREATEST(
+          COALESCE((SELECT MAX(updated_at) FROM tool_orchestrator), '1970-01-01'::timestamp),
+          COALESCE((SELECT MAX(updated_at) FROM api_keys_vault), '1970-01-01'::timestamp),
+          COALESCE((SELECT MAX(updated_at) FROM gpu_providers), '1970-01-01'::timestamp)
+        ) as last_synced_at,
+        (SELECT COUNT(*) FROM tool_orchestrator) as tools_count,
+        (SELECT COUNT(*) FROM api_keys_vault WHERE is_active = true) as active_keys_count,
+        (SELECT COUNT(*) FROM gpu_providers WHERE is_active = true) as active_gpu_count,
+        (SELECT COUNT(*) FROM gpu_provider_models WHERE is_active = true) as gpu_models_count
+    `);
+
+    const vaultModels = await pool.query('SELECT models FROM api_keys_vault WHERE is_active = true');
+    let llmModelsCount = 0;
+    vaultModels.rows.forEach((r: any) => {
+      let parsed = typeof r.models === 'string' ? JSON.parse(r.models) : r.models;
+      if (Array.isArray(parsed)) {
+        llmModelsCount += parsed.length;
+      }
+    });
+
+    const row = statusQuery.rows[0] || {};
+    const gpuModelsCount = parseInt(row.gpu_models_count || '0', 10);
+    const totalModelsCount = llmModelsCount + gpuModelsCount;
+
+    const { getGpuDiscoveryStatus } = await import('../services/gpu/gpuDiscoveryService.js');
+
+    res.json({
+      success: true,
+      lastSync: row.last_synced_at || new Date().toISOString(),
+      toolsCount: parseInt(row.tools_count || '0', 10),
+      activeKeysCount: parseInt(row.active_keys_count || '0', 10),
+      activeGpuCount: parseInt(row.active_gpu_count || '0', 10),
+      totalModelsCount,
+      status: "synchronized",
+      discoveryStatus: getGpuDiscoveryStatus()
+    });
+  } catch (err: any) {
+    console.error('[Admin Orchestrator] Sync status error:', err);
+    res.status(500).json({ error: 'Internal Error' });
+  }
+});
+
+router.post("/orchestrator/sync-models", authenticateAdmin, async (req, res) => {
+  try {
+    let syncedProvidersCount = 0;
+
+    // 1. Sync active API keys in api_keys_vault
+    const keysResult = await pool.query(
+      "SELECT provider, encrypted_key, url_key FROM api_keys_vault WHERE is_active = true AND encrypted_key IS NOT NULL AND encrypted_key != ''"
+    );
+
+    for (const row of keysResult.rows) {
+      try {
+        const decryptedKey = decrypt(row.encrypted_key);
+        if (decryptedKey) {
+          await syncProviderModelsInternal(row.provider, decryptedKey, row.url_key);
+          syncedProvidersCount++;
+        }
+      } catch (keyErr) {
+        console.warn(`[Admin Orchestrator Sync] Provider ${row.provider} sync warning:`, keyErr);
+      }
+    }
+
+    // 2. Automated discovery scan across registered GPU provider endpoints
+    const { runGpuEndpointDiscovery, getGpuDiscoveryStatus } = await import('../services/gpu/gpuDiscoveryService.js');
+    const discoveryResult = await runGpuEndpointDiscovery();
+
+    // 3. Invalidate caches
+    memoryCache.delete("admin:orchestrator:models");
+    memoryCache.delete("admin:orchestrator:routes");
+    invalidateVaultCache();
+    invalidateApiKeysVaultCache();
+    invalidateOrchestratorConfigCache();
+
+    // 4. Retrieve fresh model listings
+    const modelsResult = await pool.query('SELECT provider, models FROM api_keys_vault');
+    const providerModels: Record<string, any[]> = {};
+    let totalModelCount = 0;
+
+    modelsResult.rows.forEach((row: any) => {
+      let parsed = typeof row.models === 'string' ? JSON.parse(row.models) : row.models;
+      if (Array.isArray(parsed)) {
+        const seen = new Set<string>();
+        parsed = parsed.filter((m: any) => {
+          const val = typeof m === 'string' ? m : (m?.id || m?.name || '');
+          if (!val || seen.has(val)) return false;
+          seen.add(val);
+          return true;
+        });
+        totalModelCount += parsed.length;
+      }
+      providerModels[row.provider] = parsed || [];
+    });
+
+    const gpuModelsResult = await pool.query(`
+      SELECT m.*, p.name as provider_name, p.provider_id as provider_slug, p.provider_id as provider_code, p.id as provider_pk, p.health_status, p.latency_ms
+      FROM gpu_provider_models m
+      JOIN gpu_providers p ON m.provider_id = p.id
+      WHERE m.is_active = true AND p.is_active = true
+      ORDER BY m.name ASC
+    `);
+    const gpuModels = gpuModelsResult.rows || [];
+    totalModelCount += gpuModels.length;
+
+    const lastSync = new Date().toISOString();
+
+    res.json({
+      success: true,
+      lastSync,
+      providerModels,
+      gpuModels,
+      totalModelCount,
+      syncedProvidersCount,
+      syncedGpuCount: discoveryResult.activeProvidersCount,
+      discoveredModelsCount: discoveryResult.discoveredModelsCount,
+      discoveryStatus: getGpuDiscoveryStatus(),
+      discoveryDetails: discoveryResult.providers,
+      message: `Model listings dynamically synchronized from live endpoints: ${totalModelCount} models available (${discoveryResult.discoveredModelsCount} live GPU models)`
+    });
+  } catch (err: any) {
+    console.error('[Admin Orchestrator Sync Error]:', err);
+    res.status(500).json({ error: err?.message || 'Sync failed' });
+  }
+});
+
+// Admin Action: Health check on registered GPU servers
+router.post('/gpu/reprovision', authenticateAdmin, async (req, res) => {
+  try {
+    const check = await pool.query('SELECT id, provider_id, name, health_status FROM gpu_providers WHERE is_active = true');
+    res.json({ success: true, count: check.rowCount || 0, providers: check.rows });
+  } catch (err: any) {
+    console.error('[Admin GPU Status Check Error]:', err);
+    res.status(500).json({ success: false, error: err?.message || 'Failed to check GPU providers' });
   }
 });
 

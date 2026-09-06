@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
+import { Readable, Transform } from 'stream';
 import { globalLimiter, adminLimiter } from './middleware/rateLimit.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { uploadValidator } from './middleware/uploadValidator.js';
@@ -14,22 +15,210 @@ import { generateAuthMd } from './utils/auth-md.js';
 import { paymentMiddlewareFromConfig } from '@x402/express';
 import wellKnownRouter from './routes/well-known.js';
 
-import { pool, ledgerPool, externalPool, securityPool, getExternalPool, getPoolMetrics } from './db/index.js';
+import { pool, ledgerPool, externalPool, securityPool, getDatabasePool, getExternalPool, getPoolMetrics, cleanupAbandonedConnections } from './db/index.js';
 import QueryStream from 'pg-query-stream';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
-import { getCachedRouteSeo, getCachedAllActiveRouteSeo, getCachedRouteSeoMetadata } from './db/queries.js';
+import { getCachedRouteSeo, getCachedAllActiveRouteSeo, getCachedRouteSeoMetadata, getCachedSeoMetadata, upsertSeoMetadata, getAllSeoMetadata, getCachedOgPreview } from './db/queries.js';
 
 const app = express();
 
+// Stale-Connection-Reaper and Bottleneck Observer for high-concurrency spikes (> 60s orphaned / idle-in-transaction connections)
+const ensureSaturationListener = (poolInstance: any) => {
+  if (poolInstance && typeof poolInstance.on === 'function' && !(poolInstance as any)._hasSaturationListener) {
+    (poolInstance as any)._hasSaturationListener = true;
+    poolInstance.on('pool_saturation_event', async (details: any) => {
+      try {
+        const targetPool = pool || poolInstance;
+        if (targetPool) {
+          await targetPool.query(
+            `INSERT INTO user_activity_logs (user_id, event_type, event_details, ip_address, user_agent)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+              null,
+              'pool_saturation_event',
+              JSON.stringify(details || { timestamp: new Date().toISOString() }),
+              null,
+              'stale-connection-reaper'
+            ]
+          );
+        }
+      } catch (err: any) {
+        console.error('[Pool Event] Failed to log pool_saturation_event to user_activity_logs:', err?.message || err);
+      }
+    });
+  }
+};
+
+const activePoolsList = [
+  { name: 'core', poolInstance: pool },
+  { name: 'ledger', poolInstance: ledgerPool },
+  { name: 'external', poolInstance: externalPool },
+  { name: 'security', poolInstance: securityPool },
+];
+activePoolsList.forEach(({ poolInstance }) => ensureSaturationListener(poolInstance));
+
+// ==========================================
+// Performance Monitoring & Latency Capture Subsystem
+// ==========================================
+let isApiPerfTableEnsured = false;
+export async function ensureApiPerfLogsTable() {
+  const targetPool = pool || getDatabasePool('core');
+  if (isApiPerfTableEnsured || !targetPool) return;
+  try {
+    await targetPool.query(`
+      CREATE TABLE IF NOT EXISTS api_performance_logs (
+        id SERIAL PRIMARY KEY,
+        endpoint VARCHAR(255) NOT NULL,
+        method VARCHAR(20) NOT NULL,
+        status_code INTEGER NOT NULL,
+        duration_ms NUMERIC(10, 2) NOT NULL,
+        ip_address VARCHAR(100),
+        user_agent TEXT,
+        user_id INTEGER,
+        query_params JSONB DEFAULT '{}',
+        headers_snapshot JSONB DEFAULT '{}',
+        is_slow BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_api_performance_logs_created_at ON api_performance_logs (created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_api_performance_logs_duration ON api_performance_logs (duration_ms);
+      CREATE INDEX IF NOT EXISTS idx_api_performance_logs_endpoint ON api_performance_logs (endpoint);
+    `);
+    isApiPerfTableEnsured = true;
+  } catch (err: any) {
+    console.error('[PerfMonitoring] Error ensuring api_performance_logs table:', err?.message || err);
+  }
+}
+
+async function recordSlowApiRequest(data: {
+  endpoint: string;
+  method: string;
+  statusCode: number;
+  durationMs: number;
+  clientIp: string | null;
+  userAgent: string | null;
+  userId: number | null;
+  queryParams: any;
+  headersSnapshot: any;
+}) {
+  const targetPool = pool || getDatabasePool('core');
+  if (!targetPool) return;
+  try {
+    if (!isApiPerfTableEnsured) {
+      await ensureApiPerfLogsTable();
+    }
+    await targetPool.query(
+      `INSERT INTO api_performance_logs 
+       (endpoint, method, status_code, duration_ms, ip_address, user_agent, user_id, query_params, headers_snapshot, is_slow)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        data.endpoint.substring(0, 255),
+        data.method,
+        data.statusCode,
+        data.durationMs,
+        data.clientIp ? String(data.clientIp).substring(0, 100) : null,
+        data.userAgent ? String(data.userAgent).substring(0, 1000) : null,
+        typeof data.userId === 'number' ? data.userId : null,
+        JSON.stringify(data.queryParams || {}),
+        JSON.stringify(data.headersSnapshot || {}),
+        true
+      ]
+    );
+  } catch (err: any) {
+    console.error('[PerfMonitoring] Failed to record slow API request:', err?.message || err);
+  }
+}
+
+/**
+ * Performance Monitoring Middleware:
+ * 1. Accurately captures server-side latency using high-resolution timers (process.hrtime.bigint).
+ * 2. Injects debugging performance headers (Server-Timing, X-Response-Time, X-Server-Latency) for frontend inspections.
+ * 3. Detects and asynchronously records slow API requests exceeding 500ms into the dedicated api_performance_logs database table.
+ */
 app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    if (req.path.startsWith('/api/')) {
-      const duration = Date.now() - start;
-      const logPrefix = duration > 1000 ? '[SLOW API]' : '[API Logger]';
-      console.log(`${logPrefix} ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`);
+  // Gracefully handle network stream errors like EPIPE and ECONNRESET to prevent uncaughtExceptions
+  res.on('error', (err: any) => {
+    if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+      console.info(`[Response Stream] Handled ${err.code} gracefully on ${req.method} ${req.originalUrl}`);
+    } else {
+      console.error('[Response Stream Error]:', err);
     }
   });
+
+  if (res.socket) {
+    res.socket.on('error', (err: any) => {
+      if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+        console.info(`[Socket Stream] Handled ${err.code} gracefully on ${req.method} ${req.originalUrl}`);
+      } else {
+        console.error('[Socket Stream Error]:', err);
+      }
+    });
+  }
+
+  const isApi = req.path.startsWith('/api/') || req.originalUrl.startsWith('/api');
+  const startHr = process.hrtime.bigint();
+
+  // Intercept writeHead to inject response timing headers before flushing to socket
+  const originalWriteHead = res.writeHead;
+  res.writeHead = function (this: any, statusCode: any, ...args: any[]) {
+    if (isApi) {
+      const elapsedHr = process.hrtime.bigint() - startHr;
+      const durationMs = Math.round((Number(elapsedHr) / 1_000_000) * 100) / 100;
+      const durationFormatted = durationMs.toFixed(2);
+
+      try {
+        if (!res.headersSent) {
+          res.setHeader('X-Response-Time', `${durationFormatted}ms`);
+          res.setHeader('Server-Timing', `total;dur=${durationFormatted};desc="Total Server Latency"`);
+          res.setHeader('X-Server-Latency', `${durationFormatted}ms`);
+        }
+      } catch {
+        // Safe guard against headers already formatted or sent
+      }
+    }
+    return (originalWriteHead as any).apply(this, [statusCode, ...args]);
+  };
+
+  res.on('finish', () => {
+    if (isApi) {
+      const elapsedHr = process.hrtime.bigint() - startHr;
+      const totalDurationMs = Math.round((Number(elapsedHr) / 1_000_000) * 100) / 100;
+      const roundedMs = totalDurationMs.toFixed(2);
+
+      if (totalDurationMs >= 500) {
+        console.warn(`[SLOW API] ⚠️ ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${roundedMs}ms (>500ms threshold)`);
+
+        setImmediate(() => {
+          const sanitizedHeaders: Record<string, any> = {};
+          const sensitiveKeys = new Set(['authorization', 'cookie', 'x-csrf-token', 'x-api-key', 'set-cookie', 'proxy-authorization']);
+          for (const [key, value] of Object.entries(req.headers)) {
+            if (!sensitiveKeys.has(key.toLowerCase())) {
+              sanitizedHeaders[key] = typeof value === 'string' ? value.substring(0, 300) : value;
+            }
+          }
+
+          const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress || null;
+          const userId = (req as any).user?.id || (req as any).userId || null;
+          const rawEndpoint = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.path || req.originalUrl?.split('?')[0] || '/');
+
+          recordSlowApiRequest({
+            endpoint: rawEndpoint,
+            method: req.method,
+            statusCode: res.statusCode,
+            durationMs: totalDurationMs,
+            clientIp,
+            userAgent: req.headers['user-agent'] || null,
+            userId,
+            queryParams: req.query || {},
+            headersSnapshot: sanitizedHeaders
+          }).catch(() => {});
+        });
+      } else {
+        console.log(`[API Logger] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${roundedMs}ms`);
+      }
+    }
+  });
+
   next();
 });
 
@@ -1143,15 +1332,19 @@ import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
 import aiRoutes from './routes/ai.js';
+import gpuProvidersRoutes from './routes/gpuProviders.js';
+import ownershipRoutes from './routes/ownership.js';
 
 app.use('/api/mcp', mcpRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/admin/gpu-providers', adminLimiter, gpuProvidersRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -1160,6 +1353,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/share-snapshot', shareRoutes);
 app.use('/api/gifts', giftsRoutes);
 app.use('/api/google-integrations', googleIntegrationsRoutes);
+app.use('/api/ownership', ownershipRoutes);
 
 app.post('/api/activity/log', async (req, res) => {
   try {
@@ -1192,6 +1386,24 @@ app.get('/api/seo-routes', async (req, res) => {
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch public route SEO settings' });
+  }
+});
+
+app.get('/api/seo-metadata', async (req, res) => {
+  try {
+    const route = req.query.route ? String(req.query.route) : null;
+    if (route) {
+      const data = await getCachedSeoMetadata(route);
+      return res.json({ metadata: data });
+    }
+    const list = await getAllSeoMetadata({
+      entity_type: req.query.entity_type ? String(req.query.entity_type) : undefined,
+      limit: req.query.limit ? Math.min(100, parseInt(String(req.query.limit), 10)) : 50,
+      offset: req.query.offset ? parseInt(String(req.query.offset), 10) : 0
+    });
+    res.json({ list });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch dynamic SEO metadata' });
   }
 });
 
@@ -1248,7 +1460,17 @@ app.get('/sitemap.xml', async (req, res) => {
           
           await new Promise<void>((resolve, reject) => {
             stream.on('data', (row: any) => {
-              res.write(formatRow(row));
+              try {
+                if (!res.writableEnded && !res.finished) {
+                  res.write(formatRow(row));
+                } else {
+                  stream.destroy();
+                  resolve();
+                }
+              } catch (_) {
+                stream.destroy();
+                resolve();
+              }
             });
             stream.on('end', resolve);
             stream.on('error', reject);
@@ -1355,6 +1577,75 @@ function escapeHtmlAttribute(str: string): string {
     .replace(/\//g, '&#x2F;');
 }
 
+class HtmlSeoTransformStream extends Transform {
+  private headInjected = false;
+  private tailBuffer = '';
+  private metaBlock: string;
+  private escTitle: string;
+  private escFavicon: string;
+  private escCanonical: string;
+  private hasFaviconUrl: boolean;
+
+  constructor(metaBlock: string, escTitle: string, escFavicon: string, escCanonical: string, hasFaviconUrl: boolean) {
+    super();
+    this.metaBlock = metaBlock;
+    this.escTitle = escTitle;
+    this.escFavicon = escFavicon;
+    this.escCanonical = escCanonical;
+    this.hasFaviconUrl = hasFaviconUrl;
+  }
+
+  _transform(chunk: Buffer | string, encoding: string, callback: Function) {
+    let str = chunk.toString();
+
+    // Stream-based incremental transformations on chunks
+    str = str.replace(/<title>[^]*?<\/title>/gi, '');
+    str = str.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
+    str = str.replace(/<meta\s+property="og:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
+    str = str.replace(/<meta\s+name="twitter:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
+    str = str.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
+    str = str.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
+
+    if (this.hasFaviconUrl) {
+      str = str.replace(/<link\s+rel="icon"\s+type="image\/png"\s+href="[^]*?"\s*\/?>/gi, '');
+      str = str.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, '');
+    }
+
+    if (!this.headInjected && /<\/head>/i.test(str)) {
+      this.headInjected = true;
+      const injection = `<title>${this.escTitle}</title>\n  <link rel="canonical" href="${this.escCanonical}" />\n  ${this.hasFaviconUrl ? `<link rel="icon" type="image/png" href="${this.escFavicon}" />\n  ` : ''}${this.metaBlock}\n  </head>`;
+      str = str.replace(/<\/head>/i, injection);
+    }
+
+    this.push(str);
+    callback();
+  }
+
+  _flush(callback: Function) {
+    callback();
+  }
+}
+
+async function streamTransformHtml(html: string, escTitle: string, escCanonical: string, escFavicon: string, metaBlock: string, settings: any): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const readable = Readable.from([html]);
+    const transformStream = new HtmlSeoTransformStream(metaBlock, escTitle, escFavicon, escCanonical, Boolean(settings.favicon_url));
+    let result = '';
+
+    readable
+      .pipe(transformStream)
+      .on('data', (chunk) => {
+        result += chunk.toString();
+      })
+      .on('end', () => {
+        resolve(result);
+      })
+      .on('error', (err) => {
+        reject(err);
+      });
+  });
+}
+
 async function injectSEOTags(
   html: string,
   settings: any,
@@ -1451,9 +1742,45 @@ async function injectSEOTags(
   const normalizedPath = req.path === '/' ? '/' : (req.path || '/').replace(/\/$/, '');
 
   let isRouteSeoActive = false;
+  let extraJsonLd: any = null;
 
   if (pool) {
     try {
+      // Check dedicated og_preview_cache for pre-generated static Open Graph social media previews
+      const cachedOg = await getCachedOgPreview(normalizedPath);
+      if (cachedOg) {
+        if (cachedOg.title) currentTitle = cachedOg.title;
+        if (cachedOg.description) currentDesc = cachedOg.description;
+        if (cachedOg.image_url) imageUrl = validateImageUrl(cachedOg.image_url);
+        if (cachedOg.meta_data && typeof cachedOg.meta_data === 'object' && Object.keys(cachedOg.meta_data).length > 0) {
+          extraJsonLd = cachedOg.meta_data;
+        }
+        isRouteSeoActive = true;
+      }
+
+      // 1. First priority: Check optimized dynamic route SEO metadata (from seo_metadata table)
+      const dynamicSeo = await getCachedSeoMetadata(normalizedPath);
+      if (dynamicSeo) {
+        isRouteSeoActive = true;
+        const dTitle = preferredLang === 'ar'
+          ? (dynamicSeo.title_ar || dynamicSeo.title_en)
+          : (dynamicSeo.title_en || dynamicSeo.title_ar);
+        const dDesc = preferredLang === 'ar'
+          ? (dynamicSeo.description_ar || dynamicSeo.description_en)
+          : (dynamicSeo.description_en || dynamicSeo.description_ar);
+        const dKw = preferredLang === 'ar'
+          ? (dynamicSeo.keywords_ar || dynamicSeo.keywords_en)
+          : (dynamicSeo.keywords_en || dynamicSeo.keywords_ar);
+
+        if (dTitle) currentTitle = dTitle;
+        if (dDesc) currentDesc = dDesc;
+        if (dKw) currentKeywords = dKw;
+        if (dynamicSeo.og_image_url) imageUrl = validateImageUrl(dynamicSeo.og_image_url);
+        if (dynamicSeo.structured_data && typeof dynamicSeo.structured_data === 'object' && Object.keys(dynamicSeo.structured_data).length > 0) {
+          extraJsonLd = dynamicSeo.structured_data;
+        }
+      }
+
       const routeMetadata = await getCachedRouteSeoMetadata(normalizedPath);
       if (routeMetadata) {
         isRouteSeoActive = true;
@@ -1496,8 +1823,6 @@ async function injectSEOTags(
       ? `تصنيف: ${categoryParam} - ${defaultSiteName}`
       : `Category: ${categoryParam} - ${defaultSiteName}`;
   }
-
-  let extraJsonLd: any = null;
 
   if (queryParam) {
     if (normalizedPath.startsWith('/blog')) {
@@ -1664,6 +1989,21 @@ async function injectSEOTags(
               "name": currentSiteName
             }
           };
+
+          upsertSeoMetadata({
+            route_path: normalizedPath,
+            entity_type: 'blog',
+            entity_id: slug,
+            title_en: article.meta_title_en || article.title_en,
+            title_ar: article.meta_title_ar || article.title_ar,
+            description_en: article.meta_description_en || (article.content_en ? article.content_en.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
+            description_ar: article.meta_description_ar || (article.content_ar ? article.content_ar.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
+            og_image_url: imageUrl,
+            keywords_en: article.keywords_en,
+            keywords_ar: article.keywords_ar,
+            structured_data: extraJsonLd,
+            is_active: true
+          }).catch(() => {});
         }
       } catch (err) {
         console.error('[SEO] Failed to fetch blog article details:', err);
@@ -1717,17 +2057,33 @@ async function injectSEOTags(
               "availability": "https://schema.org/InStock"
             }
           };
+
+          upsertSeoMetadata({
+            route_path: normalizedPath,
+            entity_type: 'marketplace',
+            entity_id: itemParam,
+            title_en: item.meta_title_en || item.title_en,
+            title_ar: item.meta_title_ar || item.title_ar,
+            description_en: item.meta_description_en || (item.description_en ? item.description_en.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
+            description_ar: item.meta_description_ar || (item.description_ar ? item.description_ar.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
+            og_image_url: imageUrl,
+            keywords_en: item.keywords_en,
+            keywords_ar: item.keywords_ar,
+            structured_data: extraJsonLd,
+            is_active: true
+          }).catch(() => {});
         }
       } catch (err) {
         console.error('[SEO] Failed to fetch marketplace item details:', err);
       }
     }
-  } else if (normalizedPath.startsWith('/bulletin/')) {
-    const adId = normalizedPath.split('/bulletin/')[1];
+  } else if (normalizedPath.startsWith('/bulletin/') || normalizedPath.startsWith('/reels/')) {
+    const parts = normalizedPath.split('/');
+    const adId = parts[parts.length - 1];
     if (adId) {
       try {
         const adRes = await pool.query(
-          'SELECT title, description, image_url, author_name, created_at, updated_at FROM bulletin_ads WHERE id = $1',
+          'SELECT title, description, image_url, video_url, author_name, created_at, updated_at FROM bulletin_ads WHERE id = $1',
           [parseInt(adId, 10) || -1]
         );
         if (adRes.rows.length > 0) {
@@ -1737,8 +2093,9 @@ async function injectSEOTags(
           currentDesc = cleanContent.slice(0, 160).trim();
           if (cleanContent.length > 160) currentDesc += '...';
           
-          if (ad.image_url) {
-            imageUrl = validateImageUrl(ad.image_url);
+          const targetMedia = ad.image_url || ad.video_url;
+          if (targetMedia) {
+            imageUrl = validateImageUrl(targetMedia);
           }
 
           extraJsonLd = {
@@ -1753,9 +2110,22 @@ async function injectSEOTags(
               "name": ad.author_name || currentSiteName
             }
           };
+
+          upsertSeoMetadata({
+            route_path: normalizedPath,
+            entity_type: 'bulletin',
+            entity_id: adId,
+            title_en: ad.title || 'Bulletin Item',
+            title_ar: ad.title || 'عنصر في النشرة',
+            description_en: cleanContent.slice(0, 160),
+            description_ar: cleanContent.slice(0, 160),
+            og_image_url: imageUrl,
+            structured_data: extraJsonLd,
+            is_active: true
+          }).catch(() => {});
         }
       } catch (err) {
-        console.error('[SEO] Failed to fetch bulletin ad details:', err);
+        console.error('[SEO] Failed to fetch bulletin/reel details:', err);
       }
     }
   } else {
@@ -1917,28 +2287,7 @@ async function injectSEOTags(
     metaBlock = `\n    <meta name="robots" content="noindex, nofollow" />\n    `;
   }
 
-  let processedHtml = html;
-
-  if (/<title>[^]*?<\/title>/i.test(processedHtml)) {
-    processedHtml = processedHtml.replace(/<title>[^]*?<\/title>/gi, `<title>${escTitle}</title>`);
-  } else {
-    processedHtml = processedHtml.replace('</head>', `<title>${escTitle}</title>\n</head>`);
-  }
-
-  processedHtml = processedHtml.replace(/<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi, '');
-  processedHtml = processedHtml.replace(/<meta\s+property="og:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
-  processedHtml = processedHtml.replace(/<meta\s+name="twitter:[^]*?"\s+content="[^]*?"\s*\/?>/gi, '');
-  processedHtml = processedHtml.replace(/<link\s+rel="canonical"\s+href="[^]*?"\s*\/?>/gi, '');
-  processedHtml = processedHtml.replace(/<link\s+href="[^]*?"\s+rel="canonical"\s*\/?>/gi, '');
-
-  if (settings.favicon_url) {
-    processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+type="image\/png"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" type="image/png" href="${escFavicon}" />`);
-    processedHtml = processedHtml.replace(/<link\s+rel="icon"\s+href="[^]*?"\s*\/?>/gi, `<link rel="icon" href="${escFavicon}" />`);
-  }
-
-  processedHtml = processedHtml.replace('</head>', `<link rel="canonical" href="${escCanonical}" />\n  ${metaBlock}\n  </head>`);
-
-  return processedHtml;
+  return await streamTransformHtml(html, escTitle, escCanonical, escFavicon, metaBlock, settings);
 }
 
 if (process.env.NODE_ENV === "production") {

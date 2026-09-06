@@ -350,7 +350,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           {/* Progress Bars (Persistent) */}
           <div className="absolute top-4 inset-x-0 z-50 flex items-center gap-1.5 px-4 pointer-events-none">
             {stories.map((story, idx) => (
-              <div key={`story-progress-${story.id || 'story'}-${idx}`} className="h-1 bg-white/20 rounded-full overflow-hidden flex-1 backdrop-blur-sm">
+              <div key={`story-progress-${story.id || 'story'}-${idx}`} className="h-1 bg-white/20 rounded-[4px] overflow-hidden flex-1 backdrop-blur-sm">
                 <div 
                   className="h-full bg-white transition-all duration-[20ms] ease-linear"
                   style={{ 
@@ -443,7 +443,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute top-20 z-40 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-purple-500/40 text-white flex items-center gap-2 shadow-2xl pointer-events-auto"
+                      className="absolute top-20 z-40 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-[8px] border border-purple-500/40 text-white flex items-center gap-2 shadow-2xl pointer-events-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         resetZoom();
@@ -458,7 +458,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                           e.stopPropagation();
                           resetZoom();
                         }}
-                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                        className="p-1 hover:bg-white/20 rounded-[8px] transition-colors"
                         title={isRtl ? 'إعادة ضبط' : 'Reset'}
                       >
                         <X size={12} />
@@ -492,14 +492,14 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                 {currentStory.video_url && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 transition-theme"
+                    className="w-9 h-9 flex items-center justify-center rounded-[8px] bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 transition-theme"
                   >
                     {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </button>
                 )}
                 <button 
                   onClick={(e) => { e.stopPropagation(); onClose(); }}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 transition-theme"
+                  className="w-9 h-9 flex items-center justify-center rounded-[8px] bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 transition-theme"
                 >
                   <X size={20} />
                 </button>
@@ -554,7 +554,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
                 >
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                      <div className="w-10 h-10 rounded-[8px] bg-red-500/10 flex items-center justify-center text-red-500">
                         <AlertTriangle size={20} />
                       </div>
                       <h3 className="text-base font-black tracking-tight">

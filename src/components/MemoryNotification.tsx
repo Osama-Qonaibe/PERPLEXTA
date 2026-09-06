@@ -21,7 +21,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
     }
   }, [isVisible, onClose]);
 
-  if (!isVisible) return null;
+  if (!isVisible || isMobile) return null;
 
   const config = {
     startup: {
@@ -56,8 +56,8 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
 
   if (isMobile) {
     return (
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[280px] bg-[var(--bg-secondary)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full shadow-2xl py-1.5 px-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
-        <div className={`w-5 h-5 rounded-full ${current.bg} flex items-center justify-center flex-shrink-0`}>
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-[280px] bg-[var(--bg-secondary)]/95 backdrop-blur-xl border border-[var(--border)] rounded-[4px] shadow-2xl py-1.5 px-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className={`w-5 h-5 rounded-[4px] ${current.bg} flex items-center justify-center flex-shrink-0`}>
           <BrainCircuit className={current.color} size={12} />
         </div>
         <p className="text-[10px] font-bold text-[var(--text-primary)] leading-none flex-1 truncate">
@@ -75,7 +75,7 @@ export const MemoryNotification: React.FC<MemoryNotificationProps> = ({ isVisibl
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-full bg-accent/[0.03] border border-accent/20 backdrop-blur-sm shadow-[0_0_20px_rgba(156,163,175,0.05)]"
+      className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-[4px] bg-accent/[0.03] border border-accent/20 backdrop-blur-sm shadow-[0_0_20px_rgba(156,163,175,0.05)]"
     >
       <BrainCircuit className="text-accent" size={14} />
       <span className="text-[11px] font-black text-accent/90 tracking-tight uppercase whitespace-nowrap">

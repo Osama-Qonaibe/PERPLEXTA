@@ -172,7 +172,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
           <div>
             <h4 className="text-xs font-black text-white flex items-center gap-1.5">
               <span>{isRtl ? 'لوحة تحليلات ورؤى الإعلان' : 'Creator Ad Insights Panel'}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-accent text-black font-extrabold">
+              <span className="text-[9px] px-2 py-0.5 rounded-[4px] bg-accent text-black font-extrabold">
                 Live Analytics
               </span>
             </h4>
@@ -367,9 +367,9 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
                   <span>{isRtl ? loc.city : loc.cityEn}</span>
                   <span className="font-bold text-accent">{loc.percentage}% ({loc.count})</span>
                 </div>
-                <div className="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-gray-900 h-1.5 rounded-[4px] overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-gray-500/10 to-teal-400 h-full rounded-full transition-theme"
+                    className="bg-gradient-to-r from-gray-500/10 to-teal-400 h-full rounded-[4px] transition-theme"
                     style={{ width: `${loc.percentage}%` }}
                   />
                 </div>
@@ -392,7 +392,7 @@ export const AdInsightsTab: React.FC<AdInsightsTabProps> = ({
             {data.devices.map((dev, idx) => (
               <div key={`dev-insight-${idx}-${dev.device}`} className="flex items-center justify-between p-1.5 rounded-lg bg-gray-900/80 border border-gray-800">
                 <span className="text-gray-300 font-medium">{dev.device}</span>
-                <span className="font-extrabold text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
+                <span className="font-extrabold text-accent bg-accent/10 px-2 py-0.5 rounded-[4px] border border-accent/20">
                   {dev.percentage}%
                 </span>
               </div>

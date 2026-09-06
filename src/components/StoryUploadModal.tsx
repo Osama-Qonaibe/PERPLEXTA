@@ -237,7 +237,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-zinc-900/50">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-accent/15 text-accent flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-[8px] bg-accent/15 text-accent flex items-center justify-center font-bold">
                 <Sparkles size={18} />
               </div>
               <div>
@@ -255,7 +255,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
             <button
               onClick={onClose}
               disabled={isUploading}
-              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+              className="p-1.5 rounded-[8px] hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
             >
               <X size={18} />
             </button>
@@ -294,11 +294,11 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-500 text-[11px] font-bold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-blue-500/10 text-blue-500 text-[11px] font-bold">
                     <ImageIcon size={14} />
                     {isRtl ? 'صورة' : 'Photo'}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-500 text-[11px] font-bold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] bg-purple-500/10 text-purple-500 text-[11px] font-bold">
                     <VideoIcon size={14} />
                     {isRtl ? 'فيديو (15ث)' : 'Video (15s)'}
                   </span>
@@ -322,7 +322,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
                     ) : (
                       /* Fallback for videos that can't be previewed in browser */
                       <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-center p-6">
-                        <div className="w-16 h-16 rounded-full bg-accent/20 text-accent flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 rounded-[8px] bg-accent/20 text-accent flex items-center justify-center mb-4">
                           <VideoIcon size={32} />
                         </div>
                         <p className="text-sm font-bold text-white mb-2">
@@ -353,7 +353,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
                       <img
                         src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                         alt="Avatar"
-                        className="w-8 h-8 rounded-full border-2 border-accent object-cover"
+                        className="w-8 h-8 rounded-[8px] border-2 border-accent object-cover"
                       />
                       <div>
                         <p className="text-[11px] font-extrabold leading-tight">
@@ -371,7 +371,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
                         setSelectedFile(null);
                         setMediaPreviewUrl('');
                       }}
-                      className="px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-[10px] font-bold border border-white/20 backdrop-blur-sm"
+                      className="px-2.5 py-1 rounded-[8px] bg-black/60 hover:bg-black/80 text-white text-[10px] font-bold border border-white/20 backdrop-blur-sm"
                     >
                       {isRtl ? 'تغيير' : 'Change'}
                     </button>
@@ -379,14 +379,14 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
 
                   {/* Video Duration Badge if Video */}
                   {isVideo && videoDuration > 0 && (
-                    <div className="absolute bottom-3 end-3 px-2.5 py-1 rounded-full bg-black/70 text-white text-[10px] font-extrabold flex items-center gap-1 backdrop-blur-sm border border-white/10">
+                    <div className="absolute bottom-3 end-3 px-2.5 py-1 rounded-[8px] bg-black/70 text-white text-[10px] font-extrabold flex items-center gap-1 backdrop-blur-sm border border-white/10">
                       <VideoIcon size={12} className="text-purple-400" />
                       <span>{Math.round(videoDuration)}s / 15s</span>
                     </div>
                   )}
                   
                   {isVideo && videoDuration === 0 && (
-                    <div className="absolute bottom-3 end-3 px-2.5 py-1 rounded-full bg-black/70 text-white text-[10px] font-extrabold flex items-center gap-1 backdrop-blur-sm border border-white/10">
+                    <div className="absolute bottom-3 end-3 px-2.5 py-1 rounded-[8px] bg-black/70 text-white text-[10px] font-extrabold flex items-center gap-1 backdrop-blur-sm border border-white/10">
                       <Clock size={12} className="text-blue-400" />
                       <span>{isRtl ? 'جاري المعالجة' : 'To be processed'}</span>
                     </div>

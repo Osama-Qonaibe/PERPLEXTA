@@ -20,13 +20,13 @@ export const GlobalLoadingOverlay: React.FC = () => {
             <div className="relative w-12 h-12 flex items-center justify-center">
               {/* Subtle outer pulse */}
               <motion.div
-                className="absolute inset-0 rounded-full border-2 border-[var(--text-primary)] opacity-20"
+                className="absolute inset-0 rounded-[4px] border-2 border-[var(--text-primary)] opacity-20"
                 animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               />
               {/* Inner spinning element */}
               <motion.div 
-                className="w-8 h-8 rounded-full border-t-2 border-r-2 border-emerald-500"
+                className="w-8 h-8 rounded-[4px] border-t-2 border-r-2 border-emerald-500"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               />

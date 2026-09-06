@@ -213,9 +213,9 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
             )}
           </div>
 
-          <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-full overflow-hidden">
+          <div className="w-full h-1.5 md:h-2 bg-[var(--bg-primary)] rounded-[4px] overflow-hidden">
             <motion.div 
-              className={`h-full rounded-full ${
+              className={`h-full rounded-[4px] ${
                 isLimitReached ? 'bg-amber-500' : 'bg-accent'
               }`}
               initial={{ width: 0 }}
@@ -298,7 +298,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
         </div>
       ) : filteredMemories.length === 0 ? (
         <div className={`p-12 rounded-[var(--radius)] border border-dashed flex flex-col items-center justify-center text-center border-[var(--border-main)] bg-[var(--bg-secondary)]/30`}>
-          <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-[4px] bg-accent/10 flex items-center justify-center mb-6">
             <BrainCircuit size={40} className="text-accent/50" />
           </div>
           <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">{t('noResults')}</h3>
@@ -382,7 +382,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                       {memory.fact}
                     </p>
                     <p className="text-[10px] text-[var(--text-muted)] mt-3 flex items-center flex-wrap gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-accent" />
+                      <span className="w-1 h-1 rounded-[4px] bg-accent" />
                       <span>
                         {new Date(memory.created_at).toLocaleString(dir === 'rtl' ? 'ar-EG' : 'en-US', { 
                           year: 'numeric', 

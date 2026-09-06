@@ -123,7 +123,7 @@ export const SubscriptionPage: React.FC = () => {
 
   if (!plansLoaded) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="w-10 h-10 border-2 border-accent/30 border-t-accent-500 rounded-full animate-spin" />
+      <div className="w-10 h-10 border-2 border-accent/30 border-t-accent-500 rounded-[4px] animate-spin" />
       <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">{dir === 'rtl' ? 'جاري تحميل الخطط...' : 'Loading plans...'}</p>
     </div>
   );
@@ -267,7 +267,7 @@ export const SubscriptionPage: React.FC = () => {
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="pb-12"
+      className=""
     >
       {isVerifying && (
         <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-black/85 backdrop-blur-md">
@@ -286,9 +286,10 @@ export const SubscriptionPage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-[var(--radius)] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-accent"
+              className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-theme bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-accent hover:border-accent/40 active:scale-95 cursor-pointer"
+              title={dir === 'rtl' ? 'رجوع' : 'Back'}
             >
-              {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {dir === 'rtl' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
             <div>
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('subscription')}</h1>
@@ -384,7 +385,7 @@ export const SubscriptionPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius)] bg-[var(--bg-primary)] border border-[var(--border-main)] text-xs text-[var(--text-muted)] font-bold">
-              <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+              <span className="w-2 h-2 rounded-[4px] bg-accent animate-ping" />
               <span>{dir === 'rtl' ? 'المرحلة: التأسيس المعماري والنمذجة' : 'Phase: Architectural Ingestion & Setup'}</span>
             </div>
             <button
@@ -410,14 +411,14 @@ export const SubscriptionPage: React.FC = () => {
               <div className="absolute top-0 left-0 right-0 h-1 md:h-1.5 rounded-t-sm transition-theme group-hover:h-2" style={{ backgroundColor: plan.color || '#334155' }}></div>
               {plan.badge !== 'none' && (
                 <div className="absolute top-0 right-6 md:right-8 -translate-y-1/2">
-                  <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-full shadow-lg" style={{ backgroundColor: plan.color || '#334155' }}>
+                  <span className="px-2 md:px-3 py-1 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-[4px] shadow-lg" style={{ backgroundColor: plan.color || '#334155' }}>
                     {t(plan.badge)}
                   </span>
                 </div>
               )}
               <div className="mb-3 md:mb-4">
                 <h3 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 flex items-center gap-2 text-[var(--text-primary)]">
-                  <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm" style={{ backgroundColor: plan.color || '#334155' }}></span>
+                  <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-[4px] shadow-sm" style={{ backgroundColor: plan.color || '#334155' }}></span>
                   {dir === 'rtl' ? plan.nameAr : plan.nameEn}
                 </h3>
                 <p className="text-[11px] md:text-sm text-[var(--text-secondary)] leading-tight">{dir === 'rtl' ? plan.descAr : plan.descEn}</p>
@@ -691,7 +692,7 @@ export const SubscriptionPage: React.FC = () => {
                         }
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-[var(--border-main)]/50 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div className="w-full bg-gray-200 dark:bg-[var(--border-main)]/50 h-1.5 rounded-[4px] overflow-hidden mt-1">
                       <motion.div 
                         initial={{ width: "100%" }}
                         animate={{ width: "0%" }}

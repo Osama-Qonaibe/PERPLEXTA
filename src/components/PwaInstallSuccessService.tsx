@@ -136,12 +136,12 @@ export const PwaInstallSuccessService: React.FC = () => {
                     fallbackIcon={<CheckCircle2 className="w-6 h-6 text-accent" />}
                   />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-accent flex items-center justify-center text-black shadow-sm">
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-[4px] bg-accent flex items-center justify-center text-black shadow-sm">
                   <Sparkles size={9} className="fill-current" />
                 </div>
               </div>
 
-              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30 mb-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-[4px] bg-accent/15 text-accent border border-accent/30 mb-1.5">
                 {isAr ? 'تم التثبيت بنجاح 🎉' : 'App Installed 🎉'}
               </span>
 

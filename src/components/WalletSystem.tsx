@@ -652,44 +652,44 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const currentBalance = wallet ? wallet.balance : 0;
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme pt-12 pb-20">
+    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme pt-2 sm:pt-6 pb-20">
       
       {/* Centered Banking Hero Card - High Density Elite */}
-      <div className="px-6 md:px-12 flex justify-center flex-none mt-4">
-        <div className="relative w-full max-w-5xl p-10 rounded-[var(--radius)] border shadow-2xl transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
+      <div className="px-2 sm:px-6 md:px-12 flex justify-center flex-none mt-2 sm:mt-4">
+        <div className="relative w-full max-w-5xl p-4 sm:p-8 md:p-10 rounded-[var(--radius)] border shadow-2xl transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
           
           {/* Neon Top Accent Line for the Wallet Hero */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-gray-500/10 via-gray-500/10 to-gray-500/5 blur-[1px]" />
           
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-6 sm:gap-10">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-              <div className="flex items-center gap-6">
-                <div className="w-14 h-14 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(156,163,175,0.15)] border border-accent/30">
-                  <Wallet size={28} strokeWidth={1} />
+            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 sm:gap-8">
+              <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left rtl:sm:text-right">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[var(--radius)] bg-accent/10 flex items-center justify-center text-accent shadow-[0_0_20px_rgba(156,163,175,0.15)] border border-accent/30 shrink-0">
+                  <Wallet size={24} className="sm:w-7 sm:h-7" strokeWidth={1} />
                 </div>
-                <div className="space-y-1 text-center md:text-left rtl:md:text-right">
-                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.4em]">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] sm:tracking-[0.4em]">
                     {dir === 'rtl' ? 'الرصيد الكلي المتاح للمشتريات' : 'Available Perplexta Liquidity'}
                   </p>
-                  <div className="flex items-baseline justify-center md:justify-start gap-2">
-                    <span className="text-2xl font-medium opacity-40">$</span>
-                    <span className="text-5xl font-black tracking-tighter text-[var(--text-primary)] transition-theme">
+                  <div className="flex items-baseline justify-center sm:justify-start gap-1.5 sm:gap-2">
+                    <span className="text-xl sm:text-2xl font-medium opacity-40">$</span>
+                    <span className="text-3xl sm:text-5xl font-black tracking-tighter text-[var(--text-primary)] transition-theme">
                        {currentBalance.toLocaleString(undefined, { 
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2
                        })}
                     </span>
-                    <span className="text-base font-bold opacity-30 tracking-widest">USD</span>
+                    <span className="text-xs sm:text-base font-bold opacity-30 tracking-widest">USD</span>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons - Refined Side-by-Side Arrangement */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4 w-full md:w-auto">
                 <button 
                   onClick={() => setActiveTab('deposit')}
-                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-theme group w-full md:w-auto justify-center ${
+                  className={`flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-theme group w-full md:w-auto justify-center cursor-pointer ${
                     activeTab === 'deposit'
                       ? 'bg-accent border-accent/50 text-white '
                       : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-accent hover:border-accent/30 shadow-sm'
@@ -700,7 +700,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
                 </button>
                 <button 
                   onClick={() => setActiveTab('withdraw')}
-                  className={`flex items-center gap-3 px-8 py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.3em] transition-theme group w-full md:w-auto justify-center ${
+                  className={`flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-3.5 rounded-[var(--radius)] border text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] transition-theme group w-full md:w-auto justify-center cursor-pointer ${
                     activeTab === 'withdraw'
                       ? 'bg-accent border-accent/50 text-white '
                       : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-accent hover:border-accent/30 shadow-sm'
@@ -713,34 +713,34 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             </div>
 
             {/* Bottom Stats Row */}
-            <div className="pt-8 flex flex-wrap items-center justify-center md:justify-start gap-12 border-t border-[var(--border)] transition-theme">
-               <div className="space-y-1">
-                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">
+            <div className="pt-6 sm:pt-8 flex flex-wrap items-center justify-between sm:justify-start gap-4 sm:gap-12 border-t border-[var(--border)] transition-theme">
+               <div className="space-y-0.5 sm:space-y-1">
+                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] sm:tracking-[0.3em] opacity-60">
                     {dir === 'rtl' ? 'الرصيد بنقاط المكافآت' : 'Points Pool'}
                   </p>
-                  <p className="text-xl font-black text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                  <p className="text-base sm:text-xl font-black text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]">
                     {wallet ? wallet.points.toLocaleString() : '0'} PTS
                   </p>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">
+               <div className="space-y-0.5 sm:space-y-1">
+                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] sm:tracking-[0.3em] opacity-60">
                     {dir === 'rtl' ? 'قيمة الرصيد بالدولار' : 'US Dollar Valuation'}
                   </p>
-                  <p className="text-xl font-black text-accent ">
+                  <p className="text-base sm:text-xl font-black text-accent ">
                     ${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                   </p>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">
+               <div className="space-y-0.5 sm:space-y-1">
+                  <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] sm:tracking-[0.3em] opacity-60">
                     {dir === 'rtl' ? 'حالة ميزان الدفاتر' : 'Ledger Integrity'}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_10px_rgba(156,163,175,0.8)]" />
-                    <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">Verified (AES-256)</p>
+                    <p className="text-[9px] sm:text-[10px] font-black text-accent uppercase tracking-[0.15em] sm:tracking-[0.2em]">Verified (AES-256)</p>
                   </div>
                </div>
                <div className="hidden lg:block h-10 w-px bg-[var(--border)]" />
-               <div className="space-y-1 hidden md:block">
+               <div className="space-y-0.5 sm:space-y-1 hidden md:block">
                   <p className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-[0.3em] opacity-60">{dir === 'rtl' ? 'الفئة العضوية' : 'Financial Level'}</p>
                   <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Enterprise Premium</p>
                </div>
@@ -750,8 +750,8 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       </div>
 
       {/* Perplexta Tabs - Emerald Glow Hierarchy */}
-      <div className="px-6 md:px-12 mt-8 flex-none w-full max-w-5xl mx-auto">
-        <div className="flex items-center overflow-x-auto gap-4 border-b border-[var(--border)] no-scrollbar transition-theme">
+      <div className="px-2 sm:px-6 md:px-12 mt-6 sm:mt-8 flex-none w-full max-w-5xl mx-auto">
+        <div className="flex items-center overflow-x-auto gap-2 sm:gap-4 border-b border-[var(--border)] no-scrollbar scrollbar-none transition-theme">
           {[
             { id: 'transactions', label: dir === 'rtl' ? 'سجل الإيداع' : 'Deposits Book' },
             { id: 'withdrawal_history', label: dir === 'rtl' ? 'سجل السحب' : 'Withdrawals Book' },
@@ -765,7 +765,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
               <button
                 key={`wallet-tab-${tab.id}-${tIdx}`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 text-[9px] font-black uppercase tracking-[0.25em] transition-theme relative shrink-0 overflow-hidden ${
+                className={`px-3.5 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.25em] transition-theme relative shrink-0 overflow-hidden cursor-pointer whitespace-nowrap ${
                   active 
                     ? 'text-accent' 
                     : `text-[var(--text-muted)] hover:text-[var(--text-primary)]`
@@ -786,7 +786,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       </div>
 
       {/* Dynamic Content Area - Full Expansion to Bottom */}
-      <div className="flex-1 px-6 md:px-12 py-8 w-full max-w-5xl mx-auto">
+      <div className="flex-1 px-2 sm:px-6 md:px-12 py-4 sm:py-8 w-full max-w-5xl mx-auto">
         
         <AnimatePresence mode="wait">
           

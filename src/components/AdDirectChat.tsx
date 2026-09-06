@@ -275,7 +275,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
               <h4 className="font-extrabold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">
                 {otherParticipant?.name || (isRtl ? 'محادثة خاصة' : 'Private Inquiry')}
               </h4>
-              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20 shrink-0">
+              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-[6px] border border-accent/20 shrink-0">
                 <Lock size={10} />
                 <span>E2EE</span>
               </span>
@@ -408,11 +408,11 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
 
         {/* Recipient Typing Indicator */}
         {recipientTyping && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#1e1e22] px-3 py-1.5 rounded-full w-fit border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#1e1e22] px-3 py-1.5 rounded-[8px] w-fit border border-gray-200 dark:border-gray-800">
             <span className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
-              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.2s]" />
-              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.4s]" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce [animation-delay:0.2s]" />
+              <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce [animation-delay:0.4s]" />
             </span>
             <span>{isRtl ? 'المعلن يكتب الآن...' : 'Typing message...'}</span>
           </div>
@@ -428,7 +428,7 @@ export const AdDirectChat: React.FC<AdDirectChatProps> = ({ ad, onClose, isCompa
             <button
               key={`quick-prompt-bar-${idx}-${q}`}
               onClick={() => handleSendMessage(q)}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-accent/10 hover:text-accent dark:hover:bg-accent/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
+              className="text-[11px] font-medium px-2.5 py-1 rounded-[8px] bg-gray-100 dark:bg-gray-800 hover:bg-accent/10 hover:text-accent dark:hover:bg-accent/20 text-gray-600 dark:text-gray-300 whitespace-nowrap transition-theme border border-gray-200/60 dark:border-gray-700/60"
             >
               {q}
             </button>

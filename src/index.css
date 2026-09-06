@@ -44,6 +44,7 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
+  --safe-area-spacing: 74px;
 
   /* Component Sizing Scale */
   --size-xs: 20px;
@@ -715,6 +716,18 @@ body {
   );
 }
 
+/* Layout Stability Protocol: Prevent layout jumping, shifting, and scrollbar jitter */
+html {
+  scrollbar-gutter: stable;
+  overflow-anchor: auto;
+}
+
+body {
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
 body.layout-locked {
   overflow: hidden !important;
   overflow-anchor: none;
@@ -783,6 +796,15 @@ html:not(.dark) a.bg-black svg {
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+@utility pb-safe-area {
+  padding-bottom: calc(var(--safe-area-spacing) + env(safe-area-inset-bottom, 0px));
+}
+@utility pb-safe-nav {
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+@utility h-mobile-safe {
+  height: calc(100dvh - var(--safe-area-spacing));
+}
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -804,3 +826,47 @@ html:not(.dark) a.bg-black svg {
 button, a {
   user-select: none;
 }
+
+/* ==========================================================================
+   PERPLEXTA ANTI-JITTER & LAYOUT STABILIZATION PROTOCOL
+   ========================================================================== */
+*, ::before, ::after {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  overflow-anchor: none;
+}
+
+.no-jitter, .gpu-stabilized {
+  transform: translateZ(0);
+  will-change: auto;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Suppress jitter during state transitions and route updates */
+.stabilized-transition {
+  transition: opacity var(--theme-transition-duration) var(--theme-transition-easing),
+              background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing);
+  contain: layout style paint;
+}
+
+/* ==========================================================================
+   ZERO-JITTER LANGUAGE TRANSITION PROTOCOL
+   ========================================================================== */
+html.lang-transitioning body {
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(4px);
+  transition: opacity 0.14s cubic-bezier(0.25, 1, 0.5, 1), filter 0.14s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html:not(.lang-transitioning) body {
+  opacity: 1;
+  filter: blur(0px);
+  transition: opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1), filter 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+}
+

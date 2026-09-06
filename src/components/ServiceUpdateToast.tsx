@@ -7,7 +7,7 @@ import { toast } from '../context/NotificationContext';
 export const ServiceUpdateToast: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { language } = useAppContext();
+  const { language, dir } = useAppContext();
   const isAr = language === 'ar';
 
   useEffect(() => {
@@ -49,78 +49,60 @@ export const ServiceUpdateToast: React.FC = () => {
     localStorage.setItem('perplexta_update_applied', Date.now().toString());
     sessionStorage.setItem('perplexta_session_synced', 'true');
 
-    toast.success(
-      isAr ? 'جاري جلب التحديثات الجديدة وتثبيت الجلسة...' : 'Fetching new updates & synchronizing session...',
-      isAr ? 'تحديث النظام' : 'System Update'
-    );
-
     try {
-      // Clear service worker caches if supported to fetch fresh build
+      // 1. Unregister all service workers to bypass service worker cache entirely
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (const registration of registrations) {
-          await registration.update();
+          await registration.unregister();
         }
       }
+      // 2. Clear all browser cache storage
       if ('caches' in window) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map(name => caches.delete(name)));
       }
     } catch (e) {
-      console.error('Update sync error:', e);
+      console.error('Hard reset cache bypass error:', e);
     }
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 600);
+    // 3. Perform a true hard refresh bypassing local & CDN cache using a timestamp cache-buster
+    const url = new URL(window.location.href);
+    url.searchParams.set('u', Date.now().toString());
+    window.location.replace(url.toString());
   };
+
+  const isRtl = dir === 'rtl';
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
           id="service-update-toast"
-          initial={{ opacity: 0, y: 30, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.96 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="w-full pointer-events-auto p-2.5 sm:p-3 rounded-[var(--radius)] bg-[var(--surface-card)] border border-[var(--border-main)] shadow-xl transition-all"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+          className={`fixed top-3 ${isRtl ? 'left-3 md:left-4' : 'right-3 md:right-4'} z-[10100] flex items-center gap-2.5 p-1 sm:p-1.5 pl-3 pr-1 sm:pl-3.5 sm:pr-1.5 rounded-full bg-[var(--surface-card)]/95 backdrop-blur-md border border-[var(--border-main)] shadow-md select-none pointer-events-auto transition-theme max-w-[95%] sm:max-w-md w-auto`}
         >
-          <div className="flex items-start gap-2">
-            <div className="p-1 rounded-md bg-accent/10 text-accent shrink-0 flex items-center justify-center mt-0.5">
-              <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <h4 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)]">
-                  {isAr ? 'يتوفر تحديث جديد للنظام' : 'New System Update Available'}
-                </h4>
-                <button
-                  id="service-update-close-btn"
-                  type="button"
-                  onClick={close}
-                  aria-label={isAr ? 'إغلاق' : 'Close'}
-                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0.5 rounded shrink-0"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <p className="mt-1 text-[10px] sm:text-[10.5px] text-[var(--text-secondary)] leading-relaxed">
-                {isAr
-                  ? 'تم تجهيز نسخة محسّنة. اضغط تحديث لجلب أحدث التحديثات وحفظ الجلسة تلقائياً.'
-                  : 'An optimized build is ready. Click update to fetch latest changes and persist your session.'}
-              </p>
-            </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+            </span>
+            <span className="text-[10px] sm:text-[11px] font-extrabold text-[var(--text-primary)] whitespace-nowrap">
+              {isAr ? 'يتوفر تحديث جديد للنظام' : 'Update available'}
+            </span>
           </div>
 
-          <div className="mt-2.5 pt-2 border-t border-[var(--border-main)] flex items-center justify-end gap-1.5">
+          <div className="w-px h-3 bg-[var(--border-main)] shrink-0" />
+
+          <div className="flex items-center gap-1 shrink-0">
             <button
               id="service-update-dismiss-btn"
               type="button"
               onClick={close}
-              className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium rounded-[var(--radius)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)] transition-all"
+              className="px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-all cursor-pointer"
             >
               {isAr ? 'لاحقاً' : 'Later'}
             </button>
@@ -129,10 +111,10 @@ export const ServiceUpdateToast: React.FC = () => {
               type="button"
               onClick={handleUpdate}
               disabled={isUpdating}
-              className="px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-[var(--radius)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-75"
+              className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-extrabold rounded-full bg-accent text-white hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1 disabled:opacity-75 cursor-pointer"
             >
-              <RefreshCw className={`w-3 h-3 ${isUpdating ? 'animate-spin' : ''}`} />
-              <span>{isAr ? 'تحديث الآن وجلب النسخة' : 'Update & Refresh'}</span>
+              <RefreshCw className={`w-2.5 h-2.5 shrink-0 ${isUpdating ? 'animate-spin' : ''}`} />
+              <span>{isAr ? 'تحديث الآن' : 'Update'}</span>
             </button>
           </div>
         </motion.div>

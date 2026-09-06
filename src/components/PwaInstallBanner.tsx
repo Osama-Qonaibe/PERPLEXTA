@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { usePwaContext } from '../context/PwaContext';
+import { isMobilePwaBannerHidden } from '../utils/sectionVisibility';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { safeStorageGet } from '../utils/safeStorage';
 import { motion, AnimatePresence } from 'motion/react';
@@ -8,7 +9,7 @@ import { Smartphone, Download, X, Share2, PlusSquare, Sparkles, Check, ExternalL
 import { NotificationIconRenderer } from '../utils/imageProcessor';
 
 export const PwaInstallBanner: React.FC = () => {
-  const { siteSettings, language, theme } = useAppContext();
+  const { siteSettings, language, theme, dir } = useAppContext();
 
   const {
     installState,
@@ -22,7 +23,7 @@ export const PwaInstallBanner: React.FC = () => {
   } = usePwaContext();
 
   const isStandaloneMode = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
-  if (installState === 'installed' || isStandaloneMode) return null;
+  if (installState === 'installed' || isStandaloneMode || isMobilePwaBannerHidden(siteSettings?.blocked_paths)) return null;
 
   const isDark = theme === 'dark';
   const isAr = language === 'ar';
@@ -92,59 +93,34 @@ export const PwaInstallBanner: React.FC = () => {
       <AnimatePresence>
         {isVisible && !showGuideModal && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-            className="w-full pointer-events-auto p-2.5 sm:p-3 rounded-[var(--radius)] bg-[var(--surface-card)] border border-[var(--border-main)] shadow-xl transition-all relative overflow-hidden"
+            id="pwa-install-banner"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+            className={`fixed top-3 ${dir === 'rtl' ? 'left-3 md:left-4' : 'right-3 md:right-4'} z-[10090] flex items-center gap-2.5 p-1 sm:p-1.5 pl-3 pr-1 sm:pl-3.5 sm:pr-1.5 rounded-full bg-[var(--surface-card)]/95 backdrop-blur-md border border-[var(--border-main)] shadow-md select-none pointer-events-auto transition-theme max-w-[95%] sm:max-w-md w-auto`}
           >
-            <div className="flex items-start gap-2 relative z-10">
-              <div className="p-1 rounded-md bg-accent/10 text-accent shrink-0 flex items-center justify-center mt-0.5">
-                <Smartphone className="w-3.5 h-3.5" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                    <h4 className="text-[11px] sm:text-xs font-bold text-[var(--text-primary)] leading-tight">
-                      {siteName}
-                    </h4>
-                    {(installState as string) === 'installed' ? (
-                      <span className="text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-accent/20 text-accent">
-                        {isAr ? 'مثبّت' : 'Installed'}
-                      </span>
-                    ) : (
-                      <span className="text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-accent/15 text-accent">
-                        {isAr ? 'التطبيق الأصلي' : 'Native App'}
-                      </span>
-                    )}
-                  </div>
-
-                  <button
-                    id="pwa-banner-close-btn"
-                    type="button"
-                    onClick={handleClose}
-                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0.5 rounded shrink-0"
-                    aria-label={isAr ? 'إغلاق' : 'Close'}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <p className="mt-1 text-[10px] sm:text-[10.5px] text-[var(--text-secondary)] leading-relaxed">
-                  {(installState as string) === 'installed'
-                    ? (isAr ? 'تم التثبيت بنجاح! جاهز للاستخدام الفوري.' : 'Successfully installed! Ready to launch.')
-                    : (isAr ? 'تثبيت التطبيق لتجربة أسرع وأسهل بدون متصفح' : 'Install the app for a faster and easier experience without a browser.')}
-                </p>
-              </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+              </span>
+              <span className="text-[10px] sm:text-[11px] font-extrabold text-[var(--text-primary)] whitespace-nowrap">
+                {siteName}
+              </span>
+              <span className="text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent whitespace-nowrap">
+                {isAr ? 'التطبيق الأصلي' : 'Native App'}
+              </span>
             </div>
 
-            <div className="mt-2.5 pt-2 border-t border-[var(--border-main)] flex items-center justify-end gap-1.5 relative z-10">
+            <div className="w-px h-3 bg-[var(--border-main)] shrink-0" />
+
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 id="pwa-banner-dismiss-btn"
                 type="button"
                 onClick={handleClose}
-                className="px-2.5 py-1 text-[10px] sm:text-[11px] font-medium rounded-[var(--radius)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)] transition-all"
+                className="px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-all cursor-pointer"
               >
                 {isAr ? 'لاحقاً' : 'Later'}
               </button>
@@ -154,28 +130,29 @@ export const PwaInstallBanner: React.FC = () => {
                   id="pwa-banner-open-btn"
                   type="button"
                   onClick={handleAction}
-                  className="px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-[var(--radius)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all shadow-xs"
+                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-extrabold rounded-full bg-accent text-white hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                 >
-                  {isAr ? 'فتح التطبيق' : 'Open'}
+                  <span>{isAr ? 'فتح' : 'Open'}</span>
                 </button>
               ) : installState === 'installing' ? (
                 <button
                   id="pwa-banner-installing-btn"
                   type="button"
                   disabled
-                  className="px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-[var(--radius)] bg-accent/40 text-black cursor-wait flex items-center gap-1 shadow-xs"
+                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-bold rounded-full bg-accent/40 text-black cursor-wait flex items-center gap-1 shadow-xs"
                 >
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>{isAr ? 'تثبيت...' : 'Installing...'}</span>
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  <span>...</span>
                 </button>
               ) : (
                 <button
                   id="pwa-banner-install-btn"
                   type="button"
                   onClick={handleAction}
-                  className="px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-[var(--radius)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all shadow-xs"
+                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-extrabold rounded-full bg-accent text-white hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                 >
-                  {isAr ? 'تثبيت الآن' : 'Install Now'}
+                  <Download className="w-2.5 h-2.5 shrink-0" />
+                  <span>{isAr ? 'تثبيت الآن' : 'Install'}</span>
                 </button>
               )}
             </div>

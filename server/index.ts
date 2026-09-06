@@ -2,17 +2,25 @@ import 'dotenv/config';
 import { createServer } from 'http';
 
 process.on('uncaughtException', (err: any) => {
+  if (err?.code === 'EPIPE' || err?.code === 'ECONNRESET' || err?.message?.includes('EPIPE') || err?.message?.includes('ECONNRESET')) {
+    console.info('[Process] Handled asynchronous network stream disconnection error gracefully:', err?.message || err);
+    return;
+  }
   console.error('[Process] Uncaught Exception:', err?.message || err);
   if (err?.stack) console.error(err.stack);
 });
 
 process.on('unhandledRejection', (reason: any) => {
+  if (reason?.code === 'EPIPE' || reason?.code === 'ECONNRESET' || reason?.message?.includes('EPIPE') || reason?.message?.includes('ECONNRESET')) {
+    console.info('[Process] Handled unhandled rejection network disconnection error gracefully:', reason?.message || reason);
+    return;
+  }
   console.error('[Process] Unhandled Promise Rejection:', reason?.message || reason);
 });
 
-import app from './app.js';
+import app, { ensureApiPerfLogsTable } from './app.js';
 import { initSocket } from './config/socket.js';
-import { initializePerplextaPools, synchronizePerplextaPoolsFromRegistry } from './db/index.js';
+import { initializePerplextaPools, synchronizePerplextaPoolsFromRegistry, startConnectionHealthCheck, startPoolSaturationGuardian } from './db/index.js';
 import { createServer as createViteServer } from 'vite';
 import { runDatabaseMigrations, setIo, verifySchemaIntegrity } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
@@ -42,14 +50,16 @@ async function initDatabase(): Promise<boolean> {
         process.env.EXTERNAL_DATABASE_URL || '',
         process.env.SECURITY_DATABASE_URL || ''
       );
-      await synchronizePerplextaPoolsFromRegistry();
       await runDatabaseMigrations();
-      await verifySchemaIntegrity();
-      await syncSystemTemplates();
-      await refreshCachedAppName();
-      await ensureAdsSeedData();
-      await ensureBulletinSeedData();
-      await ensureBlogSeedData();
+      await synchronizePerplextaPoolsFromRegistry();
+      await Promise.allSettled([
+        syncSystemTemplates(),
+        refreshCachedAppName(),
+        ensureAdsSeedData(),
+        ensureBulletinSeedData(),
+        ensureBlogSeedData(),
+        ensureApiPerfLogsTable()
+      ]);
       return true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -101,10 +111,18 @@ async function startServer() {
     // Run database initialization and secondary services asynchronously
     // so port 3000 is available immediately for health checks and Vite traffic
     initDatabase()
-      .then((dbReady) => {
+      .then(async (dbReady) => {
         if (dbReady) {
           setIo(ioInstance);
           initCronJobs();
+          startConnectionHealthCheck();
+          startPoolSaturationGuardian();
+          try {
+            const { startAutomatedGpuDiscovery } = await import('./services/gpu/gpuDiscoveryService.js');
+            startAutomatedGpuDiscovery();
+          } catch (gpuDiscErr: any) {
+            console.warn('[Server] GPU Discovery initialization warning:', gpuDiscErr.message);
+          }
           console.log('[Server] Database initialization completed. Secondary databases synchronized & operational.');
         } else {
           console.log('[Server] Loaded Engine in Degraded Mode (no persistent DB connectivity).');

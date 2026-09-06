@@ -265,6 +265,7 @@ router.post("/:id/fork", authenticateToken, chatLimiter, async (req: any, res) =
 router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds, async (req: any, res) => {
   let userMessageId = 0;
   let assistantMessageId = 0;
+  let messageSaved = false;
   try {
     const hasActiveSub = await checkActiveSubscription(req.user.id);
     if (!hasActiveSub) {
@@ -329,6 +330,7 @@ router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds,
       'UPDATE messages SET content = $1, generation_time = $2, citations = $3, follow_ups = $4 WHERE id = $5',
       [cleanText, generationTimeSeconds, JSON.stringify(result.citations || []), JSON.stringify(finalFollowUps || []), assistantMessageId]
     );
+    messageSaved = true;
 
     if (toolId === 'video' && result.result && assistantMessageId) {
       try {
@@ -362,11 +364,15 @@ router.post("/sync-message", authenticateToken, chatLimiter, verifyBillingFunds,
   } catch (error: any) {
     console.error('[SyncMessage Error]:', error);
     
-    if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
-      await pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup assistant empty message failed:', e));
-    }
-    if (typeof userMessageId !== 'undefined' && userMessageId > 0) {
-      await pool.query('DELETE FROM messages WHERE id = $1', [userMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup user message failed:', e));
+    if (!messageSaved) {
+      if (typeof assistantMessageId !== 'undefined' && assistantMessageId > 0) {
+        await pool.query('DELETE FROM messages WHERE id = $1', [assistantMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup assistant empty message failed:', e));
+      }
+      if (typeof userMessageId !== 'undefined' && userMessageId > 0) {
+        await pool.query('DELETE FROM messages WHERE id = $1', [userMessageId]).catch((e: any) => console.error('[SyncMessage] Cleanup user message failed:', e));
+      }
+    } else {
+      console.info('[SyncMessage] Generation succeeded and saved. Skipping deletion cleanup despite post-generation write/socket error.');
     }
 
     let status = 500;

@@ -76,11 +76,7 @@ export async function refreshCachedAppName() {
 }
 
 export async function getSystemSettings() {
-  const settings = await getCachedSystemSettings();
-  if (settings) {
-    ensurePersistentSystemAssets(settings).catch(() => {});
-  }
-  return settings;
+  return getCachedSystemSettings();
 }
 
 export async function updateSystemSettings(settings: any) {

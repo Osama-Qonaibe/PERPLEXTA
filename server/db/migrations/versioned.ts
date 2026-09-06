@@ -21,7 +21,13 @@ export async function runVersionedMigrations(
   const ledgerTarget = ledgerClient || client;
   const secTarget = securityClient || client;
 
+  const existingMigrationsRes = await client.query("SELECT migration_name FROM migration_history").catch(() => ({ rows: [] }));
+  const existingMigrations = new Set(existingMigrationsRes.rows.map((r: any) => r.migration_name));
+
   const runVersioned = async (name: string, description: string, fn: (tx: WrappedClient, ledgerTx: WrappedClient) => Promise<void>) => {
+    if (existingMigrations.has(name)) {
+      return;
+    }
     const check = await client.query("SELECT 1 FROM migration_history WHERE migration_name = $1", [name]);
     if (check.rows.length === 0) {
       const lockKey = hashStringToAdvisoryLockKey(name);
@@ -36,6 +42,7 @@ export async function runVersionedMigrations(
         await client.query(`SELECT pg_try_advisory_xact_lock($1)`, [lockKey]).catch(() => {});
         const doubleCheck = await client.query("SELECT 1 FROM migration_history WHERE migration_name = $1", [name]);
         if (doubleCheck.rows.length > 0) {
+          existingMigrations.add(name);
           await client.query("COMMIT");
           if (ledgerClient) await ledgerClient.query("COMMIT");
           if (externalClient) await externalClient.query("COMMIT");
@@ -93,6 +100,7 @@ export async function runVersionedMigrations(
 
         await fn(wrappedClient, wrappedLedgerClient);
         await client.query("INSERT INTO migration_history (migration_name) VALUES ($1)", [name]);
+        existingMigrations.add(name);
         await client.query("COMMIT");
         if (ledgerClient) await ledgerClient.query("COMMIT");
         if (externalClient) await externalClient.query("COMMIT");
@@ -1527,6 +1535,350 @@ export async function runVersionedMigrations(
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_ad_muted_notif ON bulletin_ad_muted_notifications(user_id, ad_id)`);
     });
 
+    await runVersioned('v87_create_seo_metadata_table', 'Create seo_metadata table for dynamic routes and populate initial metadata', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS seo_metadata (
+          id SERIAL PRIMARY KEY,
+          route_path VARCHAR(255) UNIQUE NOT NULL,
+          entity_type VARCHAR(50),
+          entity_id VARCHAR(100),
+          title_en VARCHAR(255),
+          title_ar VARCHAR(255),
+          description_en TEXT,
+          description_ar TEXT,
+          og_image_url TEXT,
+          og_image_alt_en TEXT,
+          og_image_alt_ar TEXT,
+          keywords_en TEXT,
+          keywords_ar TEXT,
+          canonical_url TEXT,
+          structured_data JSONB DEFAULT '{}',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_seo_metadata_route_path ON seo_metadata(route_path)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_seo_metadata_entity ON seo_metadata(entity_type, entity_id)`);
+
+      // Seed/populate dynamic routes for existing bulletin ads
+      await tx.query(`
+        INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+        SELECT 
+          CONCAT('/bulletin/', id) as route_path,
+          'bulletin' as entity_type,
+          CAST(id AS VARCHAR(100)) as entity_id,
+          COALESCE(meta_title_en, title, 'Bulletin Ad') as title_en,
+          COALESCE(meta_title_ar, title, 'إعلان في النشرة') as title_ar,
+          COALESCE(meta_description_en, SUBSTRING(description FROM 1 FOR 160), '') as description_en,
+          COALESCE(meta_description_ar, SUBSTRING(description FROM 1 FOR 160), '') as description_ar,
+          COALESCE(og_image_url, image_url, '') as og_image_url,
+          COALESCE(keywords_en, 'bulletin, perplexta, advertisement') as keywords_en,
+          COALESCE(keywords_ar, 'إعلانات, بيربليكستا, خدمات') as keywords_ar,
+          CURRENT_TIMESTAMP as updated_at
+        FROM bulletin_ads
+        ON CONFLICT (route_path) DO NOTHING
+      `).catch((err: any) => console.warn('[Migration v87] Bulletin ads initial SEO sync note:', err.message));
+
+      // Seed/populate dynamic routes for existing marketplace items (by ID and by slug)
+      await tx.query(`
+        INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+        SELECT 
+          CONCAT('/marketplace/', id) as route_path,
+          'marketplace' as entity_type,
+          CAST(id AS VARCHAR(100)) as entity_id,
+          COALESCE(meta_title_en, title_en, 'Marketplace Item') as title_en,
+          COALESCE(meta_title_ar, title_ar, 'منتج في المتجر') as title_ar,
+          COALESCE(meta_description_en, SUBSTRING(description_en FROM 1 FOR 160), '') as description_en,
+          COALESCE(meta_description_ar, SUBSTRING(description_ar FROM 1 FOR 160), '') as description_ar,
+          COALESCE(og_image_url, image_url, preview_url, '') as og_image_url,
+          COALESCE(keywords_en, 'marketplace, products, perplexta') as keywords_en,
+          COALESCE(keywords_ar, 'متجر, منتجات, حلول برمجية') as keywords_ar,
+          CURRENT_TIMESTAMP as updated_at
+        FROM marketplace_items
+        ON CONFLICT (route_path) DO NOTHING
+      `).catch((err: any) => console.warn('[Migration v87] Marketplace items initial SEO sync note:', err.message));
+
+      await tx.query(`
+        INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+        SELECT 
+          CONCAT('/marketplace/', slug) as route_path,
+          'marketplace' as entity_type,
+          slug as entity_id,
+          COALESCE(meta_title_en, title_en, 'Marketplace Item') as title_en,
+          COALESCE(meta_title_ar, title_ar, 'منتج في المتجر') as title_ar,
+          COALESCE(meta_description_en, SUBSTRING(description_en FROM 1 FOR 160), '') as description_en,
+          COALESCE(meta_description_ar, SUBSTRING(description_ar FROM 1 FOR 160), '') as description_ar,
+          COALESCE(og_image_url, image_url, preview_url, '') as og_image_url,
+          COALESCE(keywords_en, 'marketplace, products, perplexta') as keywords_en,
+          COALESCE(keywords_ar, 'متجر, منتجات, حلول برمجية') as keywords_ar,
+          CURRENT_TIMESTAMP as updated_at
+        FROM marketplace_items
+        WHERE slug IS NOT NULL AND slug != ''
+        ON CONFLICT (route_path) DO NOTHING
+      `).catch((err: any) => console.warn('[Migration v87] Marketplace slug initial SEO sync note:', err.message));
+
+      // Seed/populate dynamic routes for existing blog articles if accessible on extTarget
+      const extTarget = externalClient || tx;
+      try {
+        const blogRows = await extTarget.query(`
+          SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, og_image_url,
+                 meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
+                 keywords_en, keywords_ar
+          FROM blog_articles
+        `);
+        for (const row of blogRows.rows) {
+          const titleEn = row.meta_title_en || row.title_en || 'Blog Post';
+          const titleAr = row.meta_title_ar || row.title_ar || 'مقال في المدونة';
+          const descEn = row.meta_description_en || (row.content_en ? row.content_en.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '');
+          const descAr = row.meta_description_ar || (row.content_ar ? row.content_ar.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '');
+          const imgUrl = row.og_image_url || row.image_url || '';
+          const kwEn = row.keywords_en || 'blog, articles, analysis';
+          const kwAr = row.keywords_ar || 'مدونة, مقالات, تحليلات';
+
+          if (row.slug) {
+            await tx.query(`
+              INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+              VALUES ($1, 'blog', $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+              ON CONFLICT (route_path) DO NOTHING
+            `, [`/blog/${row.slug}`, row.slug, titleEn, titleAr, descEn, descAr, imgUrl, kwEn, kwAr]);
+          }
+          await tx.query(`
+            INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+            VALUES ($1, 'blog', $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+            ON CONFLICT (route_path) DO NOTHING
+          `, [`/blog/${row.id}`, String(row.id), titleEn, titleAr, descEn, descAr, imgUrl, kwEn, kwAr]);
+        }
+      } catch (blogErr: any) {
+        console.warn('[Migration v87] Blog initial SEO sync note:', blogErr.message);
+      }
+    });
+
+    await runVersioned('v88_create_gpu_providers_infrastructure', 'Create and enforce gpu_providers table with security protocols, load capacity, metadata, and model relations', async (tx) => {
+      // 1. Create gpu_providers table if not exists with strict security and required fields
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS gpu_providers (
+          id SERIAL PRIMARY KEY,
+          provider_id VARCHAR(100) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          provider_type VARCHAR(100) NOT NULL,
+          endpoint_id VARCHAR(150),
+          base_url TEXT NOT NULL,
+          api_url TEXT,
+          encrypted_api_key TEXT NOT NULL,
+          current_load_capacity INTEGER DEFAULT 100,
+          status VARCHAR(50) DEFAULT 'active',
+          metadata JSONB DEFAULT '{}',
+          health_status VARCHAR(50) DEFAULT 'offline',
+          latency_ms INTEGER DEFAULT 0,
+          capabilities TEXT[] DEFAULT ARRAY['vision']::TEXT[],
+          daily_budget NUMERIC(15, 4) DEFAULT '0',
+          used_today NUMERIC(15, 4) DEFAULT '0',
+          last_reset_date DATE DEFAULT CURRENT_DATE,
+          config JSONB DEFAULT '{}',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 2. Ensure columns exist if table was already created earlier (defensive additive migration)
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS base_url TEXT`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS api_url TEXT`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS encrypted_api_key TEXT`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS current_load_capacity INTEGER DEFAULT 100`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active'`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'`);
+      await tx.query(`ALTER TABLE gpu_providers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+
+      // Keep api_url in sync with base_url and status with is_active for legacy entries
+      await tx.query(`UPDATE gpu_providers SET api_url = base_url WHERE (api_url IS NULL OR api_url = '') AND base_url IS NOT NULL`);
+      await tx.query(`UPDATE gpu_providers SET base_url = api_url WHERE (base_url IS NULL OR base_url = '') AND api_url IS NOT NULL`);
+      await tx.query(`UPDATE gpu_providers SET status = CASE WHEN is_active = false THEN 'inactive' ELSE 'active' END WHERE status IS NULL`);
+      await tx.query(`UPDATE gpu_providers SET metadata = config WHERE (metadata IS NULL OR metadata = '{}'::jsonb) AND config IS NOT NULL AND config != '{}'::jsonb`);
+      await tx.query(`UPDATE gpu_providers SET config = metadata WHERE (config IS NULL OR config = '{}'::jsonb) AND metadata IS NOT NULL AND metadata != '{}'::jsonb`);
+
+      // 3. Create gpu_provider_models table
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS gpu_provider_models (
+          id SERIAL PRIMARY KEY,
+          provider_id INTEGER NOT NULL REFERENCES gpu_providers(id) ON DELETE CASCADE,
+          model_id VARCHAR(255) NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          task_type VARCHAR(100) NOT NULL,
+          context_window INTEGER DEFAULT 32768,
+          max_output_tokens INTEGER DEFAULT 4096,
+          is_active BOOLEAN DEFAULT true,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`ALTER TABLE gpu_provider_models ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'`);
+
+      // 4. Create Indexes
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS gpu_providers_pkey ON gpu_providers(id)`);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS gpu_providers_provider_id_key ON gpu_providers(provider_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_providers_status ON gpu_providers(status)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_providers_is_active ON gpu_providers(is_active)`);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS gpu_provider_models_pkey ON gpu_provider_models(id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_provider_models_provider_id ON gpu_provider_models(provider_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_provider_models_task_type ON gpu_provider_models(task_type)`);
+    });
+
+    await runVersioned('v89_create_gpu_execution_jobs', 'Create and enforce gpu_execution_jobs table for task queue, metrics, and audit logs', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS gpu_execution_jobs (
+          id SERIAL PRIMARY KEY,
+          job_id VARCHAR(120) UNIQUE NOT NULL,
+          user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          provider_id INTEGER REFERENCES gpu_providers(id) ON DELETE SET NULL,
+          model_id VARCHAR(255) NOT NULL,
+          task_type VARCHAR(100) NOT NULL,
+          status VARCHAR(50) NOT NULL DEFAULT 'pending',
+          prompt TEXT,
+          parameters JSONB DEFAULT '{}',
+          remote_job_id VARCHAR(255),
+          result_url TEXT,
+          result_data JSONB DEFAULT '{}',
+          latency_ms INTEGER DEFAULT 0,
+          error_message TEXT,
+          attempts INTEGER DEFAULT 1,
+          failover_count INTEGER DEFAULT 0,
+          cost_charged NUMERIC(15, 4) DEFAULT '0',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          completed_at TIMESTAMP
+        )
+      `);
+
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS provider_id INTEGER REFERENCES gpu_providers(id) ON DELETE SET NULL`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS remote_job_id VARCHAR(255)`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS result_url TEXT`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS result_data JSONB DEFAULT '{}'`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS latency_ms INTEGER DEFAULT 0`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS error_message TEXT`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS attempts INTEGER DEFAULT 1`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS failover_count INTEGER DEFAULT 0`);
+      await tx.query(`ALTER TABLE gpu_execution_jobs ADD COLUMN IF NOT EXISTS cost_charged NUMERIC(15, 4) DEFAULT '0'`);
+
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS gpu_execution_jobs_pkey ON gpu_execution_jobs(id)`);
+      await tx.query(`CREATE UNIQUE INDEX IF NOT EXISTS gpu_execution_jobs_job_id_key ON gpu_execution_jobs(job_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_user_id ON gpu_execution_jobs(user_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_provider_id ON gpu_execution_jobs(provider_id)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_task_type ON gpu_execution_jobs(task_type)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_status ON gpu_execution_jobs(status)`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_gpu_execution_jobs_created_at ON gpu_execution_jobs(created_at DESC)`);
+    });
+
+    await runVersioned('v90_add_pages_and_marketplace_owner_id', 'Add owner_id column and foreign key link to bulletin_pages and marketplace_items for exclusive content management', async (tx) => {
+      await tx.query(`ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+      await tx.query(`UPDATE bulletin_pages SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_pages_owner_id ON bulletin_pages(owner_id)`);
+
+      await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+      await tx.query(`UPDATE marketplace_items SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_owner_id ON marketplace_items(owner_id)`);
+    });
+
+    await runVersioned('v91_create_og_preview_cache', 'Create dedicated cache table for Open Graph social media previews with lightning-fast metadata storage', async (tx) => {
+      await tx.query(`
+        CREATE TABLE IF NOT EXISTS og_preview_cache (
+          id SERIAL PRIMARY KEY,
+          route_path VARCHAR(500) UNIQUE NOT NULL,
+          title VARCHAR(500),
+          description TEXT,
+          image_url TEXT,
+          meta_data JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_og_preview_cache_route_path ON og_preview_cache(route_path)`);
+    });
+
+    await runVersioned('v92_add_meta_tags_updated_at', 'Add meta_tags_updated_at timestamp column to bulletin_pages, marketplace_items, and blog_articles for crawler priority re-indexing', async (tx) => {
+      await tx.query(`ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_pages_meta_tags_updated_at ON bulletin_pages(meta_tags_updated_at DESC)`);
+
+      await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_meta_tags_updated_at ON marketplace_items(meta_tags_updated_at DESC)`);
+
+      await tx.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+      await tx.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_meta_tags_updated_at ON blog_articles(meta_tags_updated_at DESC)`);
+    });
+
+    await runVersioned('v93_purge_mock_gpu_providers', 'Purge mock and hardcoded GPU providers to ensure sovereign and dynamic custom cluster registration', async (tx) => {
+      await tx.query(`
+        DELETE FROM gpu_providers 
+        WHERE provider_id IN ('runpod_ai', 'pruna___p_video', 'fal_ai', 'perplexta_vision')
+      `);
+    });
+
+    await runVersioned('v94_purge_preprogrammed_tool_models', 'Clean pre-programmed models and obsolete provider references from tool_orchestrator for complete administrative sovereignty', async (tx) => {
+      await tx.query(`
+        UPDATE tool_orchestrator
+        SET primary_provider = '', primary_model = ''
+        WHERE primary_provider IN ('runpod_ai', 'pruna___p_video', 'fal_ai', 'perplexta_vision')
+           OR (primary_provider != '' AND tool_id IN ('image', 'video', 'vision', 'perplexta_vision') 
+               AND NOT EXISTS (SELECT 1 FROM gpu_providers gp WHERE gp.provider_id = tool_orchestrator.primary_provider))
+      `);
+      await tx.query(`
+        UPDATE tool_orchestrator
+        SET fallback_1_provider = '', fallback_1_model = ''
+        WHERE fallback_1_provider IN ('runpod_ai', 'pruna___p_video', 'fal_ai', 'perplexta_vision')
+      `);
+      await tx.query(`
+        UPDATE tool_orchestrator
+        SET fallback_2_provider = '', fallback_2_model = ''
+        WHERE fallback_2_provider IN ('runpod_ai', 'pruna___p_video', 'fal_ai', 'perplexta_vision')
+      `);
+      await tx.query(`
+        UPDATE tool_orchestrator
+        SET fallback_3_provider = '', fallback_3_model = ''
+        WHERE fallback_3_provider IN ('runpod_ai', 'pruna___p_video', 'fal_ai', 'perplexta_vision')
+      `);
+    });
+
+    await runVersioned('v95_reconcile_admin_seeded_wallet', 'Correcting the seeded admin wallet balance from $10,000 USD to 10,000 points (PTS)', async (tx, ledgerTx) => {
+      // 1. Fetch all admin user IDs from the core DB
+      const adminRes = await tx.query(`SELECT id FROM users WHERE role = 'admin'`);
+      const adminIds = adminRes.rows.map((r: any) => r.id);
+
+      if (adminIds.length > 0 && ledgerTx) {
+        for (const adminId of adminIds) {
+          // 2. Fetch wallet for each admin from ledger DB
+          const walletCheck = await ledgerTx.query(`SELECT id, balance, points FROM wallets WHERE user_id = $1`, [adminId]);
+          if (walletCheck.rows.length > 0) {
+            const wallet = walletCheck.rows[0];
+            const currentBalance = parseFloat(wallet.balance || '0');
+            const currentPoints = parseInt(wallet.points || '0', 10);
+
+            // If the wallet has exactly 10000.00 USD and 0 points, perform correction
+            if (Math.abs(currentBalance - 10000.0) < 0.01 && currentPoints === 0) {
+              await ledgerTx.query(`
+                UPDATE wallets
+                SET balance = 0.0000, points = 10000, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+              `, [wallet.id]);
+
+              // Record a correcting transaction in the ledger for transparency
+              await ledgerTx.query(`
+                INSERT INTO ledger_transactions (user_id, wallet_id, amount, points, transaction_type, status, description)
+                VALUES ($1, $2, -10000.00, 10000, 'reconciliation', 'success', $3)
+              `, [
+                adminId,
+                wallet.id,
+                'تحديث تصحيح رصيد البذر التلقائي: تعديل من $10,000.00 دولار إلى 10,000 نقطة PTS / Seed balance correction: $10,000.00 USD adjusted to 10,000 PTS'
+              ]);
+
+              console.log(`[Migrations] Successfully corrected admin ${adminId} wallet: adjusted balance to 0 and awarded 10,000 PTS.`);
+            }
+          }
+        }
+      }
+    });
     
   console.log("[Migrations] All versioned migrations completed successfully.");
 }

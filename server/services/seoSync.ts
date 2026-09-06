@@ -1,5 +1,5 @@
 import { pool, externalPool, getExternalPool } from '../db/index.js';
-import { getCachedOrchestratorConfig } from '../db/queries.js';
+import { getCachedOrchestratorConfig, upsertSeoMetadata } from '../db/queries.js';
 
 export function slugify(text: string): string {
   if (!text || typeof text !== 'string') return '';
@@ -200,7 +200,8 @@ Generate JSON with:
     }
 
     if (!response) {
-        throw lastError || new Error("Failed to generate SEO content with all available models");
+        console.warn("[SEOSync] AI SEO generation fallback due to quota or unavailable models. Using algorithmic extraction.");
+        return null;
     }
 
     if (response && response.text) {
@@ -1109,6 +1110,38 @@ export async function applySmartSeoSuggestion(
       );
   }
 
+  // Update dynamic route SEO metadata cache and persistent table
+  try {
+    const routePaths: string[] = [];
+    if (type === 'bulletin') {
+      routePaths.push(`/bulletin/${id}`);
+    } else if (type === 'marketplace') {
+      routePaths.push(`/marketplace/${id}`);
+      if (slug) routePaths.push(`/marketplace/${slug}`);
+    } else if (type === 'blog') {
+      routePaths.push(`/blog/${id}`);
+      if (slug) routePaths.push(`/blog/${slug}`);
+    }
+
+    for (const routePath of routePaths) {
+      await upsertSeoMetadata({
+        route_path: routePath,
+        entity_type: type,
+        entity_id: slug || String(id),
+        title_en: meta_title_en,
+        title_ar: meta_title_ar,
+        description_en: meta_description_en,
+        description_ar: meta_description_ar,
+        og_image_url: og_image_url,
+        keywords_en: keywords_en,
+        keywords_ar: keywords_ar,
+        is_active: true
+      });
+    }
+  } catch (err: any) {
+    console.warn('[SEOSync] Error updating seo_metadata table in applySmartSeoSuggestion:', err.message);
+  }
+
   return {
     success: true,
     id,
@@ -1125,11 +1158,152 @@ export async function applySmartSeoSuggestion(
   };
 }
 
+export async function syncDynamicRoutesToSeoMetadata(): Promise<{ syncedRoutes: number }> {
+  console.log('[SEOSync] 🔄 Syncing dynamic routes to seo_metadata table...');
+  if (!pool) return { syncedRoutes: 0 };
+  let count = 0;
+
+  try {
+    // 1. Bulletin Ads: /bulletin/:id
+    const bulletinRes = await pool.query(`
+      SELECT id, title, description, image_url, meta_title_en, meta_title_ar,
+             meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
+      FROM bulletin_ads
+      WHERE deleted_at IS NULL AND (status IS NULL OR status = 'approved' OR status = 'active')
+    `);
+    for (const row of bulletinRes.rows) {
+      await upsertSeoMetadata({
+        route_path: `/bulletin/${row.id}`,
+        entity_type: 'bulletin',
+        entity_id: String(row.id),
+        title_en: row.meta_title_en || (row.title ? `${row.title} | Perplexta Bulletin` : 'Bulletin Ad | Perplexta'),
+        title_ar: row.meta_title_ar || (row.title ? `${row.title} | نشرة بيربليكستا` : 'إعلان في النشرة | بيربليكستا'),
+        description_en: row.meta_description_en || (row.description ? extractDescription(row.description) : ''),
+        description_ar: row.meta_description_ar || (row.description ? extractDescription(row.description) : ''),
+        og_image_url: row.og_image_url || row.image_url || '',
+        keywords_en: row.keywords_en || 'bulletin, perplexta, announcement',
+        keywords_ar: row.keywords_ar || 'إعلانات, بيربليكستا, خدمات',
+        is_active: true
+      });
+      count++;
+    }
+
+    // 2. Marketplace Items: /marketplace/:id and /marketplace/:slug
+    const marketRes = await pool.query(`
+      SELECT id, slug, title_en, title_ar, description_en, description_ar, image_url, preview_url,
+             meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
+             keywords_en, keywords_ar, og_image_url
+      FROM marketplace_items
+    `);
+    for (const row of marketRes.rows) {
+      const titleEn = row.meta_title_en || (row.title_en ? `${row.title_en} | Perplexta Marketplace` : 'Marketplace Item');
+      const titleAr = row.meta_title_ar || (row.title_ar ? `${row.title_ar} | متجر بيربليكستا` : 'منتج في المتجر');
+      const descEn = row.meta_description_en || (row.description_en ? extractDescription(row.description_en) : '');
+      const descAr = row.meta_description_ar || (row.description_ar ? extractDescription(row.description_ar) : '');
+      const imgUrl = row.og_image_url || row.image_url || row.preview_url || '';
+      const kwEn = row.keywords_en || 'marketplace, software, tools';
+      const kwAr = row.keywords_ar || 'متجر, أدوات, برمجيات';
+
+      await upsertSeoMetadata({
+        route_path: `/marketplace/${row.id}`,
+        entity_type: 'marketplace',
+        entity_id: String(row.id),
+        title_en: titleEn,
+        title_ar: titleAr,
+        description_en: descEn,
+        description_ar: descAr,
+        og_image_url: imgUrl,
+        keywords_en: kwEn,
+        keywords_ar: kwAr,
+        is_active: true
+      });
+      count++;
+
+      if (row.slug) {
+        await upsertSeoMetadata({
+          route_path: `/marketplace/${row.slug}`,
+          entity_type: 'marketplace',
+          entity_id: row.slug,
+          title_en: titleEn,
+          title_ar: titleAr,
+          description_en: descEn,
+          description_ar: descAr,
+          og_image_url: imgUrl,
+          keywords_en: kwEn,
+          keywords_ar: kwAr,
+          is_active: true
+        });
+        count++;
+      }
+    }
+
+    // 3. Blog Articles: /blog/:slug and /blog/:id
+    const blogPool = getExternalPool() || pool;
+    if (blogPool) {
+      const blogRes = await blogPool.query(`
+        SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, og_image_url,
+               meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
+               keywords_en, keywords_ar
+        FROM blog_articles
+        WHERE is_published = true OR is_published IS NULL
+      `);
+      for (const row of blogRes.rows) {
+        const titleEn = row.meta_title_en || (row.title_en ? `${row.title_en} | Perplexta Blog` : 'Blog Article');
+        const titleAr = row.meta_title_ar || (row.title_ar ? `${row.title_ar} | مدونة بيربليكستا` : 'مقال المدونة');
+        const descEn = row.meta_description_en || (row.content_en ? extractDescription(row.content_en) : '');
+        const descAr = row.meta_description_ar || (row.content_ar ? extractDescription(row.content_ar) : '');
+        const imgUrl = row.og_image_url || row.image_url || '';
+        const kwEn = row.keywords_en || 'blog, article, perplexta';
+        const kwAr = row.keywords_ar || 'مدونة, مقال, بيربليكستا';
+
+        if (row.slug) {
+          await upsertSeoMetadata({
+            route_path: `/blog/${row.slug}`,
+            entity_type: 'blog',
+            entity_id: row.slug,
+            title_en: titleEn,
+            title_ar: titleAr,
+            description_en: descEn,
+            description_ar: descAr,
+            og_image_url: imgUrl,
+            keywords_en: kwEn,
+            keywords_ar: kwAr,
+            is_active: true
+          });
+          count++;
+        }
+
+        await upsertSeoMetadata({
+          route_path: `/blog/${row.id}`,
+          entity_type: 'blog',
+          entity_id: String(row.id),
+          title_en: titleEn,
+          title_ar: titleAr,
+          description_en: descEn,
+          description_ar: descAr,
+          og_image_url: imgUrl,
+          keywords_en: kwEn,
+          keywords_ar: kwAr,
+          is_active: true
+        });
+        count++;
+      }
+    }
+
+    console.log(`[SEOSync] ✅ Synced ${count} dynamic routes to seo_metadata table.`);
+  } catch (err: any) {
+    console.error('[SEOSync] Error syncing dynamic routes to seo_metadata:', err.message);
+  }
+
+  return { syncedRoutes: count };
+}
+
 export async function syncAllContentSeoMetadata() {
   console.log('[SEOSync] 🚀 Initiating AI-assisted sync for missing metadata fields in blog_articles, marketplace_items & bulletin_ads...');
   const blogResult = await syncBlogArticlesMetadata();
   const marketplaceResult = await syncMarketplaceItemsMetadata();
   const bulletinResult = await syncBulletinAdsMetadata();
+  const dynamicRoutesResult = await syncDynamicRoutesToSeoMetadata();
 
   const blogUpdated = blogResult.updatedCount || 0;
   const marketplaceUpdated = marketplaceResult.updatedCount || 0;
@@ -1137,12 +1311,13 @@ export async function syncAllContentSeoMetadata() {
   const totalUpdated = blogUpdated + marketplaceUpdated + bulletinUpdated;
   const totalAi = (blogResult.aiProcessedCount || 0) + (marketplaceResult.aiProcessedCount || 0) + (bulletinResult.aiProcessedCount || 0);
 
-  console.log(`[SEOSync] ✅ SEO Metadata sync completed. Total records updated: ${totalUpdated} (Blog: ${blogUpdated}, Marketplace: ${marketplaceUpdated}, Bulletin: ${bulletinUpdated}, AI Generated: ${totalAi})`);
+  console.log(`[SEOSync] ✅ SEO Metadata sync completed. Total records updated: ${totalUpdated} (Blog: ${blogUpdated}, Marketplace: ${marketplaceUpdated}, Bulletin: ${bulletinUpdated}, AI Generated: ${totalAi}, Dynamic Routes Synced: ${dynamicRoutesResult.syncedRoutes})`);
 
   return {
     success: true,
     totalUpdated,
     totalAiProcessed: totalAi,
+    dynamicRoutesSynced: dynamicRoutesResult.syncedRoutes,
     blog: blogResult,
     marketplace: marketplaceResult,
     bulletin: bulletinResult,

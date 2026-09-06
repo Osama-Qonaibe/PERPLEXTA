@@ -86,6 +86,65 @@ export interface ApiKeyVault {
   protocol_config: any;
 }
 
+export interface GpuProvider {
+  id: number;
+  provider_id: string;
+  name: string;
+  provider_type: 'runpod_serverless' | 'openai_vision_compatible' | 'comfyui_worker' | 'custom_rest';
+  endpoint_id: string | null;
+  base_url: string;
+  api_url?: string;
+  encrypted_api_key: string;
+  current_load_capacity?: number;
+  status?: 'active' | 'inactive' | string;
+  metadata?: any;
+  health_status: 'online' | 'cold_boot' | 'busy' | 'offline';
+  latency_ms: number;
+  capabilities: string[];
+  daily_budget: number | string;
+  used_today: number | string;
+  last_reset_date: Date | string;
+  config: any;
+  is_active: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface GpuProviderModel {
+  id: number;
+  provider_id: number;
+  model_id: string;
+  name: string;
+  task_type: 'vision_analysis' | 'image_gen' | 'video_gen';
+  context_window: number;
+  max_output_tokens: number;
+  is_active: boolean;
+  metadata?: any;
+  created_at: Date | string;
+}
+
+export interface GpuExecutionJob {
+  id: number;
+  job_id: string;
+  user_id: number | null;
+  provider_id: number | null;
+  model_id: string;
+  task_type: 'vision_analysis' | 'image_gen' | 'video_gen';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  prompt: string | null;
+  parameters: any;
+  remote_job_id: string | null;
+  result_url: string | null;
+  result_data: any;
+  latency_ms: number;
+  error_message: string | null;
+  attempts: number;
+  failover_count: number;
+  cost_charged: number | string;
+  created_at: Date | string;
+  completed_at: Date | string | null;
+}
+
 export interface ToolOrchestrator {
   id: number;
   tool_id: string;
@@ -753,6 +812,7 @@ export interface MediaGalleryItem {
 export interface BulletinAd {
   id: number;
   user_id: number;
+  owner_id?: number | null;
   page_id?: number | null;
   page_name?: string | null;
   page_avatar?: string | null;
@@ -783,6 +843,7 @@ export interface BulletinAd {
   clicks_count: number;
   impressions_count: number;
   user_has_liked?: boolean;
+  user_reaction?: string | null;
   user_has_saved?: boolean;
   is_ai_generated?: boolean;
   feeling?: string | null;
@@ -852,5 +913,20 @@ export interface Advertisement {
   end_date: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
+}
+
+export interface ApiPerformanceLog {
+  id: number;
+  endpoint: string;
+  method: string;
+  status_code: number;
+  duration_ms: number;
+  ip_address: string | null;
+  user_agent: string | null;
+  user_id: number | null;
+  query_params?: any;
+  headers_snapshot?: any;
+  is_slow: boolean;
+  created_at: Date | string;
 }
 

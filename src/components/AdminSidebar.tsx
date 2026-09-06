@@ -3,7 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { 
   Activity, Key, Database, Cpu, Landmark, 
   CreditCard, Users, Settings, Mail, ArrowRight,
-  Send, Brain, ShieldAlert, UserPlus, Megaphone, Shield
+  Send, Brain, ShieldAlert, UserPlus, Megaphone, Shield,
+  Server
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -21,6 +22,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
       { icon: <Shield size={18} />, label: language === 'ar' ? 'رادار الأمان' : 'Security Radar', path: '/admin/radar' },
       { icon: <Activity size={18} />, label: language === 'ar' ? 'مقاييس الأداء ورندر' : 'Render & Latency Metrics', path: '/admin/metrics' },
       { icon: <Key size={18} />, label: t('aiInfrastructure'), path: '/admin/keys' },
+      { icon: <Server size={18} />, label: language === 'ar' ? 'مزودي خوادم الـ GPU' : 'GPU Infrastructure', path: '/admin/gpu' },
       { icon: <Database size={18} />, label: t('dbOrchestration'), path: '/admin/databases' },
       { icon: <Cpu size={18} />, label: t('toolOrchestrator'), path: '/admin/orchestrator' },
       { icon: <Landmark size={18} />, label: t('financeVault'), path: '/admin/finance' },
@@ -90,7 +92,7 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
               </div>
               <span className="font-bold text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">{t('home')}</span>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-accent opacity-0 group-hover:opacity-100 transition-theme"></div>
+            <div className="w-1.5 h-1.5 rounded-[4px] bg-accent opacity-0 group-hover:opacity-100 transition-theme"></div>
           </NavLink>
         </div>
       </aside>

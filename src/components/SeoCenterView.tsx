@@ -372,7 +372,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
     <div className="space-y-6">
       {/* Top Banner Header */}
       <div className="p-6 rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg transition-theme relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-[4px] blur-3xl pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -470,7 +470,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
               {healthScore}%
             </span>
           </div>
-          <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden mt-3 border border-[var(--border)]">
+          <div className="w-full bg-[var(--bg-base)] h-2 rounded-[4px] overflow-hidden mt-3 border border-[var(--border)]">
             <div
               className={`h-full bg-accent transition-all duration-500`}
               style={{ width: `${healthScore}%` }}
@@ -554,9 +554,9 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             </div>
           </div>
 
-          <div className="w-full bg-[var(--bg-base)] h-3 rounded-full overflow-hidden border border-[var(--border)] p-0.5">
+          <div className="w-full bg-[var(--bg-base)] h-3 rounded-[4px] overflow-hidden border border-[var(--border)] p-0.5">
             <div
-              className="h-full bg-accent rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(156,163,175,0.8)]"
+              className="h-full bg-accent rounded-[4px] transition-all duration-300 shadow-[0_0_12px_rgba(156,163,175,0.8)]"
               style={{ width: `${Math.min(100, Math.max(5, (syncProgress.completed / (syncProgress.total || 1)) * 100))}%` }}
             />
           </div>
@@ -591,7 +591,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
           >
             <AlertTriangle size={14} />
             <span>{isAr ? "يتطلب استكمال الميتاداتا" : "Requires Metadata"}</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-black/20 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-[4px] bg-black/20 text-[10px]">
               {items.filter(i => i.requires_metadata_population).length}
             </span>
           </button>
@@ -744,7 +744,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                               {item.seo_score}%
                             </span>
                           </div>
-                          <div className="w-full bg-[var(--bg-base)] h-1.5 rounded-full overflow-hidden border border-[var(--border)]">
+                          <div className="w-full bg-[var(--bg-base)] h-1.5 rounded-[4px] overflow-hidden border border-[var(--border)]">
                             <div
                               className={`h-full ${
                                 item.seo_score >= 85 ? 'bg-emerald-500' : item.seo_score >= 60 ? 'bg-amber-500' : 'bg-rose-500'
@@ -866,11 +866,11 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                 </div>
                 <div>
                   {selectedItem.requires_metadata_population ? (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                    <span className="px-3 py-1 rounded-[4px] text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
                       ⚠️ {isAr ? "يتطلب استكمال البيانات" : "Requires Metadata"}
                     </span>
                   ) : (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
+                    <span className="px-3 py-1 rounded-[4px] text-xs font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
                       ✅ {isAr ? "مكتمل ومؤرشف بنجاح" : "Fully Optimized"}
                     </span>
                   )}
@@ -978,7 +978,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
 
             {loadingSmartSuggest ? (
               <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                <div className="p-4 rounded-full bg-accent/10 text-accent animate-bounce">
+                <div className="p-4 rounded-[4px] bg-accent/10 text-accent animate-bounce">
                   <Wand2 size={32} />
                 </div>
                 <div className="text-center space-y-1">

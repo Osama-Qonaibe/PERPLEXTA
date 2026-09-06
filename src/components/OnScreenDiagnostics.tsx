@@ -187,8 +187,8 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
         onClick={() => setIsExpanded(true)}
       >
         <span className="relative flex h-1.5 w-1.5">
-          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isPlaying ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-          <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isPlaying ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+          <span className={`animate-ping absolute inline-flex h-full w-full rounded-[4px] opacity-75 ${isPlaying ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+          <span className={`relative inline-flex rounded-[4px] h-1.5 w-1.5 ${isPlaying ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
         </span>
         <span className="font-bold">MEDIA-HUD</span>
         <span className="text-zinc-500">|</span>
@@ -210,8 +210,8 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
       <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800">
         <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-emerald-500"></span>
           </span>
           <span>PERPLEXTA MEDIA HUD v1.2</span>
         </div>

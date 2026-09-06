@@ -292,7 +292,7 @@ export const NotificationThresholdsModal: React.FC<NotificationThresholdsModalPr
                 className="px-5 py-2 rounded-lg bg-accent hover:bg-accent/90 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer"
               >
                 {isSaving ? (
-                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <div className="w-4 h-4 rounded-[4px] border-2 border-white/30 border-t-white animate-spin" />
                 ) : (
                   <Save size={15} />
                 )}

@@ -387,7 +387,7 @@ authenticateAgent();`;
           <Terminal size={140} />
         </div>
         <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold tracking-wider uppercase">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-accent/10 border border-accent/20 text-accent text-[11px] font-bold tracking-wider uppercase">
             <Cpu size={12} />
             {isAr ? 'بروتوكول الوكلاء والأتمتة' : 'AI Bot & Agent Integration Profile'}
           </div>
@@ -504,7 +504,7 @@ authenticateAgent();`;
                   {isAr ? 'الوكلاء والأجهزة المرتبطة حالياً' : 'Your Registered Connected Systems'}
                 </h3>
               </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent/10 text-accent font-bold">
+              <span className="text-xs px-2.5 py-0.5 rounded-[4px] bg-accent/10 text-accent font-bold">
                 {agents.length}
               </span>
             </div>
@@ -574,7 +574,7 @@ authenticateAgent();`;
                 className="p-6 md:p-8 rounded-[4px] border border-accent/20 bg-accent/[0.02] space-y-4 overflow-hidden"
               >
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-accent/10 text-accent shrink-0">
+                  <div className="p-2 rounded-[4px] bg-accent/10 text-accent shrink-0">
                     <ShieldAlert size={18} />
                   </div>
                   <div className="space-y-1.5">
@@ -685,7 +685,7 @@ authenticateAgent();`;
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Cpu size={20} className="text-accent animate-pulse" />
-                  <div className="absolute -inset-1 rounded-full bg-accent/20 blur opacity-75"></div>
+                  <div className="absolute -inset-1 rounded-[4px] bg-accent/20 blur opacity-75"></div>
                 </div>
                 <div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
@@ -906,8 +906,8 @@ authenticateAgent();`;
                     />
                     {externalMcpStatus === 'connected' && (
                       <span className="absolute right-3 top-2.5 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-accent opacity-75"></span>
+                        <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-accent"></span>
                       </span>
                     )}
                   </div>

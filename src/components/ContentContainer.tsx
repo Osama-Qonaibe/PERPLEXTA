@@ -38,7 +38,7 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
       initial="initial"
       animate="animate"
       exit="exit"
-      className={`mx-auto w-[92%] md:w-[85%] pb-24 ${maxWidthClasses[maxWidth]} ${spacingClasses[spacing]} ${className}`}
+      className={`mx-auto w-[92%] md:w-[85%] pt-4 sm:pt-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] lg:pb-16 ${maxWidthClasses[maxWidth]} ${spacingClasses[spacing]} ${className}`}
       {...props}
     >
       {children}

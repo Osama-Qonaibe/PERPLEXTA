@@ -1,18 +1,20 @@
 import { safeStorageGet, safeStorageSet } from "@/utils/safeStorage";
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { usePerplextaRouter } from '../hooks/usePerplextaRouter';
 import { toast } from '../context/NotificationContext';
 import { Gift, CreditCard, LayoutDashboard, Plus, User, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Wallet, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { isPathBlocked } from '../utils/sectionVisibility';
 import { SkeletonLoader } from './SkeletonLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
-import { SIDEBAR_TRANSITION, SIDEBAR_MOTION_TRANSITION } from '../constants/motions';
+import { SIDEBAR_TRANSITION } from '../constants/motions';
 import { useSwipeToClose, useSwipeNavigation } from '../utils/swipe';
 import { FloatingPopover } from './FloatingPopover';
 import { triggerHaptic } from '../utils/haptics';
 const sidebarTransition = SIDEBAR_TRANSITION;
-const sidebarSpring = SIDEBAR_MOTION_TRANSITION;
+const sidebarSpring = SIDEBAR_TRANSITION;
 const elasticSpring = SIDEBAR_TRANSITION;
 
 export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
@@ -75,8 +77,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   const activeOptionsMenuChatId = optionsMenuTarget?.chatId || null;
   const deletingChat = recentChats.find((c: any) => c.id?.toString() === deletingChatConfirmId?.toString());
   const deletingChatTitle = deletingChat ? deletingChat.title : '';
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { navigate, location } = usePerplextaRouter();
 
   const match = location.pathname.match(/^\/chat\/([^/]+)/);
   const activeChatId = match ? match[1] : null;
@@ -285,16 +286,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     return () => {};
   }, []);
 
-  const navItems: { icon: React.ReactNode, label: string, path: string, className?: string }[] = [];
+  const rawNavItems: { icon: React.ReactNode, label: string, path: string, className?: string }[] = [];
 
   if (user) {
-    navItems.push({
-      icon: <LayoutGrid size={18} />,
-      label: language === 'ar' ? 'قوقل' : 'Google Hub',
-      path: '/google-hub'
-    });
-
-    navItems.push({
+    rawNavItems.push({
       icon: <Sparkles size={18} className="text-accent" />,
       label: language === 'ar' ? 'اكتشف' : 'Discover',
       path: '/discover'
@@ -303,27 +298,34 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   }
 
   if (user) {
-    navItems.push({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
+    rawNavItems.push({ icon: <Gift size={18} />, label: t('rewards'), path: '/rewards' });
   }
 
-  if (!isMobile) {
-    navItems.push({ icon: <CreditCard size={18} />, label: t('subscription'), path: '/subscription' });
+  if (!isMobile && (typeof window === 'undefined' || window.innerWidth >= 768)) {
+    rawNavItems.push({ 
+      icon: <CreditCard size={18} />, 
+      label: t('subscription'), 
+      path: '/subscription',
+      className: 'hidden md:flex'
+    });
   }
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
   if (!isMobile && user && (['admin', 'support', 'elite'].includes(user.role || '') || (adminEmail && user.email === adminEmail))) {
-    navItems.push({ 
+    rawNavItems.push({ 
       icon: <LayoutDashboard size={18} />, 
       label: t('dashboard'), 
       path: '/admin',
       className: 'hidden md:flex'
     });
-    navItems.push({
+    rawNavItems.push({
       icon: <Settings2 size={18} />,
       label: language === 'ar' ? 'لوحة تحكم الأقسام' : 'Sections Dashboard',
       path: '/admin-community'
     });
   }
+
+  const navItems = rawNavItems.filter(item => !isPathBlocked(item.path, siteSettings?.blocked_paths, isMobile));
 
   const handleNewChat = () => {
     const isAlreadyAtNewChat = window.location.pathname === '/' || window.location.pathname === '/chat';
@@ -347,40 +349,70 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isMobile ? (isSidebarOpen ? '175px' : 0) : (isSidebarOpen ? 220 : 56),
-          x: isMobile && !isSidebarOpen ? (dir === 'rtl' ? 300 : -300) : 0,
+          width: isMobile ? (isSidebarOpen ? '128px' : 0) : (isSidebarOpen ? 180 : 50),
+          x: isMobile && !isSidebarOpen ? (dir === 'rtl' ? 200 : -200) : 0,
           opacity: isMobile && !isSidebarOpen ? 0 : 1
         }}
         transition={sidebarSpring}
         onTouchStart={swipeHandlers.onTouchStart}
         onTouchMove={swipeHandlers.onTouchMove}
         onTouchEnd={swipeHandlers.onTouchEnd}
-        className={`fixed top-[64px] bottom-0 flex flex-col z-[150] select-none border-[var(--border)] bg-[var(--bg-base)] start-0 max-h-[calc(100dvh-64px)] ${dir === 'rtl' ? 'border-l' : 'border-r'} transition-theme ${
-          isMobile && !isSidebarOpen ? 'pointer-events-none' : 'visible'
+        className={`fixed z-[150] select-none bg-[var(--bg-base)] transition-theme flex flex-col ${
+          isMobile 
+            ? `top-[calc(56px+env(safe-area-inset-top,0px)+12px)] bottom-[calc(var(--safe-area-spacing)+10px+env(safe-area-inset-bottom,0px))] start-2 rounded-2xl border border-[var(--border-main)] shadow-2xl shadow-black/40 overflow-hidden ${
+                !isSidebarOpen ? 'pointer-events-none' : 'visible pointer-events-auto'
+              }`
+            : `top-[calc(56px+env(safe-area-inset-top,0px)+6px)] bottom-0 pb-safe start-0 max-h-[calc(100dvh-(56px+env(safe-area-inset-top,0px)+6px))] border-[var(--border-main)] ${
+                dir === 'rtl' ? 'border-l' : 'border-r'
+              } pointer-events-auto visible`
         }`}
-        style={{ contain: 'layout', maxHeight: 'calc(100dvh - 64px)' }}
+        style={{ 
+          contain: 'layout', 
+          willChange: isMobile ? 'width, transform, opacity' : 'width',
+          transform: isMobile ? 'translateZ(0)' : 'none',
+          WebkitBackfaceVisibility: isMobile ? 'hidden' : 'visible',
+          backfaceVisibility: isMobile ? 'hidden' : 'visible',
+          [dir === 'rtl' ? 'right' : 'left']: isMobile ? 'auto' : 0,
+          [dir === 'rtl' ? 'left' : 'right']: 'auto',
+          maxHeight: isMobile 
+            ? 'calc(100dvh - (56px + env(safe-area-inset-top, 0px) + 12px + var(--safe-area-spacing) + 10px + env(safe-area-inset-bottom, 0px)))' 
+            : 'calc(100dvh - (56px + env(safe-area-inset-top, 0px) + 6px))' 
+        }}
       >
         <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className={`absolute top-0 ${dir === 'rtl' ? '-left-4' : '-right-4'} z-[170] flex items-center justify-center transition-theme active:scale-90 group -translate-y-1/2 w-8 h-8
-            ${isMobile ? 'hidden' : 'flex'}
-          `}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerHaptic('selection');
+            setIsSidebarOpen(!isSidebarOpen);
+          }} 
+          className={`absolute top-5 ${dir === 'rtl' ? '-left-3' : '-right-3'} z-[170] items-center justify-center w-6 h-6 rounded-[6px] bg-[var(--bg-surface)] border border-[var(--border-main)] shadow-sm text-[var(--text-secondary)] hover:text-accent hover:border-accent/40 active:scale-90 transition-theme cursor-pointer pointer-events-auto ${
+            isMobile ? 'hidden' : 'flex'
+          }`}
           title={isSidebarOpen ? (language === 'ar' ? 'تصغير' : 'Collapse') : (language === 'ar' ? 'توسيع' : 'Expand')}
         >
-          <div className="text-[var(--text-secondary)] transition-theme group-hover:text-accent group-hover:">
-            {isSidebarOpen ? (
-              dir === 'rtl' ? <ChevronRight size={22} strokeWidth={2.5} /> : <ChevronLeft size={22} strokeWidth={2.5} />
-            ) : (
-              dir === 'rtl' ? <ChevronLeft size={22} strokeWidth={2.5} /> : <ChevronRight size={22} strokeWidth={2.5} />
-            )}
-          </div>
+          {isSidebarOpen ? (
+            dir === 'rtl' ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />
+          ) : (
+            dir === 'rtl' ? <ChevronLeft size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />
+          )}
         </button>
 
         <div className="w-full h-full overflow-hidden relative flex flex-col items-stretch px-0">
-          <div className={`h-full flex flex-col flex-nowrap ${isMobile ? 'w-[175px]' : 'w-[220px]'} justify-between`}>
+          <div 
+            className="h-full flex flex-col flex-nowrap justify-between"
+            style={{
+              width: isMobile ? '128px' : '180px',
+              minWidth: isMobile ? '128px' : '180px',
+              position: 'absolute',
+              [dir === 'rtl' ? 'right' : 'left']: 0,
+              top: 0,
+              bottom: 0
+            }}
+          >
             
-            <div className={`flex-shrink-0 ${isMobile ? 'pt-4' : 'pt-6'}`}>
-              <nav className={isMobile ? "space-y-1" : "space-y-1"}>
+            <div className={`flex-shrink-0 ${isMobile ? 'pt-2.5 px-0' : 'pt-3.5'}`}>
+              <nav className="space-y-0.5">
                 {navItems.map((item, index) => (
                   <NavLink
                     key={`nav-${item.path}-${index}`}
@@ -395,9 +427,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     {({ isActive }) => {
                       const active = isActive;
                       return (
-                        <div className={`${(item as any).className || 'flex'} items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}>
-                          <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                            <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme ${
+                        <div 
+                          className={`${(item as any).className || 'flex'} items-center transition-theme w-full h-[34px] overflow-hidden flex-shrink-0 group`}
+                          style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
+                        >
+                          <div className="w-7 h-full flex-shrink-0 flex items-center justify-center relative">
+                            <div className={`absolute inset-0 mx-auto w-7 h-7 rounded-[4px] border border-transparent transition-theme ${
                               active ? 'bg-accent/10 border-accent/20' : 'group-hover:bg-[var(--bg-hover)]'
                             }`} />
                             <div className={`relative z-10 transition-theme ${
@@ -405,19 +440,23 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 ? 'text-accent' 
                                 : 'text-gray-400 group-hover:text-accent'
                             }`}>
-                              {React.cloneElement(item.icon as React.ReactElement, { size: isMobile ? 18 : 18 } as any)}
+                              {React.cloneElement(item.icon as React.ReactElement, { size: 15 } as any)}
                             </div>
                           </div>
-                          <AnimatePresence mode="wait" initial={false}>
+                          <AnimatePresence initial={false}>
                             {isSidebarOpen && (
                               <motion.span
-                                initial={false}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                                transition={sidebarTransition}
-                                className={`font-bold text-sm whitespace-nowrap transition-theme ${
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{
+                                  duration: isSidebarOpen ? 0.35 : 0.08,
+                                  ease: [0.2, 0, 0, 1]
+                                }}
+                                className={`font-bold text-[12px] whitespace-nowrap overflow-hidden transition-theme ${
                                   active ? 'text-accent font-bold' : 'text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
                                 } ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                                style={{ display: 'inline-block' }}
                               >
                                 {item.label}
                               </motion.span>
@@ -431,23 +470,28 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
 
                 {user && token && (
-                  <div className={`mt-4 py-2 border-t border-[var(--border-main)] transition-theme`}>
+                  <div className="mt-2 py-1 border-t border-[var(--border-main)] transition-theme">
                     <button 
                       onClick={handleNewChat}
-                      className={`flex items-center transition-theme w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} overflow-hidden flex-shrink-0 group`}
+                      className="flex items-center transition-theme w-full h-[34px] overflow-hidden flex-shrink-0 group"
+                      style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                     >
-                      <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative translate-y-0`}>
-                        <div className={`absolute inset-0 m-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] border border-transparent transition-theme bg-accent/5 border-accent/10 group-hover:bg-accent/15 group-hover:border-accent/20`} />
-                        <Plus size={isMobile ? 20 : 20} className={`relative z-10 transition-theme text-accent`} />
+                      <div className="w-7 h-full flex-shrink-0 flex items-center justify-center relative translate-y-0">
+                        <div className="absolute inset-0 m-auto w-7 h-7 rounded-[4px] border border-transparent transition-theme bg-accent/5 border-accent/10 group-hover:bg-accent/15 group-hover:border-accent/20" />
+                        <Plus size={16} className="relative z-10 transition-theme text-accent" />
                       </div>
-                      <AnimatePresence mode="wait" initial={false}>
+                      <AnimatePresence initial={false}>
                         {isSidebarOpen && (
                           <motion.span
-                            initial={false}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: dir === 'rtl' ? 10 : -10 }}
-                            transition={sidebarTransition}
-                            className={`font-black ${isMobile ? 'text-sm' : 'text-sm'} text-accent whitespace-nowrap ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{
+                              duration: isSidebarOpen ? 0.35 : 0.08,
+                              ease: [0.2, 0, 0, 1]
+                            }}
+                            className={`font-black text-[12px] text-accent whitespace-nowrap overflow-hidden ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                            style={{ display: 'inline-block' }}
                           >
                             {t('newChat')}
                           </motion.span>
@@ -461,16 +505,20 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
             {user && token && (
               <div className="flex-grow flex-shrink flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className={`pt-2.5 pb-1 mt-1 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center h-7 overflow-hidden`}>
-                  <div className={`${isMobile ? 'w-8' : 'w-[56px]'} flex-shrink-0`} />
+                <div className="pt-1.5 pb-0.5 mt-0.5 h-6 border-t border-[var(--border-main)] transition-theme flex-shrink-0 flex items-center overflow-hidden">
+                  <div className="w-7 flex-shrink-0" style={{ marginInlineStart: '11px' }} />
                   <AnimatePresence initial={false}>
                     {isSidebarOpen && (
                       <motion.span 
-                        initial={false}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={elasticSpring}
-                        className={`flex-1 text-[10.5px] font-semibold text-gray-500 dark:text-gray-400/80 uppercase ${dir === 'rtl' ? 'tracking-normal mr-1' : 'tracking-wider ml-1'} whitespace-nowrap truncate text-start transition-theme`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{
+                          duration: isSidebarOpen ? 0.35 : 0.08,
+                          ease: [0.2, 0, 0, 1]
+                        }}
+                        className={`flex-1 text-[9.5px] font-semibold text-gray-500 dark:text-gray-400/80 uppercase ${dir === 'rtl' ? 'tracking-normal mr-1' : 'tracking-wider ml-1'} whitespace-nowrap overflow-hidden text-start transition-theme`}
+                        style={{ display: 'inline-block' }}
                       >
                         {dir === 'rtl' ? 'المحادثات السابقة' : 'Recent Chats'}
                       </motion.span>
@@ -478,12 +526,18 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </AnimatePresence>
                 </div>
 
-                <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-4 min-h-0">
-                  <div className="min-h-[200px]">
+                <div className="flex-1 overflow-y-auto scrollbar-none custom-scrollbar scroll-smooth pb-2 min-h-0">
+                  <div className="min-h-[85px]">
                     {isChatsLoading ? (
-                      <SkeletonLoader type="chat-history" count={6} />
+                      <SkeletonLoader 
+                        type="chat-history" 
+                        count={isMobile ? 3 : 5} 
+                        isSidebarOpen={isSidebarOpen} 
+                        isMobile={true} 
+                        isRtl={dir === 'rtl'} 
+                      />
                     ) : recentChats.length > 0 ? (
-                      <div className={isMobile ? "space-y-1" : "space-y-1"}>
+                      <div className="space-y-0.5">
                         {recentChats.map((chat, cIdx) => {
                           const isActive = activeChatId?.toString() === chat.id?.toString();
                           const isMenuOpen = activeOptionsMenuChatId === chat.id;
@@ -499,11 +553,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 repeat: Infinity,
                                 ease: "easeInOut"
                               }}
-                              className={`flex items-center w-full ${isMobile ? 'h-[38px] px-3.5' : 'h-11'} ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-theme group relative border rounded-[4px] ${
+                              className={`flex items-center w-full h-[34px] ${isMenuOpen ? 'overflow-visible z-30' : 'overflow-hidden'} flex-shrink-0 transition-theme group relative border rounded-[4px] ${
                                 isActive 
                                   ? 'text-[var(--text-primary)] bg-gray-500/5 border-gray-500/15 shadow-[0_0_8px_rgba(156,163,175,0.05)]' 
                                   : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] border-transparent'
                               }`}
+                              style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                             >
                               <div
                                 onClick={() => {
@@ -512,10 +567,10 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 }}
                                 className="flex items-center h-full flex-1 min-w-0 cursor-pointer"
                               >
-                                <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-full flex-shrink-0 flex items-center justify-center relative`}>
-                                  <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme ${isActive ? 'bg-transparent' : 'group-hover:bg-[var(--bg-hover)]'}`} />
+                                <div className="w-7 h-full flex-shrink-0 flex items-center justify-center relative">
+                                  <div className={`absolute inset-0 mx-auto w-7 h-7 rounded-[4px] transition-theme ${isActive ? 'bg-transparent' : 'group-hover:bg-[var(--bg-hover)]'}`} />
                                   <MessageSquare 
-                                    size={isMobile ? 16 : 16} 
+                                    size={14} 
                                     className={`relative z-10 transition-theme ${
                                       isActive 
                                         ? 'text-[var(--text-primary)]' 
@@ -525,20 +580,24 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                     }`} 
                                   />
                                 </div>
-                                <AnimatePresence mode="wait" initial={false}>
+                                <AnimatePresence initial={false}>
                                   {isSidebarOpen && (
                                     <motion.span
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
                                       exit={{ opacity: 0 }}
-                                      transition={sidebarTransition}
-                                      className={`font-semibold ${isMobile ? 'text-[12.5px]' : 'text-[13px]'} truncate whitespace-nowrap text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
+                                      transition={{
+                                        duration: isSidebarOpen ? 0.35 : 0.08,
+                                        ease: [0.2, 0, 0, 1]
+                                      }}
+                                      className={`font-semibold text-[11.5px] truncate whitespace-nowrap overflow-hidden text-start transition-theme ${dir === 'rtl' ? 'mr-1' : 'ml-1'} ${
                                         isActive 
                                           ? 'text-[var(--text-primary)] font-extrabold' 
                                           : streamingChatId === chat.id 
                                             ? 'text-[var(--text-primary)] font-extrabold' 
                                             : 'text-gray-400 group-hover:text-[var(--text-primary)]'
                                       }`}
+                                      style={{ display: 'inline-block' }}
                                     >
                                       {chat.title}
                                     </motion.span>
@@ -546,13 +605,17 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                 </AnimatePresence>
                               </div>
                               
-                              <AnimatePresence>
+                              <AnimatePresence initial={false}>
                                 {isSidebarOpen && (
                                   <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className={`flex items-center gap-1 ${optionsMenuTarget?.chatId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-theme ${dir === 'rtl' ? (isMobile ? 'mr-auto pl-2.5' : 'mr-auto pl-4') : (isMobile ? 'ml-auto pr-2.5' : 'ml-auto pr-4')}`}
+                                    transition={{
+                                      duration: isSidebarOpen ? 0.35 : 0.08,
+                                      ease: [0.2, 0, 0, 1]
+                                    }}
+                                    className={`flex items-center gap-1 ${optionsMenuTarget?.chatId === chat.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-theme ${dir === 'rtl' ? 'mr-auto pl-1.5' : 'ml-auto pr-1.5'}`}
                                   >
                                     <button 
                                       type="button"
@@ -565,21 +628,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                           setOptionsMenuTarget({ chatId: chat.id, rect });
                                         }
                                       }}
-                                      className={`w-8 h-8 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
+                                      className={`w-6 h-6 flex items-center justify-center rounded-[4px] border border-transparent transition-theme ${
                                         optionsMenuTarget?.chatId === chat.id 
                                           ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)]' 
                                           : 'text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)]'
                                       }`}
                                       title={language === 'ar' ? 'خيارات' : 'Options'}
                                     >
-                                      <MoreHorizontal size={isMobile ? 14 : 13} />
+                                      <MoreHorizontal size={12} />
                                     </button>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
                               {/* Left or Right indicator bar for active item */}
                               {isActive && (
-                                <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-4 bg-[var(--text-primary)] ${
+                                <div className={`absolute top-1/2 -translate-y-1/2 w-[3px] h-3 bg-[var(--text-primary)] ${
                                   dir === 'rtl' ? 'right-0 rounded-l-[1.5px]' : 'left-0 rounded-r-[1.5px]'
                                 }`} />
                               )}
@@ -592,11 +655,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                 </div>
 
                 {isSidebarOpen && activeChatId && (
-                  <div className={`mx-3 mb-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-[var(--surface-subtle)] flex flex-col transition-theme`}>
+                  <div className={`${isMobile ? 'mx-2 mb-1.5 p-2 rounded-md' : 'mx-3 mb-2 p-2.5 rounded-lg'} border border-gray-200 dark:border-gray-800 bg-[var(--surface-subtle)] flex flex-col transition-theme`}>
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsContextCollapsed(!isContextCollapsed)}>
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <BrainCircuit size={14} className="text-[var(--text-primary)] flex-shrink-0" />
-                        <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate font-sans">
+                        <BrainCircuit size={isMobile ? 12 : 14} className="text-[var(--text-primary)] flex-shrink-0" />
+                        <span className={`${isMobile ? 'text-[9.5px]' : 'text-[11px]'} font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 truncate font-sans`}>
                           {language === 'ar' ? 'ملخص السياق النشط' : 'Context Summary'}
                         </span>
                       </div>
@@ -632,7 +695,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               <textarea
                                 value={editedContext}
                                 onChange={(e) => setEditedContext(e.target.value)}
-                                className="w-full h-24 text-[11px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-main)] focus:border-[var(--border-accent)] outline-none resize-none transition-theme"
+                                className="w-full h-20 text-[10.5px] font-sans p-1.5 rounded-[4px] bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-main)] focus:border-[var(--border-accent)] outline-none resize-none transition-theme"
                                 placeholder={language === 'ar' ? 'اكتب سياق المعرفة هنا...' : 'Type active context summary here...'}
                                 disabled={isSavingContext}
                                 autoFocus
@@ -664,8 +727,8 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               </div>
                             </div>
                           ) : (
-                            <div className="flex flex-col gap-1.5 mt-2">
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400 font-sans leading-relaxed tracking-wide select-text whitespace-pre-wrap max-h-[140px] overflow-y-auto custom-scrollbar p-2 bg-white/40 dark:bg-black/20 border border-gray-100 dark:border-gray-800/40 rounded-[4px]">
+                            <div className="flex flex-col gap-1 mt-1.5">
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400 font-sans leading-relaxed tracking-wide select-text whitespace-pre-wrap max-h-[120px] overflow-y-auto custom-scrollbar p-1.5 bg-white/40 dark:bg-black/20 border border-gray-100 dark:border-gray-800/40 rounded-[4px]">
                                 {editedContext ? (
                                   editedContext
                                 ) : (
@@ -679,13 +742,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               {!editedContext && (
                                 <button
                                   onClick={() => setIsEditingContext(true)}
-                                  className="self-start text-[9px] font-bold text-[var(--text-primary)] hover:opacity-80 transition-theme flex items-center gap-1 mt-1"
+                                  className="self-start text-[8.5px] font-bold text-[var(--text-primary)] hover:opacity-80 transition-theme flex items-center gap-1 mt-0.5"
                                 >
-                                  <Plus size={10} />
+                                  <Plus size={9} />
                                   {language === 'ar' ? 'إضافة ملخص يدوي' : 'Add summary manually'}
                                 </button>
                               )}
-                              <span className="text-[9px] text-gray-400 dark:text-gray-500/80 leading-snug">
+                              <span className="text-[8.5px] text-gray-400 dark:text-gray-500/80 leading-snug">
                                 {language === 'ar'
                                   ? '💡 يمثل هذا السياق النشط الذي يتم تضمينه في ذاكرة الذكاء الاصطناعي لفهم محتوى المحادثة الحالي.'
                                   : '💡 This represents the active context synthesized for the AI model to track key objectives.'}
@@ -700,7 +763,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               </div>
             )}
 
-            <div className={`mt-auto pt-4 pb-5 border-t border-[var(--border-main)] transition-theme ${isMobile ? 'space-y-1.5' : 'space-y-1'} flex-shrink-0 relative`} ref={dropdownRef}>
+            <div className={`mt-auto ${isMobile ? 'pt-2 pb-2 space-y-1' : 'pt-2 pb-2.5 space-y-1'} border-t border-[var(--border-main)] transition-theme flex-shrink-0 relative`} ref={dropdownRef}>
               {user ? (
                 <>
                   <AnimatePresence>
@@ -709,14 +772,18 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className={`absolute bottom-full mb-2 w-[calc(100%-24px)] bg-[var(--bg-surface)] border-[var(--border)] border rounded-lg shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? 'right-3' : 'left-3'}`}
+                        className={`absolute bottom-full mb-1.5 ${isMobile ? 'w-[calc(100%-8px)]' : 'w-[calc(100%-12px)]'} bg-[var(--bg-surface)] border-[var(--border)] border rounded-[8px] shadow-xl overflow-hidden z-50 ${dir === 'rtl' ? (isMobile ? 'right-1' : 'right-1.5') : (isMobile ? 'left-1' : 'left-1.5')}`}
                       >
-                        <div className={`p-2 ${isMobile ? 'space-y-1.5' : 'space-y-1'}`}>
+                        <div className="p-1.5 space-y-0.5">
                           <button 
-                            onClick={() => { navigate('/settings?tab=account'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
+                            onClick={() => { 
+                              navigate('/settings?tab=account'); 
+                              setIsDropdownOpen(false); 
+                              if (isMobile) setIsSidebarOpen(false);
+                            }} 
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
                           >
-                            <User size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
+                            <User size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -726,17 +793,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={sidebarTransition}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
+                                  <span className="font-bold text-xs">{t('accountSettings') || (dir === 'rtl' ? 'الحساب' : 'Account')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
                           <button 
-                            onClick={() => { navigate('/settings?tab=usage'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
+                            onClick={() => { 
+                              navigate('/settings?tab=usage'); 
+                              setIsDropdownOpen(false); 
+                              if (isMobile) setIsSidebarOpen(false);
+                            }} 
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
                           >
-                            <Activity size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
+                            <Activity size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -746,19 +817,23 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={sidebarTransition}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('consumption') || (dir === 'rtl' ? 'الاستهلاك' : 'Consumption')}</span>
+                                  <span className="font-bold text-xs">{t('consumption') || (dir === 'rtl' ? 'الاستهلاك' : 'Consumption')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
-                          <div className={`h-px bg-[var(--border-main)] my-1 mx-2 transition-theme`}></div>
+                          <div className="h-px bg-[var(--border-main)] my-0.5 mx-1 transition-theme"></div>
 
                           <button 
-                            onClick={() => { navigate('/settings?tab=wallet'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
+                            onClick={() => { 
+                              navigate('/settings?tab=wallet'); 
+                              setIsDropdownOpen(false); 
+                              if (isMobile) setIsSidebarOpen(false);
+                            }} 
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
                           >
-                            <Wallet size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
+                            <Wallet size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -768,37 +843,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={sidebarTransition}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </button>
-
-                          <button 
-                            onClick={() => { navigate('/settings?tab=marketplace_purchases'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
-                          >
-                            <ShoppingBag size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
-                            <AnimatePresence mode="wait" initial={false}>
-                              {isSidebarOpen && (
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={sidebarTransition}
-                                  className="overflow-hidden whitespace-nowrap text-start"
-                                >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{language === 'ar' ? 'مشترياتي الرقمية' : 'Digital Purchases'}</span>
+                                  <span className="font-bold text-xs">{t('wallet') || (dir === 'rtl' ? 'المحفظة' : 'Wallet')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
                           <button 
-                            onClick={() => { navigate('/settings?tab=memory'); setIsDropdownOpen(false); }} 
-                            className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item`}
+                            onClick={() => { 
+                              navigate('/settings?tab=marketplace_purchases'); 
+                              setIsDropdownOpen(false); 
+                              if (isMobile) setIsSidebarOpen(false);
+                            }} 
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
                           >
-                            <BrainCircuit size={isMobile ? 16 : 16} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
+                            <ShoppingBag size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -808,17 +867,45 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={sidebarTransition}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
+                                  <span className="font-bold text-xs">{language === 'ar' ? 'مشترياتي الرقمية' : 'Digital Purchases'}</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </button>
+
+                          <button 
+                            onClick={() => { 
+                              navigate('/settings?tab=memory'); 
+                              setIsDropdownOpen(false); 
+                              if (isMobile) setIsSidebarOpen(false);
+                            }} 
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
+                          >
+                            <BrainCircuit size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
+                            <AnimatePresence mode="wait" initial={false}>
+                              {isSidebarOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={sidebarTransition}
+                                  className="overflow-hidden whitespace-nowrap text-start"
+                                >
+                                  <span className="font-bold text-xs">{t('memoryCenter') || (dir === 'rtl' ? 'ذاكرة المساعد' : 'Memory Center')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </button>
 
                            <button 
-                             onClick={() => { logout(); setIsDropdownOpen(false); }} 
-                             className={`w-full flex items-center gap-3 ${isMobile ? 'px-3 py-2' : 'px-3 py-2.5'} rounded-[4px] border border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-theme`}
+                             onClick={() => { 
+                               logout(); 
+                               setIsDropdownOpen(false); 
+                               if (isMobile) setIsSidebarOpen(false);
+                             }} 
+                             className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-theme"
                            >
-                            <LogOut size={isMobile ? 16 : 16} className="flex-shrink-0" />
+                            <LogOut size={14} className="flex-shrink-0" />
                             <AnimatePresence mode="wait" initial={false}>
                               {isSidebarOpen && (
                                 <motion.div
@@ -828,7 +915,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                                   transition={sidebarTransition}
                                   className="overflow-hidden whitespace-nowrap text-start"
                                 >
-                                  <span className={`font-bold ${isMobile ? 'text-sm' : 'text-sm'}`}>{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
+                                  <span className="font-bold text-xs">{t('logout') || (dir === 'rtl' ? 'تسجيل الخروج' : 'Logout')}</span>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -839,13 +926,14 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   </AnimatePresence>
                     <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme`}
+                      className="flex items-center group cursor-pointer w-full h-[36px] overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme"
+                      style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
-                        <div className={`${isMobile ? 'w-8' : 'w-[56px]'} ${isMobile ? 'h-[44px]' : 'h-[44px]'} flex-shrink-0 flex items-center justify-center relative`}>
-                          <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]`} />
+                        <div className="w-7 h-[36px] flex-shrink-0 flex items-center justify-center relative">
+                          <div className="absolute inset-0 mx-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]" />
                           <div 
-                            className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-[var(--border-accent)] shadow-sm group-hover:scale-105`}
+                            className="w-7 h-7 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-[var(--border-accent)] shadow-sm group-hover:scale-105"
                             style={{ 
                               borderColor: user.subscription?.plan_color || 'var(--border)'
                             }}
@@ -853,7 +941,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             {user.avatar ? (
                               <img src={resolveImageUrl(user.avatar, 'avatar')} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             ) : (
-                              <User size={isMobile ? 18 : 20} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
+                              <User size={15} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                             )}
                           </div>
                           <div className={`absolute -bottom-1 left-0 right-0 flex justify-center transition-theme ${!isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -865,18 +953,21 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                             </span>
                           </div>
                         </div>
-                        <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-2' : 'pl-2'} justify-center`}>
-                        <AnimatePresence mode="wait" initial={false}>
+                        <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-1.5' : 'pl-1.5'} justify-center`}>
+                        <AnimatePresence initial={false}>
                           {isSidebarOpen && (
                             <motion.div 
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
-                              transition={sidebarTransition}
+                              transition={{
+                                duration: isSidebarOpen ? 0.35 : 0.08,
+                                ease: [0.2, 0, 0, 1]
+                              }}
                               className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                             >
-                              <span className={`font-bold ${isMobile ? 'text-sm' : 'text-[13px]'} truncate whitespace-nowrap leading-tight text-[var(--text-primary)] transition-theme`}>{user.name}</span>
-                              <span className={`text-[10px] text-[var(--text-secondary)] truncate whitespace-nowrap uppercase tracking-widest font-black leading-tight mt-0.5`}>
+                              <span className="font-bold text-[11.5px] truncate whitespace-nowrap leading-tight text-[var(--text-primary)] transition-theme">{user.name}</span>
+                              <span className="text-[8.5px] text-[var(--text-secondary)] truncate whitespace-nowrap uppercase tracking-widest font-black leading-tight mt-0.5">
                                 {t(`role_${(user.role || 'user').toLowerCase()}`) || (user.subscription?.plan_id 
                                   ? (plans.find((p: any) => p.id.toString() === user.subscription?.plan_id.toString())?.name || t('activePlan'))
                                   : t('noPlan'))}
@@ -888,12 +979,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     </div>
                   </div>
                   
-                  <div className="flex flex-col w-full overflow-hidden flex-shrink-0 mt-2">
+                  <div className="flex flex-col w-full overflow-hidden flex-shrink-0 mt-1">
                   </div>
                 </>
               ) : (
                   <div 
-                    className={`flex items-center group cursor-pointer w-full ${isMobile ? 'h-[44px] px-3.5' : 'h-[44px]'} overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme`}
+                    className="flex items-center group cursor-pointer w-full h-[36px] overflow-hidden flex-shrink-0 text-gray-400 hover:text-[var(--text-primary)] transition-theme"
+                    style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                     onClick={() => {
                       setIsAuthModalOpen(true);
                       if (isMobile) {
@@ -901,24 +993,27 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                       }
                     }}
                   >
-                    <div className={`${isMobile ? 'w-8' : 'w-[56px]'} h-[44px] flex-shrink-0 flex items-center justify-center relative`}>
-                      <div className={`absolute inset-0 mx-auto ${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]`} />
-                      <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]`}>
-                        <User size={isMobile ? 16 : 18} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
+                    <div className="w-7 h-[36px] flex-shrink-0 flex items-center justify-center relative">
+                      <div className="absolute inset-0 mx-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]" />
+                      <div className="w-7 h-7 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]">
+                        <User size={15} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                       </div>
                     </div>
-                    <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-2' : 'pl-2'} justify-center`}>
-                      <AnimatePresence mode="wait">
+                    <div className={`flex flex-col min-w-0 ${dir === 'rtl' ? 'pr-1.5' : 'pl-1.5'} justify-center`}>
+                      <AnimatePresence initial={false}>
                         {isSidebarOpen && (
                           <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={sidebarTransition}
+                            transition={{
+                              duration: isSidebarOpen ? 0.35 : 0.08,
+                              ease: [0.2, 0, 0, 1]
+                            }}
                             className={`flex flex-col overflow-hidden ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                           >
-                            <span className="text-[10px] text-gray-500 truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
-                            <span className={`font-bold text-sm truncate whitespace-nowrap text-gray-400 group-hover:text-[var(--text-primary)] transition-theme`}>{t('login')}</span>
+                            <span className="text-[9px] text-gray-500 truncate whitespace-nowrap font-bold uppercase tracking-wider mb-0.5">{t('createAccount')}</span>
+                            <span className="font-bold text-xs truncate whitespace-nowrap text-gray-400 group-hover:text-[var(--text-primary)] transition-theme">{t('login')}</span>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -928,26 +1023,29 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
               
 
               
-              <div className={`flex flex-col w-full h-4 overflow-hidden flex-shrink-0 mt-2 ${isMobile ? 'px-2' : 'px-6'} relative`}>
-                <AnimatePresence mode="wait">
+              <div className="flex flex-col w-full h-3 px-1.5 mt-0.5 overflow-hidden flex-shrink-0 relative">
+                <AnimatePresence initial={false}>
                   {isSidebarOpen && (
                     <motion.div 
                       key="legal-footer"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={sidebarTransition}
-                      className={`flex items-center ${isMobile ? 'justify-start gap-1.5' : 'justify-between gap-1'} opacity-35 hover:opacity-100 transition-theme pointer-events-auto w-full`}
+                      transition={{
+                        duration: isSidebarOpen ? 0.35 : 0.08,
+                        ease: [0.2, 0, 0, 1]
+                      }}
+                      className="flex items-center justify-between opacity-40 hover:opacity-100 transition-theme pointer-events-auto w-full overflow-hidden"
                     >
-                      <NavLink to="/terms" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <NavLink to="/terms" className="text-[6.5px] font-bold text-gray-500 hover:text-[var(--text-primary)] transition-theme whitespace-nowrap">
                         {t('termsOfUse')}
                       </NavLink>
-                      {!isMobile && <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />}
-                      <NavLink to="/privacy" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <span className="w-0.5 h-0.5 rounded-[1px] bg-gray-400/40 flex-shrink-0" />
+                      <NavLink to="/privacy" className="text-[6.5px] font-bold text-gray-500 hover:text-[var(--text-primary)] transition-theme whitespace-nowrap">
                         {t('privacyPolicy')}
                       </NavLink>
-                      {!isMobile && <span className="w-0.5 h-0.5 rounded-full bg-[var(--border)] flex-shrink-0" />}
-                      <NavLink to="/about" className={`${isMobile ? 'text-[7.5px]' : 'text-[6.5px]'} font-black text-gray-500 hover:text-[var(--text-primary)] transition-theme uppercase tracking-[0.08em] whitespace-nowrap`}>
+                      <span className="w-0.5 h-0.5 rounded-[1px] bg-gray-400/40 flex-shrink-0" />
+                      <NavLink to="/about" className="text-[6.5px] font-bold text-gray-500 hover:text-[var(--text-primary)] transition-theme whitespace-nowrap">
                         {language === 'ar' ? 'عن المنصة' : 'About'}
                       </NavLink>
                     </motion.div>
@@ -960,7 +1058,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
         </div>
       </motion.aside>
 
-      {isSidebarOpen && (
+      {isSidebarOpen && isMobile && (
         <div
           className="fixed inset-0 z-[149] bg-transparent"
           onClick={() => setIsSidebarOpen(false)}

@@ -15,227 +15,30 @@ let isBulletinTablesEnsured = false;
  */
 export async function ensureBulletinSeedData() {
   if (isBulletinTablesEnsured || !pool) return;
-  console.log('[Bulletin] Ensuring bulletin initial data state...');
+  console.log('[Bulletin] Ensuring bulletin tables and columns schema state...');
   try {
-    try {
-      await getExternalPool().query("UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'").catch(() => {});
-    } catch (e: any) {}
-    const cleanupQueries = [
-      "UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
-      "UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%'",
-      "UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
-      "UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%'",
-      "UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%'"
-    ];
-    for (const q of cleanupQueries) {
-      try {
-        await pool.query(q);
-      } catch (e: any) {
-        // Ignored if table or column doesn't exist yet
-      }
-    }
-
-    const checkPages = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_pages');
-    if (checkPages.rows[0].count === 0) {
-      await pool.query(`
-        INSERT INTO bulletin_pages (
-          user_id, name, category, city, address, description, avatar_url, cover_url, whatsapp_number, phone_number, website_url, is_verified, followers_count, ads_count
-        ) VALUES
-        (
-          1,
-          'شركة القدس للتكنولوجيا والحلول الذكية',
-          'تكنولوجيا / Tech',
-          'القدس',
-          'شارع صلاح الدين - القدس الشريف',
-          'الصفحة الرسمية لشركة القدس للتكنولوجيا. نمكن الأسر والمحلات التجارية في فلسطين من الوصول لأحدث تقنيات البرمجة والذكاء الاصطناعي.',
-          'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
-          'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
-          '+972599000111',
-          '+97226200000',
-          'https://perplexta.ai',
-          TRUE,
-          1280,
-          1
-        ),
-        (
-          1,
-          'متجر الأمل التجاري - غزة',
-          'تجارة إلكترونية / E-Commerce',
-          'غزة',
-          'حي الرمال - شارع عمر المختار - غزة',
-          'توصيل كافة المستلزمات والمنتجات والأجهزة الكهربائية والإلكترونية في قطاع غزة بأسعار ميسرة وخدمة توصيل فورية.',
-          'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=200&q=80',
-          'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
-          '+970599123456',
-          '+97082800000',
-          'https://pal-store.com',
-          TRUE,
-          950,
-          2
-        ),
-        (
-          1,
-          'معرض الضفة للسيارات والمعدات',
-          'عقارات وسيارت / Real Estate',
-          'رام الله',
-          'طريق رام الله - نابلس الرئيسي',
-          'بيع وشراء وأقساط ميسرة لجميع أنواع السيارات الحديثة والمعدات التجارية في جميع محافظات الضفة والقدس.',
-          'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=200&q=80',
-          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
-          '+970598888777',
-          '+97022900000',
-          '',
-          TRUE,
-          640,
-          1
-        );
-      `);
-      console.log('[Bulletin API] 🏪 Initial merchant pages inserted.');
-    }
-
-    const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM bulletin_ads');
-    if (checkRes.rows[0].count < 8) {
-      await pool.query(`
-        INSERT INTO bulletin_ads (
-          user_id, page_id, location_city, author_name, author_avatar, title, description, image_url, video_url, ad_format, aspect_ratio, whatsapp_number, target_url, hashtags, category, price_paid, duration_days, status, starts_at, expires_at
-        ) VALUES 
-        (
-          1,
-          1,
-          'القدس',
-          'شركة القدس للتكنولوجيا والحلول الذكية',
-          'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
-          'إطلاق منصة التحليل المالي الذكي والربط البرمجي السريع 🚀',
-          'تسهيلاً على المؤسسات والمتاجر في فلسطين والوطن العربي، يمكنك الآن الاستفادة من منصات التحليل المالي الذكي والربط البرمجي عبر API بأعلى سرعة وكفاءة.',
-          'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1080&q=80',
-          'https://assets.mixkit.co/videos/preview/mixkit-woman-running-on-the-beach-at-sunset-40008-large.mp4',
-          'post',
-          '16:9',
-          '+972599000111',
-          'https://perplexta.ai',
-          '#فلسطين,#تكنولوجيا,#القدس,#أعمال,#ذكاء_اصطناعي',
-          'تكنولوجيا / Tech',
-          18.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        ),
-        (
-          1,
-          2,
-          'غزة',
-          'متجر الأمل التجاري - غزة',
-          'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=200&q=80',
-          'عروض الشاشات الذكية والأجهزة اللوحية مع خدمة التوصيل السريع 📱',
-          'تخفيضات كبرى على الحواسيب المحمولة والشاشات وملحقات الطاقة الشمسية والبطاريات المنزلية مع ضمان معتمد وخدمة التوصيل لكافة مناطق القطاع.',
-          'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1080&q=80',
-          NULL,
-          'post',
-          '1:1',
-          '+970599123456',
-          'https://pal-store.com',
-          '#غزة,#أجهزة,#إلكترونيات,#توصيل,#عروض',
-          'تجارة إلكترونية / E-Commerce',
-          10.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        ),
-        (
-          1,
-          3,
-          'رام الله',
-          'معرض الضفة للسيارات والمعدات',
-          'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=200&q=80',
-          'وصول أحدث سيارات الهايبرد والكهرباء مع تمويل إسلامي ميسر 🚗',
-          'معرض الضفة يوفر لكم أحدث المركبات الاقتصادية فحص كامل، مع إمكانية التقسيط المباشر بدون وساطة بنكية وتأمين شامل معتمد.',
-          'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1080&q=80',
-          'https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smartphone-with-green-screen-41551-large.mp4',
-          'reel',
-          '9:16',
-          '+970598888777',
-          '',
-          '#رام_الله,#الضفة,#سيارات,#أقساط,#هايبرد',
-          'عقارات وسيارت / Real Estate',
-          18.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        ),
-        (
-          1,
-          1,
-          'نابلس',
-          'وكالة النخبة للحلول التسويقية والبرمجية',
-          'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=200&q=80',
-          'تصميم الهوية البصرية وإدارة الحملات الإعلانية الموجهة 📈',
-          'نقدم خدمات متكاملة لتطوير المواقع، إدارة الحسابات التجارية، وتحسين محركات البحث SEO لرفع مبيعات المتاجر والشركات المحلية.',
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1080&q=80',
-          NULL,
-          'post',
-          '16:9',
-          '+970599444333',
-          'https://perplexta.ai',
-          '#نابلس,#تسويق,#برمجة,#تصميم,#سيو',
-          'خدمات وأعمال / Services',
-          10.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        ),
-        (
-          1,
-          1,
-          'الخليل',
-          'شركة القدس للتكنولوجيا والحلول الذكية',
-          'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
-          'قصة نجاح اليوم: تحديثات خوارزميات التداول والتحليل اللحظي ✨',
-          'تابعوا كيف ساعدت أدوات بيربليكستا المتطورة في تحسين دقة القرارات المالية بأكثر من 45%.',
-          'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1080&q=80',
-          'https://assets.mixkit.co/videos/preview/mixkit-set-of-plateaus-seen-from-the-sky-in-a-sunset-26070-large.mp4',
-          'story',
-          '9:16',
-          '+972599000111',
-          'https://perplexta.ai',
-          '#الخليل,#قصص,#نجاح,#تكنولوجيا',
-          'تكنولوجيا / Tech',
-          5.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        ),
-        (
-          1,
-          2,
-          'جنين',
-          'متجر الأمل التجاري - غزة',
-          'https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&w=200&q=80',
-          'عروض حصرية خلال 24 ساعة فقط! تخفيض 30% على كافة الإكسسوارات 🔥',
-          'استمتع بأفضل العروض اليومية على السماعات السلكية واللاسلكية والشواحن السريعة الأصلية.',
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1080&q=80',
-          NULL,
-          'story',
-          '9:16',
-          '+970599123456',
-          'https://pal-store.com',
-          '#جنين,#عروض,#تخفيضات,#إلكترونيات',
-          'تجارة إلكترونية / E-Commerce',
-          5.00,
-          30,
-          'approved',
-          NOW(),
-          NOW() + INTERVAL '60 days'
-        )
-        ON CONFLICT DO NOTHING;
-      `);
-      console.log('[Bulletin] Bulletin tables & rich seed ads verified/created successfully.');
-    }
     isBulletinTablesEnsured = true;
+    console.log('[Bulletin] Schema integrity verified successfully (Clean state without default mock items).');
+
+    // Run one-off cleanup queries in background without delaying server startup
+    setImmediate(async () => {
+      try {
+        const extPool = getExternalPool();
+        if (extPool) {
+          extPool.query("UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'").catch(() => {});
+        }
+        const cleanupQueries = [
+          "ALTER TABLE bulletin_ad_likes ADD COLUMN IF NOT EXISTS reaction VARCHAR(20) DEFAULT 'like'",
+          "ALTER TABLE bulletin_comment_likes ADD COLUMN IF NOT EXISTS reaction VARCHAR(20) DEFAULT 'like'",
+          "UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
+          "UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%'",
+          "UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
+          "UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%'",
+          "UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%'"
+        ];
+        await Promise.allSettled(cleanupQueries.map(q => pool.query(q).catch(() => {})));
+      } catch {}
+    });
   } catch (err: any) {
     console.error('[Bulletin API] Error ensuring bulletin tables:', err.message);
   }
@@ -369,13 +172,14 @@ router.get('/ads', async (req, res) => {
     }
 
     let likedAdIds = new Set<number>();
+    let userReactionMap = new Map<number, string>();
     let savedAdIds = new Set<number>();
     let mutedAdIds = new Set<number>();
     if (currentUserId && result.rows.length > 0) {
       const adIds = result.rows.map((row: any) => row.id);
       const [likesRes, savedRes, mutedRes] = await Promise.all([
         pool.query(
-          'SELECT ad_id FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = ANY($2)',
+          'SELECT ad_id, reaction FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = ANY($2)',
           [currentUserId, adIds]
         ).catch(() => ({ rows: [] })),
         pool.query(
@@ -387,7 +191,10 @@ router.get('/ads', async (req, res) => {
           [currentUserId, adIds]
         ).catch(() => ({ rows: [] }))
       ]);
-      likesRes.rows.forEach((r: any) => likedAdIds.add(r.ad_id));
+      likesRes.rows.forEach((r: any) => {
+        likedAdIds.add(r.ad_id);
+        if (r.reaction) userReactionMap.set(r.ad_id, r.reaction);
+      });
       savedRes.rows.forEach((r: any) => savedAdIds.add(r.ad_id));
       mutedRes.rows.forEach((r: any) => mutedAdIds.add(r.ad_id));
     }
@@ -426,6 +233,7 @@ router.get('/ads', async (req, res) => {
         clicks_count: Number(row.clicks_count || 0),
         impressions_count: Number(row.impressions_count || 0),
         user_has_liked: likedAdIds.has(row.id),
+        user_reaction: userReactionMap.get(row.id) || (likedAdIds.has(row.id) ? 'like' : null),
         user_has_saved: savedAdIds.has(row.id),
         is_muted_notifications: mutedAdIds.has(row.id),
         who_can_comment: row.who_can_comment || 'anyone',
@@ -507,16 +315,18 @@ router.get('/ads/:id', async (req: any, res: any, next: any) => {
 
     const row = result.rows[0];
     let liked = false;
+    let userReaction: string | null = null;
     let saved = false;
     let isMuted = false;
 
     if (currentUserId) {
       const [lRes, sRes, mRes] = await Promise.all([
-        pool.query('SELECT 1 FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
+        pool.query('SELECT reaction FROM bulletin_ad_likes WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
         pool.query('SELECT 1 FROM bulletin_saved_ads WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] })),
         pool.query('SELECT 1 FROM bulletin_ad_muted_notifications WHERE user_id = $1 AND ad_id = $2', [currentUserId, adId]).catch(() => ({ rows: [] }))
       ]);
       liked = (lRes.rows.length > 0);
+      userReaction = lRes.rows[0]?.reaction || (liked ? 'like' : null);
       saved = (sRes.rows.length > 0);
       isMuted = (mRes.rows.length > 0);
     }
@@ -554,6 +364,7 @@ router.get('/ads/:id', async (req: any, res: any, next: any) => {
       clicks_count: Number(row.clicks_count || 0),
       impressions_count: Number(row.impressions_count || 0),
       user_has_liked: liked,
+      user_reaction: userReaction,
       user_has_saved: saved,
       is_muted_notifications: isMuted,
       who_can_comment: row.who_can_comment || 'anyone',
@@ -1029,25 +840,38 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
   try {
     const adId = parseInt(req.params.id);
     const userId = req.user.id;
+    const { reaction = 'like' } = req.body || {};
 
     if (isNaN(adId)) {
       return res.status(400).json({ error: 'ID إعلان غير صالح' });
     }
 
     const existing = await pool.query(
-      'SELECT id FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2',
+      'SELECT id, reaction FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2',
       [adId, userId]
     );
 
     let isLiked = false;
+    let savedReaction: string | null = null;
     if (existing.rows.length > 0) {
-      await pool.query('DELETE FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2', [adId, userId]);
-      await pool.query('UPDATE bulletin_ads SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1', [adId]);
-      isLiked = false;
+      const currentReaction = existing.rows[0].reaction || 'like';
+      if (currentReaction === reaction) {
+        // Toggle off
+        await pool.query('DELETE FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2', [adId, userId]);
+        await pool.query('UPDATE bulletin_ads SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1', [adId]);
+        isLiked = false;
+        savedReaction = null;
+      } else {
+        // Change reaction emoji/type (likes_count stays the same)
+        await pool.query('UPDATE bulletin_ad_likes SET reaction = $1 WHERE ad_id = $2 AND user_id = $3', [reaction, adId, userId]);
+        isLiked = true;
+        savedReaction = reaction;
+      }
     } else {
-      await pool.query('INSERT INTO bulletin_ad_likes (ad_id, user_id) VALUES ($1, $2)', [adId, userId]);
+      await pool.query('INSERT INTO bulletin_ad_likes (ad_id, user_id, reaction) VALUES ($1, $2, $3)', [adId, userId, reaction]);
       await pool.query('UPDATE bulletin_ads SET likes_count = likes_count + 1 WHERE id = $1', [adId]);
       isLiked = true;
+      savedReaction = reaction;
     }
 
     const updatedRes = await pool.query('SELECT likes_count, user_id, title FROM bulletin_ads WHERE id = $1', [adId]);
@@ -1056,7 +880,7 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
     const adTitle = updatedRes.rows[0]?.title || 'منشورك';
 
     if (io) {
-      io.emit('reel_like_update', { reelId: adId, likesCount, userId, isLiked });
+      io.emit('reel_like_update', { reelId: adId, likesCount, userId, isLiked, reaction: savedReaction });
     }
 
     if (isLiked && adOwnerId && Number(adOwnerId) !== Number(userId)) {
@@ -1069,19 +893,89 @@ router.post('/ads/:id/like', authenticateToken, async (req: any, res) => {
           'new_like',
           'New Like on Your Post/Reel',
           'إعجاب جديد بمنشورك أو المقطع',
-          `${likerName} liked your post/reel "${adTitle}"`,
-          `أعجب ${likerName} بمنشورك أو المقطع "${adTitle}"`,
-          { adId, likerId: userId }
+          `${likerName} reacted to your post/reel "${adTitle}"`,
+          `تفاعل ${likerName} مع منشورك أو المقطع "${adTitle}"`,
+          { adId, likerId: userId, reaction: savedReaction }
         );
       } catch (nErr) {
         console.error('[Bulletin API] Like notification error:', nErr);
       }
     }
 
-    res.json({ success: true, isLiked, likesCount });
+    res.json({ success: true, isLiked, likesCount, user_reaction: savedReaction });
   } catch (error: any) {
     console.error('[Bulletin API] Like error:', error.message);
     res.status(500).json({ error: 'فشل التفاعل مع الإعلان' });
+  }
+});
+
+/**
+ * GET /api/bulletin/ads/:id/reaction-counts
+ * Ultra-efficient, lightweight endpoint to fetch reaction counts and interaction state for a reel/ad
+ */
+router.get('/ads/:id/reaction-counts', authenticateTokenOptional, async (req: any, res) => {
+  try {
+    const adId = parseInt(req.params.id);
+    if (isNaN(adId)) {
+      return res.status(400).json({ error: 'Invalid ad ID' });
+    }
+    const userId = req.user?.id;
+
+    const [adRes, breakdownRes, userLikeRes, userSaveRes] = await Promise.all([
+      pool.query(
+        `SELECT id, likes_count, comments_count, shares_count, impressions_count 
+         FROM bulletin_ads WHERE id = $1`,
+        [adId]
+      ),
+      pool.query(
+        `SELECT reaction, COUNT(*)::int as count 
+         FROM bulletin_ad_likes WHERE ad_id = $1 
+         GROUP BY reaction`,
+        [adId]
+      ).catch(() => ({ rows: [] })),
+      userId
+        ? pool.query(
+            `SELECT reaction FROM bulletin_ad_likes WHERE ad_id = $1 AND user_id = $2`,
+            [adId, userId]
+          ).catch(() => ({ rows: [] }))
+        : Promise.resolve({ rows: [] }),
+      userId
+        ? pool.query(
+            `SELECT 1 FROM bulletin_saved_ads WHERE ad_id = $1 AND user_id = $2`,
+            [adId, userId]
+          ).catch(() => ({ rows: [] }))
+        : Promise.resolve({ rows: [] })
+    ]);
+
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Ad not found' });
+    }
+
+    const ad = adRes.rows[0];
+    const reactionsBreakdown: Record<string, number> = {};
+    breakdownRes.rows.forEach((r: any) => {
+      reactionsBreakdown[r.reaction || 'like'] = Number(r.count);
+    });
+
+    const userHasLiked = userLikeRes.rows.length > 0;
+    const userReaction = userLikeRes.rows[0]?.reaction || (userHasLiked ? 'like' : null);
+    const userHasSaved = userSaveRes.rows.length > 0;
+
+    res.json({
+      success: true,
+      ad_id: adId,
+      likes_count: Number(ad.likes_count || 0),
+      comments_count: Number(ad.comments_count || 0),
+      shares_count: Number(ad.shares_count || 0),
+      impressions_count: Number(ad.impressions_count || 0),
+      user_has_liked: userHasLiked,
+      user_reaction: userReaction,
+      user_has_saved: userHasSaved,
+      reactions_breakdown: reactionsBreakdown
+    });
+  } catch (error: any) {
+    console.error('[Bulletin API] Reaction counts fetch error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch reaction counts' });
   }
 });
 
@@ -3884,6 +3778,23 @@ router.post('/comments/:id/like', authenticateToken, async (req: any, res) => {
 
     const likeCountResult = await pool.query('SELECT COUNT(*) FROM bulletin_comment_likes WHERE comment_id = $1', [commentId]);
     const likeCount = parseInt(likeCountResult.rows[0].count);
+
+    // Get ad_id to notify clients
+    try {
+      const commentRes = await pool.query('SELECT ad_id FROM bulletin_ad_comments WHERE id = $1', [commentId]);
+      if (commentRes.rows.length > 0 && io) {
+        const adId = commentRes.rows[0].ad_id;
+        io.emit('reel_comment_like_update', {
+          commentId,
+          reelId: adId,
+          likeCount,
+          userReaction: newReaction,
+          userId
+        });
+      }
+    } catch (sErr) {
+      console.warn('[Bulletin Socket] Comment like emit warning:', sErr);
+    }
 
     res.json({ success: true, like_count: likeCount, user_reaction: newReaction });
   } catch (error: any) {

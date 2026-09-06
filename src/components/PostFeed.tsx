@@ -335,7 +335,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopyLink = (ad: BulletinAd) => {
-    const shareUrl = `${window.location.origin}/bulletin?ad=${ad.id}`;
+    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl).then(() => {
@@ -380,7 +380,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   };
 
   const handleWhatsAppShare = (ad: BulletinAd) => {
-    const shareUrl = `${window.location.origin}/bulletin?ad=${ad.id}`;
+    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
     const text = encodeURIComponent(
       isRtl
         ? `شاهِد هذا الإعلان المميز على المنصة: "${ad.title}"\n${shareUrl}`
@@ -440,7 +440,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             className="rounded-2xl bg-white dark:bg-[#1a1a1c] p-4 border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800" />
+              <div className="w-10 h-10 rounded-[8px] bg-gray-200 dark:bg-gray-800" />
               <div className="space-y-1.5 flex-1">
                 <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3" />
                 <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
@@ -456,7 +456,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   if (ads.length === 0) {
     return (
       <div className="text-center py-16 px-4 bg-white dark:bg-[#1a1a1c] rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4 w-full">
-        <div className="w-16 h-16 rounded-full bg-accent/10 text-accent flex items-center justify-center mx-auto">
+        <div className="w-16 h-16 rounded-[8px] bg-accent/10 text-accent flex items-center justify-center mx-auto">
           <Megaphone size={32} />
         </div>
         <h3 className="text-base font-bold">
@@ -567,7 +567,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
               <div className="flex items-center gap-1.5 shrink-0">
                 {ad.is_ai_generated && (
-                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 dark:text-indigo-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
+                  <span className="px-2 py-0.5 rounded-[8px] bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 dark:text-indigo-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
                     <Sparkles size={11} className="text-indigo-500 animate-pulse" />
                     <span>{isRtl ? 'بواسطة AI' : 'AI-Generated'}</span>
                   </span>
@@ -580,7 +580,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                         onOpenReelFeed(ad.id);
                       }
                     }}
-                    className={`px-2 py-0.5 rounded-full border text-[10px] font-black flex items-center gap-1 shadow-sm transition-transform active:scale-95 ${
+                    className={`px-2 py-0.5 rounded-[8px] border text-[10px] font-black flex items-center gap-1 shadow-sm transition-transform active:scale-95 ${
                       ad.ad_format === 'reel' 
                         ? 'bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 cursor-pointer' 
                         : 'bg-accent/10 border-accent/30 text-accent dark:text-accent'
@@ -591,7 +591,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   </button>
                 )}
                 {ad.is_boosted && (
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-gray-500/10 to-amber-500/20 border border-amber-500/40 text-amber-500 dark:text-amber-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
+                  <span className="px-2 py-0.5 rounded-[8px] bg-gradient-to-r from-amber-500/20 via-gray-500/10 to-amber-500/20 border border-amber-500/40 text-amber-500 dark:text-amber-400 text-[10px] font-black flex items-center gap-1 shadow-sm">
                     <Rocket size={11} className="text-amber-500 animate-bounce" />
                     <span className="hidden sm:inline">{isRtl ? 'مُموَّل VIP' : 'Boosted'}</span>
                   </span>
@@ -603,7 +603,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     {onEditAd && (
                       <button
                         onClick={() => onEditAd(ad)}
-                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 transition-theme border border-transparent hover:border-accent/20"
+                        className="w-7 h-7 rounded-[8px] bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 transition-theme border border-transparent hover:border-accent/20"
                         title={isRtl ? 'تعديل المنشور' : 'Edit Post'}
                       >
                         <Edit size={12} />
@@ -612,7 +612,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     {onDeleteAd && (
                       <button
                         onClick={() => onDeleteAd(ad)}
-                        className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20"
+                        className="w-7 h-7 rounded-[8px] bg-gray-100 dark:bg-gray-800/80 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-theme border border-transparent hover:border-red-500/20"
                         title={isRtl ? 'حذف المنشور' : 'Delete Post'}
                       >
                         <Trash2 size={12} />
@@ -629,7 +629,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                       e.stopPropagation();
                       setActiveMoreMenuId(activeMoreMenuId === ad.id ? null : ad.id);
                     }}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] flex items-center justify-center transition-all cursor-pointer ${
                       activeMoreMenuId === ad.id
                         ? 'bg-gray-200 dark:bg-zinc-700 text-gray-900 dark:text-white ring-2 ring-accent/40 shadow-sm'
                         : 'text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800'
@@ -739,10 +739,17 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     </div>
 
                     {/* Hashtags separated list */}
-                    {ad.hashtags && ad.hashtags.length > 0 && (() => {
+                    {(() => {
+                      const rawTags: string[] = Array.isArray(ad.hashtags)
+                        ? ad.hashtags
+                        : typeof ad.hashtags === 'string'
+                        ? (ad.hashtags as string).split(/[,\s]+/).map(t => t.replace(/^#/, '').trim()).filter(Boolean)
+                        : [];
+                      if (rawTags.length === 0) return null;
+
                       const combinedText = `${cleanTitle} ${cleanDesc}`.toLowerCase();
-                      const uniqueTags = ad.hashtags.filter(tag => {
-                        const clean = tag.replace(/^#/, '').trim().toLowerCase();
+                      const uniqueTags = rawTags.filter(tag => {
+                        const clean = String(tag).replace(/^#/, '').trim().toLowerCase();
                         return clean && !combinedText.includes(`#${clean}`);
                       });
 
@@ -755,7 +762,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                               key={`tag-${ad.id}-${tag}-${idx}`}
                               className="text-[10px] font-extrabold text-accent dark:text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
                             >
-                              <HighlightText text={tag.startsWith('#') ? tag : `#${tag}`} query={searchQuery} />
+                              <HighlightText text={String(tag).startsWith('#') ? String(tag) : `#${String(tag)}`} query={searchQuery} />
                             </span>
                           ))}
                         </div>
@@ -891,11 +898,17 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                   isPage={Boolean(ad.page_id)}
                 />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-xs font-black text-gray-900 dark:text-gray-100 truncate group-hover:text-accent transition-colors">
                       {ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
                     </span>
                     <CheckCircle2 size={13} className="text-blue-500 shrink-0" />
+                    {(ad.owner_id || ad.user_id) && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[8px] text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0" title={isRtl ? 'حساب مالك موثق مسجل' : 'Verified Owner Account'}>
+                        <CheckCircle2 size={10} className="text-emerald-500" />
+                        {isRtl ? 'مالك موثق' : 'Verified Owner'}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
                     {ad.page_id 
@@ -1011,8 +1024,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-gray-800/60 text-[13px] text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1.5">
                  <div className="flex -space-x-1 rtl:space-x-reverse">
-                   <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c] z-10"><ThumbsUp size={10} className="fill-current" /></div>
-                   <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c]"><Heart size={10} className="fill-current" /></div>
+                   <div className="w-5 h-5 rounded-[6px] bg-blue-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c] z-10"><ThumbsUp size={10} className="fill-current" /></div>
+                   <div className="w-5 h-5 rounded-[6px] bg-red-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c]"><Heart size={10} className="fill-current" /></div>
                  </div>
                  <span className="font-semibold ms-1 text-gray-700 dark:text-gray-200">{formatCompactCount(ad.likes_count)}</span>
               </div>
@@ -1042,7 +1055,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                          animate={{ opacity: 1, y: 0, scale: 1 }}
                          exit={{ opacity: 0, y: 4, scale: 0.88 }}
                          transition={{ duration: 0.16, ease: 'easeOut' }}
-                         className="flex items-center gap-1 sm:gap-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-full border border-gray-200/90 dark:border-zinc-700/90 shadow-2xl ring-1 ring-black/5 select-none"
+                         className="flex items-center gap-1 sm:gap-1.5 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-2 sm:px-2.5 py-1.5 rounded-[8px] border border-gray-200/90 dark:border-zinc-700/90 shadow-2xl ring-1 ring-black/5 select-none"
                          onMouseEnter={() => handleLikeMouseEnter(ad.id)}
                          onMouseLeave={handleLikeMouseLeave}
                        >
@@ -1059,12 +1072,12 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                                setHoveredReactionId(reac.id);
                              }}
                              onMouseLeave={() => setHoveredReactionId(null)}
-                             className="relative group/reac text-xl sm:text-2xl hover:scale-125 active:scale-95 transition-transform duration-150 p-1 sm:p-1.5 cursor-pointer focus:outline-none select-none rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800"
+                             className="relative group/reac text-xl sm:text-2xl hover:scale-125 active:scale-95 transition-transform duration-150 p-1 sm:p-1.5 cursor-pointer focus:outline-none select-none rounded-[8px] hover:bg-gray-100 dark:hover:bg-zinc-800"
                              title={isRtl ? reac.labelAr : reac.labelEn}
                            >
                              <span className="block transform-gpu">{reac.emoji}</span>
                              {hoveredReactionId === reac.id && (
-                               <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white text-[10px] font-bold py-0.5 px-2 rounded-full whitespace-nowrap pointer-events-none shadow-md z-50">
+                               <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white text-[10px] font-bold py-0.5 px-2 rounded-[8px] whitespace-nowrap pointer-events-none shadow-md z-50">
                                  {isRtl ? reac.labelAr : reac.labelEn}
                                </span>
                              )}
@@ -1119,7 +1132,11 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                  <button 
                    onClick={(e) => {
                      e.stopPropagation();
-                     setActiveShareMenuId(activeShareMenuId === ad.id ? null : ad.id);
+                     if (onShare) {
+                       onShare(ad);
+                     } else {
+                       setActiveShareMenuId(activeShareMenuId === ad.id ? null : ad.id);
+                     }
                    }}
                    className="w-full flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800/50 font-bold text-[14px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                  >
@@ -1319,7 +1336,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
           className="col-span-full py-6 text-center flex flex-col items-center justify-center gap-2"
         >
           {loadingMore ? (
-            <div className="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-5 py-2.5 rounded-full border border-accent/20 shadow-sm animate-pulse">
+            <div className="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-5 py-2.5 rounded-[8px] border border-accent/20 shadow-sm animate-pulse">
               <Loader2 size={16} className="animate-spin text-accent" />
               <span>{isRtl ? 'جاري تحميل المزيد من الإعلانات...' : 'Fetching more advertisements...'}</span>
             </div>

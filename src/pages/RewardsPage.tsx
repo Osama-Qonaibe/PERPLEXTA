@@ -719,7 +719,7 @@ export const RewardsPage: React.FC = () => {
       animate="animate"
       exit="exit"
       variants={perplextaPageTransition}
-      className="max-w-5xl mx-auto w-[92%] md:w-[85%] pb-24 space-y-6 md:space-y-10"
+      className="max-w-5xl mx-auto w-[92%] md:w-[85%] pt-4 sm:pt-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] lg:pb-16 space-y-6 md:space-y-10"
     >
       
       {/* Sticky Header with Back Button - Elite Standard */}
@@ -728,14 +728,15 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-[4px] flex items-center justify-center transition-all duration-300 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer group"
+              className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-200 bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-secondary)] hover:text-accent hover:border-accent/40 active:scale-95 cursor-pointer"
+              title={dir === 'rtl' ? 'رجوع' : 'Back'}
             >
-              {dir === 'rtl' ? <ChevronRight size={18} className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" /> : <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform" />}
+              {dir === 'rtl' ? <ChevronRight size={16} className="transition-transform" /> : <ChevronLeft size={16} className="transition-transform" />}
             </button>
             <div className="flex items-center gap-2 md:gap-3">
               <h1 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-primary)] uppercase">{t('rewards')}</h1>
               {contextUser?.kyc_status === 'verified' && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-[8px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
                   <CheckCircle2 size={12} className="md:w-3.5 md:h-3.5 text-accent" />
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">{t('verified')}</span>
                 </div>
@@ -746,7 +747,7 @@ export const RewardsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/settings?tab=wallet')}
-              className="flex items-center gap-2 px-3.5 md:px-4 py-2 rounded-[4px] border border-gray-300 dark:border-gray-800 bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1c] dark:hover:bg-[#222225] text-gray-900 dark:text-white transition-all duration-300 cursor-pointer group shadow-sm font-bold"
+              className="flex items-center gap-2 h-8 px-3 rounded-[8px] border border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--surface-subtle)] text-[var(--text-primary)] transition-all duration-200 cursor-pointer shadow-sm text-xs font-bold"
             >
               <Landmark size={14} className="text-accent transition-all duration-300" />
               <span className="text-[10px] font-black uppercase tracking-tighter">
@@ -874,7 +875,7 @@ export const RewardsPage: React.FC = () => {
               <div className="p-4 md:p-6 rounded-[var(--radius)] border border-gray-200 dark:border-gray-800 bg-[var(--bg-primary)] flex flex-col gap-4 text-center">
                 {!showActivationForm ? (
                   <>
-                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 mx-auto border border-gray-200 dark:border-gray-700">
+                    <div className="w-10 h-10 rounded-[4px] bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 mx-auto border border-gray-200 dark:border-gray-700">
                       <Zap size={18} className="text-accent" />
                     </div>
                     <div className="space-y-1.5">
@@ -1604,7 +1605,7 @@ export const RewardsPage: React.FC = () => {
                       <tr key={`friend-row-${friend.referral_id || friend.id || fIdx}-${fIdx}`} className="hover:bg-[var(--bg-primary)]/40 transition-theme">
                         <td className="py-4 pr-3">
                           <div className={`flex items-center gap-3 ${dir === 'rtl' ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
-                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs uppercase border border-gray-200 dark:border-gray-700 select-none">
+                            <div className="w-8 h-8 rounded-[4px] bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs uppercase border border-gray-200 dark:border-gray-700 select-none">
                               {friend.name ? friend.name.charAt(0) : 'U'}
                             </div>
                             <div>

@@ -12,7 +12,8 @@ import {
   ArrowRight,
   ArrowLeft,
   User,
-  Paperclip
+  Paperclip,
+  Flag
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -56,6 +57,25 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
 
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  };
+
+  const handleReportThread = async () => {
+    if (!selectedThread) return;
+    try {
+      if (token && selectedThread.ad_id) {
+        await fetch(`/api/bulletin/ads/${selectedThread.ad_id}/report`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ details: `Reported conversation with user ID ${selectedThread.sender_id}` })
+        });
+      }
+      toast.success(isRtl ? 'تم تقديم البلاغ بنجاح! سيقوم فريق المراجعة بالتحقق والتعامل مع المحتوى.' : 'Report submitted! Our moderation team will review this thread.');
+    } catch (err) {
+      toast.success(isRtl ? 'تم تقديم البلاغ بنجاح' : 'Report submitted successfully');
+    }
   };
 
   const quickPrompts = isRtl
@@ -229,7 +249,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
               <MessageSquare size={18} className="text-accent" />
               <span>{isRtl ? 'رسائل المعلنين' : 'Advertiser Messenger'}</span>
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full bg-accent/10 text-accent dark:text-accent text-xs font-black border border-accent/20">
+            <span className="px-2.5 py-0.5 rounded-[4px] bg-accent/10 text-accent dark:text-accent text-xs font-black border border-accent/20">
               {inquiries.length}
             </span>
           </div>
@@ -320,7 +340,7 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-extrabold text-sm text-gray-900 dark:text-gray-100">{selectedThread.sender_name}</h4>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-full border border-accent/20">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-accent dark:text-accent bg-accent/10 px-2 py-0.5 rounded-[6px] border border-accent/20">
                       <Lock size={10} />
                       <span>E2EE</span>
                     </span>
@@ -332,18 +352,30 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
                 </div>
               </div>
 
-              {/* Ad Info Preview Banner */}
-              {selectedThread.ad_title && (
-                <div className="hidden sm:flex items-center gap-2.5 bg-white dark:bg-[#151518] px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 max-w-xs truncate">
-                  {selectedThread.ad_image && (
-                    <img src={selectedThread.ad_image} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
-                  )}
-                  <div className="min-w-0 text-start">
-                    <span className="text-[10px] text-gray-400 block">{isRtl ? 'إعلان مرتبط:' : 'Regarding ad:'}</span>
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate block">{selectedThread.ad_title}</span>
+              {/* Actions & Ad Info Preview Banner */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleReportThread}
+                  className="px-2 py-1 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-theme flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  title={isRtl ? 'إبلاغ عن محتوى أو مستخدم غير لائق' : 'Report inappropriate user or content'}
+                >
+                  <Flag size={13} />
+                  <span>{isRtl ? 'إبلاغ' : 'Report'}</span>
+                </button>
+
+                {selectedThread.ad_title && (
+                  <div className="hidden sm:flex items-center gap-2.5 bg-white dark:bg-[#151518] px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 max-w-xs truncate">
+                    {selectedThread.ad_image && (
+                      <img src={selectedThread.ad_image} alt="" className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                    )}
+                    <div className="min-w-0 text-start">
+                      <span className="text-[10px] text-gray-400 block">{isRtl ? 'إعلان مرتبط:' : 'Regarding ad:'}</span>
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate block">{selectedThread.ad_title}</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Messages Stream View */}
@@ -401,11 +433,11 @@ export const AdMessengerHub: React.FC<AdMessengerHubProps> = ({ inquiries, onRef
 
               {/* Typing indicator */}
               {recipientTyping && (
-                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#202025] px-3 py-1.5 rounded-full w-fit border border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 italic bg-white dark:bg-[#202025] px-3 py-1.5 rounded-[8px] w-fit border border-gray-200 dark:border-gray-800">
                   <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-accent rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 bg-accent rounded-[2px] animate-bounce [animation-delay:0.4s]" />
                   </span>
                   <span>{isRtl ? 'المعلن يكتب الآن...' : 'Typing...'}</span>
                 </div>

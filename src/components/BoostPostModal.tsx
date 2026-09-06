@@ -208,7 +208,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                 <div>
                   <h3 className="text-base font-extrabold flex items-center gap-2">
                     <span>{isRtl ? 'تمويل وترويج الإعلان' : 'Boost & Promote Post'}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-gray-900 text-[10px] font-black uppercase">
+                    <span className="px-2 py-0.5 rounded-[4px] bg-amber-400 text-gray-900 text-[10px] font-black uppercase">
                       VIP
                     </span>
                   </h3>
@@ -220,7 +220,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-theme"
+                className="p-1.5 rounded-[4px] bg-white/10 hover:bg-white/20 text-white transition-theme"
               >
                 <X size={18} />
               </button>
@@ -287,7 +287,7 @@ export const BoostPostModal: React.FC<BoostPostModalProps> = ({
                             {isRtl ? tier.titleAr : tier.titleEn}
                           </span>
                           {tier.popular && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] font-extrabold">
+                            <span className="px-2 py-0.5 rounded-[4px] bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] font-extrabold">
                               {isRtl ? tier.badgeAr : tier.badgeEn}
                             </span>
                           )}

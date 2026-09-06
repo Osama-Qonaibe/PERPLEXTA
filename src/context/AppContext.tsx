@@ -74,6 +74,7 @@ interface AppContextType {
   setTheme: (theme: Theme) => void;
   resolvedTheme: 'dark' | 'light';
   themeTransitioning: boolean;
+  languageTransitioning: boolean;
   dir: 'rtl' | 'ltr';
   t: (key: string, replacements?: Record<string, string | number>) => string;
   isSidebarOpen: boolean;
@@ -184,6 +185,8 @@ const translations = {
     learning: 'مساعد التعليم',
     code: 'توليد كود',
     canvas: 'استوديو الصوت',
+    perplexta_music: 'الموسيقى والأغاني',
+    perplexta_music_desc: 'التأليف الصوتي المتقدم والتركيب الموسيقي الهيكلي.',
     storage_mb: 'مساحة التخزين (MB)',
     marketplace_listings: 'حد منتجات المتجر',
     sovereign_memory: 'الذاكرة السيادية',
@@ -899,6 +902,8 @@ const translations = {
     learning: 'Education Assistant',
     code: 'Code Generation',
     canvas: 'Audio Studio',
+    perplexta_music: 'Music & Songs',
+    perplexta_music_desc: 'Advanced acoustic composition and structural music synthesis.',
     storage_mb: 'Storage Space (MB)',
     marketplace_listings: 'Marketplace Listing Limit',
     sovereign_memory: 'Sovereign Memory',
@@ -1585,6 +1590,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [language, setLanguage] = useState<Language>(() => {
     try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
+  const [languageTransitioning, setLanguageTransitioning] = useState<boolean>(false);
   const { theme, setTheme: setThemeContext, resolvedTheme, themeTransitioning } = useTheme();
   const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window === 'undefined') return 'dark';
@@ -1701,15 +1707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const bootStartTime = useRef(Date.now());
 
   const completeBoot = (force = false) => {
-    const elapsed = Date.now() - bootStartTime.current;
-    const storedToken = localStorage.getItem('app_token');
-    const isGuest = !storedToken || storedToken === 'null' || storedToken === 'undefined' || storedToken === '';
-
-    const activeMinBootTime = isGuest ? 50 : 250;
-    const remaining = force ? 0 : Math.max(0, activeMinBootTime - elapsed);
-    setTimeout(() => {
-      setIsAuthReady(true);
-    }, remaining);
+    setIsAuthReady(true);
   };
   const [balance, setBalance] = useState<number>(() => {
     try {
@@ -1748,11 +1746,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [isOperationPending, setIsOperationPending] = useState(false);
 
-  const [economySettings, setEconomySettings] = useState<any>({ 
-    welcome_bonus_points: 600, 
-    referral_bonus_points: 1000, 
-    points_per_dollar: 1000, 
-    conversion_rate: 0.001 
+  const [economySettings, setEconomySettings] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('app_economy_settings');
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return { 
+      welcome_bonus_points: 600, 
+      referral_bonus_points: 1000, 
+      points_per_dollar: 1000, 
+      conversion_rate: 0.001 
+    };
   });
 
   const [memoryNotification, setMemoryNotification] = useState<{
@@ -1764,12 +1768,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     type: 'success'
   });
 
-  const triggerMemoryNotification = (type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup', desc?: string) => {
-    setMemoryNotification({
-      isVisible: true,
-      type,
-      desc
-    });
+  const triggerMemoryNotification = (_type: 'success' | 'warning' | 'cleanup' | 'optimization' | 'startup', _desc?: string) => {
+    // SILENCED FOR CLEANER MOBILE EXPERIENCE AND STORE COMPLIANCE
+    setMemoryNotification({ isVisible: false, type: 'success' });
   };
 
   const closeMemoryNotification = () => {
@@ -1794,19 +1795,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const dir = language === 'ar' ? 'rtl' : 'ltr';
 
   const handleLanguageChange = async (lang: Language) => {
-    setLanguage(lang);
-    localStorage.setItem('language', lang); 
-    if (token) {
-      try {
-        await fetch('/api/user/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ language: lang })
-        });
-      } catch (e) {
-
+    // 1. Begin fade-out phase
+    setLanguageTransitioning(true);
+    
+    // 2. Wait 150ms for the UI to completely fade to 0 opacity in the background
+    setTimeout(async () => {
+      // 3. Apply the language swap in the dark (when the content is fully invisible)
+      setLanguage(lang);
+      localStorage.setItem('language', lang); 
+      
+      if (token) {
+        try {
+          await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ language: lang })
+          });
+        } catch (e) {
+          // Silence profile update errors safely
+        }
       }
-    }
+      
+      // 4. Wait a tiny 80ms fraction for the browser layout to calculate direction & sidebar alignment in the dark
+      setTimeout(() => {
+        // 5. Begin fade-in phase
+        setLanguageTransitioning(false);
+      }, 80);
+    }, 150);
   };
 
   const handleThemeChange = async (newTheme: Theme) => {
@@ -1863,13 +1878,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isOperationPending]);
 
-  const triggerAuthSuccessToast = (type: 'login' | 'signup') => {
-    const isAr = (localStorage.getItem('language') || language) === 'ar';
-    if (type === 'login') {
-      toast.success(isAr ? 'تم تسجيل الدخول بنجاح!' : 'Login Successful!', { id: 'login-success', duration: 1000 });
-    } else {
-      toast.success(isAr ? 'تم إنشاء الحساب بنجاح!' : 'Account Created Successfully!', { id: 'signup-success', duration: 1000 });
-    }
+  const triggerAuthSuccessToast = (_type: 'login' | 'signup') => {
+    // SILENCED FOR STORE COMPLIANCE AND CLEAN UNINTERRUPTED USER EXPERIENCE
   };
 
   const handleAuthSuccess = (userData: any) => {
@@ -2280,9 +2290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const loggedOutToast = localStorage.getItem('app_logged_out_toast');
     if (loggedOutToast === '1') {
       localStorage.removeItem('app_logged_out_toast');
-      setTimeout(() => {
-        toast.success(language === 'ar' ? 'تم تسجيل الخروج بنجاح!' : 'Logged out successfully!', { id: 'logout-success', duration: 1000 });
-      }, 100);
+      // SILENCED FOR STORE COMPLIANCE
     }
   }, [language]);
 
@@ -2672,7 +2680,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
 
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('app_plans_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [plansLoaded, setPlansLoaded] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [milestoneData, setMilestoneData] = useState<any>(null);
@@ -3202,6 +3217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             logoLightBase64: settingsData.logo_light_url || null,
             faviconBase64: settingsData.favicon_url || null,
             seoImageUrl: settingsData.seo_image_url || null,
+            blocked_paths: settingsData.blocked_paths || '',
             fontLoadingConfig: parsedFontConfig,
             fontConfigAr: parsedAr,
             fontConfigEn: parsedEn
@@ -3215,6 +3231,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const ecoData = await fetchWithRetry('/api/system/economy', options, 1, 300);
           setEconomySettings(ecoData);
+          try {
+            localStorage.setItem('app_economy_settings', JSON.stringify(ecoData));
+          } catch {}
         } catch (ecoError) {
           console.error('[AppContext] Economy fetch error:', ecoError);
         }
@@ -3259,6 +3278,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             };
           });
           setPlans(formattedPlans);
+          try {
+            localStorage.setItem('app_plans_cache', JSON.stringify(formattedPlans));
+          } catch {}
         } catch (error) {
           console.error('[AppContext] Plans fetch error:', error);
         } finally {
@@ -3281,75 +3303,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [language, theme, dir, siteSettings.fontLoadingConfig]);
 
   useEffect(() => {
-    const currentSiteName = language === 'ar' ? (siteSettings.seoSiteNameAr || siteSettings.siteNameAr || siteSettings.siteName) : (siteSettings.seoSiteNameEn || siteSettings.siteName);
-    const currentSiteDesc = language === 'ar' ? (siteSettings.siteDescriptionAr || siteSettings.siteDescription) : siteSettings.siteDescription;
-    const resolvedDesc = (language === 'ar' ? siteSettings.seoDescriptionAr : siteSettings.seoDescriptionEn) || currentSiteDesc;
-
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription) {
-      metaDescription = document.createElement('meta');
-      metaDescription.setAttribute('name', 'description');
-      document.head.appendChild(metaDescription);
+    if (languageTransitioning) {
+      document.documentElement.classList.add('lang-transitioning');
+    } else {
+      const timer = setTimeout(() => {
+        document.documentElement.classList.remove('lang-transitioning');
+      }, 50);
+      return () => clearTimeout(timer);
     }
-    metaDescription.setAttribute('content', resolvedDesc || '');
+  }, [languageTransitioning]);
 
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta'));
-
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', resolvedDesc || '');
-
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    const resolvedSeoImg = siteSettings.seoImageUrl ? resolveImageUrl(siteSettings.seoImageUrl, 'general') : '';
-    ogImage.setAttribute('content', resolvedSeoImg);
-
-    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
-    if (!twitterTitle) {
-      twitterTitle = document.createElement('meta');
-      twitterTitle.setAttribute('name', 'twitter:title');
-      document.head.appendChild(twitterTitle);
-    }
-    twitterTitle.setAttribute('content', currentSiteName || (language === 'ar' ? 'بيربليكستا' : 'Perplexta'));
-
-    let twitterDesc = document.querySelector('meta[name="twitter:description"]');
-    if (!twitterDesc) {
-      twitterDesc = document.createElement('meta');
-      twitterDesc.setAttribute('name', 'twitter:description');
-      document.head.appendChild(twitterDesc);
-    }
-    twitterDesc.setAttribute('content', resolvedDesc || '');
-
-    let twitterImage = document.querySelector('meta[name="twitter:image"]');
-    if (!twitterImage) {
-      twitterImage = document.createElement('meta');
-      twitterImage.setAttribute('name', 'twitter:image');
-      document.head.appendChild(twitterImage);
-    }
-    twitterImage.setAttribute('content', resolvedSeoImg);
-
-    let metaKeywords = document.querySelector('meta[name="keywords"]');
-    if (!metaKeywords) {
-      metaKeywords = document.createElement('meta');
-      metaKeywords.setAttribute('name', 'keywords');
-      document.head.appendChild(metaKeywords);
-    }
-    metaKeywords.setAttribute('content', (language === 'ar' ? siteSettings.keywordsAr : siteSettings.keywordsEn) || '');
-
+  useEffect(() => {
     if (siteSettings.faviconBase64) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!link) {
@@ -3359,12 +3323,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       link.href = resolveImageUrl(siteSettings.faviconBase64, 'general');
     }
-  }, [siteSettings, language]);
+  }, [siteSettings.faviconBase64]);
 
   return (
     <AppContext.Provider value={{ 
       language, setLanguage: handleLanguageChange, 
       theme, setTheme: handleThemeChange, resolvedTheme, themeTransitioning, 
+      languageTransitioning,
       dir, t, 
       isSidebarOpen, setIsSidebarOpen,
       user, setUser, isAuthReady,

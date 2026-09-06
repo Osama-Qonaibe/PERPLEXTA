@@ -31,6 +31,10 @@ router.get('/sse', (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+  res.on('error', (err) => {
+    console.info('[MCP SSE] Managed stream write error:', err.message);
+  });
+
   const sessionId = crypto.randomUUID();
   sessions.set(sessionId, {
     id: sessionId,
@@ -209,14 +213,22 @@ router.post('/message', async (req, res) => {
 
         const activeSession = sessionId ? sessions.get(sessionId) : null;
         if (activeSession) {
-          activeSession.res.write(`event: log\ndata: ${JSON.stringify({ message: `Executing tool ${toolName} for query.` })}\n\n`);
+          try {
+            if (!activeSession.res.writableEnded && !activeSession.res.finished) {
+              activeSession.res.write(`event: log\ndata: ${JSON.stringify({ message: `Executing tool ${toolName} for query.` })}\n\n`);
+            }
+          } catch (_) {}
         }
 
         let buffer = '';
         const onChunk = (chunk: string) => {
           buffer += chunk;
           if (activeSession) {
-            activeSession.res.write(`event: progress\ndata: ${JSON.stringify({ chunk })}\n\n`);
+            try {
+              if (!activeSession.res.writableEnded && !activeSession.res.finished) {
+                activeSession.res.write(`event: progress\ndata: ${JSON.stringify({ chunk })}\n\n`);
+              }
+            } catch (_) {}
           }
         };
 

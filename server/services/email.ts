@@ -121,18 +121,21 @@ export const sendSmartEmail = async (userId: number | null, toEmail: string, tem
 };
 
 export async function syncSystemTemplates() {
+  if (!pool) return;
   try {
-    for (const template of systemTemplates) {
-      await pool.query(`
-        INSERT INTO email_templates (name, subject_en, subject_ar, body_en, body_ar)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (name) DO UPDATE SET
-          subject_en = EXCLUDED.subject_en,
-          subject_ar = EXCLUDED.subject_ar,
-          body_en = EXCLUDED.body_en,
-          body_ar = EXCLUDED.body_ar
-      `, [template.name, template.subject_en, template.subject_ar, template.body_en, template.body_ar]);
-    }
+    await Promise.all(
+      systemTemplates.map(template =>
+        pool.query(`
+          INSERT INTO email_templates (name, subject_en, subject_ar, body_en, body_ar)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (name) DO UPDATE SET
+            subject_en = EXCLUDED.subject_en,
+            subject_ar = EXCLUDED.subject_ar,
+            body_en = EXCLUDED.body_en,
+            body_ar = EXCLUDED.body_ar
+        `, [template.name, template.subject_en, template.subject_ar, template.body_en, template.body_ar])
+      )
+    );
     console.log('[Email] System templates synchronized.');
   } catch (error) {
     console.error('[Email] Template sync failed:', error);

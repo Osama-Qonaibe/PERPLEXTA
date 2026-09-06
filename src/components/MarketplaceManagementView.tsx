@@ -567,7 +567,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
       {/* Listings Table */}
       {loading ? (
         <div className="py-12 flex flex-col items-center justify-center space-y-2">
-          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-[4px] animate-spin" />
           <span className="text-xs text-gray-400">{language === 'ar' ? 'جاري تحميل المعروضات...' : 'Loading listings...'}</span>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -633,9 +633,9 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       {item.seller_avatar ? (
-                        <img src={resolveImageUrl(item.seller_avatar, 'avatar')} className="w-6 h-6 rounded-full object-cover" alt="" referrerPolicy="no-referrer" />
+                        <img src={resolveImageUrl(item.seller_avatar, 'avatar')} className="w-6 h-6 rounded-[4px] object-cover" alt="" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center font-bold text-[10px]">
+                        <div className="w-6 h-6 rounded-[4px] bg-accent/10 text-accent flex items-center justify-center font-bold text-[10px]">
                           {item.seller_name.charAt(0)}
                         </div>
                       )}
@@ -1020,7 +1020,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                           <img src={editImage ? (editImage.startsWith('data:') ? editImage : editImage.split(',')[0].trim()) : ''} className="w-full h-full object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
                         </div>
                       ) : uploadingImage ? (
-                        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-[4px] animate-spin" />
                       ) : (
                         <div className="text-center select-none text-gray-500 animate-pulse">
                           <Upload className="w-4 h-4 mx-auto mb-1 opacity-50" />
@@ -1160,7 +1160,7 @@ export const MarketplaceManagementView: React.FC<{ theme: string; t: any; dir: s
                     className="px-5 h-10 bg-accent text-black hover:bg-accent disabled:opacity-50 font-extrabold text-xs rounded-[4px] shadow-lg transition-theme flex items-center justify-center gap-1.5 cursor-pointer leading-none"
                   >
                     {updating ? (
-                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-[4px] animate-spin" />
                     ) : (
                       language === 'ar' ? 'حفظ التغييرات وتزامنها' : 'Save & Synchronize Changes'
                     )}
