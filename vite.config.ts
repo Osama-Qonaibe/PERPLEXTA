@@ -13,7 +13,7 @@ const pwaConfig: any = {
   registerType: 'autoUpdate',
   includeAssets: ['favicon.ico', 'app-assets/icon.png', 'app-assets/og-image.png'],
   workbox: {
-    navigateFallback: null,
+    navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
     skipWaiting: true,
     clientsClaim: true,
@@ -69,9 +69,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
-        input: {
-          main: path.resolve(rootDir, 'index.html'),
-        },
+        input: 'index.html',
         output: {
           manualChunks: {
             'react-query': ['@tanstack/react-query'],
