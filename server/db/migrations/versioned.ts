@@ -1323,7 +1323,13 @@ export async function runVersionedMigrations(
     await runVersioned('v73_add_file_url_indexes', 'Adding indexes on file_url columns', async (tx) => {
       const safeIndex = async (clientObj: any, table: string, column: string, indexName: string) => {
         try {
-          await clientObj.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${column}) WHERE length(${column}) <= 1000`);
+          const colCheck = await clientObj.query(
+            `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+            [table, column]
+          );
+          if (colCheck.rows.length > 0) {
+            await clientObj.query(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${column}) WHERE length(${column}) <= 1000`);
+          }
         } catch (idxErr) {
           console.warn(`[Migrations v73] Could not create index ${indexName}:`, idxErr instanceof Error ? idxErr.message : 'Unknown error');
         }
@@ -1581,76 +1587,59 @@ export async function runVersionedMigrations(
       `).catch((err: any) => console.warn('[Migration v87] Bulletin ads initial SEO sync note:', err.message));
 
       // Seed/populate dynamic routes for existing marketplace items (by ID and by slug)
-      await tx.query(`
-        INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
-        SELECT 
-          CONCAT('/marketplace/', id) as route_path,
-          'marketplace' as entity_type,
-          CAST(id AS VARCHAR(100)) as entity_id,
-          COALESCE(meta_title_en, title_en, 'Marketplace Item') as title_en,
-          COALESCE(meta_title_ar, title_ar, 'منتج في المتجر') as title_ar,
-          COALESCE(meta_description_en, SUBSTRING(description_en FROM 1 FOR 160), '') as description_en,
-          COALESCE(meta_description_ar, SUBSTRING(description_ar FROM 1 FOR 160), '') as description_ar,
-          COALESCE(og_image_url, image_url, preview_url, '') as og_image_url,
-          COALESCE(keywords_en, 'marketplace, products, perplexta') as keywords_en,
-          COALESCE(keywords_ar, 'متجر, منتجات, حلول برمجية') as keywords_ar,
-          CURRENT_TIMESTAMP as updated_at
-        FROM marketplace_items
-        ON CONFLICT (route_path) DO NOTHING
-      `).catch((err: any) => console.warn('[Migration v87] Marketplace items initial SEO sync note:', err.message));
+      const hasCol = async (clientObj: any, table: string, col: string) => {
+        try {
+          const res = await clientObj.query(`SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`, [table, col]);
+          return res.rows.length > 0;
+        } catch { return false; }
+      };
 
-      await tx.query(`
-        INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
-        SELECT 
-          CONCAT('/marketplace/', slug) as route_path,
-          'marketplace' as entity_type,
-          slug as entity_id,
-          COALESCE(meta_title_en, title_en, 'Marketplace Item') as title_en,
-          COALESCE(meta_title_ar, title_ar, 'منتج في المتجر') as title_ar,
-          COALESCE(meta_description_en, SUBSTRING(description_en FROM 1 FOR 160), '') as description_en,
-          COALESCE(meta_description_ar, SUBSTRING(description_ar FROM 1 FOR 160), '') as description_ar,
-          COALESCE(og_image_url, image_url, preview_url, '') as og_image_url,
-          COALESCE(keywords_en, 'marketplace, products, perplexta') as keywords_en,
-          COALESCE(keywords_ar, 'متجر, منتجات, حلول برمجية') as keywords_ar,
-          CURRENT_TIMESTAMP as updated_at
-        FROM marketplace_items
-        WHERE slug IS NOT NULL AND slug != ''
-        ON CONFLICT (route_path) DO NOTHING
-      `).catch((err: any) => console.warn('[Migration v87] Marketplace slug initial SEO sync note:', err.message));
+      if (await hasCol(tx, 'marketplace_items', 'title_en')) {
+        await tx.query(`
+          INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
+          SELECT 
+            CONCAT('/marketplace/', id) as route_path,
+            'marketplace' as entity_type,
+            CAST(id AS VARCHAR(100)) as entity_id,
+            COALESCE(title_en, 'Marketplace Item') as title_en,
+            COALESCE(title_ar, 'منتج في المتجر') as title_ar,
+            COALESCE(SUBSTRING(description_en FROM 1 FOR 160), '') as description_en,
+            COALESCE(SUBSTRING(description_ar FROM 1 FOR 160), '') as description_ar,
+            COALESCE(image_url, '') as og_image_url,
+            'marketplace, products, perplexta' as keywords_en,
+            'متجر, منتجات, حلول برمجية' as keywords_ar,
+            CURRENT_TIMESTAMP as updated_at
+          FROM marketplace_items
+          ON CONFLICT (route_path) DO NOTHING
+        `);
+      }
 
       // Seed/populate dynamic routes for existing blog articles if accessible on extTarget
       const extTarget = externalClient || tx;
-      try {
-        const blogRows = await extTarget.query(`
-          SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, og_image_url,
-                 meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
-                 keywords_en, keywords_ar
-          FROM blog_articles
-        `);
-        for (const row of blogRows.rows) {
-          const titleEn = row.meta_title_en || row.title_en || 'Blog Post';
-          const titleAr = row.meta_title_ar || row.title_ar || 'مقال في المدونة';
-          const descEn = row.meta_description_en || (row.content_en ? row.content_en.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '');
-          const descAr = row.meta_description_ar || (row.content_ar ? row.content_ar.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '');
-          const imgUrl = row.og_image_url || row.image_url || '';
-          const kwEn = row.keywords_en || 'blog, articles, analysis';
-          const kwAr = row.keywords_ar || 'مدونة, مقالات, تحليلات';
+      if (await hasCol(extTarget, 'blog_articles', 'title_en')) {
+        try {
+          const blogRows = await extTarget.query(`
+            SELECT id, title_en, title_ar, content_en, content_ar, image_url
+            FROM blog_articles
+          `);
+          for (const row of blogRows.rows) {
+            const titleEn = row.title_en || 'Blog Post';
+            const titleAr = row.title_ar || 'مقال في المدونة';
+            const descEn = row.content_en ? row.content_en.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '';
+            const descAr = row.content_ar ? row.content_ar.slice(0, 160).replace(/[#*`_\\[\\]()]/g, '') : '';
+            const imgUrl = row.image_url || '';
+            const kwEn = 'blog, articles, analysis';
+            const kwAr = 'مدونة, مقالات, تحليلات';
 
-          if (row.slug) {
             await tx.query(`
               INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
               VALUES ($1, 'blog', $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
               ON CONFLICT (route_path) DO NOTHING
-            `, [`/blog/${row.slug}`, row.slug, titleEn, titleAr, descEn, descAr, imgUrl, kwEn, kwAr]);
+            `, [`/blog/${row.id}`, String(row.id), titleEn, titleAr, descEn, descAr, imgUrl, kwEn, kwAr]);
           }
-          await tx.query(`
-            INSERT INTO seo_metadata (route_path, entity_type, entity_id, title_en, title_ar, description_en, description_ar, og_image_url, keywords_en, keywords_ar, updated_at)
-            VALUES ($1, 'blog', $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
-            ON CONFLICT (route_path) DO NOTHING
-          `, [`/blog/${row.id}`, String(row.id), titleEn, titleAr, descEn, descAr, imgUrl, kwEn, kwAr]);
+        } catch (blogErr: any) {
+          console.warn('[Migration v87] Blog initial SEO sync note:', blogErr.message);
         }
-      } catch (blogErr: any) {
-        console.warn('[Migration v87] Blog initial SEO sync note:', blogErr.message);
       }
     });
 
@@ -1819,8 +1808,16 @@ export async function runVersionedMigrations(
         END $$;
       `);
 
-      await tx.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_meta_tags_updated_at ON blog_articles(meta_tags_updated_at DESC)`);
+      const extTarget = externalClient || tx;
+      await extTarget.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'blog_articles') THEN
+            ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+            CREATE INDEX IF NOT EXISTS idx_blog_articles_meta_tags_updated_at ON blog_articles(meta_tags_updated_at DESC);
+          END IF;
+        END $$;
+      `);
     });
 
     await runVersioned('v93_purge_mock_gpu_providers', 'Purge mock and hardcoded GPU providers to ensure sovereign and dynamic custom cluster registration', async (tx) => {

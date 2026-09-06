@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "migrate:drop-forum": "tsx server/scripts/delete_forum_tables.ts",
     "sync:metadata": "tsx server/scripts/sync_seo_metadata.ts",
+    "db:wipe": "tsx server/scripts/wipe_bulletin_data.ts",
+    "db:zero-fill": "bash scripts/zero_fill_databases.sh",
     "db:reset": "tsx server/scripts/reset_and_reinit_databases.ts",
     "clean": "rm -rf dist",
     "check:colors": "node scripts/check-color-governance.js",
