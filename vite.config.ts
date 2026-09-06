@@ -56,6 +56,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, 'VITE_');
   return {
     root: rootDir,
+    base: '/',
+    publicDir: path.resolve(rootDir, 'public'),
     plugins: [
       react(),
       tailwindcss(),
@@ -63,8 +65,13 @@ export default defineConfig(({ mode }) => {
     ],
     define: {},
     build: {
+      outDir: path.resolve(rootDir, 'dist'),
+      emptyOutDir: true,
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
+        input: {
+          main: path.resolve(rootDir, 'index.html'),
+        },
         output: {
           manualChunks: {
             'react-query': ['@tanstack/react-query'],
@@ -76,6 +83,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(rootDir, 'src'),
+        '/src': path.resolve(rootDir, 'src'),
         'react': path.resolve(rootDir, 'node_modules/react'),
         'react-dom': path.resolve(rootDir, 'node_modules/react-dom'),
       },
