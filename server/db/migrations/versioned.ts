@@ -1777,9 +1777,16 @@ export async function runVersionedMigrations(
       await tx.query(`UPDATE bulletin_pages SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_pages_owner_id ON bulletin_pages(owner_id)`);
 
-      await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
-      await tx.query(`UPDATE marketplace_items SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_owner_id ON marketplace_items(owner_id)`);
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'marketplace_items') THEN
+            ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+            UPDATE marketplace_items SET owner_id = user_id WHERE owner_id IS NULL AND user_id IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS idx_marketplace_items_owner_id ON marketplace_items(owner_id);
+          END IF;
+        END $$;
+      `);
     });
 
     await runVersioned('v91_create_og_preview_cache', 'Create dedicated cache table for Open Graph social media previews with lightning-fast metadata storage', async (tx) => {
@@ -1802,8 +1809,15 @@ export async function runVersionedMigrations(
       await tx.query(`ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_bulletin_pages_meta_tags_updated_at ON bulletin_pages(meta_tags_updated_at DESC)`);
 
-      await tx.query(`ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
-      await tx.query(`CREATE INDEX IF NOT EXISTS idx_marketplace_items_meta_tags_updated_at ON marketplace_items(meta_tags_updated_at DESC)`);
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'marketplace_items') THEN
+            ALTER TABLE marketplace_items ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+            CREATE INDEX IF NOT EXISTS idx_marketplace_items_meta_tags_updated_at ON marketplace_items(meta_tags_updated_at DESC);
+          END IF;
+        END $$;
+      `);
 
       await tx.query(`ALTER TABLE blog_articles ADD COLUMN IF NOT EXISTS meta_tags_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
       await tx.query(`CREATE INDEX IF NOT EXISTS idx_blog_articles_meta_tags_updated_at ON blog_articles(meta_tags_updated_at DESC)`);
@@ -1888,6 +1902,109 @@ export async function runVersionedMigrations(
         ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS file_data BYTEA;
       `);
       console.log('[Migrations] Successfully ensured file_data BYTEA columns in user_files and media_assets.');
+    });
+
+    await runVersioned('v85_safely_remove_marketplace_ecosystem', 'Safely decommission and drop marketplace tables, constraints, foreign keys, and route metadata', async (tx) => {
+      // Drop dependent marketplace tables with cascade
+      await tx.query(`DROP TABLE IF EXISTS marketplace_reviews CASCADE;`);
+      await tx.query(`DROP TABLE IF EXISTS marketplace_purchases CASCADE;`);
+      await tx.query(`DROP TABLE IF EXISTS marketplace_items CASCADE;`);
+
+      // Clean media_assets references to marketplace safely
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'media_assets') THEN
+            ALTER TABLE media_assets DROP CONSTRAINT IF EXISTS fk_media_assets_marketplace_item_id;
+            DROP INDEX IF EXISTS idx_media_assets_marketplace_item_id;
+            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'media_assets' AND column_name = 'marketplace_item_id') THEN
+              ALTER TABLE media_assets DROP COLUMN marketplace_item_id;
+            END IF;
+          END IF;
+        END $$;
+      `);
+
+      // Clean SEO metadata and routes related to marketplace safely
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'seo_metadata') THEN
+            DELETE FROM seo_metadata WHERE route_path LIKE '/marketplace%';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'route_seo_metadata') THEN
+            DELETE FROM route_seo_metadata WHERE route_path LIKE '/marketplace%';
+          END IF;
+        END $$;
+      `);
+
+      console.log('[Migrations] Successfully removed all marketplace tables, columns, constraints, and SEO paths.');
+    });
+    
+    await runVersioned('v99_clean_slate_and_deep_architecture_purge', 'Deep Architecture Purge & Dead Code Elimination for Market and Blog sections across Core and External pools', async (tx) => {
+      // 1. Drop all legacy tables from Core pool
+      const legacyTables = [
+        'marketplace_reviews',
+        'marketplace_purchases',
+        'marketplace_items',
+        'blog_ratings',
+        'blog_comments',
+        'blog_articles',
+        'forum_post_ratings',
+        'forum_comments',
+        'forum_posts',
+        'forum_categories'
+      ];
+
+      for (const tbl of legacyTables) {
+        await tx.query(`DROP TABLE IF EXISTS ${tbl} CASCADE;`).catch(() => {});
+      }
+
+      // 2. Drop all legacy tables from External pool if accessible
+      if (extTarget) {
+        for (const tbl of legacyTables) {
+          await extTarget.query(`DROP TABLE IF EXISTS ${tbl} CASCADE;`).catch(() => {});
+        }
+      }
+
+      // 3. Clean media_assets constraints and legacy columns
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'media_assets') THEN
+            ALTER TABLE media_assets DROP CONSTRAINT IF EXISTS fk_media_assets_marketplace_item_id;
+            ALTER TABLE media_assets DROP CONSTRAINT IF EXISTS fk_media_assets_blog_article_id;
+            DROP INDEX IF EXISTS idx_media_assets_marketplace_item_id;
+            DROP INDEX IF EXISTS idx_media_assets_blog_article_id;
+            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'media_assets' AND column_name = 'marketplace_item_id') THEN
+              ALTER TABLE media_assets DROP COLUMN marketplace_item_id;
+            END IF;
+            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'media_assets' AND column_name = 'blog_article_id') THEN
+              ALTER TABLE media_assets DROP COLUMN blog_article_id;
+            END IF;
+            -- Update context check constraint if exists
+            ALTER TABLE media_assets DROP CONSTRAINT IF EXISTS media_assets_context_check;
+            ALTER TABLE media_assets ADD CONSTRAINT media_assets_context_check CHECK (context IN ('avatar', 'bulletin', 'ad', 'system', 'general', 'video'));
+          END IF;
+        END $$;
+      `).catch(() => {});
+
+      // 4. Clean SEO metadata and routes related to legacy sections
+      await tx.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'seo_metadata') THEN
+            DELETE FROM seo_metadata WHERE route_path LIKE '/marketplace%' OR route_path LIKE '/blog%' OR route_path LIKE '/forum%';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'route_seo_metadata') THEN
+            DELETE FROM route_seo_metadata WHERE route_path LIKE '/marketplace%' OR route_path LIKE '/blog%' OR route_path LIKE '/forum%';
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'route_seo_settings') THEN
+            DELETE FROM route_seo_settings WHERE route LIKE '/marketplace%' OR route LIKE '/blog%' OR route LIKE '/forum%';
+          END IF;
+        END $$;
+      `).catch(() => {});
+
+      console.log('[Migrations] [Clean Slate] Deep architecture purge completed cleanly.');
     });
     
   console.log("[Migrations] All versioned migrations completed successfully.");

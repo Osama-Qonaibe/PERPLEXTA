@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Lock, Camera, Edit2, ShieldCheck, CreditCard, Check, X, Loader2, Languages, Monitor, Target, Archive, Trash2, AlertTriangle } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { toast } from '../context/NotificationContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { ThemeToggleButton } from './ThemeToggleButton';
@@ -32,8 +33,10 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, onUpdate
   const notify = (message: string, type: 'success' | 'error' = 'success') => {
     if (showToast) {
       showToast(message, type);
+    } else if (type === 'error') {
+      toast.error(message);
     } else {
-      alert(message);
+      toast.success(message);
     }
   };
 

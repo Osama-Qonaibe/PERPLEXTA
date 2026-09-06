@@ -5,7 +5,6 @@ import {
   Sparkles, 
   Compass, 
   Sliders, 
-  ShoppingBag, 
   Zap, 
   BookOpen, 
   Megaphone, 
@@ -22,7 +21,7 @@ import { RecommendationPreferencesModal } from './RecommendationPreferencesModal
 
 interface RecommendationItem {
   recommendation_id: string;
-  item_type: 'marketplace' | 'bulletin' | 'tool' | 'blog';
+  item_type: 'bulletin' | 'tool' | 'page';
   item_id: any;
   score: number;
   match_percentage: number;
@@ -32,11 +31,11 @@ interface RecommendationItem {
 }
 
 interface RecommendationWidgetProps {
-  variant?: 'full' | 'compact' | 'marketplace' | 'bulletin' | 'tools' | 'banner';
+  variant?: 'full' | 'compact' | 'bulletin' | 'tools' | 'banner';
   title?: string;
   subtitle?: string;
   limit?: number;
-  filterType?: 'all' | 'marketplace' | 'bulletin' | 'tool' | 'blog';
+  filterType?: 'all' | 'bulletin' | 'tool';
   onOpenPreferences?: () => void;
   onAdClick?: (adId: number) => void;
   className?: string;
@@ -152,14 +151,12 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
       if (onAdClick && typeof item.item_id === 'number') {
         onAdClick(item.item_id);
       } else {
-        navigate(`/bulletin?id=${item.item_id}`);
+        navigate(`/bulletin?ad_id=${item.item_id}`);
       }
-    } else if (item.item_type === 'marketplace') {
-      navigate(`/marketplace?id=${item.item_id}`);
+    } else if (item.item_type === 'page') {
+      navigate(`/bulletin?tab=pages&page_id=${item.item_id}`);
     } else if (item.item_type === 'tool') {
       navigate(`/chat?tool=${item.data?.tool_id || item.item_id}`);
-    } else if (item.item_type === 'blog') {
-      navigate(`/blog/${item.data?.slug || item.item_id}`);
     }
   };
 
@@ -196,10 +193,9 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'marketplace': return <ShoppingBag size={14} className="text-accent" />;
       case 'bulletin': return <Megaphone size={14} className="text-amber-500" />;
+      case 'page': return <BookOpen size={14} className="text-emerald-500" />;
       case 'tool': return <Zap size={14} className="text-blue-500" />;
-      case 'blog': return <BookOpen size={14} className="text-purple-500" />;
       default: return <Sparkles size={14} className="text-accent" />;
     }
   };
@@ -207,18 +203,16 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
   const getTypeBadgeText = (type: string) => {
     if (language === 'ar') {
       switch (type) {
-        case 'marketplace': return 'منتج رقمي';
-        case 'bulletin': return 'إعان/خدمة';
+        case 'bulletin': return 'منشور/خدمة';
+        case 'page': return 'صفحة تجارية';
         case 'tool': return 'أداة ذكية';
-        case 'blog': return 'مقال';
         default: return 'توصية';
       }
     } else {
       switch (type) {
-        case 'marketplace': return 'Digital Product';
-        case 'bulletin': return 'Service Ad';
+        case 'bulletin': return 'Feed Post';
+        case 'page': return 'Verified Page';
         case 'tool': return 'AI Tool';
-        case 'blog': return 'Article';
         default: return 'Recommended';
       }
     }
@@ -287,10 +281,8 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-3.5 text-xs font-semibold">
           {[
             { id: 'all', label_ar: 'الكل', label_en: 'All Picks', icon: <Compass size={13} /> },
-            { id: 'marketplace', label_ar: 'المنتجات الرقمية', label_en: 'Digital Products', icon: <ShoppingBag size={13} /> },
-            { id: 'bulletin', label_ar: 'الخدمات والإعلانات', label_en: 'Services & Ads', icon: <Megaphone size={13} /> },
+            { id: 'bulletin', label_ar: 'فايرال بوك (Viralbook)', label_en: 'Viralbook Feeds & Ads', icon: <Megaphone size={13} /> },
             { id: 'tool', label_ar: 'أدوات الذكاء الاصطناعي', label_en: 'AI Tools', icon: <Zap size={13} /> },
-            { id: 'blog', label_ar: 'مقالات ومعرفة', label_en: 'Insights & Articles', icon: <BookOpen size={13} /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -310,42 +302,46 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
 
       {/* Loading Skeleton */}
       {isLoading ? (
-        <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
+        <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
           {Array.from({ length: limit > 4 ? 4 : limit }).map((_, i) => (
-            <div key={`rec-widget-skel-${i}`} className="h-16 sm:h-20 rounded-xl bg-gray-100 dark:bg-gray-800/60 animate-pulse p-3 flex items-center gap-3">
-              <div className="w-11 h-11 bg-gray-200 dark:bg-gray-700 rounded-xl shrink-0" />
+            <div key={`rec-widget-skel-${i}`} className="h-16 sm:h-20 rounded-xl bg-gray-100 dark:bg-white/[0.03] animate-pulse p-3 flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-200 dark:bg-white/[0.06] rounded-xl shrink-0" />
               <div className="flex-1 space-y-1.5">
-                <div className="w-3/4 h-3.5 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="w-1/2 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="w-3/4 h-3 bg-gray-200 dark:bg-white/[0.06] rounded" />
+                <div className="w-1/2 h-2.5 bg-gray-200 dark:bg-white/[0.06] rounded" />
               </div>
             </div>
           ))}
         </div>
       ) : error ? (
-        <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 text-center text-xs text-red-400">
+        <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/5 text-center text-xs text-red-400">
           {error}
         </div>
       ) : visibleItems.length === 0 ? (
-        <div className="p-5 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 text-center space-y-2">
-          <Megaphone size={24} className="mx-auto text-accent/40" />
+        <div className="py-5 px-3 text-center space-y-2">
+          <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center mx-auto text-accent">
+            <Megaphone size={16} />
+          </div>
           <h4 className="text-xs font-bold text-[var(--text-primary)]">
             {language === 'ar' ? 'لا تتوفر إعلانات موصى بها حالياً' : 'No ad recommendations currently'}
           </h4>
-          <p className="text-[11px] text-[var(--text-muted)] max-w-xs mx-auto">
+          <p className="text-[11px] text-[var(--text-muted)] max-w-xs mx-auto leading-relaxed">
             {language === 'ar' 
               ? 'تصفح الإعلانات والخدمات لتدريب المحرك الذكي، أو خصص اهتماماتك مباشرة' 
               : 'Browse ads or adjust your preferences to train your recommendation vector.'}
           </p>
-          <button
-            onClick={() => setIsPrefModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs transition-theme shadow-xs cursor-pointer"
-          >
-            {language === 'ar' ? 'تخصيص تفضيلاتي الآن' : 'Set My Preferences'}
-          </button>
+          <div className="pt-1">
+            <button
+              onClick={() => setIsPrefModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-full bg-accent/10 hover:bg-accent/20 text-accent font-bold text-[11px] transition-theme border border-accent/20 cursor-pointer"
+            >
+              {language === 'ar' ? 'تخصيص تفضيلاتي الآن' : 'Set My Preferences'}
+            </button>
+          </div>
         </div>
       ) : (
         /* Items Grid */
-        <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
+        <div className={isBulletinOnly || variant === 'compact' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'}>
           {visibleItems.map((item, recIdx) => {
             const reasonText = language === 'ar' 
               ? (item.reasons_ar?.[0] || 'توصية مخصصة')
@@ -368,7 +364,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   onClick={() => handleItemClick(item)}
-                  className="group relative p-2.5 sm:p-3 rounded-xl bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] border border-[var(--border-main)] hover:border-[var(--border-accent)] transition-theme flex items-center justify-between gap-2.5 cursor-pointer shadow-2xs overflow-hidden"
+                  className="group relative p-2.5 rounded-xl bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border border-transparent hover:border-gray-200/50 dark:hover:border-white/[0.06] transition-theme flex items-center justify-between gap-2.5 cursor-pointer overflow-hidden"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <BulletinAvatar
@@ -397,7 +393,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           </span>
                         )}
 
-                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded-[6px] flex items-center gap-0.5">
+                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
                           <Sparkles size={9} />
                           {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
                         </span>
@@ -409,7 +405,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                         )}
                       </div>
 
-                      <p className="text-[10px] text-accent dark:text-accent truncate mt-0.5 font-medium">
+                      <p className="text-[10px] text-[var(--text-muted)] truncate mt-0.5 font-medium">
                         {reasonText}
                       </p>
                     </div>
@@ -430,7 +426,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                         handleItemClick(item);
                       }}
                       title={language === 'ar' ? 'التفاصيل' : 'Details'}
-                      className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-white transition-theme cursor-pointer"
+                      className="p-1.5 rounded-lg text-gray-400 group-hover:text-accent transition-theme cursor-pointer"
                     >
                       <ChevronRight size={14} className={dir === 'rtl' ? 'rotate-180' : ''} />
                     </button>

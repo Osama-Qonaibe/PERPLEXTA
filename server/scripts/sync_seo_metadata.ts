@@ -18,7 +18,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.log('[Script] Running SEO metadata sync for blog posts and marketplace items...');
+  console.log('[Script] Running SEO metadata sync for Viralbook items...');
   const result = await syncAllContentSeoMetadata();
 
   console.log('[Script] Summary Result:', JSON.stringify(result, null, 2));

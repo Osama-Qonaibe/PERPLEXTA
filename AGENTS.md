@@ -135,7 +135,7 @@ The Bulletin Board is divided into seven dedicated tabs and specialized modular 
   - **Facebook-Standard Post Composer**: Header with author pill, audience selector (`public`, `friends`, `only_me`), AI-generated content toggles (`is_ai_generated`), feeling/activity tags (`FEELINGS`), Palestinian/Arab city targeting selector (`COUNTRIES_CITIES_DATA`), multi-photo/video attachment support, aspect ratio controls, and a high-conversion WhatsApp CTA banner with phone number verification.
   - **Stories Carousel**: 24-hour ephemeral stories with progress indicators, creator modals (`StoryUploadModal`), and immersive playback viewer (`StoryViewerModal`).
   - **Interactive Post Feed (`PostFeed.tsx`)**: Reaction engine (Like, Love, Haha, Wow, Sad, Angry) with authentic database recording (`bulletin_ad_likes`), nested multi-level threaded comments (`bulletin_ad_comments`) with comment reaction tracking (`bulletin_comment_likes`), media lightbox viewers (`MediaLightboxModal`), video frame capture, and social share modals.
-  - **Contextual Sidebars**: Right and left sidebars integrating contextual Marketplace widgets, trending insights, page recommendations (`RecommendationWidget`), and sponsored promotions.
+  - **Contextual Sidebars**: Right and left sidebars integrating trending insights, page recommendations (`RecommendationWidget`), and sponsored promotions.
 - **`reels` (مقاطع الفيديو / Short-Form Video Feed)**:
   - Full-screen, high-definition vertical video feed (`ReelsFeed.tsx`) with dynamic audio coordination (`mediaCoordinator.ts`), gesture controls, video trimmer modal (`VideoTrimmerModal`), aspect-ratio auto-detection, view/like counters, and direct creator follow mechanisms.
 - **`pages` (الصفحات والشركات / Verified Business Pages)**:
@@ -539,7 +539,7 @@ To seamlessly expand Perplexta's media compute borders with high-performance ser
   - Group Member Directory with Role Badges (Admin, Moderator, Top Contributor).
 - [ ] **9.3 Elite Public User Profiles & Portfolio Hub (البروفايل المهني المتكامل لكل مستخدم)**:
   - Custom Vanity Usernames (`@username`) and QR Profile Cards.
-  - Unified Activity Timeline (Authored Posts, Active Ads, Shared Reels, Marketplace Listings).
+  - Unified Activity Timeline (Authored Posts, Active Ads, Shared Reels, Bookmarked Items).
   - Verified Identity Badges, KYC Status & Trust Score Indicator.
   - Direct P2P End-to-End Chat Initiation & Mutual Connections Network.
   - Privacy Controls (Audience selection for profile sections: Public, Followers Only, Private).
@@ -1125,6 +1125,37 @@ Applied with 100% uniformity across:
   - Implemented an automated database-level healing migration `v95` in `server/db/migrations/versioned.ts`.
   - The migration identifies any admin user whose wallet has exactly `$10,000.00 USD` and `0` points, instantly adjusting the balance to `$0.00` and awarding **10,000 PTS (points)**.
   - Generates an official, auditable ledger transaction record (`reconciliation` type) for complete transparency.
+
+### 7.8. Global Confirmation Modals, Floating Toast System & Mobile Floating Capsule Symmetry (نظام التوثيق الشامل، التنبيهات العائمة، وكبسولة الملاحة العائمة)
+
+#### 1. Unified Action Confirmation Modal (`ActionConfirmationModal`)
+- **Eradication of Browser Alerts**: Completely removed native browser popups (`alert`, `confirm`, `prompt`) across all platform modules.
+- **Visual Action States**:
+  - **Red Action State**: Deletion and destructive actions utilize an official, soft red button (`bg-red-500 hover:bg-red-600 text-white`).
+  - **Crisp Action State**: Save and confirmation actions utilize a high-contrast white/accent action button (`bg-white dark:bg-[var(--surface-card)]`).
+  - **Subtle Cancel**: Transparent, calm cancellation controls (`text-[var(--text-muted)] hover:bg-[var(--surface-subtle)]`).
+
+#### 2. Unified Floating Toast Classes (`ServiceUpdateToast`)
+- **Global CSS Infrastructure**: Defined `.toast-container-floating`, `.toast-floating`, `.toast-progress-track`, and `.toast-progress-fill` in `src/index.css`.
+- **Asynchronous Task Progress**: Integrated `.loading(message, title)` methods into `NotificationContext` displaying smooth linear progress indicators and native haptic feedback triggers (`triggerHaptic`).
+
+#### 3. Mobile Floating Capsule Navigation & Header-to-Footer Symmetry
+- **Floating Capsule Island**: Mobile bottom nav (`.mobile-bottom-nav`) floats at `bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))` with side margins (`0.75rem`), eliminating screen edge sticking on iOS/Android devices.
+- **Symmetric Controls**: Standardized `32px` (`h-8`) button heights, `14px` icon scale, `8px` rounded corners, and single-line `8.5px` font labels to match top header controls (`HEADER_SIZING`).
+
+### 🛠️ Session Work Completed Today (September 6, 2026 - Global Confirmation Standardization, Mobile Floating Capsule & Documentation Refresh):
+- **Global Action Confirmation Modal & Toast Standardization**:
+  - Standardized `ActionConfirmationModal` across all platform modules for save, update, delete, and destructive actions.
+  - Implemented unified floating toast CSS classes (`.toast-container-floating`, `.toast-floating`, `.toast-progress-track`) in `src/index.css` and updated `ServiceUpdateToast.tsx` and `NotificationContext.tsx`.
+- **Mobile Navigation Header-to-Footer Symmetry & Safe Area Capsule Island**:
+  - Created global mobile bottom navigation classes (`.mobile-bottom-nav`, `.mobile-nav-item`, `.mobile-nav-icon`, `.mobile-nav-label`, `.mobile-nav-center-action`).
+  - Transformed the mobile navigation bar into a floating capsule island (`bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))`, `left: 0.75rem`, `right: 0.75rem`, `rounded-2xl`) with backdrop blur (`backdrop-blur-xl`), ensuring no edge sticking on iOS/Android devices.
+  - Applied symmetry across `BulletinBoardPage.tsx` and `SettingsPage.tsx`.
+- **Global Codebase Purge, Architecture Sync & Documentation Refresh**:
+  - Purged project root directory of temporary files (`.tmp`, `.log`), unused scripts, and redundant assets.
+  - Synchronized `metadata.json` and `index.html` (titles, descriptions, OpenGraph tags).
+  - Re-written `README.md` from scratch documenting the current identity of Viralbook & ViralLinkUp platform, clean URLs architecture, profile/page structures, dual-database schemas, 10 relational bulletin tables, GPU compute vault, and server background cron routines (`consolidateAllUserMemories`, `cleanupExpiredStories`, `auditExpiredBoostedAds`).
+  - Updated `AGENTS.md` with full session logs and architectural standards.
 
 ### ⚠️ IMMUTABLE ARCHITECTURE & EXTENSION-ONLY MANDATE (أمر الالتزام بالاستكمال والتطوير وحظر التعديل أو التخريب) ⚠️
 1. **STRICT ARCHITECTURAL SEAL**: All existing architecture—including Express/Vite full-stack engine, Core & Ledger dual-database separation, Orchestrator routing, Socket execution, and UI design systems—is officially **LOCKED AND SEALED**.

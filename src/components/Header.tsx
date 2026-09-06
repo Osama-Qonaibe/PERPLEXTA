@@ -75,7 +75,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   const [tempTitle, setTempTitle] = useState('');
 
   const chatId = location.pathname.startsWith('/chat/') ? location.pathname.split('/chat/')[1] : null;
-  const isBulletinActive = location.pathname.startsWith('/bulletin');
+  const isViralbookActive = location.pathname.startsWith('/viralbook') || location.pathname.startsWith('/bulletin') || location.pathname.startsWith('/reels');
 
   useEffect(() => {
     const fetchChatTitle = async () => {
@@ -345,20 +345,20 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 px-3 sm:px-4 md:px-6 shrink-0 h-full">
-            {!isPathBlocked('/bulletin', siteSettings?.blocked_paths, isMobileView) && (
+            {!isPathBlocked('/viralbook', siteSettings?.blocked_paths, isMobileView) && !isPathBlocked('/bulletin', siteSettings?.blocked_paths, isMobileView) && (
               <NavLink
-                to="/bulletin"
+                to="/viralbook"
                 className={`flex items-center justify-center w-8 h-8 rounded-[8px] border transition-theme active:scale-95 group shrink-0 ${
-                  isBulletinActive 
+                  isViralbookActive 
                     ? 'bg-accent/[0.04] border-accent/30 text-accent' 
                     : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
                 }`}
-                title={language === 'ar' ? 'لوحة الإعلانات التفاعلية' : 'Interactive Bulletin Board'}
+                title={language === 'ar' ? 'فايرال بوك - شبكة المحتوى والمنشورات' : 'Viralbook - Content Hub'}
               >
                 <Megaphone 
                   size={14} 
                   className={`transition-theme ${
-                    isBulletinActive 
+                    isViralbookActive 
                       ? 'text-accent' 
                       : 'text-gray-400 group-hover:text-accent'
                   }`} 
@@ -424,17 +424,30 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
         
         {(user || token) && (
           <div className="flex items-center gap-1 sm:gap-1.5 h-full">
-            <button
-              onClick={() => {
-                triggerHaptic('light');
-                navigate('/bulletin');
-                window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
-              }}
-              className="hidden md:flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme relative active:scale-95 group shrink-0 cursor-pointer"
-              title={language === 'ar' ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
-            >
-              <MessageSquare size={14} className="text-gray-400 group-hover:text-accent group-hover: transition-theme" />
-            </button>
+            {isViralbookActive && (
+              <button
+                onClick={() => {
+                  triggerHaptic('light');
+                  navigate('/viralbook/inquiries');
+                  window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
+                }}
+                className={`hidden md:flex items-center justify-center w-8 h-8 rounded-[8px] border transition-theme relative active:scale-95 group shrink-0 cursor-pointer ${
+                  location.pathname === '/viralbook/inquiries' || location.pathname.includes('/inquiries')
+                    ? 'bg-accent/[0.04] border-accent/30 text-accent'
+                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+                }`}
+                title={language === 'ar' ? 'صندوق محادثات واستفسارات فايرال بوك' : 'Viralbook Messenger & Inquiries'}
+              >
+                <MessageSquare 
+                  size={14} 
+                  className={`transition-theme ${
+                    location.pathname === '/viralbook/inquiries' || location.pathname.includes('/inquiries')
+                      ? 'text-accent'
+                      : 'text-gray-400 group-hover:text-accent'
+                  }`} 
+                />
+              </button>
+            )}
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
               <button 
@@ -496,10 +509,10 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                           onClick={() => {
                             if (!notif.is_read) markAsRead(notif.id);
                             if (notif.metadata?.ad_id) {
-                              navigate(`/bulletin/${notif.metadata.ad_id}`);
+                              navigate(`/viralbook/${notif.metadata.ad_id}`);
                               setIsNotifOpen(false);
                             } else if (notif.metadata?.inquiry_id) {
-                              navigate(`/bulletin/${notif.metadata.ad_id || ''}`);
+                              navigate(`/viralbook/${notif.metadata.ad_id || ''}`);
                               setIsNotifOpen(false);
                             }
                           }}

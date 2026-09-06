@@ -278,12 +278,22 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
     }
     try {
       if (typeof window !== 'undefined') {
+        // 1. Check path parameters (e.g. /viralbook/reels/123 or /reels/123)
+        const pathMatch = window.location.pathname.match(/\/(?:reels|viralbook\/reels|bulletin\/reels)\/(\d+)/i);
+        if (pathMatch && pathMatch[1]) {
+          const pathReelId = Number(pathMatch[1]);
+          const idx = reelsList.findIndex((r) => Number(r.id) === pathReelId);
+          if (idx >= 0) return idx;
+        }
+
+        // 2. Check legacy query parameter fallback (?reel=123)
         const searchParams = new URLSearchParams(window.location.search);
         const urlReelId = searchParams.get('reel');
         if (urlReelId) {
           const idx = reelsList.findIndex((r) => Number(r.id) === Number(urlReelId));
           if (idx >= 0) return idx;
         }
+
         const savedReelId = sessionStorage.getItem('perplexta_active_reel_id');
         if (savedReelId) {
           const idx = reelsList.findIndex((r) => Number(r.id) === Number(savedReelId));
@@ -910,10 +920,13 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         sessionStorage.setItem('perplexta_active_reel_index', String(activeIndex));
 
         if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          if (url.searchParams.get('tab') === 'reels') {
-            url.searchParams.set('reel', String(currentReel.id));
-            window.history.replaceState(null, '', url.toString());
+          const pathname = window.location.pathname;
+          if (pathname.includes('/reels') || pathname.includes('/viralbook') || pathname.includes('/bulletin')) {
+            const baseRoute = pathname.startsWith('/reels') ? '/reels' : '/viralbook/reels';
+            const cleanUrl = `${baseRoute}/${currentReel.id}`;
+            if (window.location.pathname !== cleanUrl) {
+              window.history.replaceState(null, '', cleanUrl);
+            }
           }
         }
       }
@@ -1451,14 +1464,14 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
   const handleCopyReelLink = (reelId: number) => {
     triggerHaptic(25);
-    const shareUrl = `${window.location.origin}${window.location.pathname}?reel=${reelId}`;
+    const shareUrl = `${window.location.origin}/viralbook/reels/${reelId}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success(isRtl ? 'تم نسخ رابط الريلز المباشر للحافظة 📋' : 'Direct Reel link copied to clipboard 📋');
   };
 
   const handleNativeSystemShare = async (reel: ReelItemData) => {
     triggerHaptic(25);
-    const shareUrl = `${window.location.origin}${window.location.pathname}?reel=${reel.id}`;
+    const shareUrl = `${window.location.origin}/viralbook/reels/${reel.id}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -1716,10 +1729,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
               setActiveTab('for_you');
               setActiveIndex(0);
             }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[4px] transition-all cursor-pointer ${
+            className={`px-4 py-1.5 text-xs font-bold rounded-[var(--radius-sm)] transition-theme cursor-pointer ${
               activeTab === 'for_you'
-                ? 'bg-gray-900 text-white dark:bg-accent dark:text-white shadow-md scale-105'
-                : 'text-gray-700 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
             }`}
           >
             {isRtl ? 'لك' : 'For You'}
@@ -1729,10 +1742,10 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
               setActiveTab('following');
               setActiveIndex(0);
             }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[4px] transition-all cursor-pointer ${
+            className={`px-4 py-1.5 text-xs font-bold rounded-[var(--radius-sm)] transition-theme cursor-pointer ${
               activeTab === 'following'
-                ? 'bg-gray-900 text-white dark:bg-accent dark:text-white shadow-md scale-105'
-                : 'text-gray-700 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
             }`}
           >
             {isRtl ? 'المتابَعون' : 'Following'}
@@ -1742,8 +1755,18 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
 
       {/* Top Floating Navigation Header Overlay - Clean, Spacious & Centered on Desktop */}
       <header className="absolute top-0 inset-x-0 z-40 px-3 sm:px-8 py-3 flex items-center justify-between bg-gradient-to-b from-white/90 via-white/50 dark:from-black/90 dark:via-black/50 to-transparent pointer-events-auto">
-        {/* Top Left: Spacer */}
+        {/* Top Left: Mobile Back Button */}
         <div className="flex items-center gap-2.5">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme text-xs font-bold cursor-pointer"
+              title={isRtl ? 'رجوع' : 'Back'}
+            >
+              {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+              <span>{isRtl ? 'رجوع' : 'Back'}</span>
+            </button>
+          )}
         </div>
 
         {/* Top Right: Search + Upload + Volume Slider + Close */}
@@ -1826,25 +1849,25 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
       </header>
 
       {/* Desktop Floating Navigation Chevrons */}
-      <div className="hidden md:flex fixed end-4 lg:end-8 top-1/2 -translate-y-1/2 z-40 flex-col items-center gap-2.5 select-none pointer-events-auto">
+      <div className="hidden md:flex fixed end-4 lg:end-8 top-1/2 -translate-y-1/2 z-40 flex-col items-center gap-2 select-none pointer-events-auto">
         <button
           onClick={() => scrollToIndex(Math.max(0, activeIndex - 1))}
           disabled={activeIndex === 0}
-          className="w-11 h-11 rounded-[4px] bg-white/90 dark:bg-zinc-900/85 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-25 text-gray-900 dark:text-white backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed cursor-pointer"
+          className="w-10 h-10 rounded-[var(--radius-sm)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] disabled:opacity-25 text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center transition-theme disabled:cursor-not-allowed cursor-pointer"
           title={isRtl ? 'المقطع السابق (↑)' : 'Previous Reel (↑)'}
         >
-          <ChevronUp size={22} />
+          <ChevronUp size={20} />
         </button>
-        <div className="px-2.5 py-1 rounded-[4px] bg-white/90 dark:bg-black/60 backdrop-blur-md border border-gray-200 dark:border-white/10 text-[10px] font-mono font-black text-gray-800 dark:text-gray-300 shadow">
+        <div className="px-2.5 py-1 rounded-[var(--radius-xs)] bg-[var(--surface-card)] border border-[var(--border-main)] text-[10px] font-mono font-bold text-[var(--text-secondary)]">
           {activeIndex + 1} / {activeReelsList.length || 1}
         </div>
         <button
           onClick={() => scrollToIndex(Math.min(activeReelsList.length - 1, activeIndex + 1))}
           disabled={activeIndex >= activeReelsList.length - 1}
-          className="w-11 h-11 rounded-[4px] bg-white/90 dark:bg-zinc-900/85 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-25 text-gray-900 dark:text-white backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed cursor-pointer"
+          className="w-10 h-10 rounded-[var(--radius-sm)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] disabled:opacity-25 text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center transition-theme disabled:cursor-not-allowed cursor-pointer"
           title={isRtl ? 'المقطع التالي (↓)' : 'Next Reel (↓)'}
         >
-          <ChevronDown size={22} />
+          <ChevronDown size={20} />
         </button>
       </div>
 
@@ -1868,9 +1891,9 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         {isLoading ? (
           <div className="w-full h-[calc(100dvh-80px)] flex items-center justify-center bg-black" />
         ) : activeReelsList.length === 0 ? (
-          <div className="w-full h-[calc(100dvh-80px)] flex items-center justify-center p-4 text-center select-none bg-black/40">
-            <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-3xl bg-zinc-900/90 border border-zinc-800 backdrop-blur-xl max-w-sm shadow-2xl text-center">
-              <span className="text-xs font-bold text-zinc-300">
+          <div className="w-full h-[calc(100dvh-80px)] flex items-center justify-center p-4 text-center select-none">
+            <div className="flex flex-col items-center gap-3 max-w-sm text-center">
+              <span className="text-xs font-bold text-[var(--text-muted)]">
                 {activeTab === 'following'
                   ? (isRtl ? 'لا توجد مقاطع ريلز من الأشخاص الذين تتابعهم حالياً.' : 'No reels from creators you follow yet.')
                   : (isRtl ? 'لا توجد مقاطع ريلز منشورة حالياً' : 'No published reels available.')}
@@ -1878,17 +1901,18 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
               {activeTab === 'following' ? (
                 <button
                   onClick={() => setActiveTab('for_you')}
-                  className="px-4 py-2 rounded-[4px] bg-accent text-white font-bold text-xs shadow-lg hover:opacity-90 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-accent transition-theme cursor-pointer"
                 >
-                  {isRtl ? 'تصفح قسم لك' : 'Explore For You'}
+                  <span>{isRtl ? 'تصفح قسم لك' : 'Explore For You'}</span>
                 </button>
               ) : (
                 <button
+                  id="add-reel-button"
                   onClick={handleUploadReelClick}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-accent transition-theme cursor-pointer border border-[var(--border-main)] rounded-[var(--radius-full)] !bg-transparent !shadow-none hover:bg-[var(--surface-subtle)]"
                 >
-                  <Plus size={14} className="stroke-[3]" />
-                  <span>{isRtl ? 'إضافة مقطع ريلز' : 'Add Reel'}</span>
+                  <Plus size={14} className="stroke-[2.5] shrink-0" />
+                  <span className="leading-none flex items-center">{isRtl ? 'إضافة مقطع ريلز' : 'Add Reel'}</span>
                 </button>
               )}
             </div>
@@ -2155,8 +2179,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                       </div>
                       <button
                         onClick={(e) => handleFollowToggle(e, reel.id, reel.author_name)}
-                        className={`absolute -bottom-1.5 start-1/2 -translate-x-1/2 w-5 h-5 rounded-[6px] flex items-center justify-center text-white shadow-md border border-black transition-all ${
-                          isFollowing ? 'bg-emerald-500' : 'bg-purple-600 hover:bg-purple-700'
+                        className={`absolute -bottom-1.5 start-1/2 -translate-x-1/2 w-5 h-5 rounded-[6px] flex items-center justify-center text-white border border-black/20 transition-theme ${
+                          isFollowing ? 'bg-[var(--fg-success)]' : 'bg-[var(--bg-accent-emphasis)]'
                         }`}
                         title={isFollowing ? (isRtl ? 'تتابع بالفعل' : 'Following') : (isRtl ? 'متابعة' : 'Follow')}
                       >
@@ -2344,8 +2368,8 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                     </div>
                     <button
                       onClick={(e) => handleFollowToggle(e, reel.id, reel.author_name)}
-                      className={`absolute -bottom-1 start-1/2 -translate-x-1/2 w-5 h-5 rounded-[6px] flex items-center justify-center text-white shadow-lg border-2 border-zinc-950 transition-all cursor-pointer ${
-                        isFollowing ? 'bg-emerald-500' : 'bg-purple-600 hover:bg-purple-700 hover:scale-110'
+                      className={`absolute -bottom-1 start-1/2 -translate-x-1/2 w-5 h-5 rounded-[6px] flex items-center justify-center text-white border border-black/20 transition-theme cursor-pointer ${
+                        isFollowing ? 'bg-[var(--fg-success)]' : 'bg-[var(--bg-accent-emphasis)]'
                       }`}
                       title={isFollowing ? (isRtl ? 'تتابع بالفعل' : 'Following') : (isRtl ? 'متابعة' : 'Follow')}
                     >
@@ -2474,12 +2498,12 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
             className="md:hidden absolute bottom-20 inset-x-0 z-30 flex flex-col items-center justify-center pointer-events-none"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-              className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-[8px] border border-white/20 text-white shadow-2xl"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+              className="flex items-center gap-2 bg-[var(--surface-subtle)] backdrop-blur-md px-3.5 py-1.5 rounded-[var(--radius-full)] border border-[var(--border-main)] text-[var(--text-primary)]"
             >
-              <ChevronUp size={18} className="text-pink-400 animate-bounce" />
-              <span className="text-[11px] font-extrabold tracking-wide text-gray-200">
+              <ChevronUp size={16} className="text-[var(--text-primary)]" />
+              <span className="text-[11px] font-bold text-[var(--text-primary)]">
                 {isRtl ? 'اسحب للأعلى لمشاهدة المزيد' : 'Swipe up for next Reel'}
               </span>
             </motion.div>
@@ -3308,7 +3332,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                 </button>
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/bulletin?tab=reels&reel=${moreMenuReel.id}`;
+                    const url = `${window.location.origin}/viralbook/reels/${moreMenuReel.id}`;
                     navigator.clipboard.writeText(url);
                     toast.success(isRtl ? 'تم نسخ رابط المقطع' : 'Link copied to clipboard');
                     setMoreMenuReel(null);

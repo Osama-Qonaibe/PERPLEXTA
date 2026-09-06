@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { getAuthHeaders, getTimeAgo } from "../../utils/adminUtils";
 import {
@@ -73,10 +74,6 @@ export const MassBroadcastView = ({
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const [form, setForm] = useState({
     broadcast_type: "both",
@@ -113,9 +110,12 @@ export const MassBroadcastView = ({
     }
   }, [form.target_group, showForm, token]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (type === "success") {
+      globalToast.success(message, dir === "rtl" ? "تم بنجاح" : "Success");
+    } else {
+      globalToast.error(message, dir === "rtl" ? "حدث خطأ" : "Error");
+    }
   };
 
   const fetchBroadcasts = async () => {
@@ -248,28 +248,6 @@ export const MassBroadcastView = ({
           </div>
         </div>
       </div>
-
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-md shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                : "bg-white border border-accent text-accent"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
 
       <AnimatePresence mode="wait">
         {showForm ? (

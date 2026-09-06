@@ -746,7 +746,7 @@ export const RewardsPage: React.FC = () => {
           
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => navigate('/settings?tab=wallet')}
+              onClick={() => navigate('/settings/wallet')}
               className="flex items-center gap-2 h-8 px-3 rounded-[8px] border border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--surface-subtle)] text-[var(--text-primary)] transition-all duration-200 cursor-pointer shadow-sm text-xs font-bold"
             >
               <Landmark size={14} className="text-accent transition-all duration-300" />
@@ -777,8 +777,8 @@ export const RewardsPage: React.FC = () => {
               <span className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] tracking-tight">${withdrawableUSD}</span>
             </div>
             <button 
-              onClick={() => navigate('/settings?tab=wallet')}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
+              onClick={() => navigate('/settings/wallet')}
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-gray-800 dark:hover:bg-gray-700 border border-slate-800 dark:border-gray-600 text-xs md:text-sm font-extrabold transition-all duration-200 cursor-pointer group shadow-md active:scale-95"
             >
               <Wallet size={16} className="md:w-[18px] md:h-[18px] text-accent transition-all duration-300" />
               <span>{t('requestWithdrawal')}</span>
@@ -802,7 +802,7 @@ export const RewardsPage: React.FC = () => {
             </div>
             <button 
               onClick={() => setIsConvertModalOpen(true)}
-              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-[4px] bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-xs md:text-base font-extrabold transition-all duration-300 cursor-pointer group shadow-sm"
+              className="mt-2 md:mt-6 flex items-center justify-center gap-2 mx-auto px-5 py-2.5 md:px-6 md:py-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-gray-800 dark:hover:bg-gray-700 border border-slate-800 dark:border-gray-600 text-xs md:text-sm font-extrabold transition-all duration-200 cursor-pointer group shadow-md active:scale-95"
             >
               <Zap size={16} className="md:w-[18px] md:h-[18px] text-accent transition-all duration-300" />
               <span>{t('convertPointsToBalance')}</span>

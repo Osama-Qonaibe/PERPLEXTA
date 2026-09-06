@@ -160,7 +160,7 @@ const translations = {
     dashboard: 'لوحة التحكم',
     newChat: 'محادثة جديدة',
     settings: 'الإعدادات',
-    askAssistant: 'اسأل بيربليكستا',
+    askAssistant: 'اسأل أو أرسل أمرك...',
     fast: 'سريع',
     pro: 'احترافي',
     thinking: 'تفكير',
@@ -188,7 +188,6 @@ const translations = {
     perplexta_music: 'الموسيقى والأغاني',
     perplexta_music_desc: 'التأليف الصوتي المتقدم والتركيب الموسيقي الهيكلي.',
     storage_mb: 'مساحة التخزين (MB)',
-    marketplace_listings: 'حد منتجات المتجر',
     sovereign_memory: 'الذاكرة السيادية',
     sovereign_memory_desc: 'التكامل السيادي والاحتفاظ بالمعارف والذكريات على المدى الطويل لمصادقة وسياق الهوية الرقمية الذكية.',
     x402_api: 'بوابة الـ API (x402)',
@@ -651,7 +650,7 @@ const translations = {
     ledgerDbCloudTitle: 'قاعدة المالية (سحابية)',
     coreDbDesc: 'البيانات التشغيلية',
     ledgerDbDesc: 'البيانات المالية',
-    externalDbDesc: 'البيانات المجتمعية والمدونات والمنتديات',
+    externalDbDesc: 'البيانات التكاملية والخدمات الخارجية المعزولة',
     securityDbDesc: 'التحكم ومكافحة الإغراق وحماية الموارد',
     dbHost: 'المضيف',
     dbPort: 'المنفذ',
@@ -877,8 +876,8 @@ const translations = {
     dashboard: 'Dashboard',
     newChat: 'New Chat',
     settings: 'Settings',
-    howCanIHelp: 'What would you like to do?',
-    askAssistant: 'Ask Perplexta',
+    howCanIHelp: 'How can I help?',
+    askAssistant: 'Ask or prompt...',
     fast: 'Fast',
     pro: 'Pro',
     thinking: 'Think',
@@ -905,7 +904,6 @@ const translations = {
     perplexta_music: 'Music & Songs',
     perplexta_music_desc: 'Advanced acoustic composition and structural music synthesis.',
     storage_mb: 'Storage Space (MB)',
-    marketplace_listings: 'Marketplace Listing Limit',
     sovereign_memory: 'Sovereign Memory',
     sovereign_memory_desc: 'Sovereign system integration and long-term knowledge retention with identity verification mapping.',
     x402_api: 'Agent Gateway (x402 API)',
@@ -1338,7 +1336,7 @@ const translations = {
     ledgerDbCloudTitle: 'Ledger DB (Cloud) - PostgreSQL',
     coreDbDesc: 'Operational Data (Users, Chats, Logs)',
     ledgerDbDesc: 'Financial Data (Wallets, Transactions, Balances)',
-    externalDbDesc: 'Social Data (Forums, Topics, Comments, Blog articles)',
+    externalDbDesc: 'External Integrations & Isolated Third-party Services',
     securityDbDesc: 'Security Logs, Rate Limiter lists & Blacklists',
     dbHost: 'Host',
     dbPort: 'Port',
@@ -2632,7 +2630,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }
-    }, 1000);
+    }, 2500);
 
     return () => {
       events.forEach(event => {

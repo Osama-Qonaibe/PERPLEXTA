@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { usePerplextaRouter } from '../hooks/usePerplextaRouter';
 import { toast } from '../context/NotificationContext';
-import { Gift, CreditCard, LayoutDashboard, Plus, User, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Wallet, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, ShoppingBag, MoreHorizontal, Sparkles, LayoutGrid } from 'lucide-react';
+import { Gift, CreditCard, LayoutDashboard, Plus, User, LogOut, MessageSquare, Trash2, Edit2, Check, X, Settings2, Wallet, BrainCircuit, ChevronLeft, ChevronRight, Loader2, Activity, MoreHorizontal, Sparkles, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { isPathBlocked } from '../utils/sectionVisibility';
 import { SkeletonLoader } from './SkeletonLoader';
@@ -317,11 +317,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
       label: t('dashboard'), 
       path: '/admin',
       className: 'hidden md:flex'
-    });
-    rawNavItems.push({
-      icon: <Settings2 size={18} />,
-      label: language === 'ar' ? 'لوحة تحكم الأقسام' : 'Sections Dashboard',
-      path: '/admin-community'
     });
   }
 
@@ -777,7 +772,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                         <div className="p-1.5 space-y-0.5">
                           <button 
                             onClick={() => { 
-                              navigate('/settings?tab=account'); 
+                              navigate('/settings/account'); 
                               setIsDropdownOpen(false); 
                               if (isMobile) setIsSidebarOpen(false);
                             }} 
@@ -801,7 +796,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { 
-                              navigate('/settings?tab=usage'); 
+                              navigate('/settings/usage'); 
                               setIsDropdownOpen(false); 
                               if (isMobile) setIsSidebarOpen(false);
                             }} 
@@ -827,7 +822,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { 
-                              navigate('/settings?tab=wallet'); 
+                              navigate('/settings/wallet'); 
                               setIsDropdownOpen(false); 
                               if (isMobile) setIsSidebarOpen(false);
                             }} 
@@ -851,31 +846,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
                           <button 
                             onClick={() => { 
-                              navigate('/settings?tab=marketplace_purchases'); 
-                              setIsDropdownOpen(false); 
-                              if (isMobile) setIsSidebarOpen(false);
-                            }} 
-                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-[4px] border border-transparent transition-theme text-gray-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] group/item"
-                          >
-                            <ShoppingBag size={14} className="flex-shrink-0 group-hover/item:text-[var(--text-primary)] text-gray-400 transition-theme" />
-                            <AnimatePresence mode="wait" initial={false}>
-                              {isSidebarOpen && (
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={sidebarTransition}
-                                  className="overflow-hidden whitespace-nowrap text-start"
-                                >
-                                  <span className="font-bold text-xs">{language === 'ar' ? 'مشترياتي الرقمية' : 'Digital Purchases'}</span>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </button>
-
-                          <button 
-                            onClick={() => { 
-                              navigate('/settings?tab=memory'); 
+                              navigate('/settings/memory'); 
                               setIsDropdownOpen(false); 
                               if (isMobile) setIsSidebarOpen(false);
                             }} 

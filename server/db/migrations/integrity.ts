@@ -293,25 +293,6 @@ export async function verifySchemaIntegrity() {
           created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
         }
       },
-      marketplace_items: {
-        columns: ['id', 'user_id', 'title_en', 'title_ar', 'description_en', 'description_ar', 'price', 'category_en', 'category_ar', 'image_url', 'status', 'views', 'contact_link', 'download_url', 'preview_url', 'video_url', 'features', 'technologies', 'referral_percent', 'highlight_tag', 'license_type', 'created_at', 'updated_at', 'slug', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
-        repairCols: {
-          slug: { type: 'VARCHAR(255)' },
-          meta_title_en: { type: 'VARCHAR(255)' },
-          meta_title_ar: { type: 'VARCHAR(255)' },
-          meta_description_en: { type: 'TEXT' },
-          meta_description_ar: { type: 'TEXT' },
-          keywords_en: { type: 'TEXT' },
-          keywords_ar: { type: 'TEXT' },
-          og_image_url: { type: 'TEXT' }
-        }
-      },
-      marketplace_purchases: {
-        columns: ['id', 'user_id', 'item_id', 'price_paid', 'license_type', 'referrer_id', 'commission_paid', 'download_token', 'created_at']
-      },
-      marketplace_reviews: {
-        columns: ['id', 'user_id', 'item_id', 'rating', 'comment', 'created_at', 'updated_at']
-      },
       video_resources: {
         columns: ['id', 'user_id', 'chat_id', 'message_id', 'file_url', 'prompt', 'provider', 'model', 'duration', 'aspect_ratio', 'resolution', 'metadata', 'created_at']
       },
@@ -328,7 +309,7 @@ export async function verifySchemaIntegrity() {
         columns: ['id', 'user_id', 'tool_id', 'is_connected', 'config', 'access_token', 'refresh_token', 'expires_at', 'scopes', 'last_connected_at', 'created_at', 'updated_at']
       },
       media_assets: {
-        columns: ['id', 'stored_path', 'original_filename', 'context', 'format', 'width', 'height', 'size_bytes', 'sha256_hash', 'is_public', 'user_id', 'blog_article_id', 'marketplace_item_id', 'metadata', 'created_at', 'updated_at'],
+        columns: ['id', 'stored_path', 'original_filename', 'context', 'format', 'width', 'height', 'size_bytes', 'sha256_hash', 'is_public', 'user_id', 'metadata', 'created_at', 'updated_at'],
         repairCols: {
           context: { type: 'TEXT', default: "'general'" },
           format: { type: 'TEXT', default: "'webp'" },
@@ -634,51 +615,7 @@ export async function verifySchemaIntegrity() {
         }
       }
     },
-    external: {
-      blog_articles: {
-        columns: ['id', 'author_id', 'slug', 'title_en', 'title_ar', 'content_en', 'content_ar', 'image_url', 'category_en', 'category_ar', 'views', 'created_at', 'updated_at', 'meta_title_en', 'meta_title_ar', 'meta_description_en', 'meta_description_ar', 'keywords_en', 'keywords_ar', 'og_image_url', 'image_asset_id'],
-        repairCols: {
-          author_id: { type: 'INTEGER' },
-          slug: { type: 'VARCHAR(255)' },
-          title_en: { type: 'VARCHAR(255)' },
-          title_ar: { type: 'VARCHAR(255)' },
-          content_en: { type: 'TEXT' },
-          content_ar: { type: 'TEXT' },
-          image_url: { type: 'TEXT' },
-          category_en: { type: 'VARCHAR(100)', default: "'General'" },
-          category_ar: { type: 'VARCHAR(100)', default: "'عام'" },
-          views: { type: 'INTEGER', default: 0 },
-          meta_title_en: { type: 'VARCHAR(255)' },
-          meta_title_ar: { type: 'VARCHAR(255)' },
-          meta_description_en: { type: 'TEXT' },
-          meta_description_ar: { type: 'TEXT' },
-          keywords_en: { type: 'TEXT' },
-          keywords_ar: { type: 'TEXT' },
-          og_image_url: { type: 'TEXT' },
-          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
-          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
-        }
-      },
-      blog_comments: {
-        columns: ['id', 'article_id', 'user_id', 'content', 'created_at', 'updated_at'],
-        repairCols: {
-          article_id: { type: 'INTEGER' },
-          user_id: { type: 'INTEGER' },
-          content: { type: 'TEXT' },
-          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' },
-          updated_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
-        }
-      },
-      blog_ratings: {
-        columns: ['id', 'article_id', 'user_id', 'rating', 'created_at'],
-        repairCols: {
-          article_id: { type: 'INTEGER' },
-          user_id: { type: 'INTEGER' },
-          rating: { type: 'INTEGER', default: 5 },
-          created_at: { type: 'TIMESTAMP', default: 'CURRENT_TIMESTAMP' }
-        }
-      }
-    },
+    external: {},
     security: {
       token_blacklist: {
         columns: ['id', 'token', 'expires_at', 'created_at'],

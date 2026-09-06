@@ -17,7 +17,7 @@ if (!APP_URL) {
 const ADMIN_ROOM = 'admin_room';
 const USER_ROOM_PREFIX = 'user_';
 const AD_CHAT_PREFIX = 'ad_chat_';
-const ADMIN_STATS_INTERVAL = 15000;
+const ADMIN_STATS_INTERVAL = 30000;
 const MAX_BUFFER_SIZE = 1e6;
 const MIN_TOKEN_LENGTH = 20;
 

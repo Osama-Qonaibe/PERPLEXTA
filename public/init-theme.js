@@ -34,23 +34,20 @@
     if (isDark) {
       root.classList.add('dark');
       root.classList.remove('light');
-      root.style.setProperty('--pwa-theme-color', '#000000');
-      root.style.setProperty('--pwa-bg-color', '#000000');
-      root.style.backgroundColor = '#000000';
-      root.style.color = '#ffffff';
-      if (meta) meta.setAttribute('content', '#000000');
+      root.setAttribute('data-theme', 'dark');
+      root.style.setProperty('--pwa-theme-color', '#0b0c0e');
+      root.style.setProperty('--pwa-bg-color', '#0b0c0e');
+      if (meta) meta.setAttribute('content', '#0b0c0e');
     } else {
       root.classList.add('light');
       root.classList.remove('dark');
-      root.style.setProperty('--pwa-theme-color', '#ffffff');
-      root.style.setProperty('--pwa-bg-color', '#ffffff');
-      root.style.backgroundColor = '#ffffff';
-      root.style.color = '#000000';
-      if (meta) meta.setAttribute('content', '#ffffff');
+      root.setAttribute('data-theme', 'light');
+      root.style.setProperty('--pwa-theme-color', '#f8fafc');
+      root.style.setProperty('--pwa-bg-color', '#f8fafc');
+      if (meta) meta.setAttribute('content', '#f8fafc');
     }
   } catch (e) {
     document.documentElement.classList.add('dark');
-    document.documentElement.style.backgroundColor = '#000000';
-    document.documentElement.style.color = '#ffffff';
+    document.documentElement.setAttribute('data-theme', 'dark');
   }
 })();

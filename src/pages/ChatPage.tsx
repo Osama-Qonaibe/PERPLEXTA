@@ -67,7 +67,7 @@ const SimpleImageLoadingPlaceholder = ({ dir, aspectRatio = '1:1' }: { dir: 'ltr
 
       {/* Modern Shaded Square Canvas Placeholder */}
       <div 
-        className={`relative overflow-hidden rounded-2xl border border-zinc-700/50 dark:border-zinc-800/90 bg-[#1e1e21] dark:bg-[#18181b] ${containerAspectClass} w-full shadow-xl flex items-center justify-center`}
+        className={`relative overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white dark:bg-transparent ${containerAspectClass} w-full flex items-center justify-center`}
       >
         {/* Soft breathing center radial aura */}
         <motion.div 
@@ -283,7 +283,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
     <div className="w-full flex flex-col my-4 items-start gap-3">
       {/* Thumbnail Card */}
       <div 
-        className={`relative group overflow-hidden rounded-2xl border border-zinc-700/40 dark:border-zinc-800/80 bg-[#1e1e21] dark:bg-[#18181b] ${containerAspectClass} w-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer`}
+        className={`relative group overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-white/[0.08] bg-white dark:bg-transparent ${containerAspectClass} w-full transition-all duration-300 cursor-pointer`}
         onClick={() => setIsPreviewOpen(true)}
       >
         {!imageError && (
@@ -4179,7 +4179,7 @@ export const InsufficientFundsCard = ({ data, dir, t, navigate, user }: { data: 
             if (triggerUpgradePrompt) {
               triggerUpgradePrompt('wallet');
             } else {
-              navigate('/settings?tab=wallet');
+              navigate('/settings/wallet');
             }
           }}
           className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-sm text-[11px] font-black uppercase tracking-wider transition-theme shadow-[0_10px_20px_rgba(239,68,68,0.3)] hover:translate-y-[-2px] active:translate-y-0"
@@ -4234,11 +4234,15 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (user && !prevUserRef.current) {
       setSelectedTool('chat');
+      setSelectedModel('fast');
       localStorage.setItem('last_active_tool', 'chat');
+      localStorage.setItem('last_active_model', 'fast');
     }
     if (!user && prevUserRef.current) {
       setSelectedTool('chat');
       setSelectedModel('fast');
+      localStorage.setItem('last_active_tool', 'chat');
+      localStorage.setItem('last_active_model', 'fast');
     }
     prevUserRef.current = user;
   }, [user]);
@@ -6214,13 +6218,12 @@ export const ChatPage: React.FC = () => {
   };
 
   const models = [
-    { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
     { id: 'fast', label: t('fast'), icon: <Zap size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
     { id: 'thinking', label: t('thinking'), icon: <Brain size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
+    { id: 'pro', label: t('pro'), icon: <Sparkles size={18} />, color: 'text-accent', dotColor: 'bg-accent' },
   ];
 
   const advancedTools = [
-    { id: 'chat', label: t('chat') || (dir === 'rtl' ? 'محادثة' : 'Chat'), icon: <MessageSquare size={16} />, isNew: false },
     { id: 'code', label: t('code') || (dir === 'rtl' ? 'توليد كود' : 'Code Generation'), icon: <Code size={16} />, isNew: true },
     { id: 'image', label: t('image') || (dir === 'rtl' ? 'توليد صورة' : 'Image Generation'), icon: <ImageIcon size={16} />, isNew: false },
     { id: 'video', label: t('video') || (dir === 'rtl' ? 'توليد فيديو' : 'Video Generation'), icon: <Video size={16} />, isNew: true },
@@ -6234,8 +6237,9 @@ export const ChatPage: React.FC = () => {
     { id: 'perplexta_music', label: t('perplexta_music') || (dir === 'rtl' ? 'الموسيقى والأغاني' : 'Music & Songs'), icon: <Music size={16} />, isNew: true },
   ];
 
-  const currentModel = models.find(m => m.id === selectedModel) || models[2];
-  const currentTool = advancedTools.find(t => t.id === selectedTool) || advancedTools[0];
+  const defaultChatTool = { id: 'chat', label: t('chat') || (dir === 'rtl' ? 'محادثة' : 'Chat'), icon: <MessageSquare size={16} /> };
+  const currentModel = models.find(m => m.id === selectedModel) || models.find(m => m.id === 'fast') || models[1];
+  const currentTool = advancedTools.find(t => t.id === selectedTool) || defaultChatTool;
   const currentPlan = plans?.find((p: any) => p.id?.toString() === user?.subscription?.plan_id?.toString());
 
   const getToolWelcomeIntro = (toolId: string) => {
@@ -6697,163 +6701,180 @@ export const ChatPage: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t border-[var(--border-main)]/60 transition-all ease-in-out">
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            <div ref={toolsMenuRef} className="relative">
-              <button 
-                type="button"
-                onClick={() => {
-                  if (!isInputDisabled) {
-                    setIsAdvancedToolsOpen(prev => !prev);
-                    setIsModelMenuOpen(false);
-                    setIsAttachmentMenuOpen(false);
-                  }
-                }}
-                disabled={isInputDisabled}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 h-8 rounded-[8px] transition-theme border ${
-                  isInputDisabled
-                    ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
-                    : activeDropdown === 'tool'
-                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]' 
-                      : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-accent hover:bg-accent/5'
-                }`}
-              >
-                <span className={activeDropdown === 'tool' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
-                  {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'w-3.5 h-3.5' })}
-                </span>
-                <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentTool.label}</span>
-              </button>
-
-              {isAdvancedToolsOpen && (
-                <div className={`absolute bottom-full mb-2 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-52 sm:w-56 rounded-xl border shadow-2xl flex flex-col z-[100] overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)] backdrop-blur-md`}>
-                  <div className={`px-3 py-2 text-[10px] font-black tracking-wider text-[var(--text-muted)] bg-[var(--bg-base)]/30 border-b border-[var(--border-main)]/40`}>
-                    {dir === 'rtl' ? 'الأدوات' : 'TOOLS'}
-                  </div>
-                  <div className="p-1 flex flex-col gap-0 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    {advancedTools.map((tool, tIdx) => {
-                      const limit = currentPlan?.limits?.[tool.id];
-                      const isHidden = limit?.isHidden === true;
-                      const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
-                      const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
-                      const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
-
-                      return (
-                        <button 
-                          key={`adv-tool-${tool.id}-${tIdx}`} 
-                          onClick={() => {
-                            if (isLocked) {
-                              return;
-                            }
-                            setSelectedTool(tool.id);
-                            setActiveDropdown('tool');
-                            setIsAdvancedToolsOpen(false);
-                          }}
-                          className={`${tool.id === 'code' ? 'hidden md:flex' : 'flex'} items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-theme text-[12px] font-bold ${
-                            isLocked 
-                              ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
-                              : selectedTool === tool.id && activeDropdown === 'tool'
-                                ? 'bg-[var(--bg-base)] text-[var(--text-primary)] font-extrabold shadow-sm' 
-                                : 'hover:bg-[var(--bg-base)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                          }`}
-                        >
-                          <span className={isLocked ? 'text-[var(--text-muted)] opacity-70' : selectedTool === tool.id && activeDropdown === 'tool' ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                            {tool.icon}
-                          </span>
-                          <div className="flex items-center justify-between flex-1 min-w-0">
-                            <span className="truncate">{tool.label}</span>
-                            <div className="flex items-center gap-1.5">
-                              {tool.isNew && !isLocked && (
-                                <span className="px-1.5 py-[1px] rounded-[4px] bg-gray-500/20 text-gray-400 text-[8px] font-black uppercase tracking-wider">
-                                  NEW
-                                </span>
-                              )}
-                              {isLocked && (
-                                <Lock size={12} className="text-amber-500" />
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="w-px h-4 bg-[var(--border-main)] mx-0.5 hidden sm:block" />
-
-            <div ref={modelsMenuRef} className="relative">
-              <button 
-                type="button"
-                onClick={() => {
-                  if (!isInputDisabled) {
-                    setIsModelMenuOpen(prev => !prev);
-                    setIsAdvancedToolsOpen(false);
-                    setIsAttachmentMenuOpen(false);
-                  }
-                }}
-                disabled={isInputDisabled}
-                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 h-8 rounded-[8px] transition-theme border ${
-                  isInputDisabled
-                    ? 'opacity-30 cursor-not-allowed border-transparent text-gray-500 bg-transparent'
-                    : activeDropdown === 'model'
-                      ? 'bg-accent/10 border-accent/20 text-accent shadow-[0_0_15px_rgba(156,163,175,0.1)]' 
-                      : 'bg-transparent border-transparent text-[var(--text-muted)] hover:text-gray-900 dark:hover:text-white hover:bg-[var(--bg-overlay)]'
-                }`}
-              >
-                <span className={activeDropdown === 'model' ? ' text-accent' : 'opacity-60 group-hover:opacity-100'}>
-                  {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 14, className: 'w-3.5 h-3.5' })}
-                </span>
-                <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] hidden xs:inline">{currentModel.label}</span>
-              </button>
-              {isModelMenuOpen && (
-                <div className={`absolute bottom-full mb-3 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-36 p-1.5 rounded-lg border shadow-2xl flex flex-col gap-0.5 z-[100] bg-[var(--surface-card)] border-[var(--border-main)]`}>
-                  {models.map((model, idx) => {
-                    const toolMapping: Record<string, string> = {
-                      'fast': 'chat_fast',
-                      'pro': 'chat_pro',
-                      'thinking': 'chat_reasoning'
-                    };
-                    const mappedToolId = toolMapping[model.id] || 'chat';
-                    const limit = currentPlan?.limits?.[mappedToolId];
-                    const isHidden = limit?.isHidden === true;
-                    const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
-                    const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
-                    const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
-
-                    return (
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap min-w-0">
+            <div ref={toolsMenuRef} className="relative shrink-0">
+              {(() => {
+                const isToolActive = selectedTool !== 'chat';
+                return (
+                  <>
                     <button 
-                      key={`${model.id}-${idx}`} 
+                      type="button"
                       onClick={() => {
-                        if (isLocked) {
-                          return;
+                        if (!isInputDisabled) {
+                          setIsAdvancedToolsOpen(prev => !prev);
+                          setIsModelMenuOpen(false);
+                          setIsAttachmentMenuOpen(false);
                         }
-                        setSelectedModel(model.id as any);
-                        setSelectedTool(mappedToolId);
-                        setActiveDropdown('model');
-                        setIsModelMenuOpen(false);
                       }}
-                      className={`flex items-center justify-between px-3 py-2 rounded-[6px] transition-theme text-[12px] font-bold uppercase tracking-tight ${
-                        isLocked
-                          ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
-                          : 'hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-gray-900 dark:hover:text-white group'
+                      disabled={isInputDisabled}
+                      className={`flex items-center gap-1 md:gap-1.5 px-1.5 sm:px-2 md:px-2.5 h-7 sm:h-8 rounded-[8px] flex-nowrap transition-all border border-transparent bg-transparent hover:bg-[var(--surface-subtle)] ${
+                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className={`${isLocked ? 'text-gray-400 opacity-60' : model.color} ${isLocked ? '' : 'group-hover:scale-110 transition-transform'}`}>{model.icon}</span>
-                        <span>{model.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isLocked && (
-                          <Lock size={12} className="text-amber-500" />
-                        )}
-                        {!isLocked && selectedModel === model.id && activeDropdown === 'model' && (
-                          <div className={`w-1.5 h-1.5 rounded-[4px] ${model.dotColor} shadow-[0_0_8px_rgba(156,163,175,0.6)]`} />
-                        )}
-                      </div>
+                      <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
+                        isToolActive 
+                          ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-105' 
+                          : 'text-[var(--text-muted)]'
+                      }`}>
+                        {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { 
+                          size: 13, 
+                          className: `w-3.5 h-3.5 ${isToolActive ? 'text-emerald-500 dark:text-emerald-400' : ''}` 
+                        })}
+                      </span>
+                      <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
+                        isToolActive ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : 'text-[var(--text-primary)]'
+                      }`}>{currentTool.label}</span>
                     </button>
-                  )})}
-                </div>
-              )}
+
+                    {isAdvancedToolsOpen && (
+                      <div className={`absolute bottom-full mb-2 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-36 max-w-[calc(100vw-2rem)] rounded-xl border shadow-2xl flex flex-col z-[100] overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)] backdrop-blur-md`}>
+                        <div className="p-1 flex flex-col gap-0.5 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto custom-scrollbar">
+                          {advancedTools.map((tool, tIdx) => {
+                            const limit = currentPlan?.limits?.[tool.id];
+                            const isHidden = limit?.isHidden === true;
+                            const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
+                            const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
+                            const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+                            const isSelected = selectedTool === tool.id;
+
+                            return (
+                              <button 
+                                key={`adv-tool-${tool.id}-${tIdx}`} 
+                                onClick={() => {
+                                  if (isLocked) {
+                                    return;
+                                  }
+                                  setSelectedTool(tool.id);
+                                  setActiveDropdown('tool');
+                                  setIsAdvancedToolsOpen(false);
+                                }}
+                                className={`${tool.id === 'code' ? 'hidden md:flex' : 'flex'} items-center gap-1 flex-nowrap px-1.5 py-1 rounded-lg transition-theme text-[10.5px] font-bold bg-transparent hover:bg-[var(--surface-subtle)] ${
+                                  isLocked 
+                                    ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
+                              >
+                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-[var(--text-muted)] opacity-70' : isSelected ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-110 transition-transform' : 'text-[var(--text-muted)]'}`}>
+                                  {React.cloneElement(tool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 13, className: 'w-3.5 h-3.5' })}
+                                </span>
+                                <div className="flex items-center justify-between flex-1 min-w-0 flex-nowrap gap-1">
+                                  <span className={`truncate whitespace-nowrap ${isSelected ? 'text-emerald-500 dark:text-emerald-400 font-bold' : ''}`}>{tool.label}</span>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    {tool.isNew && !isLocked && !isSelected && (
+                                      <span className="px-1 py-[1px] rounded-[3px] bg-gray-500/20 text-gray-400 text-[7px] font-black uppercase tracking-wider">
+                                        NEW
+                                      </span>
+                                    )}
+                                    {isLocked && (
+                                      <Lock size={11} className="text-amber-500 shrink-0" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="w-px h-3.5 bg-[var(--border-main)] mx-0.5 hidden sm:block shrink-0" />
+
+            <div ref={modelsMenuRef} className="relative shrink-0">
+              {(() => {
+                const isModelActive = selectedTool === 'chat';
+
+                return (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (!isInputDisabled) {
+                          setIsModelMenuOpen(prev => !prev);
+                          setIsAdvancedToolsOpen(false);
+                          setIsAttachmentMenuOpen(false);
+                        }
+                      }}
+                      disabled={isInputDisabled}
+                      className={`flex items-center gap-1 md:gap-1.5 px-1.5 sm:px-2 md:px-2.5 h-7 sm:h-8 rounded-[8px] flex-nowrap transition-all border border-transparent bg-transparent hover:bg-[var(--surface-subtle)] ${
+                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
+                        isModelActive 
+                          ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-105' 
+                          : 'text-[var(--text-muted)]'
+                      }`}>
+                        {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { 
+                          size: 13, 
+                          className: `w-3.5 h-3.5 ${isModelActive ? 'text-emerald-500 dark:text-emerald-400' : ''}` 
+                        })}
+                      </span>
+                      <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
+                        isModelActive ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : 'text-[var(--text-primary)]'
+                      }`}>{currentModel.label}</span>
+                    </button>
+
+                    {isModelMenuOpen && (
+                      <div className={`absolute bottom-full mb-2 ${dir === 'rtl' ? 'right-0' : 'left-0'} w-28 p-1 rounded-xl border shadow-2xl flex flex-col gap-0.5 z-[110] bg-[var(--surface-card)] border-[var(--border-main)] backdrop-blur-md`}>
+                        {models.map((model, idx) => {
+                          const limit = currentPlan?.limits?.[model.id];
+                          const isHidden = limit?.isHidden === true;
+                          const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
+                          const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
+                          const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+                          const isSelected = selectedModel === model.id && isModelActive;
+
+                          return (
+                            <button 
+                              key={`${model.id}-${idx}`} 
+                              onClick={() => {
+                                if (isLocked) {
+                                  return;
+                                }
+                                setSelectedModel(model.id as any);
+                                setSelectedTool('chat');
+                                setActiveDropdown('model');
+                                setIsModelMenuOpen(false);
+                              }}
+                              className={`flex items-center justify-between px-1.5 py-1 rounded-lg flex-nowrap transition-theme text-[10.5px] font-bold uppercase tracking-tight bg-transparent hover:bg-[var(--surface-subtle)] ${
+                                isLocked
+                                  ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] group'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 flex-nowrap">
+                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-gray-400 opacity-60' : isSelected ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.85)] scale-110' : model.color} transition-transform`}>
+                                  {React.cloneElement(model.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 13, className: 'w-3.5 h-3.5' })}
+                                </span>
+                                <span className={`whitespace-nowrap ${isSelected ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : ''}`}>{model.label}</span>
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {isLocked && (
+                                  <Lock size={11} className="text-amber-500 shrink-0" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

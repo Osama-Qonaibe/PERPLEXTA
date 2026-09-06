@@ -399,7 +399,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   };
 
   // Generate Embed Code
-  const embedCode = `<iframe src="${window.location.origin}/bulletin?embed=1&ad=${ad.id}" width="500" height="650" frameborder="0" scrolling="no" allowtransparency="true" style="border:none;overflow:hidden;border-radius:16px;max-width:100%;"></iframe>`;
+  const embedCode = `<iframe src="${window.location.origin}/viralbook?embed=1&ad=${ad.id}" width="500" height="650" frameborder="0" scrolling="no" allowtransparency="true" style="border:none;overflow:hidden;border-radius:16px;max-width:100%;"></iframe>`;
 
   const copyEmbedCode = () => {
     navigator.clipboard.writeText(embedCode);
@@ -1024,8 +1024,8 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 <div className="space-y-4">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {isRtl
-                      ? 'انسخ كود iframe لتضمين هذا المنشور مباشرة في موقعك أو مدونتك:'
-                      : 'Copy this iframe snippet to embed this post directly onto your website or blog:'}
+                      ? 'انسخ كود iframe لتضمين هذا المنشور مباشرة في موقعك أو منصتك:'
+                      : 'Copy this iframe snippet to embed this post directly onto your website or platform:'}
                   </p>
 
                   <div className="p-3 rounded-2xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">

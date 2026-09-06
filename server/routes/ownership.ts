@@ -7,7 +7,7 @@ const router = express.Router();
 
 /**
  * PATCH /api/ownership/transfer
- * Allows admin or owner to update the owner_id of a bulletin_pages or marketplace_items record
+ * Allows admin or owner to update the owner_id of a bulletin_pages record
  * with full audit logging in the user_activity_logs table (including previous owner ID, new owner ID, record ID, and timestamp).
  */
 router.patch('/transfer', authenticateToken, async (req: any, res: any) => {
@@ -20,8 +20,8 @@ router.patch('/transfer', authenticateToken, async (req: any, res: any) => {
       return res.status(400).json({ error: 'Missing required fields: target_type, record_id, new_owner_id' });
     }
 
-    if (!['bulletin_page', 'marketplace_item'].includes(target_type)) {
-      return res.status(400).json({ error: 'Invalid target_type. Must be bulletin_page or marketplace_item' });
+    if (target_type !== 'bulletin_page') {
+      return res.status(400).json({ error: 'Invalid target_type. Must be bulletin_page' });
     }
 
     // Verify new owner exists
@@ -30,8 +30,8 @@ router.patch('/transfer', authenticateToken, async (req: any, res: any) => {
       return res.status(404).json({ error: 'New owner user not found' });
     }
 
-    const recordTypeEnum = target_type === 'bulletin_page' ? 'bulletin_page' : 'marketplace_item';
-    const tableName = target_type === 'bulletin_page' ? 'bulletin_pages' : 'marketplace_items';
+    const recordTypeEnum: 'bulletin_page' = 'bulletin_page';
+    const tableName = 'bulletin_pages';
     
     // Check record existence and current ownership
     const recordCheck = await pool.query(`SELECT id, owner_id, user_id FROM ${tableName} WHERE id = $1`, [record_id]);

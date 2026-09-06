@@ -79,9 +79,6 @@ const Privacy = lazyRetry(() => import('./pages/Privacy'), 'Privacy');
 const About = lazyRetry(() => import('./pages/About'), 'About');
 const ResetPasswordPage = lazyRetry(() => import('./pages/ResetPasswordPage'), 'ResetPasswordPage');
 import { BulletinBoardPage } from './pages/BulletinBoardPage';
-const BlogPage = lazyRetry(() => import('./pages/BlogPage'), 'BlogPage');
-const AdminCommunityPage = lazyRetry(() => import('./pages/AdminCommunityPage'), 'AdminCommunityPage');
-const MarketplacePage = lazyRetry(() => import('./pages/MarketplacePage'), 'MarketplacePage');
 const GoogleHubPage = lazyRetry(() => import('./pages/GoogleHubPage'));
 const SharedSnapshotPage = lazyRetry(() => import('./pages/SharedSnapshotPage'), 'SharedSnapshotPage');
 const RecommendationsPage = lazyRetry(() => import('./pages/RecommendationsPage'), 'RecommendationsPage');
@@ -180,7 +177,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     '/rewards',
     '/wallet',
     '/reset-password',
-    '/admin-community',
     '/admin-sections',
     '/admin/sections',
     ...dynamicBlockedList
@@ -313,10 +309,6 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     let pageTitlePart = '';
     if (currentPath === '/subscription') {
       pageTitlePart = language === 'ar' ? 'خطط الاشتراك والترقيات النخبة' : 'Premium Elite Subscription Plans';
-    } else if (currentPath === '/marketplace' || currentPath.startsWith('/marketplace')) {
-      pageTitlePart = language === 'ar' ? 'متجر الأكواد ونخب مطالبات الذكاء الاصطناعي' : 'Elite Prompts & Advanced Software Marketplace';
-    } else if (currentPath === '/blog' || currentPath.startsWith('/blog')) {
-      pageTitlePart = language === 'ar' ? 'المدونة التقنية والتقارير الاستخباراتية' : 'Tech Intelligence Blog & Decoded Publications';
     } else if (currentPath === '/about') {
       pageTitlePart = language === 'ar' ? 'من نحن ورؤية بيربليكستا السيادية' : 'About Our Sovereign High-Precision Framework';
     } else if (currentPath === '/terms') {
@@ -325,8 +317,8 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       pageTitlePart = language === 'ar' ? 'سياسة الخصوصية وحقوق حماية البيانات' : 'Strict Privacy & Data Security Regulations';
     } else if (currentPath === '/Studio') {
       pageTitlePart = language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio';
-    } else if (currentPath === '/bulletin' || currentPath.startsWith('/bulletin')) {
-      pageTitlePart = language === 'ar' ? 'لوحة الإعلانات ونشرات الفيديو التفاعلية' : 'Bulletin Board & Video Feeds';
+    } else if (currentPath === '/viralbook' || currentPath.startsWith('/viralbook') || currentPath === '/bulletin' || currentPath.startsWith('/bulletin')) {
+      pageTitlePart = language === 'ar' ? 'فايرال بوك - شبكة المحتوى والمنشورات التفاعلية' : 'Viralbook - Interactive Social Feed & Community Hub';
     }
 
     const defaultTitle = pageTitlePart 
@@ -343,7 +335,8 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
     const finalKeywords = dynamicKeywords || dbKeywords || resolvedKeywords;
     const rawOGImage = dynamicOgImage || dbOgImage || resolvedOGImage;
     const routeOGImage = rawOGImage.startsWith('/') ? `${window.location.origin}${rawOGImage}` : rawOGImage;
-    const finalCanonical = dynamicCanonical || currentUrl;
+    const cleanOriginPath = `${window.location.origin}${normalizedPath}`;
+    const finalCanonical = dynamicCanonical || cleanOriginPath;
 
     document.title = finalTitle;
     updateMetaTag('name', 'description', finalDesc);
@@ -419,13 +412,11 @@ export default function App() {
                 <Route path="rewards" element={<SectionRouteGuard pathKey="/rewards"><ProtectedRoute><RewardsPage /></ProtectedRoute></SectionRouteGuard>} />
                 <Route path="subscription" element={<SectionRouteGuard pathKey="/subscription"><SubscriptionPage /></SectionRouteGuard>} />
                 <Route path="chat/:id?" element={<ChatPage />} />
-                <Route path="bulletin/:id?" element={<SectionRouteGuard pathKey="/bulletin"><BulletinBoardPage /></SectionRouteGuard>} />
-                <Route path="marketplace/:id?" element={<SectionRouteGuard pathKey="/marketplace"><MarketplacePage /></SectionRouteGuard>} />
+                <Route path="viralbook/:id?" element={<SectionRouteGuard pathKey="/viralbook"><BulletinBoardPage /></SectionRouteGuard>} />
+                <Route path="bulletin/:id?" element={<SectionRouteGuard pathKey="/viralbook"><BulletinBoardPage /></SectionRouteGuard>} />
                 <Route path="google-hub" element={<SectionRouteGuard pathKey="/google-hub"><GoogleHubPage /></SectionRouteGuard>} />
                 <Route path="discover" element={<SectionRouteGuard pathKey="/explore"><RecommendationsPage /></SectionRouteGuard>} />
                 <Route path="Studio" element={<SectionRouteGuard pathKey="/studio"><StudioPage /></SectionRouteGuard>} />
-                <Route path="blog/:slug?" element={<SectionRouteGuard pathKey="/blog"><BlogPage /></SectionRouteGuard>} />
-                <Route path="admin-community" element={<AdminRoute><AdminCommunityPage /></AdminRoute>} />
                 <Route path="terms" element={<Terms />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="about" element={<About />} />

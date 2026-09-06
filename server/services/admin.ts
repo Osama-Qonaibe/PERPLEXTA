@@ -34,9 +34,6 @@ export const CORE_TABLES = [
   'message_reports',
   'support_tickets',
   'support_ticket_replies',
-  'marketplace_items',
-  'marketplace_purchases',
-  'marketplace_reviews',
   'video_resources',
   'referral_invitations',
   'shared_snapshots',
@@ -77,11 +74,7 @@ export const LEDGER_TABLES = [
   'stripe_events'
 ];
 
-export const EXTERNAL_TABLES = [
-  'blog_articles',
-  'blog_comments',
-  'blog_ratings'
-];
+export const EXTERNAL_TABLES: string[] = [];
 
 export const SECURITY_TABLES = [
   'token_blacklist',

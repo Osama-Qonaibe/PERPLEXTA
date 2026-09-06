@@ -74,7 +74,7 @@ export async function runAdSeoIndexerJob() {
         }
       }
 
-      const aiData = await generateSeoWithAi('marketplace', {
+      const aiData = await generateSeoWithAi('bulletin', {
         title_en: ad.title_en,
         title_ar: ad.title_ar,
         description_en: (ad.description_en || '') + '\n\n' + pageContent,

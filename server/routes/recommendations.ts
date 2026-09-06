@@ -60,11 +60,6 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
         }
       });
 
-      const purRes = await pool.query('SELECT m.category_en, m.category_ar FROM marketplace_purchases p JOIN marketplace_items m ON p.item_id = m.id WHERE p.user_id = $1', [userId]);
-      purRes.rows.forEach((r: any) => {
-        if (r.category_en) topCategories[r.category_en.toLowerCase().trim()] = (topCategories[r.category_en.toLowerCase().trim()] || 0) + 5.0;
-      });
-
       const savedRes = await pool.query('SELECT category FROM bulletin_saved_ads s JOIN bulletin_ads a ON s.ad_id = a.id WHERE s.user_id = $1', [userId]);
       savedRes.rows.forEach((r: any) => {
         if (r.category) topCategories[r.category.toLowerCase().trim()] = (topCategories[r.category.toLowerCase().trim()] || 0) + 3.0;
@@ -75,28 +70,26 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     }
   }
 
-  const marketRes = await pool.query(
-    `SELECT m.*, 
-            COALESCE(u.name, 'Perplexta Creator') as seller_name,
-            COALESCE(u.avatar, '') as seller_avatar,
-            COALESCE((SELECT AVG(rating)::numeric(3,1) FROM marketplace_reviews WHERE item_id = m.id), 4.8) as avg_rating,
-            COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE item_id = m.id), 12) as reviews_count,
-            COALESCE((SELECT COUNT(*) FROM marketplace_purchases WHERE item_id = m.id), 24) as purchases_count
-     FROM marketplace_items m
-     LEFT JOIN users u ON m.user_id = u.id
-     WHERE m.status = 'approved' OR m.status IS NULL
-     ORDER BY m.id DESC LIMIT 100`
-  );
-
+  // 1. Query real Viralbook bulletin_ads from database
   const bulletinRes = await pool.query(
     `SELECT a.*,
             COALESCE((SELECT COUNT(*) FROM ad_stats WHERE ad_id = a.id AND type = 'click'), 0) as stats_clicks,
-            COALESCE((SELECT COUNT(*) FROM bulletin_ad_likes WHERE ad_id = a.id), 0) as likes_count
+            COALESCE((SELECT COUNT(*) FROM bulletin_ad_likes WHERE ad_id = a.id), 0) as likes_count,
+            COALESCE((SELECT COUNT(*) FROM bulletin_ad_comments WHERE ad_id = a.id), 0) as comments_count
      FROM bulletin_ads a
      WHERE a.status = 'approved' OR a.status IS NULL OR a.status = 'active'
      ORDER BY COALESCE(a.is_boosted, false) DESC, a.created_at DESC LIMIT 100`
   );
 
+  // 2. Query real Viralbook bulletin_pages from database
+  const pagesRes = await pool.query(
+    `SELECT p.*,
+            COALESCE((SELECT COUNT(*) FROM bulletin_page_followers WHERE page_id = p.id), 0) as followers_count
+     FROM bulletin_pages p
+     ORDER BY p.is_verified DESC, p.followers_count DESC LIMIT 30`
+  );
+
+  // 3. Query real AI tools from tool_orchestrator
   const toolsRes = await pool.query(
     `SELECT id, tool_id, task_description, task_description_ar, is_active
      FROM tool_orchestrator
@@ -104,19 +97,13 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
      LIMIT 30`
   );
 
-  const blogRes = await getExternalPool().query(
-    `SELECT id, slug, title_en, title_ar, content_en, content_ar, category_en, category_ar, image_url, views, created_at
-     FROM blog_articles
-     ORDER BY views DESC, id DESC LIMIT 20`
-  );
-
   const scoredItems: any[] = [];
 
   const calculateScoreAndReasons = (item: any, type: string) => {
-    let score = 50; // Baseline
+    let score = 55; // Baseline
     const reasons_en: string[] = [];
     const reasons_ar: string[] = [];
-    let matchPercentage = 75;
+    let matchPercentage = 80;
 
     const key = `${type}:${item.id || item.tool_id || item.slug}`;
     if (dismissedItemKeys.has(key)) return null; // Exclude dismissed
@@ -139,8 +126,8 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     // Dynamic Sovereign Memory System Integration
     userMemories.forEach((mem: any) => {
       const factText = (mem.fact || '').toLowerCase();
-      const itemTitleEn = (item.title_en || item.name || item.nameEn || item.tool_id || item.slug || '').toLowerCase();
-      const itemDescEn = (item.description_en || item.descEn || item.task_description || '').toLowerCase();
+      const itemTitleEn = (item.title_en || item.title || item.name || item.tool_id || item.slug || '').toLowerCase();
+      const itemDescEn = (item.description_en || item.description || item.task_description || '').toLowerCase();
 
       const memWords = factText.split(/[\s,،\.\-\[\]\:\(\)\|\/\'\"]+/).filter((w: string) => w.length > 3);
       const hasWordOverlap = memWords.some((word: string) => {
@@ -152,9 +139,7 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
       let categoryCorrelation = false;
       if (memCat === 'technical' && (cat.includes('tech') || cat.includes('ai_tools') || cat.includes('code') || cat.includes('developer'))) {
         categoryCorrelation = true;
-      } else if (memCat === 'project' && (cat.includes('project') || cat.includes('business') || cat.includes('marketing') || cat.includes('marketplace'))) {
-        categoryCorrelation = true;
-      } else if (memCat === 'professional' && (cat.includes('job') || cat.includes('professional') || cat.includes('service') || cat.includes('consulting'))) {
+      } else if (memCat === 'project' && (cat.includes('project') || cat.includes('business') || cat.includes('marketing') || cat.includes('commercial'))) {
         categoryCorrelation = true;
       }
 
@@ -168,16 +153,16 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
       }
     });
 
-    if (item.is_boosted || item.highlight_tag || item.is_featured) {
+    if (item.is_boosted || item.is_verified) {
       score += 18;
-      reasons_en.push('🔥 Trending Featured Item');
-      reasons_ar.push('🔥 عنصر مميز وشائع');
+      reasons_en.push('🔥 Verified Viralbook Feature');
+      reasons_ar.push('🔥 محتوى/صفحة موثقة ورائجة على فايرال بوك');
     }
 
-    if (Number(item.avg_rating) >= 4.7 || Number(item.views) > 100 || Number(item.likes_count) > 10) {
+    if (Number(item.likes_count) > 5 || Number(item.followers_count) > 10 || Number(item.impressions_count) > 50) {
       score += 15;
       reasons_en.push('🌟 High User Satisfaction');
-      reasons_ar.push('🌟 حائز على تقييمات عالية');
+      reasons_ar.push('🌟 تفاعل مرتفع وموثق');
     }
 
     if (price >= preferredPriceMin && price <= preferredPriceMax) {
@@ -185,22 +170,19 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     }
 
     if (reasons_en.length === 0) {
-      if (type === 'marketplace') {
-        reasons_en.push('🛒 Popular in Marketplace');
-        reasons_ar.push('🛒 الأكثر طلبًا في السوق الرقمي');
-      } else if (type === 'bulletin') {
-        reasons_en.push('📌 Recommended Local Service');
-        reasons_ar.push('📌 خدمة موصى بها لك');
+      if (type === 'bulletin') {
+        reasons_en.push('📌 Recommended Viralbook Listing');
+        reasons_ar.push('📌 منشور مقترح على شبكة فايرال بوك');
+      } else if (type === 'page') {
+        reasons_en.push('🏢 Verified Business Page on Viralbook');
+        reasons_ar.push('🏢 صفحة تجارية موثقة على فايرال بوك');
       } else if (type === 'tool') {
         reasons_en.push('⚡ Recommended AI Productivity Assistant');
         reasons_ar.push('⚡ مساعد ذكاء اصطناعي مقترح لتسهيل عملك');
-      } else {
-        reasons_en.push('📖 Trending Platform Insight');
-        reasons_ar.push('📖 مقال شائع يتطابق مع اهتماماتك');
       }
     }
 
-    matchPercentage = Math.min(99, Math.max(70, Math.round(score)));
+    matchPercentage = Math.min(99, Math.max(72, Math.round(score)));
 
     return {
       recommendation_id: key,
@@ -214,13 +196,23 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     };
   };
 
-  marketRes.rows.forEach((item: any) => {
-    const scored = calculateScoreAndReasons(item, 'marketplace');
+  bulletinRes.rows.forEach((item: any) => {
+    const scored = calculateScoreAndReasons(item, 'bulletin');
     if (scored) scoredItems.push(scored);
   });
 
-  bulletinRes.rows.forEach((item: any) => {
-    const scored = calculateScoreAndReasons(item, 'bulletin');
+  pagesRes.rows.forEach((page: any) => {
+    const formattedPage = {
+      ...page,
+      title: page.name,
+      title_ar: page.name,
+      title_en: page.name,
+      image_url: page.avatar_url,
+      cover_url: page.cover_url,
+      category_ar: page.category || 'صفحة تجارية',
+      category_en: page.category || 'Business Page'
+    };
+    const scored = calculateScoreAndReasons(formattedPage, 'page');
     if (scored) scoredItems.push(scored);
   });
 
@@ -238,27 +230,28 @@ async function generateRecommendationsForUser(userId?: number, options: { limit?
     if (scored) scoredItems.push(scored);
   });
 
-  blogRes.rows.forEach((article: any) => {
-    const scored = calculateScoreAndReasons(article, 'blog');
-    if (scored) scoredItems.push(scored);
-  });
-
   scoredItems.sort((a, b) => b.score - a.score);
 
+  const topPicks = scoredItems.slice(0, limit);
+  const avgMatch = topPicks.length > 0
+    ? Math.round(topPicks.reduce((acc, curr) => acc + curr.match_percentage, 0) / topPicks.length)
+    : 88;
+
   return {
-    top_picks: scoredItems.slice(0, limit),
+    top_picks: topPicks,
     by_type: {
-      marketplace: scoredItems.filter(i => i.item_type === 'marketplace').slice(0, 8),
-      bulletin: scoredItems.filter(i => i.item_type === 'bulletin').slice(0, 8),
-      tools: scoredItems.filter(i => i.item_type === 'tool').slice(0, 6),
-      articles: scoredItems.filter(i => i.item_type === 'blog').slice(0, 4)
+      bulletin: scoredItems.filter(i => i.item_type === 'bulletin').slice(0, 10),
+      pages: scoredItems.filter(i => i.item_type === 'page').slice(0, 6),
+      tools: scoredItems.filter(i => i.item_type === 'tool').slice(0, 6)
     },
     user_summary: {
       top_inferred_categories: Object.entries(topCategories)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([cat]) => cat),
-      preferred_categories: preferredCategories
+      preferred_categories: preferredCategories,
+      total_recommendations: scoredItems.length,
+      avg_match_percentage: avgMatch
     }
   };
 }
@@ -285,19 +278,13 @@ router.get('/', authenticateToken, async (req: any, res: any) => {
 });
 
 /**
- * GET /api/recommendations/marketplace
+ * GET /api/recommendations/marketplace (Legacy compatibility handler - returns empty array)
  */
 router.get('/marketplace', authenticateToken, async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const data = await generateRecommendationsForUser(userId, { limit: 20 });
-    res.json({
-      success: true,
-      items: data.by_type.marketplace
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: 'Failed fetching marketplace recommendations' });
-  }
+  res.json({
+    success: true,
+    items: []
+  });
 });
 
 /**

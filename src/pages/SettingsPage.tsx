@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useToast } from '../hooks/useToast';
 import { User as AppUser } from '../context/AppContext';
@@ -7,10 +7,10 @@ import { AccountSettings } from '../components/AccountSettings';
 import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
-import { MarketplacePortfolio } from '../components/MarketplacePortfolio';
 import { DeveloperAgentPortal } from '../components/DeveloperAgentPortal';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
+import { triggerHaptic } from '../utils/haptics';
 import { 
   User as UserIcon, Users, Settings2, Shield, CreditCard, 
   Wallet, Palette, Keyboard, BrainCircuit, Globe,
@@ -19,7 +19,7 @@ import {
   Command, Terminal, MousePointer2, Type,
   MessageSquare, ImageIcon, Video, LayoutGrid,
   Activity, Clock, Zap, ShieldCheck, Brain, MapPin, 
-  FileText, Mic, Volume2, Code, ShoppingBag
+  FileText, Mic, Volume2, Code
 } from 'lucide-react';
 
 interface ProfileUpdate {
@@ -36,17 +36,28 @@ interface ApiError extends Error {
   status?: number;
 }
 
+const VALID_SETTINGS_TABS = ['account', 'usage', 'wallet', 'memory', 'developer'];
+
 export const SettingsPage: React.FC = () => {
   const { t, dir, theme, setTheme, user, setUser, logout, token, language, setLanguage } = useAppContext();
   const { toast, showToast } = useToast(4000);
+  const { tab: routeTab } = useParams<{ tab?: string }>();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => {
-    const tab = searchParams.get('tab');
-    if (tab === 'preferences' || tab === 'shortcuts') return 'account';
-    return tab || 'account';
-  });
-  const [localUser, setLocalUser] = useState(user);
   const navigate = useNavigate();
+
+  const getInitialTab = (): string => {
+    if (routeTab && VALID_SETTINGS_TABS.includes(routeTab.toLowerCase())) {
+      return routeTab.toLowerCase();
+    }
+    const queryTab = searchParams.get('tab');
+    if (queryTab && VALID_SETTINGS_TABS.includes(queryTab.toLowerCase())) {
+      return queryTab.toLowerCase();
+    }
+    return 'account';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getInitialTab);
+  const [localUser, setLocalUser] = useState(user);
 
   // Reference trackers for performance optimization
   const hasFetchedProfile = useRef(false);
@@ -64,20 +75,22 @@ export const SettingsPage: React.FC = () => {
   }, [showToast]);
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && tab !== activeTab) {
-      if (tab === 'preferences' || tab === 'shortcuts') {
-        setActiveTab('account');
-        navigate('?tab=account', { replace: true });
-      } else {
-        setActiveTab(tab);
+    if (routeTab && VALID_SETTINGS_TABS.includes(routeTab.toLowerCase())) {
+      if (activeTab !== routeTab.toLowerCase()) {
+        setActiveTab(routeTab.toLowerCase());
       }
+    } else if (searchParams.get('tab')) {
+      const queryTab = searchParams.get('tab')!.toLowerCase();
+      const resolved = VALID_SETTINGS_TABS.includes(queryTab) ? queryTab : 'account';
+      setActiveTab(resolved);
+      navigate(`/settings/${resolved}`, { replace: true });
     }
-  }, [searchParams, activeTab, navigate]);
+  }, [routeTab, searchParams, activeTab, navigate]);
 
   const handleTabChange = useCallback((tabId: string) => {
+    triggerHaptic(15);
     setActiveTab(tabId);
-    navigate(`?tab=${tabId}`, { replace: true });
+    navigate(`/settings/${tabId}`, { replace: true });
   }, [navigate]);
 
   const fetchProfile = useCallback(async () => {
@@ -251,7 +264,6 @@ export const SettingsPage: React.FC = () => {
     { id: 'account', icon: <UserIcon size={18} />, label: language === 'ar' ? 'الحساب' : 'Account' },
     { id: 'usage', icon: <Activity size={18} />, label: language === 'ar' ? 'الاستهلاك' : 'Usage' },
     { id: 'wallet', icon: <Wallet size={18} />, label: language === 'ar' ? 'المحفظة' : 'Wallet' },
-    { id: 'marketplace_purchases', icon: <ShoppingBag size={18} />, label: language === 'ar' ? 'السوق' : 'Market' },
     { id: 'memory', icon: <BrainCircuit size={18} />, label: language === 'ar' ? 'الذاكرة' : 'Memory' },
     { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'المطورين' : 'Devs' },
   ];
@@ -383,7 +395,7 @@ export const SettingsPage: React.FC = () => {
               >
               {/* Account Tab */}
               {activeTab === 'account' && localUser && (
-                <div className="p-3.5 sm:p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/60 shadow-xl">
+                <div className="w-full">
                   <AccountSettings 
                     user={localUser} 
                     onUpdate={handleUpdateProfile} 
@@ -404,11 +416,6 @@ export const SettingsPage: React.FC = () => {
                 <WalletSystem theme={theme} dir={dir} />
               )}
 
-              {/* Marketplace Portfolio & Affiliate Tab */}
-              {activeTab === 'marketplace_purchases' && (
-                <MarketplacePortfolio />
-              )}
-
               {/* Memory Center Tab */}
               {activeTab === 'memory' && (
                  <MemoryCenter
@@ -427,7 +434,7 @@ export const SettingsPage: React.FC = () => {
 
               {/* Developer & Bot Portal Tab */}
               {activeTab === 'developer' && (
-                <div className="p-3.5 sm:p-8 md:p-12 rounded-[var(--radius)] border bg-[var(--bg-secondary)]/60 border-[var(--border)]/40 shadow-xl">
+                <div className="w-full">
                   <DeveloperAgentPortal />
                 </div>
               )}
@@ -437,10 +444,10 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar - Native App Footer matching BlogPage */}
+      {/* Mobile Bottom Navigation Bar */}
       <nav 
         dir={dir}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-t border-[var(--border-main)] flex items-center justify-around pt-2 pb-[calc(20px+env(safe-area-inset-bottom,0px))] px-3 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_-8px_30px_rgb(0,0,0,0.3)] select-none"
+        className="md:hidden mobile-bottom-nav"
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -449,23 +456,21 @@ export const SettingsPage: React.FC = () => {
               key={`settings-mobile-nav-${tab.id}`}
               type="button"
               onClick={() => handleTabChange(tab.id)}
-              className={`flex flex-col items-center justify-center flex-1 h-8 gap-0.5 transition-all duration-300 active:scale-90 relative cursor-pointer ${
-                isActive
-                  ? 'text-accent'
-                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-              }`}
+              className={`mobile-nav-item flex-1 ${isActive ? 'active text-accent' : ''}`}
             >
-              <span className={`transition-transform duration-200 stroke-[2.2] ${isActive ? 'scale-110 text-accent' : ''}`}>
-                {tab.icon}
-              </span>
-              <span className="text-[8.5px] font-bold tracking-tight leading-tight">{tab.label}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="settings-mobile-nav-indicator"
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
+              <div className="mobile-nav-icon">
+                <span className={`transition-transform duration-200 stroke-[2.2] ${isActive ? 'scale-105 text-accent' : ''}`}>
+                  {tab.icon}
+                </span>
+                {isActive && (
+                  <motion.div
+                    layoutId="settings-mobile-nav-indicator"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </div>
+              <span className={`mobile-nav-label ${isActive ? 'opacity-100 font-extrabold' : 'opacity-80'}`}>{tab.label}</span>
             </button>
           );
         })}

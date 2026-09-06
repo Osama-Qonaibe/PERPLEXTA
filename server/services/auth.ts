@@ -1,21 +1,15 @@
 import { pool } from '../db/index.js';
 
 /**
- * Service utility to verify if a user owns or has management rights over a bulletin page or marketplace item.
+ * Service utility to verify if a user owns or has management rights over a bulletin page.
  */
-export async function verifyRecordOwnership(userId: number, recordType: 'bulletin_page' | 'marketplace_item', recordId: number): Promise<boolean> {
+export async function verifyRecordOwnership(userId: number, recordType: 'bulletin_page', recordId: number): Promise<boolean> {
   if (!userId || !recordId) return false;
 
   try {
     if (recordType === 'bulletin_page') {
       const res = await pool.query(
         'SELECT id FROM bulletin_pages WHERE id = $1 AND (owner_id = $2 OR user_id = $2)',
-        [recordId, userId]
-      );
-      return (res.rowCount ?? 0) > 0;
-    } else if (recordType === 'marketplace_item') {
-      const res = await pool.query(
-        'SELECT id FROM marketplace_items WHERE id = $1 AND (owner_id = $2 OR user_id = $2)',
         [recordId, userId]
       );
       return (res.rowCount ?? 0) > 0;
@@ -29,7 +23,7 @@ export async function verifyRecordOwnership(userId: number, recordType: 'bulleti
 /**
  * Express middleware factory to protect update/delete routes ensuring the authenticated user is the owner.
  */
-export function requireRecordOwnership(recordType: 'bulletin_page' | 'marketplace_item', idParamKey = 'id') {
+export function requireRecordOwnership(recordType: 'bulletin_page', idParamKey = 'id') {
   return async (req: any, res: any, next: any) => {
     const userId = req.user?.id;
     const recordId = parseInt(req.params[idParamKey], 10);

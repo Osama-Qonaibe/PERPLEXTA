@@ -15,26 +15,24 @@ export const applyThemeWithRAF = (theme: ThemeMode) => {
   const resolved = getResolvedTheme(theme);
   const isDark = resolved === 'dark';
 
-  requestAnimationFrame(() => {
-    const root = document.documentElement;
-    const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
+  const root = document.documentElement;
+  const meta = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
 
-    if (isDark) {
-      root.classList.add('dark');
-      root.classList.remove('light');
-      root.setAttribute('data-theme', 'dark');
-      if (meta) meta.setAttribute('content', '#0b0b0d');
-    } else {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      root.setAttribute('data-theme', 'light');
-      if (meta) meta.setAttribute('content', '#f8fafc');
-    }
+  if (isDark) {
+    root.classList.add('dark');
+    root.classList.remove('light');
+    root.setAttribute('data-theme', 'dark');
+    if (meta) meta.setAttribute('content', '#0b0c0e');
+  } else {
+    root.classList.remove('dark');
+    root.classList.add('light');
+    root.setAttribute('data-theme', 'light');
+    if (meta) meta.setAttribute('content', '#f8fafc');
+  }
 
-    // Remove any legacy inline style overrides on root so index.css rules control tokens cleanly
-    root.style.backgroundColor = '';
-    root.style.color = '';
-  });
+  // Remove any legacy inline style overrides on root so index.css rules control tokens cleanly
+  root.style.backgroundColor = '';
+  root.style.color = '';
 };
 
 export const ThemeSync = {

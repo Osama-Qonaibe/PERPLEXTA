@@ -334,11 +334,10 @@ export function initCronJobs() {
     console.log('[Cron] 🌐 Checking for newly inserted items to ping search engine sitemaps...');
     try {
       if (pool) {
-        const newBlogs = await getExternalPool().query("SELECT id FROM blog_articles WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
-        const newMarketplace = await pool.query("SELECT id FROM marketplace_items WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' LIMIT 1");
+        const newBulletin = await pool.query("SELECT id FROM bulletin_ads WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '30 minutes' AND status = 'active' LIMIT 1");
 
-        if ((newBlogs.rowCount && newBlogs.rowCount > 0) || (newMarketplace.rowCount && newMarketplace.rowCount > 0)) {
-          console.log('[Cron] Found newly inserted articles/items. Triggering sitemap ping...');
+        if (newBulletin.rowCount && newBulletin.rowCount > 0) {
+          console.log('[Cron] Found newly inserted items. Triggering sitemap ping...');
           const { pingSearchEngines } = await import('../services/sitemapPinger.js');
           await pingSearchEngines();
         }

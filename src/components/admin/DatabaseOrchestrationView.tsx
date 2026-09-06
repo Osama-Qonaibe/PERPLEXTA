@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "../../context/AppContext";
+import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { getAuthHeaders } from "../../utils/adminUtils";
 import {
@@ -55,10 +56,6 @@ export const DatabaseOrchestrationView = ({
   const [isMigrating, setIsMigrating] = useState<{
     id: string;
     type: string;
-  } | null>(null);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
   } | null>(null);
   const [openBackupMenuId, setOpenBackupMenuId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
@@ -140,9 +137,12 @@ export const DatabaseOrchestrationView = ({
     };
   }, [token, socket]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (type === "success") {
+      globalToast.success(message, dir === "rtl" ? "تم بنجاح" : "Success");
+    } else {
+      globalToast.error(message, dir === "rtl" ? "حدث خطأ" : "Error");
+    }
   };
 
   const handleTestConnection = async (id: string) => {
@@ -389,7 +389,7 @@ export const DatabaseOrchestrationView = ({
     const db = databases.find((d) => d.id === id);
     const targetLabel = db ? (db.db_name || db.dbName || id) : id;
     const targetTypeName = id === "ledger" ? (dir === "rtl" ? "المحفظة والمعاملات المالية" : "Finance & Ledger") :
-      id === "external" ? (dir === "rtl" ? "المدونة والمقالات" : "Blog & External") :
+      id === "external" ? (dir === "rtl" ? "البيانات والخدمات الخارجية" : "External Services & Data") :
       id === "security" ? (dir === "rtl" ? "الحماية والأمان" : "Security & Logs") :
       (dir === "rtl" ? "العمليات الأساسية والمستخدمين" : "Core Operations & Users");
 
@@ -578,22 +578,6 @@ export const DatabaseOrchestrationView = ({
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto relative transition-theme">
-      {toast && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            toast.type === "success"
-              ? "bg-[var(--bg-surface)] border border-accent/30 text-accent"
-              : "bg-[var(--bg-surface)] border border-red-500/30 text-red-500"
-          } border`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle size={20} />
-          ) : (
-            <AlertCircle size={20} />
-          )}
-          <span className="font-medium text-sm">{toast.message}</span>
-        </div>
-      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {databases.map((db, dIdx) => {
           const Icon = db.icon;

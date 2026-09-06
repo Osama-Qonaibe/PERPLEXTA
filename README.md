@@ -1,280 +1,189 @@
-# 🌌 Perplexta Platform - Elite AI System & Dual-Database Orchestrator
+# 🌌 Viralbook & ViralLinkUp Platform - Enterprise AI & Social Commerce System
 
 [![Architecture: Full-Stack React 19 + Express](https://img.shields.io/badge/Architecture-Full--Stack%20React%2019%20%2B%20Express-emerald?style=flat-square)](https://github.com)
-[![Database: PostgreSQL Dynamic Quad-Pool](https://img.shields.io/badge/Database-PostgreSQL%20Quad--Pool-blue?style=flat-square)](https://github.com)
-[![Protocol: Agentic Commerce Protocol](https://img.shields.io/badge/Protocol-ACP%20Discovery-orange?style=flat-square)](https://github.com)
-[![Protocol: Model Context Protocol](https://img.shields.io/badge/Protocol-MCP%20Integration-0052cc?style=flat-square)](https://github.com)
+[![Database: Dual-Pool PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%20Dual--Pool-blue?style=flat-square)](https://github.com)
+[![Social Commerce: Bulletin & Pages Protocol](https://img.shields.io/badge/Protocol-Viralbook%20Commerce-orange?style=flat-square)](https://github.com)
 [![Streaming: Socket.io Realtime Pipes](https://img.shields.io/badge/Streaming-Socket.io%20Ready-ff69b4?style=flat-square)](https://github.com)
-[![Stability: Verified Stable](https://img.shields.io/badge/Stability-Verified%20Stable-2ecc71?style=flat-square)](https://github.com)
+[![Stability: Verified Stable Build](https://img.shields.io/badge/Stability-100%25%20Verified%20Clean-2ecc71?style=flat-square)](https://github.com)
 
 ---
 
 ## 📖 Platform Vision & Identity
 
-**Perplexta Platform** is an enterprise-grade full-stack AI execution, programmatic workspace, and financial ledger platform engineered for **Professional Elite Technical Analysis**. Underpinned by modular full-stack interfaces and a robust dual-database infrastructure, Perplexta coordinates real-time AI tool-stream pipes, silent multi-model failover routes, large physical file intelligence extraction, and strict balance ledger auditing.
+**Viralbook & ViralLinkUp Platform** is an enterprise-grade full-stack AI execution, social commercial bulletin, and strategic intelligence ecosystem designed and developed for **Professional Elite Technical Analysis & Commercial Engagement**.
 
-The visual interface is highly structured around a premier, high-contrast aesthetic. It features responsive, eye-safe twilight modes, the signature **Emerald Glow** active indicator state, elegant Arabic-English integration governed by the native **Tajawal** typography, and zero-flicker transitions.
+* **Primary Architect & Developer:** **Osama Qoneibi** (أسامة قنيبي).
+* **Exclusive Commercial Owner:** **Viral Link Up Ltd.** (شركة فيرال لينك اب المحدودة).
+
+The platform unites AI model orchestration, sovereign community feeds (`/viralbook` & `/bulletin`), verified corporate business pages, direct end-to-end customer-to-business messaging, and real-time Socket.io streaming within a pristine, high-contrast user interface governed by native **Tajawal** typography and zero-flicker transitions.
 
 ---
 
 ## 🏗️ Technical Architecture & System Topography
 
 ```
-                                    [ Client UI - React 19 + Vite ]
-                                                   │
-                                     ( Real-time Socket.io & REST )
-                                                   │
-                                                   ▼
-                                    [ Express Core Engine & Gateway ]
-                           ┌───────────────────────┼───────────────────────┐
-                           ▼                       ▼                       ▼
-               [ Core DB (Operational) ]  [ Ledger DB (The Vault) ] [ External Ecosystem ]
-               - User Profiles & Sessions - Append-Only Transactions - Moderated Forums
-               - Orchestrator Schemas     - Partner Referral Trees   - Partner Tech Blogs
-               - Secure 100MB Sandbox     - Stripe Subscriptions     - Assets Marketplace
+                                [ Client UI - React 19 + Vite ]
+                                               │
+                                 ( Real-time Socket.io & REST )
+                                               │
+                                               ▼
+                                [ Express Core Engine & Gateway ]
+                      ┌────────────────────────┼────────────────────────┐
+                      ▼                        ▼                        ▼
+          [ Core DB (Operational) ]   [ Ledger DB (The Vault) ] [ GPU Compute Vault ]
+          - User Profiles & Auth      - Append-Only Journals  - RunPod / Vision Nodes
+          - 10 Relational Bulletin DB - Wallet Balances & Logs- ComfyUI & Image Workers
+          - Chat & Memory Engines     - Stripe Webhook Events  - Dedicated Media Models
 ```
 
-### 🛡️ Dual-DB Transaction Isolation Protocols
-To establish defense-in-depth data boundaries:
-* **Operational Core Pool (`DATABASE_URL`):** Coordinates transient contexts, dynamic system configurations, authentication schemas, chat logs, and workspace sessions.
-* **Financial Ledger Pool (`LEDGER_DATABASE_URL`):** An isolated, **strictly append-only registry** ("The Vault") tracking credits, debits, referral allocations, and Stripe webhook events. Query-level relational JOINs between these pools are strictly banned to enforce sovereign financial security.
+### 🛡️ Dual-Database Transaction Isolation
+To uphold strict security and data boundaries:
+* **Operational Core Database (`DATABASE_URL`):** Manages user accounts, active sessions, bulletin posts, verified pages, threaded comments, chat histories, memory distillation trees, and system settings.
+* **Financial Ledger Database (`LEDGER_DATABASE_URL`):** A strictly isolated, **append-only ledger** ("The Vault") tracking credits, debits, referral rewards, and Stripe subscription events. Direct relational JOINs between the Core and Ledger databases are strictly forbidden to ensure sovereign financial integrity.
 
 ---
 
-## 🧠 Core Systems & Advanced Platform Pillars
+## 🌐 Clean URLs & Routing Architecture
 
-### 1. Real-Time Task Progress WebSocket Streaming Interface
-Perplexta provides clear execution transparency during complex, high-latency tasks (e.g., dynamic AI image synthesis and Google Veo video task compilation). Rather than exposing raw system details, the platform broadcasts elegant, structured progress telemetry over Socket.io:
-* **Workflow Signaling:** The execution loop registers immediate progress logs at core milestones:
-  * **10% (Analyzing / `analyzing`)**: Preparing aesthetic model paths and checking parameters.
-  * **35% (Validating / `validating`)**: Securing token authorizations and checking wallet balances.
-  * **55% (Synthesizing / `synthesizing`)**: Handshaking with remote AI model endpoints (e.g., Replicate, Google APIs).
-  * **55% to 95% (Processing / `processing`)**: Active multi-step pixel rendering streaming loop.
-  * **100% (Completed / `completed`)**: Generating high-fidelity visual assets, performing disk syncs, and mapping metadata.
-* **Bilingual Integration:** Events emitted onto user rooms (`user_${userId}`) carry synchronized, localized strings in both Arabic and English:
-  ```json
-  {
-    "progress": 55,
-    "status": "synthesizing",
-    "status_ar": "طلب ترخيص الإنشاء من المزود وتوليد مصفوفة البيكسلات...",
-    "status_en": "Requesting synthesis authorization from Provider & launching pixel generation..."
-  }
-  ```
-* **Frontend Responsiveness:** The UI intercepts the `image_progress` and `video_progress` sockets inside the `ChatPage` lifecycle to update interactive loaders on the exact executing block, giving users clean, immediate visual progress bars.
+The platform operates on a clean, slug-friendly routing system with zero legacy query clutter:
 
-### 2. Perplexta Memory Distillation & Saturation Controls
-To optimize context limits while preserving historical continuity, the system contains an automated AI Memory Distillation Engine:
-* **Dual Threshold Limits:** 
-  * **Proactive Warning (45 records)**: Triggers an warning alert informing the interface of rising context limits.
-  * **Auto-Consolidation (50 records)**: Instantly compiles the 10 oldest discrete factual records, distilling them via background intelligence into a single, high-density conceptual summary, purging legacy noise.
-* **Transparency Protocol:** Eradicates "silent contextual ingestion" by sending custom `memory_extracted` and `memory_consolidation` events, visually rendering confirmation notices in the chat workspace.
-* **Cron Optimization (`consolidateAllUserMemories`)**: Periodically compresses memory trees for inactive profiles month-by-month as a server maintenance routine.
+| Path / Route | Description | Key Components |
+| :--- | :--- | :--- |
+| `/viralbook` | Sovereign Primary Social Feed & Community Hub | `BulletinBoardPage.tsx` |
+| `/bulletin` | Commercial Bulletin Board & Multi-Format Media Feed | `BulletinBoardPage.tsx` |
+| `/bulletin/:ad_id` | Deep-linked direct view for specific posts, ads, or reels | `BulletinBoardPage.tsx` |
+| `/bulletin/page/:page_slug` | Verified Business/Corporate Page Directory & Profile | `BusinessPageDetailModal.tsx` |
+| `/profile` | Sovereign User Account Center & Verified Badges | `ProfilePage.tsx` |
+| `/chat` | AI Execution Workspace & Strategic Intelligence Engine | `ChatPage.tsx` |
+| `/settings` | System Preferences, Theme Sync, & Security Controls | `SettingsPage.tsx` |
+| `/subscription` | Plan Manager, Credit Top-Ups, & Stripe Checkout | `SubscriptionPage.tsx` |
+| `/admin` | Enterprise ERP Command Center & AI Tool Orchestrator | `AdminPanel.tsx` |
 
-### 3. Rigid Quota Enforcer & Subscription Security
-* **Granular Tool-Specific Quotas:** Shuns generic global restrictions. System admins design discrete daily and monthly authorization barriers for each workspace tool separately (e.g., *Canvas Studio*, *Sovereign Research*, *Perplexta Analysis*) via the command dashboard.
-* **High-Conversion Blocking Card:** When a client exceeds their designated allowance, the orchestrator blocks execution and serves a localized, elegant bilingual "Quota Exceeded" banner. It suggests immediate pathways to subscription tier upgrades or friend referral links.
-* **Resilient Webhook Handlers:** Seamlessly process complex Stripe lifecycle events (`customer.subscription.deleted`, `invoice.payment_failed`) to synchronize structural account states instantly while auto-dispatching system push notifications.
-
-### 4. RLHF Quality Tracking System
-* **Fine-tuning Analytics:** Allows clients to dispatch immediate ratings ("Thumbs Up" / "Thumbs Down") directly to the database.
-* **Database Mapping:** Assistant messages stream down alongside their unique database IDs. Clicking feedback prompts immediate, error-free database writes against the `feedback` schema in Core DB, mapping human quality metrics to explicit model runs.
-
-### 5. Secure 100MB File Sandbox Ingestion & PDF Bridge
-* **Strict Allowlist Filtering:** Files uploaded to the localized volume go through heavy backend verification, enforcing strict size checks (100MB MAX limit), filename path-traversal sanitization, and type checking.
-* **PDF Analytical Bridge:** Deploys resilient on-the-fly text extraction pipelines to handle multi-version PDF files. Extracted text contexts are injected dynamically into the active Orchestrator runtime prompt parameters.
-
-### 6. Production Cache Optimizations & Zero-Database File Version serving
-To address latency issues and ensure rapid page-loading on high-traffic servers:
-* **High-Performance Version Caching (`fileVersionCache`):** Introduced a specialized, in-memory caching system for file versions to eliminate redundant query executions.
-* **Intelligent DB-Bypass logic:** When serving static assets, logos, and public site illustrations (which are not user-uploaded files), the server immediately bypasses the `user_files` database lookup entirely.
-* **Reactive Cache Invalidation:** The native file-system watcher (`fs.watch`) monitors the uploads directory and automatically flushes both the permissions cache (`filePermissionCache`) and the version cache (`fileVersionCache`) whenever files are modified, replaced, or physically erased, maintaining high performance with zero-lag consistency.
+All routes utilize automatic catch-all fallbacks to ensure smooth, SPA-friendly navigation without broken links or missing page states.
 
 ---
 
-## 🧼 Production Purging & Code Alignment Updates (August 31, 2026)
+## 🎨 Unified Toast & Global Modal Confirmation System
 
-To prepare the platform for enterprise-grade containerized deployment and achieve a flawless 100% build pass:
+### 1. Unified Action Confirmation Modal (`ActionConfirmationModal`)
+Native browser popups (`alert`, `confirm`, `prompt`) are strictly eradicated across the entire platform. All destructive and sensitive actions (deleting posts, purging memories, updating settings, processing wallet refunds) utilize a unified confirmation modal:
+* **Red Action State:** Destructive/deletion actions feature an official, soft red button (`bg-red-500 hover:bg-red-600 text-white`).
+* **Crisp Action State:** Confirmation/save actions feature a high-contrast white/accent action button (`bg-white dark:bg-[var(--surface-card)]`).
+* **Subtle Cancel:** Transparent, calm cancellation controls (`text-[var(--text-muted)] hover:bg-[var(--surface-subtle)]`).
 
-### 1. UI/UX Purge & Premium Golden Locks System
-* **Removal of Unsolicited Upgrade Prompt Modal:** Completely deleted `/src/components/UpgradePromptModal.tsx` and purged its imports and declarations from `src/App.tsx` to cleanse the project of intrusive promotional elements.
-* **Zero-Prompt Locked Interactivity:** Refactored the interactions for locked advanced tools and AI models in `/src/pages/ChatPage.tsx` to remain passive upon clicking, eliminating noisy pop-up alerts.
-* **Elite Amber/Golden Locks:** Upgraded locked advanced tools and models to feature a premium, high-contrast Amber/Golden padlock (`text-amber-500`) for clear, elegant visual guidance without unsolicited popups.
-
-### 2. File Clean-up & Zero-Clutter Compliance
-Purged all temporary testing scripts, database patches, and transitional configuration files to keep the production root directory strictly pristine:
-* Deleted temporary test scripts: `test.js`, `test-plans.js`, `test-test.ts`, `test-db.js`, `test-db.ts`, and `test-insert.js`.
-* Cleared repair, patch, and transition scripts: `fix-db.js`, `fix-db2.js`, `fix-db-plans.js`, `move_effect.cjs`, and `patch_reels_start_id.sh`.
-* Removed draft documents and local legacy guides: `auth.md`.
-
-### 3. Full-Stack Type Alignment & Bug Fixes
-* **Adaptive Connection Pool Sizing:** Engineered a dynamic pool size calculator inside `/server/db/index.ts` that detects `NODE_ENV === 'production'` and automatically clamps default database pool connections from `20` down to `10` across our isolated Core, Ledger, External, and Security connection pools. This completely shields the Postgres cloud server from connection exhaustion and "Too many connections" errors during rapid horizontal autoscale expansion on live servers (such as Cloud Run or AWS ECS).
-* **Dynamic Socket.io Loading Bridge:** Transitioned the core `createNotification` service from static `io` imports to dynamic execution imports (`await import('../config/socket.js')`). This completely resolves potential ESM uninitialized import states during initial system boots on production servers.
-* **Universal Async Loading Indicators:** Integrated a native `.loading(message, title, options)` method directly into the `NotificationContext` type and custom `toast` helpers. This ensures that operations across the Ads Management, Video Trimming, and Wallet panels can easily trigger and control state loaders.
-* **Optional Description Parsing:** Added support for the `description` field directly into `NotificationOptions` and `NotificationItem` to accept custom metadata payloads seamlessly, resolving strict type checks on multiple components.
-* **Strict Schema Castings:** Fixed numerical limit assignment within the `PlansSubscriptionsView` admin component, correcting strict typing for quota configurations (supporting numbers, booleans, and `"unlimited"` tokens cleanly).
+### 2. Global Floating Toast System (`ServiceUpdateToast`)
+Standardized CSS class infrastructure (`.toast-container-floating`, `.toast-floating`, `.toast-progress-track`) handles all live user feedback:
+* **Asynchronous Loaders:** Integrated `.loading(message, title)` methods display smooth animated progress indicators for media trimming, post boosting, and file parsing.
+* **Auto-Dismiss Progress Bar:** Visual time-remaining track (`.toast-progress-fill`) with smooth linear transitions.
+* **Haptic Feedback:** Seamless integration with native haptic engines (`triggerHaptic`) on mobile devices during toast triggers.
 
 ---
 
-## 🗺️ Architectural Roadmap: Quad-Database Studio & High-Precision Infrastructure (Upcoming Phase)
+## 📱 Mobile Safe Area & Header-to-Footer Symmetry
 
-To uphold the sovereign engineering decree of PERPLEXTA ("Only Evolve, Never Rewrite"), the next development milestone expands our administration command center with dedicated introspection and maintenance tooling without disturbing existing infrastructure:
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│               PERPLEXTA QUAD-DATABASE SCHEMA STUDIO & INFRASTRUCTURE ROADMAP          │
-├────────────────────┬────────────────────┬────────────────────┬─────────────────────────┤
-│  🏢 Core Database  │  💰 Ledger DB      │  🌐 External DB    │  🛡️ Security DB        │
-│  (Operational)     │  (Append-Only)     │  (Integrations)    │  (Forensic Audit/WAF)   │
-├────────────────────┴────────────────────┴────────────────────┴─────────────────────────┤
-│  • 1-Click Vacuum & Reindex Optimization                                               │
-│  • Live Connection Pool Telemetry & Latency Diagnostics                                │
-│  • Visual Schema & Table Size Explorer with Row-Count Telemetry                        │
-│  • Dedicated Local PostgreSQL Unix-Socket Support & RAM Buffer Tuning                  │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 1. Dedicated Quad-Database Studio (Additive Tab Layout)
-* **Zero-Rewrite Non-Destructive Extension:** The existing Database Management cards (`Test Connection`, `Save & Encrypt`, `Migrations / Schema Builder`, and `Disaster Recovery`) remain fully untouched and active. A new secondary tab (`Schema Studio & Live Health`) will be introduced alongside the existing panel.
-* **Four-Database Segregated Explorer:** Independent exploratory tabs for the 4 dedicated database instances:
-  1. `Core Database` (`perplexta_core`): Operational chat logs, memory distillation records, uploaded files catalog, and system settings.
-  2. `Finance & Ledger Database` (`perplexta_ledger`): Append-only transactional journals, user wallet balances, and referral tree graphs.
-  3. `External & Integration Database` (`perplexta_external`): Dynamic API registries, third-party provider webhooks, and tool mappings.
-  4. `Security & Audit Database` (`perplexta_security`): Forensic activity audit trails, IP blacklist rules, and rate-limiting breach telemetry.
-* **Granular Table Telemetry:** Displays physical table sizes on disk (`pg_total_relation_size`), live tuple/row counts, index sizes, and bloat metrics directly from `pg_stat_user_tables`.
-* **1-Click Self-Healing & Optimization Actions:**
-  * `VACUUM ANALYZE`: Cleans dead row versions and refreshes optimizer statistics.
-  * `REINDEX TABLE`: Rebuilds degraded b-tree indexes for accelerated query lookups.
-  * `Integrity Check`: Runs non-destructive consistency sweeps across relational keys.
-
-### 2. Local Dedicated PostgreSQL Tuning & UNIX Domain Socket Bridge
-* **Zero-SSL Handshake Optimization:** Automatic detection of `localhost` / `127.0.0.1` instances to bypass TLS overhead while maintaining strict SSL enforcement on cloud instances (Neon, AWS RDS, Supabase).
-* **UNIX Domain Socket Routing:** Optional routing through `/var/run/postgresql/.s.PGSQL.5432` for local dedicated servers, bypassing the TCP/IP stack to increase internal data throughput by up to 35%.
-* **Memory & Buffer Tuning Presets:** Pre-calculated configurations for local PostgreSQL servers allocating 25% RAM to `shared_buffers`, 75% to `effective_cache_size`, and optimal `work_mem` thresholds for analytical indexing.
-
-### 3. Universal Multi-Format Media Player & Cinematic Social Engine
-* **Purge of Simulated/Debug Overlays:** Completely removed all development simulation toggles (such as `Cover 🔄`, `auto 🔄`, `FEED ✨`, and `قص ملائم` labels) from video frames, elevating the player into a distraction-free, cinematic viewing experience.
-* **Native Aspect-Ratio Multi-Format Support:**
-  * **Square Feed (1:1):** Classic high-density social media video posts (`aspect-square`).
-  * **Vertical Reels & Stories (9:16):** Full-length immersive mobile video formats (`aspect-[9/16]`) with fullscreen expansion.
-  * **Portrait Posts (4:5):** High-conversion vertical newsfeed videos (`aspect-[4/5]`).
-  * **Widescreen Video (16:9):** Cinematic in-stream landscape video units (`aspect-video`).
-  * **Ultra-Wide Banners (21:9):** Header & featured promotional media banners (`aspect-[21/9]`).
-* **Adaptive Playback & Intelligent Idle Fade:** Control bars and scrubber timelines seamlessly fade during active playback, reappearing smoothly on touch or hover without layout jumping or duplicate notifications.
+The platform features a floating capsule mobile bottom navigation bar (`.mobile-bottom-nav`) engineered for header-to-footer symmetry:
+* **Floating Capsule Island:** Positioned at `bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px))` with side margins (`left: 0.75rem`, `right: 0.75rem`), eliminating screen edge sticking on iOS and Android devices.
+* **Symmetric Button Mass:** Nav items (`.mobile-nav-item`) feature `32px` heights, `8px` border radii (`rounded-[8px]`), and `14px` icon sizes, perfectly matching top header action buttons.
+* **Active State Indicators:** Micro-dots (`.bg-accent`) smoothly indicate active routes without layout shifting.
 
 ---
 
-## 🤖 Programmative AI Agent Capability Discovery Specifications
+## 🗄️ Database Schema & Relational Architecture
 
-To support machine clients, developer automation script networks, and autonomous AI nodes, the Perplexta Platform exposes rich programmatic discovery descriptors:
+All bulletin, page, and media operations strictly interface with the Core Database across 10 dedicated relational tables:
 
-```
-        [ Agentic client Node ] ──────── 1. Read Link Headers ────────► [ Domain Root (/) ]
-                  │                                                              │
-                  │◄─────── 2. RFC 9727 / RFC 8288 Discovery Links ──────────────┘
-                  │
-                  ├──────── 3. Map MCP Capabilities ─────────────────────────► [ /.well-known/mcp/server-card.json ]
-                  ├──────── 4. Read Commerce Specifications ─────────────────► [ /.well-known/acp.json ]
-                  └──────── 5. Automated Agent Registry & Ledger x402 ──────► [ /api/auth/register-agent ]
-```
+1. `bulletin_ads`: Posts, ads, reels, and stories entity (`user_id`, `page_id`, `ad_format`, `audience`, `whatsapp_number`, `is_boosted`, `location_city`, `media_urls`, metrics).
+2. `bulletin_pages`: Certified corporate and commercial page entities (`page_slug`, `page_name`, `verification_badge`, contact info).
+3. `bulletin_page_followers`: Many-to-many page subscription mappings.
+4. `bulletin_page_inquiries`: Commercial customer prospects and lead records.
+5. `bulletin_ad_likes`: Authentic user post reactions (Like, Love, Haha, Wow, Sad, Angry).
+6. `bulletin_ad_comments`: Nested multi-level threaded discussions.
+7. `bulletin_comment_likes`: Granular comment-level reaction records.
+8. `bulletin_ad_messages`: Direct encrypted customer-to-business messenger conversations (`AdMessengerHub.tsx`).
+9. `bulletin_saved_ads`: User bookmark collections (`bulletin_saved_ads`).
+10. `bulletin_reports`: Moderation reports and notification filtering rules.
 
-### 🪐 1. Agentic Commerce Protocol (ACP)
-* **API Specification URL:** `/.well-known/acp.json` (Public, optimized CORS, direct browser-less fetching).
-* **RFC Navigation Headers:** The host automatically responds to index requests targeting `/` or `/index.html` with reactive compliance headers:
-  ```http
-  Link: </.well-known/api-catalog>; rel="api-catalog", </.well-known/mcp/server-card.json>; rel="service-desc", </.well-known/acp.json>; rel="acp"
-  ```
-* **Discovery Schema:** Enforces automated standard handshakes:
-  ```json
-  {
-    "protocol": { "name": "acp", "version": "1.0" },
-    "api_base_url": "https://your-perplexta-instance/api",
-    "transports": ["http"],
-    "capabilities": { "services": ["checkout"] }
-  }
-  ```
-
-### 🛰️ 2. Model Context Protocol (MCP) Host Integration
-* **Service Card Catalog:** Exposed dynamically at `/.well-known/mcp/server-card.json`.
-* **Standard Schemas:** Provides programmatic developer agents immediate structural mappings of available analysis utilities, required arguments, pricing limits, and streaming paths.
-
-### ⚡ 3. Automated x402 Payment Handshake Protocol
-* **Automated Agent Registry:** Registration queries and dynamic keys generation map directly to standard financial databases and wallet balance entries.
-* **Balance Verification:** Verification protocols query administrative pricing matrices for `x402_api` triggers, checking balances against a standard audited fee of **₪5.00** per integration.
-* **Sovereign Quota Control:** If wallet credits fail to cover the cost, the backend instantly blocks credential allocations with a standardized **HTTP 402 Insufficient Funds** state:
-  ```json
-  {
-    "error": "Insufficient Balance",
-    "message": "Dynamic key creation requires ₪5.00. Please recharge your account balance."
-  }
-  ```
+### 🔌 Isolated GPU Infrastructure Vault
+GPU compute nodes, serverless endpoints (RunPod, ComfyUI, dedicated vision nodes), and media processing models are isolated in dedicated relational tables (`gpu_providers` and `gpu_provider_models`), preventing any key pollution or routing confusion with general LLM text APIs.
 
 ---
 
-## ⚙️ Development, Build, & Server Initialization
+## ⏱️ Server Background Cron Jobs & Maintenance Routines
 
-### Standard Local Prerequisites
-* **Node.js:** v18, v20, or higher with typescript support.
-* **PostgreSQL Database:** Twin accessible operational and transactional ledger instances.
+Background server jobs (`server/jobs/cron.ts`) run automated maintenance loops:
 
-### 1. Environment Setup
-Create folder environment variables:
+1. **Inactive Account & Memory Consolidation Job (`consolidateAllUserMemories`)**:
+   - Compresses legacy memory trees for inactive profiles month-by-month, distilling oldest records into high-density summaries to optimize context limits.
+2. **Ephemeral Story Cleanup Routine (`cleanupExpiredStories`)**:
+   - Automatically purges bulletin stories older than 24 hours, ensuring optimal database storage and performance.
+3. **Ad Expiry & Wallet Refund Audit (`auditExpiredBoostedAds`)**:
+   - Audits active boosted posts against duration thresholds (`bulletin_ad_daily_price`). Handles automated wallet refunds or debit adjustments upon post rejection or completion.
+4. **Daily Ledger & Wallet Audit**:
+   - Verifies ledger consistency, checks append-only transaction logs, and prevents negative balance drifts.
+
+---
+
+## 🚀 Setup & Deployment Documentation
+
+### Prerequisites
+* **Node.js:** v18, v20, or higher with TypeScript support.
+* **PostgreSQL Database:** Twin accessible operational (`Core`) and transactional (`Ledger`) database instances.
+
+### 1. Environment Configuration
+Copy `.env.example` to create `.env`:
 ```bash
 cp .env.example .env
 ```
-Populate keys securely inside `.env` (Never commit credentials to repo):
+Populate environment variables inside `.env`:
 ```env
-# Database Credentials
+# Database Connections
 DATABASE_URL=postgres://user:password@127.0.0.1:5432/perplexta_core
 LEDGER_DATABASE_URL=postgres://user:password@127.0.0.1:5432/perplexta_ledger
 
-# Execution Security & Signing Block
-JWT_SECRET=your_hyper_secure_session_token_key
+# Security & Session Keys
+JWT_SECRET=your_secure_session_secret_key
 ENCRYPTION_KEY=32_character_aes_encryption_key_here
 
-# Provider Integration Keys (Managed via dynamic API Key Vault)
-GEMINI_API_KEY=your_gemini_api_key_for_backend_orchestration
+# Provider Keys (Managed via dynamic API Key Vault)
+GEMINI_API_KEY=your_gemini_api_key
 ```
-*(All administrative keys are saved to disk with AES-256 standard encryption, using your specific `ENCRYPTION_KEY` block.)*
 
-### 2. Startup & Node Scripts
+### 2. Development Execution
 ```bash
-# Install core dependencies safely
+# Install dependencies
 npm install
 
-# Launch Vite + Express TypeScript Server in local Dev Mode
+# Launch Vite + Express TypeScript server in development mode
 npm run dev
 ```
 
-### 3. Standalone Production Bundler
-Perplexta uses `esbuild` configurations to bundle physical backend sources into a clean, standalone, type-stripped CJS artifact to eliminate runtime Module resolution errors in containerized clouds (e.g., Google Cloud Run):
+### 3. Production Build & Deployment
+The build process bundles backend TypeScript sources into a standalone CJS bundle (`dist/server.cjs`) using `esbuild` for zero runtime module resolution issues in containerized environments (Google Cloud Run, AWS ECS, Docker):
 ```bash
-# Build & Bundle assets 
+# Compile client assets and bundle backend server
 npm run build
 
-# Start stand-alone bundled server
+# Start production server
 npm run start
 ```
 
 ---
 
-## 🔒 License, Proprietary Constraints & Brand Ownership
+## 🔒 License & Brand Ownership
 
 ### **STRICTLY PROPRIETARY - ALL RIGHTS RESERVED**
 
-This application, its source code, relational databases, structural schema mapping, visual layouts, responsive CSS assets, programmatic API protocols, and integration structures are completely proprietary, highly confidential, and protected under local and international intellectual property (IP), commercial trade, and copyright laws.
+This platform, its source code, relational databases, structural schema mappings, visual layouts, responsive CSS assets, API protocols, and integration structures are completely proprietary, highly confidential, and protected under international intellectual property and copyright laws.
 
 * **Primary Architect & Developer:** **Osama Qoneibi** (أسامة قنيبي).
 * **Exclusive Commercial Owner:** **Viral Link Up Ltd.** (شركة فيرال لينك اب المحدودة).
 
-#### **Binding Terms & Restrictive Covenants:**
-1. **Reverse Engineering Prohibition:** Decompiling, extracting, or attempts to decode structural backend execution states, encryption schemas, or routing protocols is strictly prohibited.
-2. **Duplication & Redistribution Prohibitions:** No part of this repository, code structure, or interface design can be duplicated, cloned, published, altered, or shared without prior written consent from both OSAMA QONEIBI and VIRAL LINK UP LTD.
-3. **Legal Compliance Tracking:** Unauthorized access, reverse-engineering attempts, or duplication of copyright elements will initiate swift, aggressive commercial and intellectual property prosecution across international courts of justice.
+Unauthorized duplication, cloning, decompilation, reverse engineering, or redistribution of any part of this system without prior written authorization is strictly prohibited and will incur immediate legal prosecution.
 
 ---
 
 <div align="center">
-  <sub>PERPLEXTA PLATFORM • Engineered with Professional Purity, Majestic Calm & Bulletproof Performance.</sub>
+  <sub>VIRALBOOK & VIRALLINKUP PLATFORM • Engineered with Professional Purity, Majestic Symmetry & Uncompromising Performance.</sub>
   <br>
   <sub>Copyright © 2026 Osama Qoneibi & Viral Link Up Ltd. All Rights Reserved.</sub>
 </div>

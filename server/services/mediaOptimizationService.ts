@@ -19,8 +19,6 @@ export interface ImageOptimizationResult {
 
 const CONTEXT_CONSTRAINTS: Record<string, { maxWidth: number; maxHeight: number; quality: number }> = {
   avatar: { maxWidth: 512, maxHeight: 512, quality: 85 },
-  blog: { maxWidth: 1920, maxHeight: 1080, quality: 85 },
-  marketplace: { maxWidth: 1200, maxHeight: 1200, quality: 85 },
   bulletin: { maxWidth: 1200, maxHeight: 1200, quality: 85 },
   ad: { maxWidth: 1200, maxHeight: 1200, quality: 85 },
   general: { maxWidth: 1920, maxHeight: 1080, quality: 85 }
@@ -44,7 +42,7 @@ export async function optimizeUploadedImage(
   originalFilename: string,
   context: string = 'general',
   isPublic: boolean = true,
-  associations?: { userId?: number; blogArticleId?: number; marketplaceItemId?: number }
+  associations?: { userId?: number }
 ): Promise<ImageOptimizationResult> {
   const ext = path.extname(originalFilename).toLowerCase();
   const baseName = path.basename(filePath, ext);
@@ -142,13 +140,11 @@ export async function optimizeUploadedImage(
         const insertRes = await pool.query(`
           INSERT INTO media_assets (
             stored_path, original_filename, context, format, width, height, size_bytes, sha256_hash, is_public,
-            user_id, blog_article_id, marketplace_item_id, metadata
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            user_id, metadata
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           ON CONFLICT (stored_path) DO UPDATE SET
             context = EXCLUDED.context,
             user_id = COALESCE(EXCLUDED.user_id, media_assets.user_id),
-            blog_article_id = COALESCE(EXCLUDED.blog_article_id, media_assets.blog_article_id),
-            marketplace_item_id = COALESCE(EXCLUDED.marketplace_item_id, media_assets.marketplace_item_id),
             updated_at = CURRENT_TIMESTAMP
           RETURNING id
         `, [
@@ -162,8 +158,6 @@ export async function optimizeUploadedImage(
           sha256Hash,
           isPublic,
           associations?.userId || null,
-          associations?.blogArticleId || null,
-          associations?.marketplaceItemId || null,
           JSON.stringify({ originalWidth: origWidth, originalHeight: origHeight })
         ]);
         if (insertRes.rows.length > 0) {
@@ -272,7 +266,7 @@ export async function getMediaAssetById(id: string) {
 }
 
 /**
- * Finds all media_assets not referenced across user_files, blog_articles, marketplace_items, bulletin_ads, advertisements, users, or system_settings
+ * Finds all media_assets not referenced across user_files, bulletin_ads, advertisements, users, or system_settings
  */
 export async function findOrphanedMediaAssets() {
   if (!pool) return [];
@@ -281,12 +275,6 @@ export async function findOrphanedMediaAssets() {
       SELECT m.* FROM media_assets m
       WHERE NOT EXISTS (
         SELECT 1 FROM users u WHERE u.avatar LIKE '%' || m.stored_path || '%'
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM blog_articles b WHERE b.image_url LIKE '%' || m.stored_path || '%'
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM marketplace_items mi WHERE mi.image_url LIKE '%' || m.stored_path || '%'
       )
       AND NOT EXISTS (
         SELECT 1 FROM bulletin_ads ba WHERE ba.image_url LIKE '%' || m.stored_path || '%'

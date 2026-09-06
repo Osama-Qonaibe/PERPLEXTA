@@ -17,5 +17,4 @@ export const ALL_TOOLS = [
   "sovereign_search",
   "x402_api",
   "storage_mb",
-  "marketplace_listings",
 ] as const;

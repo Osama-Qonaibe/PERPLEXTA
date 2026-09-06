@@ -234,8 +234,22 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     if (token) {
       fetchPulseData();
-      const interval = setInterval(fetchPulseData, 20000);
-      return () => clearInterval(interval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        fetchPulseData();
+      }, 30000);
+
+      const handleVisibility = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          fetchPulseData();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
     }
   }, [token]);
 

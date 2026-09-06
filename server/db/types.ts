@@ -644,75 +644,6 @@ export interface StripeEvent {
   updated_at: Date | string;
 }
 
-
-export interface ForumCategory {
-  id: number;
-  slug: string;
-  name_en: string;
-  name_ar: string;
-  description_en: string | null;
-  description_ar: string | null;
-  icon: string;
-  color: string;
-  created_at: Date | string;
-}
-
-export interface ForumPost {
-  id: number;
-  category_id: number;
-  user_id: number;
-  title: string;
-  content: string;
-  is_pinned: boolean;
-  is_locked: boolean;
-  views: number;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
-
-export interface ForumComment {
-  id: number;
-  post_id: number;
-  user_id: number;
-  content: string;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
-
-export interface BlogArticle {
-  id: number;
-  author_id: number;
-  slug: string;
-  title_en: string;
-  title_ar: string;
-  content_en: string;
-  content_ar: string;
-  image_url: string | null;
-  category_en: string;
-  category_ar: string;
-  views: number;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
-
-export interface BlogComment {
-  id: number;
-  article_id: number;
-  user_id: number;
-  content: string;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
-
-export interface BlogRating {
-  id: number;
-  article_id: number;
-  user_id: number;
-  rating: number;
-  created_at: Date | string;
-}
-
-
 export interface AdminAuditLog {
   id: number;
   admin_id: number | null;
@@ -722,45 +653,6 @@ export interface AdminAuditLog {
   details: any;
   ip_address: string | null;
   user_agent: string | null;
-  created_at: Date | string;
-}
-
-
-export interface MarketplaceItem {
-  id: number;
-  user_id: number;
-  title_en: string;
-  title_ar: string;
-  description_en: string;
-  description_ar: string;
-  price: number | string;
-  category_en: string;
-  category_ar: string;
-  image_url: string | null;
-  status: 'approved' | 'pending' | 'sold' | 'rejected' | string;
-  views: number;
-  contact_link: string | null;
-  download_url: string | null;
-  preview_url: string | null;
-  video_url: string | null;
-  features: string | null;
-  technologies: string | null;
-  referral_percent: number | string | null;
-  highlight_tag: string | null;
-  license_type: string | null;
-  created_at: Date | string;
-  updated_at: Date | string;
-}
-
-export interface MarketplacePurchase {
-  id: number;
-  user_id: number;
-  item_id: number;
-  price_paid: number | string;
-  license_type: string;
-  referrer_id: number | null;
-  commission_paid: number | string;
-  download_token: string | null;
   created_at: Date | string;
 }
 

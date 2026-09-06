@@ -395,7 +395,7 @@ export function invalidateOrchestratorConfigCache(toolId?: string) {
   }
 }
 
-/** Get active marketplace subscription plans from cache */
+/** Get active subscription plans from cache */
 export async function getCachedActivePlans(): Promise<any[]> {
   const now = Date.now();
   const cached = activePlansCache.get('global');

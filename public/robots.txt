@@ -4,9 +4,8 @@ Allow: /terms
 Allow: /privacy
 Allow: /about
 Allow: /subscription
-Allow: /blog
-Allow: /forum
-Allow: /marketplace
+Allow: /viralbook
+Allow: /bulletin
 Disallow: /chat
 Disallow: /chat/
 Disallow: /admin

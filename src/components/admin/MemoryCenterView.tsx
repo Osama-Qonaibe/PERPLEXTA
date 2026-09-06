@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { getAuthHeaders, getTimeAgo } from "../../utils/adminUtils";
 import {
@@ -111,8 +112,14 @@ export const MemoryCenterView = ({
   const [diagnosticsData, setDiagnosticsData] = useState<any>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(10);
   const [loadingStats, setLoadingStats] = useState<boolean>(false);
-  const [toastMsg, setToastMsg] = useState<string>("");
-  const [isSuccessToast, setIsSuccessToast] = useState<boolean>(false);
+
+  const showToast = useCallback((message: string, isSuccess = true) => {
+    if (isSuccess) {
+      globalToast.success(message, dir === "rtl" ? "تم بنجاح" : "Success");
+    } else {
+      globalToast.error(message, dir === "rtl" ? "حدث خطأ" : "Error");
+    }
+  }, [dir]);
 
   const [lowThreshold, setLowThreshold] = useState<number>(50);
   const [highThreshold, setHighThreshold] = useState<number>(80);
@@ -153,23 +160,18 @@ export const MemoryCenterView = ({
       if (res.ok) {
         setLowThreshold(low);
         setHighThreshold(high);
-        setToastMsg(
+        showToast(
           language === "ar"
             ? "تم تحديث عتبات التنبيهات المخصصة بنجاح!"
-            : "Custom notification thresholds updated successfully!"
+            : "Custom notification thresholds updated successfully!",
+          true
         );
-        setIsSuccessToast(true);
-        setTimeout(() => setToastMsg(""), 4000);
       } else {
         const data = await res.json();
-        setToastMsg(data.error || "Failed to update thresholds");
-        setIsSuccessToast(false);
-        setTimeout(() => setToastMsg(""), 4000);
+        showToast(data.error || "Failed to update thresholds", false);
       }
     } catch (err: any) {
-      setToastMsg(err.message || "Failed to update thresholds");
-      setIsSuccessToast(false);
-      setTimeout(() => setToastMsg(""), 4000);
+      showToast(err.message || "Failed to update thresholds", false);
     }
   };
 
@@ -199,26 +201,21 @@ export const MemoryCenterView = ({
       });
       const data = await res.json();
       if (res.ok) {
-        setToastMsg(
+        showToast(
           language === "ar"
             ? `تم ضغط الذاكرة بذكاء بنجاح. تم تكثيف ${data.compressedCount} جلسة.`
-            : `Smart compression completed. Condensed ${data.compressedCount} active sessions.`
+            : `Smart compression completed. Condensed ${data.compressedCount} active sessions.`,
+          true
         );
-        setIsSuccessToast(true);
         fetchStats();
       } else {
-        setToastMsg(data.error || "Failed to execute smart compression");
-        setIsSuccessToast(false);
+        showToast(data.error || "Failed to execute smart compression", false);
       }
     } catch (err: any) {
-      setToastMsg(err.message || "Network error");
-      setIsSuccessToast(false);
+      showToast(err.message || "Network error", false);
     } finally {
       setIsCompressing(false);
       setIsOperationPending(false);
-      setTimeout(() => {
-        setToastMsg("");
-      }, 4000);
     }
   };
 
@@ -236,26 +233,21 @@ export const MemoryCenterView = ({
       });
       const data = await res.json();
       if (res.ok) {
-        setToastMsg(
+        showToast(
           language === "ar"
             ? `تم تنظيف السياق بنجاح. تم مسح ${data.cleanedCount} جلسة غير نشطة.`
-            : `Context cleanup completed. Pruned ${data.cleanedCount} inactive sessions.`
+            : `Context cleanup completed. Pruned ${data.cleanedCount} inactive sessions.`,
+          true
         );
-        setIsSuccessToast(true);
         fetchStats();
       } else {
-        setToastMsg(data.error || "Failed to execute context cleanup");
-        setIsSuccessToast(false);
+        showToast(data.error || "Failed to execute context cleanup", false);
       }
     } catch (err: any) {
-      setToastMsg(err.message || "Network error");
-      setIsSuccessToast(false);
+      showToast(err.message || "Network error", false);
     } finally {
       setIsCleaning(false);
       setIsOperationPending(false);
-      setTimeout(() => {
-        setToastMsg("");
-      }, 4000);
     }
   };
 
@@ -317,26 +309,21 @@ export const MemoryCenterView = ({
       const data = await res.json();
       if (res.ok && data.success) {
         setReports(data.report || []);
-        setToastMsg(
+        showToast(
           language === "ar"
             ? "اكتملت عملية تكثيف الذاكرة بنجاح!"
-            : "Memory distillation cycle completed successfully!"
+            : "Memory distillation cycle completed successfully!",
+          true
         );
-        setIsSuccessToast(true);
         fetchStats();
       } else {
-        setToastMsg(data.error || "Failed to execute consolidation");
-        setIsSuccessToast(false);
+        showToast(data.error || "Failed to execute consolidation", false);
       }
     } catch (err: any) {
-      setToastMsg(err.message || "Network error");
-      setIsSuccessToast(false);
+      showToast(err.message || "Network error", false);
     } finally {
       setIsRunning(false);
       setIsOperationPending(false);
-      setTimeout(() => {
-        setToastMsg("");
-      }, 4000);
     }
   };
 
@@ -349,30 +336,6 @@ export const MemoryCenterView = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Toast Notice */}
-      {toastMsg && (
-        <div
-          className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-50 flex items-center gap-3 px-6 py-4 rounded-lg shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-            isSuccessToast
-              ? theme === "dark"
-                ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                : "bg-white border border-accent text-accent"
-              : theme === "dark"
-                ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                : "bg-white border border-red-200 text-red-600"
-          }`}
-        >
-          {isSuccessToast ? (
-            <CheckCircle2
-              size={20}
-              className="text-accent "
-            />
-          ) : (
-            <AlertCircle size={20} className="text-red-500" />
-          )}
-          <span className="font-medium text-sm">{toastMsg}</span>
-        </div>
-      )}
 
       {/* Hero Header */}
       <div

@@ -204,7 +204,7 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
 
   // Real-time & Auto-Sync State
   const [autoSync, setAutoSync] = useState(true);
-  const [pollIntervalSeconds, setPollIntervalSeconds] = useState(10);
+  const [pollIntervalSeconds, setPollIntervalSeconds] = useState(30);
   const [lastSyncedTime, setLastSyncedTime] = useState<Date | null>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -277,15 +277,26 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
     };
   }, [socket, fetchUsersSilently, selectedUser?.id]);
 
-  // Polling Interval Effect
+  // Polling Interval Effect with Document Visibility Awareness
   useEffect(() => {
     if (!autoSync || !token) return;
 
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       fetchUsersSilently();
     }, pollIntervalSeconds * 1000);
 
-    return () => clearInterval(timer);
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchUsersSilently();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [autoSync, pollIntervalSeconds, token, fetchUsersSilently]);
 
   // Sync support notes & kyc rejection reason when selectedUser changes
@@ -1848,8 +1859,16 @@ export const UserManagementView: React.FC<UserManagementProps> = ({
                           </button>
 
                           <button
-                            onClick={() => {
-                              const reason = prompt(isRtl ? 'أدخل سبب رفض التوثيق:' : 'Enter rejection reason:');
+                            onClick={async () => {
+                              const reason = await confirmDialog({
+                                title: isRtl ? 'رفض التوثيق؟' : 'Reject KYC?',
+                                description: isRtl ? 'يرجى إدخال سبب رفض طلب توثيق الهوية:' : 'Enter rejection reason:',
+                                hasInput: true,
+                                inputPlaceholder: isRtl ? 'سبب الرفض...' : 'Rejection reason...',
+                                confirmLabel: isRtl ? 'تأكيد الرفض' : 'Confirm Reject',
+                                variant: 'danger',
+                                requiredInput: true,
+                              });
                               if (reason) handleUpdateKYCVerificationStatus(selectedUser.id, 'rejected', reason);
                             }}
                             disabled={isUpdating}

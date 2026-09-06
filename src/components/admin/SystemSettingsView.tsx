@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../../utils/adminUtils";
 import { resolveImageUrl } from "../../utils/imageResolver";
@@ -66,7 +67,6 @@ import {
   Smartphone,
   Tablet,
   Monitor,
-  ShoppingBag,
   Newspaper,
   Compass,
 } from "lucide-react";
@@ -167,12 +167,6 @@ export const SystemSettingsView = ({
         if (keyClean === 'rewards') {
           return itemClean !== 'rewards';
         }
-        if (keyClean === 'marketplace' || keyClean === 'market') {
-          return !['marketplace', 'market', 'store'].includes(itemClean);
-        }
-        if (keyClean === 'blog' || keyClean === 'articles') {
-          return !['blog', 'articles', 'posts', 'news'].includes(itemClean);
-        }
         if (keyClean === 'explore' || keyClean === 'discover') {
           return !['explore', 'discover'].includes(itemClean);
         }
@@ -200,10 +194,6 @@ export const SystemSettingsView = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSeoUploading, setIsSeoUploading] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
 
   const [clearingCache, setClearingCache] = useState<string | null>(null);
 
@@ -368,22 +358,22 @@ export const SystemSettingsView = ({
       });
       if (res.ok) {
         const data = await res.json();
-        setToast({
-          message: data.message || (language === "ar" ? "تم مسح الذاكرة المؤقتة بنجاح" : "Cache cleared successfully"),
-          type: "success",
-        });
+        showToast(
+          data.message || (language === "ar" ? "تم مسح الذاكرة المؤقتة بنجاح" : "Cache cleared successfully"),
+          "success"
+        );
       } else {
         const err = await res.json();
-        setToast({
-          message: err.error || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
-          type: "error",
-        });
+        showToast(
+          err.error || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+          "error"
+        );
       }
     } catch (error: any) {
-      setToast({
-        message: error.message || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
-        type: "error",
-      });
+      showToast(
+        error.message || (language === "ar" ? "فشل مسح الذاكرة المؤقتة" : "Failed to clear cache"),
+        "error"
+      );
     } finally {
       setClearingCache(null);
     }
@@ -437,7 +427,7 @@ export const SystemSettingsView = ({
   const handleSaveRouteSeo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!editingRouteItem?.route) {
-      showToast(dir === "rtl" ? "مسار الصفحة مطلوب (مثل /marketplace)" : "Route path is required (e.g. /marketplace)", "error");
+      showToast(dir === "rtl" ? "مسار الصفحة مطلوب (مثل /bulletin)" : "Route path is required (e.g. /bulletin)", "error");
       return;
     }
     try {
@@ -531,9 +521,12 @@ export const SystemSettingsView = ({
     setIsOperationPending(isSaving);
   }, [isSaving, setIsOperationPending]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (type === "success") {
+      globalToast.success(message, dir === "rtl" ? "تم بنجاح" : "Success");
+    } else {
+      globalToast.error(message, dir === "rtl" ? "حدث خطأ" : "Error");
+    }
   };
 
   const fetchSettings = async () => {
@@ -899,8 +892,7 @@ export const SystemSettingsView = ({
     const base = [
       { path: "/", labelEn: "Home Gateway Redirect", labelAr: "بوابة التوجيه الرئيسية", type: "public", status: "index", descriptionEn: "Public gateway routing users to default dashboard structure.", descriptionAr: "بوابة توجيه عامة تقوم بتوجيه المستخدمين للواجهة الافتراضية." },
       { path: "/subscription", labelEn: "Subscription Plans Page", labelAr: "صفحة خطط الاشتراكات", type: "public", status: "index", descriptionEn: "Public storefront detailing memberships, tiers, and pricing matrices.", descriptionAr: "صفحة عامة لعرض مزايا وتفاصيل العضوية والخطط السعرية." },
-      { path: "/marketplace", labelEn: "AI Plugin & Prompt Marketplace", labelAr: "متجر الإضافات والنماذج الذكية", type: "public", status: "index", descriptionEn: "Public showcase of integration add-ons and premium prompts.", descriptionAr: "معرض عام لعرض ملحقات الأنظمة المدمجة والقوالب الاحترافية." },
-      { path: "/blog", labelEn: "Technical Editorial Blog", labelAr: "المدونة التقنية والتعليمية", type: "public", status: "index", descriptionEn: "Public resource hub to publish analysis articles and tutorials.", descriptionAr: "مركز مقالات عام لنشر التحليلات الفنية والدروس التعليمية." },
+      { path: "/bulletin", labelEn: "Community Bulletin & Social Ads", labelAr: "لوحة الإعلانات والمجتمع التفاعلي", type: "public", status: "index", descriptionEn: "Public interactive feed with verified reels, business pages, and campaigns.", descriptionAr: "لوحة مجتمعية تفاعلية لنشر الإعلانات ومقاطع الفيديو والصفحات التجارية." },
       { path: "/terms", labelEn: "Terms of Service", labelAr: "شروط الخدمة والاستخدام", type: "public", status: "index", descriptionEn: "Mandatory public legal statement governing platform interactions.", descriptionAr: "اتفاقية قانونية عامة تنظم الاستخدام وحقوق الملكية للمنصة." },
       { path: "/privacy", labelEn: "Privacy Policy Charter", labelAr: "سياسة الخصوصية وحماية البيانات", type: "public", status: "index", descriptionEn: "Mandatory public charter highlighting database handling policies.", descriptionAr: "ميثاق خصوصية عام يوضح سياسات التعامل الآمن مع قواعد البيانات." },
       { path: "/about", labelEn: "About Corporate Pitch", labelAr: "صفحة التعريف والرؤية", type: "public", status: "index", descriptionEn: "Public company presentation showcasing core tech vision.", descriptionAr: "عرض عام للمؤسسة يعزز الثقة ويوضح الرؤية الابتكارية." },
@@ -908,7 +900,6 @@ export const SystemSettingsView = ({
       { path: "/settings", labelEn: "User Profile & Security Vault", labelAr: "إعدادات الحساب وحقيبة أمان العضو", type: "private", status: "noindex", descriptionEn: "Sensitive account configurations, referral links, and session details.", descriptionAr: "إعدادات شخصية حساسة ومفاتيح العضوية وسجلات الجلسات النشطة." },
       { path: "/rewards", labelEn: "Affiliate Ledger & KYC Pending Board", labelAr: "نظام المكافآت والتحقق المالي المتقدم", type: "private", status: "noindex", descriptionEn: "Ledger transaction audits, KYC identities, and wallet addresses.", descriptionAr: "سجلات ماليّة لتعيين المكافآت وبيانات التحقق وإثبات الهوية." },
       { path: "/reset-password", labelEn: "Credential Reset Gateway", labelAr: "بوابة استعادة وتعيين كلمة المرور", type: "private", status: "noindex", descriptionEn: "Temporary authentication token interface. Must stay isolated.", descriptionAr: "واجهة استعادة كلمات المرور باستخدام رموز تحقق متغيرة." },
-      { path: "/admin-community", labelEn: "Sections Panel (Community Management)", labelAr: "لوحة تحكم الأقسام (إدارة المجتمع)", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged community, sections, and category moderation hub.", descriptionAr: "مركز إدارة ومراقبة الأقسام والفئات والمجتمع ذو صلاحيات متقدمة." },
       { path: "/admin-sections", labelEn: "Sections Control Panel (External Modules)", labelAr: "لوحة تحكم الأقسام والأبحاث الخارجية", type: "admin", status: "noindex", descriptionEn: "External systems integration, categories block and custom module definitions.", descriptionAr: "لوحة ربط الأنظمة ومصادر الأبحاث الخارجية وتمرير المعطيات الحساسة." },
       { path: "/admin/sections", labelEn: "Sections Dashboard Internal Portal", labelAr: "بوابة الأقسام الداخلية للأنظمة الإلكترونية", type: "admin", status: "noindex", descriptionEn: "Internal database mappings and custom categories routing matrix.", descriptionAr: "مصفوفة فحص مسارات قواعد البيانات الداخلية للأنظمة والمجتمع." },
       { path: "/admin", labelEn: "System Command Center (Core)", labelAr: "لوحة التحكم الرئيسية والقيادة والتحكم", type: "admin", status: "noindex", descriptionEn: "Extreme-privileged interface displaying infrastructure configurations.", descriptionAr: "واجهة تحكم فائقة الحساسية للتحكم بالبنية التحتية والموديلات." }
@@ -1012,7 +1003,7 @@ export const SystemSettingsView = ({
       indexing_policy_applied: {
         strict_user_data_isolation: "enforced",
         allowed_public_routes_whitelist: [
-          "/", "/subscription", "/marketplace", "/blog", "/terms", "/privacy", "/about"
+          "/", "/subscription", "/bulletin", "/terms", "/privacy", "/about"
         ]
       },
       endpoints_analysis: routesSchema.map((r: any) => ({
@@ -1036,29 +1027,6 @@ export const SystemSettingsView = ({
 
   return (
     <div className="space-y-8 max-w-5xl relative">
-      {/* Toast Notification */}
-      {toast &&
-        createPortal(
-          <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-              toast.type === "success"
-                ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                  : "bg-white border border-accent text-accent"
-                : theme === "dark"
-                  ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                  : "bg-white border border-red-200 text-red-600"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <AlertCircle size={20} />
-            )}
-            <span className="font-medium text-sm">{toast.message}</span>
-          </div>,
-          document.body,
-        )}
 
       {/* General Settings */}
       <div
@@ -1154,7 +1122,7 @@ export const SystemSettingsView = ({
               onClick={handleSyncSeoMetadata}
               disabled={isSyncingMetadata}
               className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium transition-colors border border-emerald-500/20"
-              title={language === "ar" ? "مزامنة العناوين والكلمات المفتاحية والوصف المفقود للمقالات والمنتجات" : "Sync missing SEO titles, descriptions, and keywords for blog & marketplace items"}
+              title={language === "ar" ? "مزامنة العناوين والكلمات المفتاحية والوصف المفقود لإعلانات ومنشورات المجتمع" : "Sync missing SEO titles, descriptions, and keywords for bulletin items"}
             >
               <RefreshCw size={14} className={isSyncingMetadata ? "animate-spin" : ""} />
               <span>{language === "ar" ? "مزامنة SEO للمحتوى" : "Sync Content SEO"}</span>
@@ -1602,20 +1570,6 @@ export const SystemSettingsView = ({
                 icon: <Gift size={18} className="text-purple-500" />
               },
               {
-                key: "/marketplace",
-                title: dir === "rtl" ? "قسم المتجر والسوق (Marketplace)" : "Marketplace Section",
-                subtitle: dir === "rtl" ? "مسار /marketplace" : "Route /marketplace",
-                description: dir === "rtl" ? "إخفاء قسم المتجر وسوق المنتجات البرمجية والخدمات." : "Hide marketplace and software products section from navigation.",
-                icon: <ShoppingBag size={18} className="text-teal-500" />
-              },
-              {
-                key: "/blog",
-                title: dir === "rtl" ? "قسم المقالات والأخبار (Articles & Blog)" : "Articles & Blog Section",
-                subtitle: dir === "rtl" ? "مسار /blog" : "Route /blog",
-                description: dir === "rtl" ? "إخفاء قسم المقالات والأخبار والشروح البرمجية." : "Hide articles, blog, and news section from navigation.",
-                icon: <Newspaper size={18} className="text-orange-500" />
-              },
-              {
                 key: "/explore",
                 title: dir === "rtl" ? "قسم استكشف (Explore)" : "Explore Section",
                 subtitle: dir === "rtl" ? "مسار /explore" : "Route /explore",
@@ -1770,20 +1724,6 @@ export const SystemSettingsView = ({
                 subtitle: dir === "rtl" ? "مسار /rewards على الموبايل" : "Route /rewards on Mobile",
                 description: dir === "rtl" ? "إخفاء صفحة ونظام المكافآت والنقاط في القائمة على الهواتف." : "Hide rewards section on mobile navigation menu.",
                 icon: <Gift size={18} className="text-purple-500" />
-              },
-              {
-                key: "hide_mobile_marketplace",
-                title: dir === "rtl" ? "قسم السوق على الموبايل" : "Marketplace on Mobile",
-                subtitle: dir === "rtl" ? "مسار /marketplace على الموبايل" : "Route /marketplace on Mobile",
-                description: dir === "rtl" ? "إخفاء وحظر قسم المتجر وسوق التطبيقات والخدمات على الهواتف." : "Hide marketplace section on mobile devices.",
-                icon: <ShoppingBag size={18} className="text-teal-500" />
-              },
-              {
-                key: "hide_mobile_blog",
-                title: dir === "rtl" ? "قسم المقالات على الموبايل" : "Articles on Mobile",
-                subtitle: dir === "rtl" ? "مسار /blog على الموبايل" : "Route /blog on Mobile",
-                description: dir === "rtl" ? "إخفاء قسم المقالات والأخبار والشروح على هواتف الموبايل." : "Hide articles and blog section on mobile viewports.",
-                icon: <Newspaper size={18} className="text-orange-500" />
               },
               {
                 key: "hide_mobile_explore",
@@ -2619,20 +2559,20 @@ export const SystemSettingsView = ({
                 {/* Route path */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-accent mb-1">
-                    {dir === "rtl" ? "مسار الصفحة (Route Path)" : "Route Path (e.g. /marketplace)"} *
+                    {dir === "rtl" ? "مسار الصفحة (Route Path)" : "Route Path (e.g. /bulletin)"} *
                   </label>
                   <input
                     type="text"
                     required
                     value={editingRouteItem.route || ""}
                     onChange={(e) => setEditingRouteItem({ ...editingRouteItem, route: e.target.value })}
-                    placeholder="/marketplace"
+                    placeholder="/bulletin"
                     className={`w-full text-xs p-2.5 rounded-md border font-mono ${
                       theme === "dark" ? "bg-[#09090b] border-gray-800 text-white" : "bg-gray-50 border-gray-300 text-gray-900"
                     } focus:outline-none focus:border-accent`}
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
-                    {dir === "rtl" ? "المسار النسبي للصفحة، مثل: /blog أو /subscription أو /custom-page" : "Relative route path starting with /, e.g., /blog or /subscription"}
+                    {dir === "rtl" ? "المسار النسبي للصفحة، مثل: /bulletin أو /subscription أو /custom-page" : "Relative route path starting with /, e.g., /bulletin or /subscription"}
                   </p>
                 </div>
 

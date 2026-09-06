@@ -4,7 +4,6 @@ import {
   Sparkles, 
   Compass, 
   Sliders, 
-  ShoppingBag, 
   Megaphone, 
   Zap, 
   BookOpen, 
@@ -72,7 +71,7 @@ export const RecommendationsPage: React.FC = () => {
           </p>
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="w-full py-3.5 px-6 rounded-xl bg-accent text-black font-extrabold text-sm shadow-lg shadow-none hover:bg-accent transition-theme flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-6 rounded-xl bg-accent text-white font-extrabold text-sm shadow-md hover:opacity-90 transition-theme flex items-center justify-center gap-2 cursor-pointer"
           >
             <UserCheck size={18} />
             <span>{language === 'ar' ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</span>
@@ -100,8 +99,8 @@ export const RecommendationsPage: React.FC = () => {
               </h1>
               <p className="text-xs text-[var(--text-muted)]">
                 {language === 'ar' 
-                  ? 'ترشيح شخصي مدعوم بالذكاء الاصطناعي للمنتجات والخدمات والأدوات المناسبة لأهدافك' 
-                  : 'AI-driven personalized curation matching digital products, services, and AI tools to your exact needs'}
+                  ? 'ترشيح موجه بالذكاء الاصطناعي يتوافق مع أهدافك' 
+                  : 'AI curation matching digital services and tools to your goals'}
               </p>
             </div>
           </div>
@@ -109,7 +108,7 @@ export const RecommendationsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPrefModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-accent text-black font-extrabold text-xs shadow-lg shadow-none hover:bg-accent transition-theme"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-accent text-white font-extrabold text-xs shadow-md hover:opacity-90 transition-theme cursor-pointer"
             >
               <Sliders size={14} />
               <span>{language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}</span>
@@ -156,13 +155,17 @@ export const RecommendationsPage: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-accent">98%</p>
+              <p className="text-lg font-black text-accent">
+                {userSummary?.avg_match_percentage ? `${userSummary.avg_match_percentage}%` : '88%'}
+              </p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
                 {language === 'ar' ? 'دقة الترشيح' : 'Match Precision'}
               </p>
             </div>
             <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-accent">24+</p>
+              <p className="text-lg font-black text-accent">
+                {userSummary?.total_recommendations ? `${userSummary.total_recommendations}+` : '15+'}
+              </p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
                 {language === 'ar' ? 'عنصر مرشح' : 'Active Recommendations'}
               </p>
@@ -184,32 +187,7 @@ export const RecommendationsPage: React.FC = () => {
           />
         </section>
 
-        {/* Section 2: Marketplace Products Curation */}
-        <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
-                <ShoppingBag size={18} />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                  {language === 'ar' ? 'أفضل المنتجات الرقمية والسكربتات المرشحة' : 'Recommended Digital Products & Code Solutions'}
-                </h3>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {language === 'ar' ? 'قوالب برمجية وواجهات عالية التقييم تتناسب مع مشاريعك' : 'High-rated code templates and UI assets aligned with your dev stack'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <RecommendationWidget
-            variant="compact"
-            filterType="marketplace"
-            limit={4}
-          />
-        </section>
-
-        {/* Section 3: Bulletin Board Services & Ads */}
+        {/* Section 2: Viralbook Posts & Ads */}
         <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
             <div className="flex items-center gap-2.5">
@@ -218,10 +196,10 @@ export const RecommendationsPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                  {language === 'ar' ? 'الخدمات المستقلة والإعلانات الموصى بها' : 'Recommended Services & Professional Listings'}
+                  {language === 'ar' ? 'منشورات وخدمات فايرال بوك (Viralbook)' : 'Viralbook Feeds & Recommended Listings'}
                 </h3>
                 <p className="text-xs text-[var(--text-muted)]">
-                  {language === 'ar' ? 'خدمات موثوقة وعروض نشطة تحظى بتفاعل عالي' : 'Verified service offers and active local listings with high response velocity'}
+                  {language === 'ar' ? 'منشورات رائجة وعروض نشطة تحظى بتفاعل عالي على شبكة Viralbook' : 'Trending posts and active service offers on Viralbook with high engagement'}
                 </p>
               </div>
             </div>

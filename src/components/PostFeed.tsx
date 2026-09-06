@@ -33,7 +33,8 @@ import {
   Clapperboard,
   Camera,
   Handshake,
-  ThumbsUp
+  ThumbsUp,
+  Plus
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { BulletinAd, BulletinAdComment } from '../../server/db/types';
@@ -335,7 +336,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopyLink = (ad: BulletinAd) => {
-    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
+    const shareUrl = `${window.location.origin}/viralbook/${ad.id}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl).then(() => {
@@ -380,11 +381,11 @@ export const PostFeed: React.FC<PostFeedProps> = ({
   };
 
   const handleWhatsAppShare = (ad: BulletinAd) => {
-    const shareUrl = `${window.location.origin}/bulletin/${ad.id}`;
+    const shareUrl = `${window.location.origin}/viralbook/${ad.id}`;
     const text = encodeURIComponent(
       isRtl
-        ? `شاهِد هذا الإعلان المميز على المنصة: "${ad.title}"\n${shareUrl}`
-        : `Check out this promotion: "${ad.title}"\n${shareUrl}`
+        ? `شاهِد هذا المنشور على فايرال بوك (Viralbook): "${ad.title}"\n${shareUrl}`
+        : `Check out this Viralbook post: "${ad.title}"\n${shareUrl}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
     fetch(`/api/bulletin/ads/${ad.id}/share`, {
@@ -455,23 +456,26 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
   if (ads.length === 0) {
     return (
-      <div className="text-center py-16 px-4 bg-white dark:bg-[#1a1a1c] rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4 w-full">
-        <div className="w-16 h-16 rounded-[8px] bg-accent/10 text-accent flex items-center justify-center mx-auto">
-          <Megaphone size={32} />
+      <div className="text-center py-12 px-4 space-y-3 w-full">
+        <div className="w-10 h-10 rounded-full bg-[var(--surface-subtle)] text-[var(--text-muted)] flex items-center justify-center mx-auto">
+          <Megaphone size={20} />
         </div>
-        <h3 className="text-base font-bold">
-          {isRtl ? 'لا توجد إعلانات مطابقة حالياً' : 'No Ads Available'}
-        </h3>
-        <p className="text-xs text-gray-400 max-w-md mx-auto">
-          {isRtl
-            ? 'كن أول من ينشر إعلانه ويصل للعملاء في فلسطين والوطن العربي!'
-            : 'Be the first to create an ad campaign and reach thousands!'}
-        </p>
+        <div className="space-y-1">
+          <h3 className="text-sm font-bold text-[var(--text-primary)]">
+            {isRtl ? 'لا توجد منشورات حالياً' : 'No posts available'}
+          </h3>
+          <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
+            {isRtl
+              ? 'شارِك أفكارك أو منتجاتك الآن مع مجتمع فايرال بوك!'
+              : 'Share your posts or products with the Viralbook community!'}
+          </p>
+        </div>
         <button
           onClick={onCreateAdClick}
-          className="px-5 py-2.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-xs shadow-md transition-theme"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-accent transition-theme cursor-pointer border border-[var(--border-main)] rounded-[var(--radius-full)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)]"
         >
-          {isRtl ? 'أنشئ إعلانك الآن' : 'Create Ad Now'}
+          <Plus size={14} className="stroke-[2.5]" />
+          <span>{isRtl ? 'إنشاء منشور' : 'Create Post'}</span>
         </button>
       </div>
     );
@@ -482,7 +486,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
     .filter(ad => !hiddenAdIds.includes(ad.id) && ad.status !== 'archived' && ad.status !== 'trash');
 
   return (
-    <div className="grid grid-cols-1 gap-5 w-full touch-pan-y">
+    <div className="grid grid-cols-1 gap-4 w-full touch-pan-y">
       {visibleAds.map((ad, index) => {
         const isTextExpanded = !!expandedTextIds[ad.id];
         const isLongText = ad.description && ad.description.length > 140;
@@ -491,14 +495,14 @@ export const PostFeed: React.FC<PostFeedProps> = ({
           <motion.article
             key={(ad as any)._virtualId || `bulletin-ad-${ad.id}-${index}`}
             id={`bulletin-ad-${ad.id}`}
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`w-full rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-theme flex flex-col touch-pan-y ${
+            className={`w-full rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] hover:border-gray-300 dark:hover:border-white/[0.1] transition-theme flex flex-col touch-pan-y ${
               activeMoreMenuId === ad.id || reactionBarAdId === ad.id ? 'relative z-30 overflow-visible' : 'overflow-hidden'
             }`}
           >
             {/* Header: Author / Merchant Page info */}
-            <div className="p-3 sm:p-4 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60">
+            <div className="p-3 sm:p-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.04]">
               <div className="flex items-center gap-2.5 min-w-0">
                 <BulletinAvatar
                   src={ad.author_avatar}
@@ -886,7 +890,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             {/* ========================================================== */}
             {/* ROW 1: PAGE / AUTHOR NAME + DYNAMIC CONTACT ACTION BUTTON */}
             {/* ========================================================== */}
-            <div className="p-3 sm:px-4 bg-gray-50/90 dark:bg-[#18181b]/90 flex items-center justify-between gap-3 border-t border-gray-100 dark:border-gray-800/60">
+            <div className="p-3 sm:px-4 bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between gap-3 border-t border-gray-100 dark:border-white/[0.04]">
               <div 
                 onClick={() => ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)}
                 className={`flex items-center gap-2.5 min-w-0 ${ad.page_id ? 'cursor-pointer group' : ''}`}

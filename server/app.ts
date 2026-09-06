@@ -762,11 +762,9 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
 
     if (!isPublic) {
       const pattern = `%${cleanName}%`;
-      const blogCheck = await getExternalPool().query(`SELECT EXISTS(SELECT 1 FROM blog_articles WHERE image_url LIKE $1) AS is_public`, [pattern]).catch(() => ({ rows: [{ is_public: false }] }));
       const combinedCheck = await pool.query(`
         SELECT (
           EXISTS(SELECT 1 FROM bulletin_ads WHERE image_url LIKE $1 OR video_url LIKE $1 OR author_avatar LIKE $1) OR
-          EXISTS(SELECT 1 FROM marketplace_items WHERE image_url LIKE $1 OR preview_url LIKE $1 OR video_url LIKE $1 OR download_url LIKE $1) OR
           EXISTS(SELECT 1 FROM advertisements WHERE image_url LIKE $1) OR
           EXISTS(SELECT 1 FROM users WHERE avatar LIKE $1) OR
           EXISTS(SELECT 1 FROM bulletin_pages WHERE avatar_url LIKE $1 OR cover_url LIKE $1) OR
@@ -774,7 +772,7 @@ async function checkIsPublicFile(filename: string): Promise<boolean> {
         ) AS is_public
       `, [pattern]);
 
-      if (blogCheck.rows[0]?.is_public || combinedCheck.rows[0]?.is_public) {
+      if (combinedCheck.rows[0]?.is_public) {
         isPublic = true;
       } else {
       }
@@ -1330,8 +1328,6 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import memoryRoutes from './routes/memory.js';
 import kycRoutes from './routes/kyc.js';
 import emailRoutes from './routes/email.js';
-import blogRoutes from './routes/blog.js';
-import marketplaceRoutes from './routes/marketplace.js';
 import videoResourcesRoutes from './routes/videoResources.js';
 import shareRoutes from './routes/share.js';
 import adsRoutes from './routes/ads.js';
@@ -1440,8 +1436,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const staticRoutes = [
       { url: '/', changefreq: 'daily', priority: '1.0' },
       { url: '/subscription', changefreq: 'weekly', priority: '0.9' },
-      { url: '/marketplace', changefreq: 'daily', priority: '0.9' },
-      { url: '/blog', changefreq: 'daily', priority: '0.8' },
+      { url: '/viralbook', changefreq: 'daily', priority: '0.9' },
       { url: '/bulletin', changefreq: 'daily', priority: '0.8' },
       { url: '/rewards', changefreq: 'weekly', priority: '0.7' },
       { url: '/terms', changefreq: 'monthly', priority: '0.3' },
@@ -1509,32 +1504,12 @@ app.get('/sitemap.xml', async (req, res) => {
         };
 
         await streamToResponse(
-          getExternalPool(),
-          'SELECT slug, updated_at, image_url FROM blog_articles ORDER BY id DESC',
-          [],
-          (row) => {
-            const metrics = getSitemapMetrics(row.updated_at);
-            return `  <url>\n    <loc>${baseUrl}/blog/${row.slug}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
-          }
-        );
-
-        await streamToResponse(
-          pool,
-          'SELECT id, updated_at, image_url FROM marketplace_items ORDER BY id DESC',
-          [],
-          (row) => {
-            const metrics = getSitemapMetrics(row.updated_at);
-            return `  <url>\n    <loc>${baseUrl}/marketplace/${row.id}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
-          }
-        );
-
-        await streamToResponse(
           pool,
           'SELECT id, updated_at, image_url FROM bulletin_ads WHERE status = $1 ORDER BY id DESC',
           ['active'],
           (row) => {
             const metrics = getSitemapMetrics(row.updated_at);
-            return `  <url>\n    <loc>${baseUrl}/bulletin/${row.id}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
+            return `  <url>\n    <loc>${baseUrl}/viralbook/${row.id}</loc>\n    <lastmod>${row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()}</lastmod>\n    <changefreq>${metrics.changefreq}</changefreq>\n    <priority>${metrics.priority}</priority>\n${formatImageNode(row.image_url, baseUrl)}  </url>\n`;
           }
         );
       } catch (dbErr) {
@@ -1565,11 +1540,10 @@ app.use('/api/economy', (req, res, next) => {
 app.use('/api/memories', memoryRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/mail-services-v3', emailRoutes);
-app.use('/api/blog', blogRoutes);
-app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/video-resources', videoResourcesRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api/ads', adsRoutes);
+app.use('/api/viralbook', bulletinRoutes);
 app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
@@ -1733,14 +1707,6 @@ async function injectSEOTags(
       if (routeRes.rows.length > 0 && routeRes.rows[0].og_image_url) {
         return routeRes.rows[0].og_image_url;
       }
-      // Also check articles or items in this category for a representative image
-      const artCatRes = await getExternalPool().query(
-        'SELECT image_url FROM blog_articles WHERE category_en ILIKE $1 OR category_ar ILIKE $1 AND image_url IS NOT NULL ORDER BY id DESC LIMIT 1',
-        [`%${categoryName}%`]
-      );
-      if (artCatRes.rows.length > 0 && artCatRes.rows[0].image_url) {
-        return artCatRes.rows[0].image_url;
-      }
     } catch (e) {
       // ignore
     }
@@ -1835,106 +1801,12 @@ async function injectSEOTags(
   }
 
   if (queryParam) {
-    if (normalizedPath.startsWith('/blog')) {
-      try {
-        const searchRes = await getExternalPool().query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 OR category_en ILIKE $1 OR category_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
-          [`%${queryParam}%`]
-        );
-        if (searchRes.rows.length > 0) {
-          const article = searchRes.rows[0];
-          const articleTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث لـ "${queryParam}": ${articleTitle}` 
-            : `Search results for "${queryParam}": ${articleTitle}`;
-          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          const artCat = preferredLang === 'ar' ? article.category_ar : article.category_en;
-          const catImg = artCat ? await getCategoryOgImage(artCat) : null;
-          const targetImg = catImg || article.image_url;
-          if (targetImg) {
-            imageUrl = validateImageUrl(targetImg);
-          }
-        } else {
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث عن "${queryParam}" - مدونة بيربليكستا` 
-            : `Search results for "${queryParam}" - Perplexta Blog`;
-          currentDesc = preferredLang === 'ar' 
-            ? `استكشف أحدث المقالات والدراسات التقنية المتعلقة بـ "${queryParam}" في مدونتنا.` 
-            : `Explore the latest technical articles and deep research related to "${queryParam}" in our blog.`;
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to search blog articles for SEO:', err);
-      }
-    } else if (normalizedPath.startsWith('/marketplace')) {
-      try {
-        const searchRes = await pool.query(
-          'SELECT title_en, title_ar, description_en, description_ar, image_url, category_en, category_ar FROM marketplace_items WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR description_en ILIKE $1 OR description_ar ILIKE $1 OR category_en ILIKE $1 OR category_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
-          [`%${queryParam}%`]
-        );
-        if (searchRes.rows.length > 0) {
-          const item = searchRes.rows[0];
-          const itemTitle = preferredLang === 'ar' ? item.title_ar : item.title_en;
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث لـ "${queryParam}": ${itemTitle}` 
-            : `Search results for "${queryParam}": ${itemTitle}`;
-          let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          const itemCat = preferredLang === 'ar' ? item.category_ar : item.category_en;
-          const catImg = itemCat ? await getCategoryOgImage(itemCat) : null;
-          const targetImg = catImg || item.image_url;
-          if (targetImg) {
-            imageUrl = validateImageUrl(targetImg);
-          }
-        } else {
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث عن "${queryParam}" - متجر بيربليكستا` 
-            : `Search results for "${queryParam}" - Perplexta Marketplace`;
-          currentDesc = preferredLang === 'ar' 
-            ? `تصفح المنتجات والأدوات والحلول التقنية المتوفرة للبحث "${queryParam}".` 
-            : `Browse technical products, tools, and solutions available for "${queryParam}".`;
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to search marketplace items for SEO:', err);
-      }
-    } else {
-      try {
-        const blogRes = await getExternalPool().query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar FROM blog_articles WHERE title_en ILIKE $1 OR title_ar ILIKE $1 OR content_en ILIKE $1 OR content_ar ILIKE $1 ORDER BY id DESC LIMIT 1',
-          [`%${queryParam}%`]
-        );
-        if (blogRes.rows.length > 0) {
-          const article = blogRes.rows[0];
-          const articleTitle = preferredLang === 'ar' ? article.title_ar : article.title_en;
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث لـ "${queryParam}": ${articleTitle}` 
-            : `Search results for "${queryParam}": ${articleTitle}`;
-          let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
-          cleanContent = cleanContent.replace(/[#*`_\[\]()]/g, '');
-          currentDesc = cleanContent.slice(0, 160).trim();
-          if (cleanContent.length > 160) currentDesc += '...';
-          const artCat = preferredLang === 'ar' ? article.category_ar : article.category_en;
-          const catImg = artCat ? await getCategoryOgImage(artCat) : null;
-          const targetImg = catImg || article.image_url;
-          if (targetImg) {
-            imageUrl = validateImageUrl(targetImg);
-          }
-        } else {
-          currentTitle = preferredLang === 'ar' 
-            ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
-            : `Search results for "${queryParam}" - Perplexta`;
-          currentDesc = preferredLang === 'ar' 
-            ? `نتائج البحث والتحليلات التقنية لـ "${queryParam}".` 
-            : `Search results and proactive technical analysis for "${queryParam}".`;
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to search general records for SEO:', err);
-      }
-    }
+    currentTitle = preferredLang === 'ar' 
+      ? `نتائج البحث عن "${queryParam}" - بيربليكستا` 
+      : `Search results for "${queryParam}" - Perplexta`;
+    currentDesc = preferredLang === 'ar' 
+      ? `نتائج البحث والتحليلات لـ "${queryParam}".` 
+      : `Search results and analysis for "${queryParam}".`;
   } else if (normalizedPath.startsWith('/share/')) {
     const shareId = normalizedPath.split('/share/')[1];
     if (shareId && /^[a-f0-9]+$/i.test(shareId)) {
@@ -1952,142 +1824,7 @@ async function injectSEOTags(
         console.error('[SEO] Failed to fetch shared snapshot details:', err);
       }
     }
-  } else if (normalizedPath.startsWith('/blog/')) {
-    const slug = normalizedPath.split('/blog/')[1];
-    if (slug) {
-      try {
-        const blogRes = await getExternalPool().query(
-          'SELECT title_en, title_ar, content_en, content_ar, image_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar, created_at, updated_at, author_id FROM blog_articles WHERE slug = $1',
-          [slug]
-        );
-        if (blogRes.rows.length > 0) {
-          const article = blogRes.rows[0];
-          const customMetaTitle = preferredLang === 'ar' ? article.meta_title_ar : article.meta_title_en;
-          currentTitle = customMetaTitle || (preferredLang === 'ar' ? article.title_ar : article.title_en);
-
-          const customMetaDesc = preferredLang === 'ar' ? article.meta_description_ar : article.meta_description_en;
-          if (customMetaDesc) {
-            currentDesc = customMetaDesc;
-          } else {
-            let cleanContent = preferredLang === 'ar' ? article.content_ar : article.content_en;
-            cleanContent = (cleanContent || '').replace(/[#*`_\[\]()]/g, '');
-            currentDesc = cleanContent.slice(0, 160).trim();
-            if (cleanContent.length > 160) currentDesc += '...';
-          }
-
-          const customKeywords = preferredLang === 'ar' ? article.keywords_ar : article.keywords_en;
-          if (customKeywords) {
-            currentKeywords = customKeywords;
-          }
-
-          const articleCategory = preferredLang === 'ar' ? article.category_ar : article.category_en;
-          const categoryOg = articleCategory ? await getCategoryOgImage(articleCategory) : null;
-          const targetImg = article.og_image_url || categoryOg || article.image_url;
-          if (targetImg) {
-            imageUrl = validateImageUrl(targetImg);
-          }
-
-          extraJsonLd = {
-            "@type": "Article",
-            "headline": currentTitle,
-            "description": currentDesc,
-            "image": imageUrl ? [imageUrl] : undefined,
-            "datePublished": article.created_at ? new Date(article.created_at).toISOString() : undefined,
-            "dateModified": article.updated_at ? new Date(article.updated_at).toISOString() : undefined,
-            "author": {
-              "@type": "Person",
-              "name": currentSiteName
-            }
-          };
-
-          upsertSeoMetadata({
-            route_path: normalizedPath,
-            entity_type: 'blog',
-            entity_id: slug,
-            title_en: article.meta_title_en || article.title_en,
-            title_ar: article.meta_title_ar || article.title_ar,
-            description_en: article.meta_description_en || (article.content_en ? article.content_en.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
-            description_ar: article.meta_description_ar || (article.content_ar ? article.content_ar.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
-            og_image_url: imageUrl,
-            keywords_en: article.keywords_en,
-            keywords_ar: article.keywords_ar,
-            structured_data: extraJsonLd,
-            is_active: true
-          }).catch(() => {});
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to fetch blog article details:', err);
-      }
-    }
-  } else if (normalizedPath.startsWith('/marketplace/')) {
-    const itemParam = normalizedPath.split('/marketplace/')[1];
-    const itemId = parseInt(itemParam, 10);
-    if (itemParam) {
-      try {
-        const marketRes = await pool.query(
-          'SELECT title_en, title_ar, description_en, description_ar, image_url, preview_url, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, category_en, category_ar, price, created_at, updated_at FROM marketplace_items WHERE id = $1 OR slug = $2',
-          [isNaN(itemId) ? -1 : itemId, itemParam]
-        );
-        if (marketRes.rows.length > 0) {
-          const item = marketRes.rows[0];
-          const customMetaTitle = preferredLang === 'ar' ? item.meta_title_ar : item.meta_title_en;
-          currentTitle = customMetaTitle || (preferredLang === 'ar' ? item.title_ar : item.title_en);
-
-          const customMetaDesc = preferredLang === 'ar' ? item.meta_description_ar : item.meta_description_en;
-          if (customMetaDesc) {
-            currentDesc = customMetaDesc;
-          } else {
-            let cleanContent = preferredLang === 'ar' ? item.description_ar : item.description_en;
-            cleanContent = (cleanContent || '').replace(/[#*`_\[\]()]/g, '');
-            currentDesc = cleanContent.slice(0, 160).trim();
-            if (cleanContent.length > 160) currentDesc += '...';
-          }
-
-          const customKeywords = preferredLang === 'ar' ? item.keywords_ar : item.keywords_en;
-          if (customKeywords) {
-            currentKeywords = customKeywords;
-          }
-
-          const itemCategory = preferredLang === 'ar' ? item.category_ar : item.category_en;
-          const categoryOg = itemCategory ? await getCategoryOgImage(itemCategory) : null;
-          const targetImg = item.og_image_url || categoryOg || item.image_url || item.preview_url;
-          if (targetImg) {
-            imageUrl = validateImageUrl(targetImg);
-          }
-
-          extraJsonLd = {
-            "@type": "Product",
-            "name": currentTitle,
-            "description": currentDesc,
-            "image": imageUrl ? [imageUrl] : undefined,
-            "offers": {
-              "@type": "Offer",
-              "price": item.price || 0,
-              "priceCurrency": "USD",
-              "availability": "https://schema.org/InStock"
-            }
-          };
-
-          upsertSeoMetadata({
-            route_path: normalizedPath,
-            entity_type: 'marketplace',
-            entity_id: itemParam,
-            title_en: item.meta_title_en || item.title_en,
-            title_ar: item.meta_title_ar || item.title_ar,
-            description_en: item.meta_description_en || (item.description_en ? item.description_en.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
-            description_ar: item.meta_description_ar || (item.description_ar ? item.description_ar.slice(0, 160).replace(/[#*`_\[\]()]/g, '') : ''),
-            og_image_url: imageUrl,
-            keywords_en: item.keywords_en,
-            keywords_ar: item.keywords_ar,
-            structured_data: extraJsonLd,
-            is_active: true
-          }).catch(() => {});
-        }
-      } catch (err) {
-        console.error('[SEO] Failed to fetch marketplace item details:', err);
-      }
-    }
-  } else if (normalizedPath.startsWith('/bulletin/') || normalizedPath.startsWith('/reels/')) {
+  } else if (normalizedPath.startsWith('/bulletin/') || normalizedPath.startsWith('/viralbook/') || normalizedPath.startsWith('/reels/')) {
     const parts = normalizedPath.split('/');
     const adId = parts[parts.length - 1];
     if (adId) {
@@ -2195,14 +1932,13 @@ async function injectSEOTags(
   const escFavicon  = escapeHtmlAttribute(faviconUrl);
   const escSiteName = escapeHtmlAttribute(currentSiteName);
 
-  const PUBLIC_WHITELIST = ['/', '/subscription', '/marketplace', '/blog', '/bulletin', '/rewards', '/terms', '/privacy', '/about'];
+  const PUBLIC_WHITELIST = ['/', '/subscription', '/bulletin', '/viralbook', '/rewards', '/terms', '/privacy', '/about'];
   const isPublicRoute = 
     isRouteSeoActive ||
     PUBLIC_WHITELIST.includes(normalizedPath) ||
     normalizedPath.startsWith('/share/') ||
-    normalizedPath.startsWith('/blog/') ||
-    normalizedPath.startsWith('/marketplace/') ||
     normalizedPath.startsWith('/bulletin') ||
+    normalizedPath.startsWith('/viralbook') ||
     normalizedPath.startsWith('/rewards');
 
   let metaBlock = '';
@@ -2245,11 +1981,11 @@ async function injectSEOTags(
     }
 
     const breadcrumbNames: Record<string, Record<string, string>> = {
-      ar: { '/': 'الرئيسية', '/subscription': 'الاشتراكات', '/marketplace': 'المتجر', '/blog': 'المدونة', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
-      en: { '/': 'Home', '/subscription': 'Subscriptions', '/marketplace': 'Marketplace', '/blog': 'Blog', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
-      fr: { '/': 'Accueil', '/subscription': 'Abonnements', '/marketplace': 'Boutique', '/blog': 'Blog', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
-      es: { '/': 'Inicio', '/subscription': 'Suscripciones', '/marketplace': 'Mercado', '/blog': 'Blog', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
-      de: { '/': 'Startseite', '/subscription': 'Abonnements', '/marketplace': 'Marktplatz', '/blog': 'Blog', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
+      ar: { '/': 'الرئيسية', '/viralbook': 'فايرال بوك', '/bulletin': 'فايرال بوك', '/subscription': 'الاشتراكات', '/terms': 'الشروط والأحكام', '/privacy': 'سياسة الخصوصية', '/about': 'عن المنصة' },
+      en: { '/': 'Home', '/viralbook': 'Viralbook', '/bulletin': 'Viralbook', '/subscription': 'Subscriptions', '/terms': 'Terms & Conditions', '/privacy': 'Privacy Policy', '/about': 'About Us' },
+      fr: { '/': 'Accueil', '/viralbook': 'Viralbook', '/bulletin': 'Viralbook', '/subscription': 'Abonnements', '/terms': "Conditions d'utilisation", '/privacy': 'Politique de confidentialité', '/about': 'À propos' },
+      es: { '/': 'Inicio', '/viralbook': 'Viralbook', '/bulletin': 'Viralbook', '/subscription': 'Suscripciones', '/terms': 'Términos y condiciones', '/privacy': 'Política de privacidad', '/about': 'Acerca de' },
+      de: { '/': 'Startseite', '/viralbook': 'Viralbook', '/bulletin': 'Viralbook', '/subscription': 'Abonnements', '/terms': 'Allgemeine Geschäftsbedingungen', '/privacy': 'Datenschutzerklärung', '/about': 'Über uns' },
     };
     const names = breadcrumbNames[preferredLang] ?? breadcrumbNames['ar'];
 
@@ -2385,7 +2121,7 @@ app.use(async (req: express.Request, res: express.Response, next: express.NextFu
         baseHtml = fs.readFileSync(indexPath, 'utf8');
         const viteInstance = req.app.locals.vite;
         if (viteInstance) {
-          baseHtml = await viteInstance.transformIndexHtml(req.originalUrl || req.url, baseHtml);
+          baseHtml = await viteInstance.transformIndexHtml('/', baseHtml);
         }
       } else {
         throw new Error('Root index.html not found');

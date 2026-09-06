@@ -7,7 +7,6 @@ import { syncSystemTemplates } from '../services/email.js';
 import { refreshCachedAppName } from '../services/system.js';
 import { ensureAdsSeedData } from '../routes/ads.js';
 import { ensureBulletinSeedData } from '../routes/bulletin.js';
-import { ensureBlogSeedData } from '../routes/blog.js';
 
 async function resetAndReinitDatabases() {
   console.log('================================================================');
@@ -70,13 +69,6 @@ async function resetAndReinitDatabases() {
     console.log('[DB Reset] ✓ Bulletin board seed data ensured.');
   } catch (e: any) {
     console.warn('[DB Reset] Notice on bulletin seed:', e?.message || e);
-  }
-
-  try {
-    await ensureBlogSeedData();
-    console.log('[DB Reset] ✓ Blog platform seed data ensured.');
-  } catch (e: any) {
-    console.warn('[DB Reset] Notice on blog seed:', e?.message || e);
   }
 
   console.log('\n[DB Reset] 🔍 Performing final schema integrity verification...');

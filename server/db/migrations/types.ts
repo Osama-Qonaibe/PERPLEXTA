@@ -72,9 +72,6 @@ export const TABLE_POOL_REGISTRY: Record<string, DatabasePoolKey> = {
   system_logs: 'core',
   user_activity_logs: 'core',
   oauth_states: 'core',
-  marketplace_items: 'core',
-  marketplace_purchases: 'core',
-  marketplace_reviews: 'core',
   video_resources: 'core',
   referral_invitations: 'core',
   shared_snapshots: 'core',
@@ -126,10 +123,7 @@ export const TABLE_POOL_REGISTRY: Record<string, DatabasePoolKey> = {
   deposit_requests: 'ledger',
   stripe_events: 'ledger',
 
-  // External DB Tables
-  blog_articles: 'external',
-  blog_comments: 'external',
-  blog_ratings: 'external',
+  // External DB Tables (Reserved for isolated third-party integration pipelines)
 
   // Security DB Tables
   security_alerts: 'security',

@@ -151,7 +151,7 @@ export const CommandCenterView = ({
       }
     } catch (err: any) {
       console.error('Failed to force reconnect pool:', err);
-      alert(err.message || 'Failed to reconnect pool');
+      showToast(err.message || 'Failed to reconnect pool', 'error');
     } finally {
       setReconnectingPool(null);
     }
@@ -1341,9 +1341,9 @@ export const CommandCenterView = ({
                       if (res.ok) {
                         const cleanRes = await res.json();
                         const msg = language === "ar"
-                          ? `تم التطهير بنجاح!\nالملفات المحدوفة: ${cleanRes.summary.userFiles.prunedCount}\nالطلبات المحذوفة: ${cleanRes.summary.depositRequests.prunedCount}`
-                          : `Cleanup Completed Successfully!\nPruned files: ${cleanRes.summary.userFiles.prunedCount}\nPruned requests: ${cleanRes.summary.depositRequests.prunedCount}`;
-                        alert(msg);
+                          ? `تم التطهير بنجاح! (الملفات المحدوفة: ${cleanRes.summary.userFiles.prunedCount} | الطلبات المحذوفة: ${cleanRes.summary.depositRequests.prunedCount})`
+                          : `Cleanup Completed Successfully! (Pruned files: ${cleanRes.summary.userFiles.prunedCount} | Pruned requests: ${cleanRes.summary.depositRequests.prunedCount})`;
+                        showToast(msg, "success");
                         fetchData();
                       } else {
                         const errData = await res.json();

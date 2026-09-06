@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, AlertOctagon, AlertTriangle, Info, X, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertOctagon, AlertTriangle, Info, X, Sparkles, Loader2 } from 'lucide-react';
 import { NotificationIconRenderer, useStandardizedNotificationIcon } from '../utils/imageProcessor';
 
-export type NotificationType = 'success' | 'error' | 'warning' | 'info';
+export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'loading';
 
 export interface NotificationAction {
   label: string;
@@ -177,7 +177,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [showNotification]);
 
   const loading = useCallback((message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => {
-    return showNotification({ message, title, type: 'info', duration: 120000, ...options });
+    return showNotification({ message, title, type: 'loading', duration: 120000, ...options });
   }, [showNotification]);
 
   return (
@@ -276,6 +276,13 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
           badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
           defaultTitle: isRtl ? 'تنبيه' : 'Warning',
         };
+      case 'loading':
+        return {
+          icon: <Loader2 size={18} className="text-amber-400 animate-spin flex-shrink-0" />,
+          barBg: 'bg-amber-400',
+          badgeBg: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
+          defaultTitle: isRtl ? 'جاري التحديث...' : 'Updating...',
+        };
       case 'info':
       default:
         return {
@@ -292,18 +299,18 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20, scale: 0.94 }}
+      initial={{ opacity: 0, y: -20, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, y: 15 }}
+      exit={{ opacity: 0, scale: 0.9, y: -15 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="group relative w-full sm:w-[360px] rounded-2xl p-3.5 shadow-2xl border transition-theme overflow-hidden backdrop-blur-2xl bg-[var(--surface-card)] border-[var(--border-main)] text-[var(--text-primary)] shadow-black/20 dark:shadow-black/60 pointer-events-auto"
+      className="group toast-floating toast-card-variant"
     >
       {/* Accent side bar indicator */}
-      <div className={`absolute top-0 bottom-0 ${isRtl ? 'right-0' : 'left-0'} w-1 ${themeConfig.barBg}`} />
+      <div className={`toast-side-bar ${themeConfig.barBg}`} />
 
-      <div className="flex items-start gap-3 pl-1 pr-1">
+      <div className="flex items-start gap-3 pl-1 pr-1 w-full">
         <div className="mt-0.5 flex-shrink-0">
           {item.image ? (
             <NotificationIconRenderer 
@@ -325,7 +332,7 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
             <button
               type="button"
               onClick={() => onDismiss(item.id)}
-              className="text-gray-400 hover:text-[var(--text-primary)] p-0.5 rounded-lg hover:bg-[var(--surface-inset)] transition-theme"
+              className="toast-dismiss-btn p-0.5"
               title={isRtl ? 'إغلاق' : 'Close'}
             >
               <X size={14} />
@@ -344,7 +351,7 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
                   item.action?.onClick();
                   onDismiss(item.id);
                 }}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme"
+                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme cursor-pointer"
               >
                 {item.action.label}
               </button>
@@ -355,9 +362,9 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
 
       {/* Auto-dismiss progress bar */}
       {item.duration > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--border-main)]/30 overflow-hidden">
+        <div className="toast-progress-track">
           <div
-            className={`h-full ${themeConfig.barBg} transition-all duration-75 ease-linear`}
+            className={`toast-progress-fill ${themeConfig.barBg}`}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -376,7 +383,7 @@ const NotificationContainer: React.FC<{
 
   return createPortal(
     <div
-      className="fixed top-2.5 left-1/2 -translate-x-1/2 z-[999999] pointer-events-none flex flex-col gap-2.5 p-2 max-w-full sm:max-w-md w-full items-center"
+      className="toast-container-floating top-start max-w-full sm:max-w-md w-full items-start"
       style={{
         direction: isRtl ? 'rtl' : 'ltr',
       }}

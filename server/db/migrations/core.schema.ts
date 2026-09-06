@@ -9,7 +9,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         stored_path TEXT NOT NULL UNIQUE,
         original_filename TEXT NOT NULL,
-        context TEXT NOT NULL DEFAULT 'general' CHECK (context IN ('avatar', 'blog', 'marketplace', 'bulletin', 'ad', 'system', 'general', 'video')),
+        context TEXT NOT NULL DEFAULT 'general' CHECK (context IN ('avatar', 'bulletin', 'ad', 'system', 'general', 'video')),
         format TEXT NOT NULL DEFAULT 'webp',
         width INT NOT NULL DEFAULT 0,
         height INT NOT NULL DEFAULT 0,
@@ -17,8 +17,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         sha256_hash TEXT NOT NULL UNIQUE,
         is_public BOOLEAN DEFAULT FALSE,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        blog_article_id INTEGER,
-        marketplace_item_id INTEGER,
         metadata JSONB DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -457,61 +455,6 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         redirect_url TEXT,
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-  },
-  {
-    name: 'marketplace_items',
-    query: `CREATE TABLE IF NOT EXISTS marketplace_items (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title_en VARCHAR(255) NOT NULL,
-        title_ar VARCHAR(255) NOT NULL,
-        description_en TEXT NOT NULL,
-        description_ar TEXT NOT NULL,
-        price NUMERIC(15, 2) NOT NULL,
-        category_en VARCHAR(100) NOT NULL,
-        category_ar VARCHAR(100) NOT NULL,
-        image_url TEXT,
-        image_asset_id UUID,
-        status VARCHAR(20) DEFAULT 'approved',
-        views INTEGER DEFAULT 0,
-        contact_link TEXT,
-        download_url TEXT,
-        preview_url TEXT,
-        video_url TEXT,
-        features TEXT,
-        technologies TEXT,
-        referral_percent NUMERIC(5,2),
-        highlight_tag VARCHAR(50),
-        license_type VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-  },
-  {
-    name: 'marketplace_purchases',
-    query: `CREATE TABLE IF NOT EXISTS marketplace_purchases (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        item_id INTEGER NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
-        price_paid NUMERIC(10, 2) NOT NULL,
-        license_type VARCHAR(50) DEFAULT 'standard',
-        referrer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-        commission_paid NUMERIC(10, 2) DEFAULT 0.00,
-        download_token VARCHAR(100) UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )`
-  },
-  {
-    name: 'marketplace_reviews',
-    query: `CREATE TABLE IF NOT EXISTS marketplace_reviews (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        item_id INTEGER NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
-        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-        comment TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`
   },
   {
@@ -1282,46 +1225,6 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     metadata: { type: 'JSONB', default: "'{}'" }
   });
 
-  await ensureColumnsBulk(targetPool, 'marketplace_items', {
-    seller_id: { type: 'INTEGER' },
-    title: { type: 'VARCHAR(255)' },
-    slug: { type: 'VARCHAR(255)' },
-    description: { type: 'TEXT' },
-    category: { type: 'VARCHAR(50)' },
-    price_credits: { type: 'INTEGER', default: 0 },
-    price_usd: { type: 'DECIMAL(10,2)', default: 0 },
-    preview_url: { type: 'TEXT' },
-    asset_id: { type: 'VARCHAR(255)' },
-    image_asset_id: { type: 'UUID' },
-    rating: { type: 'DECIMAL(3,2)', default: 5.0 },
-    sales_count: { type: 'INTEGER', default: 0 },
-    is_published: { type: 'BOOLEAN', default: true },
-    metadata: { type: 'JSONB', default: "'{}'" },
-    meta_title_en: { type: 'VARCHAR(255)' },
-    meta_title_ar: { type: 'VARCHAR(255)' },
-    meta_description_en: { type: 'TEXT' },
-    meta_description_ar: { type: 'TEXT' },
-    keywords_en: { type: 'TEXT' },
-    keywords_ar: { type: 'TEXT' },
-    og_image_url: { type: 'TEXT' }
-  });
-
-  await ensureColumnsBulk(targetPool, 'marketplace_purchases', {
-    user_id: { type: 'INTEGER' },
-    item_id: { type: 'INTEGER' },
-    price_paid: { type: 'DECIMAL(10,2)', default: 0 },
-    currency: { type: 'VARCHAR(10)', default: "'CREDITS'" },
-    transaction_id: { type: 'INTEGER' },
-    status: { type: 'VARCHAR(50)', default: "'completed'" }
-  });
-
-  await ensureColumnsBulk(targetPool, 'marketplace_reviews', {
-    user_id: { type: 'INTEGER' },
-    item_id: { type: 'INTEGER' },
-    rating: { type: 'INTEGER', default: 5 },
-    review_text: { type: 'TEXT' }
-  });
-
   await ensureColumnsBulk(targetPool, 'media_assets', {
     id: { type: 'UUID' },
     stored_path: { type: 'TEXT' },
@@ -1334,8 +1237,6 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     sha256_hash: { type: 'TEXT' },
     is_public: { type: 'BOOLEAN', default: false },
     user_id: { type: 'INTEGER' },
-    blog_article_id: { type: 'INTEGER' },
-    marketplace_item_id: { type: 'INTEGER' },
     metadata: { type: 'JSONB', default: "'{}'" },
     file_data: { type: 'BYTEA' }
   });
@@ -1609,9 +1510,7 @@ export const CORE_INDEXES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_media_assets_hash ON media_assets(sha256_hash)`,
   `CREATE INDEX IF NOT EXISTS idx_media_assets_stored_path ON media_assets(stored_path)`,
   `CREATE INDEX IF NOT EXISTS idx_media_assets_user_id ON media_assets(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_media_assets_marketplace_item_id ON media_assets(marketplace_item_id)`,
   `CREATE INDEX IF NOT EXISTS idx_users_avatar_asset_id ON users(avatar_asset_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_marketplace_items_image_asset_id ON marketplace_items(image_asset_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_user_id ON bulletin_ads(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_page_id ON bulletin_ads(page_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bulletin_ads_status ON bulletin_ads(status)`,
@@ -1625,8 +1524,6 @@ export const CORE_INDEXES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_page ON bulletin_page_inquiries(page_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bulletin_page_inquiries_sender ON bulletin_page_inquiries(sender_id)`,
   `CREATE INDEX IF NOT EXISTS idx_bulletin_saved_ads_user_ad ON bulletin_saved_ads(user_id, ad_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_marketplace_purchases_user ON marketplace_purchases(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_marketplace_reviews_item ON marketplace_reviews(item_id)`,
   `CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)`,
   `CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at)`,
@@ -1676,9 +1573,7 @@ export const CORE_RELATIONS: ForeignKeyRelation[] = [
   { table: 'user_files', constraint: 'user_files_user_id_fkey', column: 'user_id', ref: 'users' },
   { table: 'users', constraint: 'users_referred_by_fkey', column: 'referred_by', ref: 'users', onDelete: 'SET NULL' },
   { table: 'media_assets', constraint: 'fk_media_assets_user_id', column: 'user_id', ref: 'users', onDelete: 'SET NULL' },
-  { table: 'media_assets', constraint: 'fk_media_assets_marketplace_item_id', column: 'marketplace_item_id', ref: 'marketplace_items', onDelete: 'SET NULL' },
   { table: 'users', constraint: 'fk_users_avatar_asset_id', column: 'avatar_asset_id', ref: 'media_assets', onDelete: 'SET NULL' },
-  { table: 'marketplace_items', constraint: 'fk_marketplace_items_image_asset_id', column: 'image_asset_id', ref: 'media_assets', onDelete: 'SET NULL' },
   { table: 'user_sessions', constraint: 'fk_user_sessions_user', column: 'user_id', ref: 'users', onDelete: 'CASCADE' },
   { table: 'admin_approval_queue', constraint: 'fk_admin_approval_queue_requester', column: 'requester_id', ref: 'users', onDelete: 'CASCADE' },
   { table: 'ad_pricing_audit', constraint: 'fk_ad_pricing_audit_admin', column: 'admin_id', ref: 'users', onDelete: 'CASCADE' },

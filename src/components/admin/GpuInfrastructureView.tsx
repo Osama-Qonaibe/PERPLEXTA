@@ -27,6 +27,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
+import { useConfirm } from "../../context/ConfirmContext";
 import { GpuInfrastructureViewProps } from "./adminTypes";
 
 interface GpuProviderRecord {
@@ -94,6 +95,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
   showToast = () => {},
 }) => {
   const { token, language, user } = useAppContext();
+  const confirm = useConfirm();
   const isRtl = language === "ar";
 
   const [activeTab, setActiveTab] = useState<'providers' | 'jobs'>('providers');
@@ -219,7 +221,12 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
   };
 
   const handleDeleteSingleJob = async (job: GpuJobRecord) => {
-    if (!confirm(isRtl ? `هل أنت متأكد من حذف سجل المهمة ${job.job_id.substring(0, 8)}...؟` : `Delete job record ${job.job_id.substring(0, 8)}...?`)) return;
+    const isConfirmed = await confirm({
+      title: isRtl ? "حذف سجل المهمة؟" : "Delete Job Record?",
+      description: isRtl ? `هل أنت متأكد من حذف سجل المهمة ${job.job_id.substring(0, 8)}...؟` : `Delete job record ${job.job_id.substring(0, 8)}...?`,
+      variant: "danger"
+    });
+    if (!isConfirmed) return;
 
     setDeletingJobId(job.job_id);
     try {

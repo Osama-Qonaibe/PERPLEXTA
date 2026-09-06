@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Clock,
   Layers,
-  ShoppingBag,
   FileText,
   Zap,
   ShieldCheck,
@@ -21,7 +20,7 @@ import { useAppContext } from "../context/AppContext";
 
 export interface SeoAuditItem {
   id: number;
-  type: 'blog' | 'marketplace' | 'bulletin';
+  type: 'bulletin';
   title_en: string;
   title_ar: string;
   slug: string;
@@ -43,8 +42,6 @@ export interface SeoAuditItem {
 
 export interface SeoAuditSummary {
   total_items: number;
-  total_blog_articles: number;
-  total_marketplace_items: number;
   total_bulletin_ads: number;
   items_missing_metadata: number;
   items_fully_optimized: number;
@@ -71,7 +68,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<SeoAuditSummary | null>(null);
   const [items, setItems] = useState<SeoAuditItem[]>([]);
-  const [filterCategory, setFilterCategory] = useState<'all' | 'missing' | 'optimized' | 'blog' | 'marketplace' | 'bulletin'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'missing' | 'optimized' | 'bulletin'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<SeoAuditItem | null>(null);
   const [isSyncingAll, setIsSyncingAll] = useState(false);
@@ -324,8 +321,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
     return items.filter(item => {
       if (filterCategory === 'missing' && !item.requires_metadata_population) return false;
       if (filterCategory === 'optimized' && item.requires_metadata_population) return false;
-      if (filterCategory === 'blog' && item.type !== 'blog') return false;
-      if (filterCategory === 'marketplace' && item.type !== 'marketplace') return false;
       if (filterCategory === 'bulletin' && item.type !== 'bulletin') return false;
 
       if (searchQuery.trim()) {
@@ -388,8 +383,8 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             </h2>
             <p className="text-sm text-[var(--text-muted)] mt-1 max-w-2xl leading-relaxed">
               {isAr
-                ? "أداة متخصصة لفحص المقالات والمنتجات الرقمية، واكتشاف الحقول الناقصة، وتوليد ميتاداتا ذكية عالية التأثير متوافقة مع محركات البحث جوجل ووسائط التواصل."
-                : "Rigorously audit marketplace items & blog articles, detect incomplete meta fields, and populate search-engine optimized metadata automatically using Gemini AI."}
+                ? "أداة متخصصة لفحص منشورات وإعلانات فايرال بوك، واكتشاف الحقول الناقصة، وتوليد ميتاداتا ذكية عالية التأثير متوافقة مع محركات البحث جوجل ووسائط التواصل."
+                : "Rigorously audit Viralbook posts and bulletin listings, detect incomplete meta fields, and populate search-engine optimized metadata automatically using Gemini AI."}
             </p>
           </div>
 
@@ -495,11 +490,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
           </div>
           <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)] font-medium">
             <span className="flex items-center gap-1">
-              <FileText size={12} className="text-blue-400" /> {summary?.total_blog_articles || 0} {isAr ? "مقالات" : "blogs"}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <ShoppingBag size={12} className="text-purple-400" /> {summary?.total_marketplace_items || 0} {isAr ? "منتجات" : "items"}
+              <Tag size={12} className="text-orange-400" /> {summary?.total_bulletin_ads || 0} {isAr ? "منشورات وإعلانات" : "posts & ads"}
             </span>
           </div>
         </div>
@@ -607,28 +598,6 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             <span>{isAr ? "مكتمل ومؤرشف" : "Fully Optimized"}</span>
           </button>
           <button
-            onClick={() => setFilterCategory('blog')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-1.5 ${
-              filterCategory === 'blog'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-[var(--bg-base)] text-blue-500 hover:bg-blue-500/10 border border-blue-500/30'
-            }`}
-          >
-            <FileText size={14} />
-            <span>{isAr ? "المقالات" : "Blog Articles"}</span>
-          </button>
-          <button
-            onClick={() => setFilterCategory('marketplace')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-1.5 ${
-              filterCategory === 'marketplace'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-[var(--bg-base)] text-purple-500 hover:bg-purple-500/10 border border-purple-500/30'
-            }`}
-          >
-            <ShoppingBag size={14} />
-            <span>{isAr ? "منتجات المتجر" : "Marketplace"}</span>
-          </button>
-          <button
             onClick={() => setFilterCategory('bulletin')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-1.5 ${
               filterCategory === 'bulletin'
@@ -637,7 +606,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             }`}
           >
             <Tag size={14} />
-            <span>{isAr ? "لوحة الإعلانات" : "Bulletin Board"}</span>
+            <span>{isAr ? "منشورات وإعلانات فايرال بوك" : "Viralbook Posts & Ads"}</span>
           </button>
         </div>
 
@@ -716,14 +685,8 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                       {/* Type & Category */}
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            item.type === 'blog' 
-                              ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' 
-                              : item.type === 'marketplace'
-                              ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
-                              : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
-                          }`}>
-                            {item.type === 'blog' ? (isAr ? "مقال" : "Blog") : item.type === 'marketplace' ? (isAr ? "منتج متجر" : "Marketplace") : (isAr ? "إعلان" : "Bulletin")}
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                            {isAr ? "منشور / إعلان" : "Post / Ad"}
                           </span>
                           <span className="text-[11px] text-[var(--text-muted)]">
                             {item.category_ar || item.category_en || "-"}
@@ -836,7 +799,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             <div className="flex items-start justify-between pb-4 border-b border-[var(--border)]">
               <div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent border border-accent/20">
-                  {selectedItem.type === 'blog' ? (isAr ? "مقال مدونة" : "Blog Article") : selectedItem.type === 'marketplace' ? (isAr ? "منتج رقمي" : "Marketplace Item") : (isAr ? "إعلان" : "Bulletin Ad")}
+                  {isAr ? "منشور / إعلان فايرال بوك" : "Viralbook Post / Ad"}
                 </span>
                 <h3 className="text-xl font-black text-[var(--text-primary)] mt-1">
                   {isAr ? (selectedItem.title_ar || selectedItem.title_en) : (selectedItem.title_en || selectedItem.title_ar)}
@@ -960,7 +923,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                       {isAr ? "اقتراح ذكي بالذكاء الاصطناعي" : "AI Smart Suggest"}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border)]">
-                      {smartSuggestItem.type === 'blog' ? (isAr ? "مقال" : "Blog Article") : smartSuggestItem.type === 'marketplace' ? (isAr ? "منتج رقمي" : "Marketplace Item") : (isAr ? "إعلان" : "Bulletin Ad")}
+                      {isAr ? "منشور / إعلان فايرال بوك" : "Viralbook Post / Ad"}
                     </span>
                   </div>
                   <h3 className="text-lg font-black text-[var(--text-primary)] mt-1">

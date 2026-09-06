@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { ALL_TOOLS } from "../../constants";
 import { getAuthHeaders, getTimeAgo } from "../../utils/adminUtils";
@@ -67,19 +68,18 @@ export const PlansSubscriptionsView = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
   const [planFilter, setPlanFilter] = useState<string>("all");
 
   useEffect(() => {
     setIsOperationPending(isSaving);
   }, [isSaving, setIsOperationPending]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    if (type === "success") {
+      globalToast.success(message, dir === "rtl" ? "تم بنجاح" : "Success");
+    } else {
+      globalToast.error(message, dir === "rtl" ? "حدث خطأ" : "Error");
+    }
   };
 
   const fetchPlans = async () => {
@@ -358,29 +358,6 @@ export const PlansSubscriptionsView = ({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto relative">
-      {/* Toast Notification */}
-      {toast &&
-        createPortal(
-          <div
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[1000] flex items-center gap-3 px-6 py-4 rounded-[var(--radius)] shadow-2xl transition-theme animate-in slide-in-from-bottom-5 ${
-              toast.type === "success"
-                ? theme === "dark"
-                  ? "bg-[#1a1a1c] border border-accent/30 text-accent"
-                  : "bg-white border border-accent text-accent"
-                : theme === "dark"
-                  ? "bg-[#1a1a1c] border border-red-500/30 text-red-500"
-                  : "bg-white border border-red-200 text-red-600"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <AlertCircle size={20} />
-            )}
-            <span className="font-medium text-sm">{toast.message}</span>
-          </div>,
-          document.body,
-        )}
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-4">
@@ -1008,12 +985,12 @@ export const PlansSubscriptionsView = ({
                             </div>
                             <div
                               className={
-                                key === "storage_mb" || key === "marketplace_listings"
+                                key === "storage_mb"
                                   ? "grid grid-cols-1"
                                   : "grid grid-cols-2 gap-2"
                               }
                             >
-                              {key !== "storage_mb" && key !== "marketplace_listings" && (
+                              {key !== "storage_mb" && (
                                 <div className="space-y-1">
                                   <label className="text-[8px] font-black text-gray-500 uppercase ml-1 opacity-60">
                                     {t("daily")}
@@ -1064,9 +1041,7 @@ export const PlansSubscriptionsView = ({
                                 <label className="text-[8px] font-black text-gray-500 uppercase ml-1 opacity-60">
                                   {key === "storage_mb"
                                     ? t("usageLoad") || "Total Capacity"
-                                    : key === "marketplace_listings"
-                                      ? t("marketplace_listings") || "Max Listings"
-                                      : t("monthly")}
+                                    : t("monthly")}
                                 </label>
                                 <div className="relative">
                                   <input

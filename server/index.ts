@@ -27,7 +27,6 @@ import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
 import { ensureAdsSeedData } from './routes/ads.js';
 import { ensureBulletinSeedData } from './routes/bulletin.js';
-import { ensureBlogSeedData } from './routes/blog.js';
 import { initCronJobs } from './jobs/cron.js';
 import { validateRequiredSecrets } from './utils/validateSecrets.js';
 import { initUploadsMonitor } from './services/uploadsMonitorService.js';
@@ -57,7 +56,6 @@ async function initDatabase(): Promise<boolean> {
         refreshCachedAppName(),
         ensureAdsSeedData(),
         ensureBulletinSeedData(),
-        ensureBlogSeedData(),
         ensureApiPerfLogsTable()
       ]);
       return true;

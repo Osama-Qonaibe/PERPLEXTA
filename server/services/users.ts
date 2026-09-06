@@ -113,16 +113,10 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     name_ar: 'سعة التخزين',
     desc_en: 'Secure storage for your intelligence assets.',
     desc_ar: 'تخزين آمن لأصولك الاستخباراتية.'
-  },
-  'marketplace_listings': {
-    name_en: 'Marketplace Listings',
-    name_ar: 'منتجات السوق الأساسية',
-    desc_en: 'List and showcase your custom intelligence tools or data assets.',
-    desc_ar: 'إدراج وعرض أدوات الذكاء المخصصة أو أصول البيانات الخاصة بك.'
   }
 };
 
-const ABSOLUTE_TOOLS = new Set(['storage_mb', 'marketplace_listings']);
+const ABSOLUTE_TOOLS = new Set(['storage_mb']);
 
 export async function getUserUsage(userId: string | number) {
   if (!pool) throw new Error('Database initializing');
@@ -197,9 +191,6 @@ export async function getUserUsage(userId: string | number) {
 
   const storageUsageMB = await getUserStorageUsage(userId.toString());
 
-  const marketplaceCountRes = await pool.query('SELECT COUNT(*) FROM marketplace_items WHERE user_id = $1', [userId]);
-  const marketplaceCount = parseInt(marketplaceCountRes.rows[0]?.count || '0', 10);
-
   const ALLOWED_VISIBLE_TOOLS = [
     'chat',
     'chat_fast',
@@ -224,7 +215,6 @@ export async function getUserUsage(userId: string | number) {
     if (isAdmin && !hasActiveSub) {
       let currentUsage = 0;
       if (toolId === 'storage_mb') currentUsage = storageUsageMB;
-      else if (toolId === 'marketplace_listings') currentUsage = marketplaceCount;
       else currentUsage = monthlyUsageMap[toolId] || 0;
 
       return {
@@ -277,9 +267,6 @@ export async function getUserUsage(userId: string | number) {
     if (toolId === 'storage_mb') {
       dailyUsage = storageUsageMB;
       monthlyUsage = storageUsageMB;
-    } else if (toolId === 'marketplace_listings') {
-      dailyUsage = marketplaceCount;
-      monthlyUsage = marketplaceCount;
     } else {
       dailyUsage = dailyUsageMap[toolId] || 0;
       monthlyUsage = monthlyUsageMap[toolId] || 0;

@@ -292,7 +292,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('7d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '7d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '7d' ? 'bg-accent text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '7 أيام' : '7 Days'}
@@ -300,7 +300,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('30d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '30d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '30d' ? 'bg-accent text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '30 يوم' : '30 Days'}
@@ -308,7 +308,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
           <button
             onClick={() => setTimeframe('90d')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-theme ${
-              timeframe === '90d' ? 'bg-accent text-black shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              timeframe === '90d' ? 'bg-accent text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             {isRtl ? '90 يوم' : '90 Days'}

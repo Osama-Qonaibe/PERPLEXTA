@@ -25,52 +25,15 @@ async function deleteLocalFileIfPresent(fileUrl?: string | null) {
 }
 
 /**
- * Seed data helper: ensures initial default advertisements exist in DB
+ * Seed data helper: ensures advertisements table is initialized cleanly without mock items
  */
 export async function ensureAdsSeedData() {
   if (isAdsTableEnsured || !pool) return;
   try {
-    const checkRes = await pool.query('SELECT COUNT(*)::int as count FROM advertisements');
-    if (checkRes.rows[0].count === 0) {
-      await pool.query(`
-        INSERT INTO advertisements (title_ar, title_en, description_ar, description_en, image_url, target_url, sponsor_name, badge_text_ar, badge_text_en, position, format, display_order, is_active)
-        VALUES 
-        (
-          'حزمة الذكاء الاصطناعي السيادي الاحترافية',
-          'Sovereign AI Elite Infrastructure Suite',
-          'استمتع بقوة نماذج Anthropic وDeepSeek بدون حدود وبأعلى سرعة مع حماية تشفير كاملة.',
-          'Experience unlimited power with Anthropic and DeepSeek models with zero latency and full encryption.',
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
-          '/subscription',
-          'Perplexta Enterprise',
-          'مُموَّل',
-          'Sponsored',
-          'sidebar',
-          'sidebar',
-          1,
-          true
-        ),
-        (
-          'متجر الأدوات والمحركات المتقدمة',
-          'Elite Software & AI Marketplace',
-          'اكتشف خطط التحليل الفني، مطالبات الذكاء الاصطناعي، والحلول البرمجية الجاهزة للتداول والأنظمة.',
-          'Discover technical analysis workflows, AI prompts, and enterprise code bases ready for deployment.',
-          'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=600&q=80',
-          '/marketplace',
-          'Supercool Devs',
-          'مُموَّل',
-          'Sponsored',
-          'sidebar',
-          'sidebar',
-          2,
-          true
-        )
-      `);
-      console.log('[Ads API] 📢 Default sample advertisements created and seeded.');
-    }
     isAdsTableEnsured = true;
+    console.log('[Ads API] Advertisements table verified (Clean state without default mock ads).');
   } catch (err: any) {
-    console.error('[Ads API] Failed to ensure advertisements table:', err.message);
+    console.error('[Ads API] Failed to verify advertisements table:', err.message);
   }
 }
 

@@ -47,17 +47,11 @@ export function isPathBlocked(pathToCheck: string, blockedPathsStr?: string, isM
     if (['google-hub', 'google_hub', 'googlehub'].includes(cleanPath)) {
       if (['google-hub', 'google_hub', 'googlehub', 'google'].includes(targetKey)) return true;
     }
-    if (['bulletin', 'ads', 'bulletinboard'].includes(cleanPath)) {
-      if (['bulletin', 'ads', 'bulletinboard'].includes(targetKey)) return true;
+    if (['viralbook', 'bulletin', 'ads', 'bulletinboard'].includes(cleanPath)) {
+      if (['viralbook', 'bulletin', 'ads', 'bulletinboard'].includes(targetKey)) return true;
     }
     if (cleanPath === 'rewards') {
       if (targetKey === 'rewards') return true;
-    }
-    if (['marketplace', 'market', 'store'].includes(cleanPath)) {
-      if (['marketplace', 'market', 'store'].includes(targetKey)) return true;
-    }
-    if (['blog', 'articles', 'posts', 'news'].includes(cleanPath)) {
-      if (['blog', 'articles', 'posts', 'news'].includes(targetKey)) return true;
     }
     if (['explore', 'discover', 'recommendations'].includes(cleanPath)) {
       if (['explore', 'discover', 'recommendations'].includes(targetKey)) return true;

@@ -14,13 +14,18 @@
     <meta name="format-detection" content="telephone=no" />
 
     <style>
-      :root {
-        --pwa-theme-color: #000000;
-        --pwa-bg-color: #000000;
+      :root,
+      :root.dark,
+      :root[data-theme="dark"] {
+        --pwa-theme-color: #0b0c0e;
+        --pwa-bg-color: #0b0c0e;
+        color-scheme: dark;
       }
-      :root.light {
-        --pwa-theme-color: #ffffff;
-        --pwa-bg-color: #ffffff;
+      :root.light,
+      :root[data-theme="light"] {
+        --pwa-theme-color: #f8fafc;
+        --pwa-bg-color: #f8fafc;
+        color-scheme: light;
       }
       html {
         background-color: var(--pwa-bg-color);
@@ -42,13 +47,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Perplexta</title>
     <meta name="description" content="Professional Elite AI Analytics & Strategic Intelligence Platform" />
-
-    <!-- Open Graph / Social -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://perplexta.com/" />
     <meta property="og:title" content="Perplexta" />
     <meta property="og:description" content="Professional Elite AI Analytics & Strategic Intelligence Platform" />
-    <meta name="twitter:card" content="summary_large_image" />
 
     <script src="/init-theme.js"></script>
     <link rel="manifest" href="/manifest.json" />
@@ -65,7 +65,7 @@
   </head>
   <body class="layout-locked">
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
     <!-- Deferred Script Loader for Non-Essential Third-Party Analytics & WebMCP -->
     <script>
       (function() {

@@ -1,4 +1,4 @@
-import { pool, externalPool, getExternalPool } from '../db/index.js';
+import { pool } from '../db/index.js';
 import { getCachedOrchestratorConfig, upsertSeoMetadata } from '../db/queries.js';
 
 export function slugify(text: string): string {
@@ -107,7 +107,7 @@ export function extractKeywords(title: string, category: string, bodyText: strin
 let aiEnabled = true;
 
 export async function generateSeoWithAi(
-  type: 'blog' | 'marketplace' | 'bulletin',
+  type: 'bulletin' | 'viralbook',
   itemData: {
     title_en?: string;
     title_ar?: string;
@@ -135,7 +135,7 @@ export async function generateSeoWithAi(
       },
     });
 
-    const prompt = `You are a professional SEO Specialist for Perplexta Platform. Generate high-ranking, engaging SEO metadata for a ${type === 'blog' ? 'blog article' : type === 'bulletin' ? 'bulletin advertisement' : 'marketplace product'}.
+    const prompt = `You are a professional SEO Specialist for Perplexta Platform. Generate high-ranking, engaging SEO metadata for a Viralbook community advertisement / post.
 Title (EN): ${itemData.title_en || ''}
 Title (AR): ${itemData.title_ar || ''}
 Category (EN): ${itemData.category_en || ''}
@@ -146,8 +146,8 @@ ${itemData.technologies ? `Technologies: ${itemData.technologies}` : ''}
 ${itemData.features ? `Features: ${itemData.features}` : ''}
 
 Generate JSON with:
-1. meta_title_en: Punchy English SEO title max 60 chars ending with "| Perplexta"
-2. meta_title_ar: Punchy Arabic SEO title max 60 chars ending with "| بيربليكستا"
+1. meta_title_en: Punchy English SEO title max 60 chars ending with "| Viralbook"
+2. meta_title_ar: Punchy Arabic SEO title max 60 chars ending with "| فايرال بوك"
 3. meta_description_en: Concise English meta description (130-155 characters)
 4. meta_description_ar: Concise Arabic meta description (130-155 characters)
 5. keywords_en: 8-10 high-performing comma-separated keywords in English optimized with content similarity and trending search data
@@ -162,46 +162,44 @@ Generate JSON with:
     ].filter(Boolean) as string[];
 
     let response: any;
-    let lastError: any;
 
     for (const model of modelChain) {
-        try {
-            response = await ai.models.generateContent({
-                model: model,
-                contents: prompt,
-                config: {
-                    responseMimeType: 'application/json',
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            meta_title_en: { type: Type.STRING },
-                            meta_title_ar: { type: Type.STRING },
-                            meta_description_en: { type: Type.STRING },
-                            meta_description_ar: { type: Type.STRING },
-                            keywords_en: { type: Type.STRING },
-                            keywords_ar: { type: Type.STRING },
-                        },
-                        required: [
-                            'meta_title_en',
-                            'meta_title_ar',
-                            'meta_description_en',
-                            'meta_description_ar',
-                            'keywords_en',
-                            'keywords_ar',
-                        ],
-                    },
-                },
-            });
-            break;
-        } catch (err: any) {
-            console.warn(`[SEOSync] AI SEO generation failed for model ${model}:`, err.message || err);
-            lastError = err;
-        }
+      try {
+        response = await ai.models.generateContent({
+          model: model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                meta_title_en: { type: Type.STRING },
+                meta_title_ar: { type: Type.STRING },
+                meta_description_en: { type: Type.STRING },
+                meta_description_ar: { type: Type.STRING },
+                keywords_en: { type: Type.STRING },
+                keywords_ar: { type: Type.STRING },
+              },
+              required: [
+                'meta_title_en',
+                'meta_title_ar',
+                'meta_description_en',
+                'meta_description_ar',
+                'keywords_en',
+                'keywords_ar',
+              ],
+            },
+          },
+        });
+        break;
+      } catch (err: any) {
+        console.warn(`[SEOSync] AI SEO generation failed for model ${model}:`, err.message || err);
+      }
     }
 
     if (!response) {
-        console.warn("[SEOSync] AI SEO generation fallback due to quota or unavailable models. Using algorithmic extraction.");
-        return null;
+      console.warn("[SEOSync] AI SEO generation fallback due to quota or unavailable models. Using algorithmic extraction.");
+      return null;
     }
 
     if (response && response.text) {
@@ -219,335 +217,11 @@ Generate JSON with:
   return null;
 }
 
-async function ensureTableColumns(client: any, tableName: string, columns: Record<string, string>) {
-  // Table schema and columns are initialized during server boot via runDatabaseMigrations
-  return;
-}
-
-export async function syncBlogArticlesMetadata() {
-  const db = getExternalPool();
-  if (!db) {
-    console.error('[SEOSync] Core/External Database pool is not initialized');
-    return { totalChecked: 0, updatedCount: 0, updatedIds: [], message: 'Database not connected' };
-  }
-
-  // Ensure metadata columns exist
-  await ensureTableColumns(db, 'blog_articles', {
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
-
-  const res = await db.query(`
-    SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar,
-           meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
-    FROM blog_articles
-    WHERE slug IS NULL OR TRIM(slug) = ''
-       OR meta_title_en IS NULL OR TRIM(meta_title_en) = ''
-       OR meta_title_ar IS NULL OR TRIM(meta_title_ar) = ''
-       OR meta_description_en IS NULL OR TRIM(meta_description_en) = ''
-       OR meta_description_ar IS NULL OR TRIM(meta_description_ar) = ''
-       OR keywords_en IS NULL OR TRIM(keywords_en) = ''
-       OR keywords_ar IS NULL OR TRIM(keywords_ar) = ''
-       OR og_image_url IS NULL OR TRIM(og_image_url) = ''
-    ORDER BY id ASC
-  `);
-
-  let updatedCount = 0;
-  let aiProcessedCount = 0;
-  const updatedIds: number[] = [];
-
-  for (const row of res.rows) {
-    let needsUpdate = false;
-    let {
-      slug,
-      title_en,
-      title_ar,
-      content_en,
-      content_ar,
-      image_url,
-      category_en,
-      category_ar,
-      meta_title_en,
-      meta_title_ar,
-      meta_description_en,
-      meta_description_ar,
-      keywords_en,
-      keywords_ar,
-      og_image_url
-    } = row;
-
-    const needsAiMetadata =
-      !meta_title_en || !meta_title_en.trim() ||
-      !meta_title_ar || !meta_title_ar.trim() ||
-      !meta_description_en || !meta_description_en.trim() ||
-      !meta_description_ar || !meta_description_ar.trim() ||
-      !keywords_en || !keywords_en.trim() ||
-      !keywords_ar || !keywords_ar.trim();
-
-    let aiData: any = null;
-    if (needsAiMetadata) {
-      aiData = await generateSeoWithAi('blog', {
-        title_en,
-        title_ar,
-        content_en,
-        content_ar,
-        category_en,
-        category_ar,
-      });
-      if (aiData) aiProcessedCount++;
-    }
-
-    if (!slug || !slug.trim()) {
-      slug = `article-${row.id}-${slugify(title_en || title_ar || 'post')}`;
-      needsUpdate = true;
-    }
-
-    if (!meta_title_en || !meta_title_en.trim()) {
-      meta_title_en = aiData?.meta_title_en || `${(title_en || 'Article').trim()} | Perplexta Blog`.slice(0, 255);
-      needsUpdate = true;
-    }
-
-    if (!meta_title_ar || !meta_title_ar.trim()) {
-      meta_title_ar = aiData?.meta_title_ar || `${(title_ar || 'مقال').trim()} | مدونة بيربليكستا`.slice(0, 255);
-      needsUpdate = true;
-    }
-
-    if (!meta_description_en || !meta_description_en.trim()) {
-      meta_description_en = aiData?.meta_description_en || extractDescription(content_en || title_en || '');
-      needsUpdate = true;
-    }
-
-    if (!meta_description_ar || !meta_description_ar.trim()) {
-      meta_description_ar = aiData?.meta_description_ar || extractDescription(content_ar || title_ar || '');
-      needsUpdate = true;
-    }
-
-    if (!keywords_en || !keywords_en.trim()) {
-      keywords_en = aiData?.keywords_en || extractKeywords(title_en || '', category_en || '', content_en || '', 'en');
-      needsUpdate = true;
-    }
-
-    if (!keywords_ar || !keywords_ar.trim()) {
-      keywords_ar = aiData?.keywords_ar || extractKeywords(title_ar || '', category_ar || '', content_ar || '', 'ar');
-      needsUpdate = true;
-    }
-
-    if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = image_url && image_url.trim() ? image_url.trim() : '';
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      await db.query(
-        `UPDATE blog_articles
-         SET slug = $1,
-             meta_title_en = $2,
-             meta_title_ar = $3,
-             meta_description_en = $4,
-             meta_description_ar = $5,
-             keywords_en = $6,
-             keywords_ar = $7,
-             og_image_url = $8,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $9`,
-        [slug, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, row.id]
-      );
-      updatedCount++;
-      updatedIds.push(row.id);
-    }
-  }
-
-  return {
-    totalChecked: res.rows.length,
-    updatedCount,
-    aiProcessedCount,
-    updatedIds,
-    message: `Successfully synchronized metadata for ${updatedCount} blog articles.`
-  };
-}
-
-export async function syncMarketplaceItemsMetadata() {
-  if (!pool) {
-    console.error('[SEOSync] Core Database pool is not initialized');
-    return { totalChecked: 0, updatedCount: 0, updatedIds: [], message: 'Database not connected' };
-  }
-
-  // Ensure metadata columns exist
-  await ensureTableColumns(pool, 'marketplace_items', {
-    slug: 'VARCHAR(255)',
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
-
-  const res = await pool.query(`
-    SELECT id, slug, title_en, title_ar, description_en, description_ar, category_en, category_ar,
-           image_url, preview_url, features, technologies,
-           meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
-    FROM marketplace_items
-    WHERE slug IS NULL OR TRIM(slug) = ''
-       OR meta_title_en IS NULL OR TRIM(meta_title_en) = ''
-       OR meta_title_ar IS NULL OR TRIM(meta_title_ar) = ''
-       OR meta_description_en IS NULL OR TRIM(meta_description_en) = ''
-       OR meta_description_ar IS NULL OR TRIM(meta_description_ar) = ''
-       OR keywords_en IS NULL OR TRIM(keywords_en) = ''
-       OR keywords_ar IS NULL OR TRIM(keywords_ar) = ''
-       OR og_image_url IS NULL OR TRIM(og_image_url) = ''
-    ORDER BY id ASC
-  `);
-
-  let updatedCount = 0;
-  let aiProcessedCount = 0;
-  const updatedIds: number[] = [];
-
-  for (const row of res.rows) {
-    let needsUpdate = false;
-    let {
-      slug,
-      title_en,
-      title_ar,
-      description_en,
-      description_ar,
-      category_en,
-      category_ar,
-      image_url,
-      preview_url,
-      features,
-      technologies,
-      meta_title_en,
-      meta_title_ar,
-      meta_description_en,
-      meta_description_ar,
-      keywords_en,
-      keywords_ar,
-      og_image_url
-    } = row;
-
-    const needsAiMetadata =
-      !meta_title_en || !meta_title_en.trim() ||
-      !meta_title_ar || !meta_title_ar.trim() ||
-      !meta_description_en || !meta_description_en.trim() ||
-      !meta_description_ar || !meta_description_ar.trim() ||
-      !keywords_en || !keywords_en.trim() ||
-      !keywords_ar || !keywords_ar.trim();
-
-    let aiData: any = null;
-    if (needsAiMetadata) {
-      aiData = await generateSeoWithAi('marketplace', {
-        title_en,
-        title_ar,
-        description_en,
-        description_ar,
-        category_en,
-        category_ar,
-        technologies,
-        features,
-      });
-      if (aiData) aiProcessedCount++;
-    }
-
-    if (!slug || !slug.trim()) {
-      slug = `item-${row.id}-${slugify(title_en || title_ar || 'product')}`;
-      needsUpdate = true;
-    }
-
-    if (!meta_title_en || !meta_title_en.trim()) {
-      const baseTitle = title_en ? title_en.trim() : 'Marketplace Item';
-      const categorySuffix = category_en ? ` - ${category_en.trim()}` : '';
-      meta_title_en = aiData?.meta_title_en || `${baseTitle}${categorySuffix} | Perplexta Marketplace`.slice(0, 255);
-      needsUpdate = true;
-    }
-
-    if (!meta_title_ar || !meta_title_ar.trim()) {
-      const baseTitleAr = title_ar ? title_ar.trim() : 'منتج رقمي';
-      const categorySuffixAr = category_ar ? ` - ${category_ar.trim()}` : '';
-      meta_title_ar = aiData?.meta_title_ar || `${baseTitleAr}${categorySuffixAr} | متجر بيربليكستا`.slice(0, 255);
-      needsUpdate = true;
-    }
-
-    if (!meta_description_en || !meta_description_en.trim()) {
-      meta_description_en = aiData?.meta_description_en || extractDescription(description_en || title_en || '');
-      needsUpdate = true;
-    }
-
-    if (!meta_description_ar || !meta_description_ar.trim()) {
-      meta_description_ar = aiData?.meta_description_ar || extractDescription(description_ar || title_ar || '');
-      needsUpdate = true;
-    }
-
-    if (!keywords_en || !keywords_en.trim()) {
-      const techAndFeatures = `${technologies || ''} ${features || ''}`;
-      keywords_en = aiData?.keywords_en || extractKeywords(title_en || '', `${category_en || ''} ${techAndFeatures}`, description_en || '', 'en');
-      needsUpdate = true;
-    }
-
-    if (!keywords_ar || !keywords_ar.trim()) {
-      const techAndFeatures = `${technologies || ''} ${features || ''}`;
-      keywords_ar = aiData?.keywords_ar || extractKeywords(title_ar || '', `${category_ar || ''} ${techAndFeatures}`, description_ar || '', 'ar');
-      needsUpdate = true;
-    }
-
-    if (!og_image_url || !og_image_url.trim()) {
-      og_image_url = (image_url && image_url.trim())
-        ? image_url.trim()
-        : ((preview_url && preview_url.trim()) ? preview_url.trim() : '');
-      needsUpdate = true;
-    }
-
-    if (needsUpdate) {
-      await pool.query(
-        `UPDATE marketplace_items
-         SET slug = $1,
-             meta_title_en = $2,
-             meta_title_ar = $3,
-             meta_description_en = $4,
-             meta_description_ar = $5,
-             keywords_en = $6,
-             keywords_ar = $7,
-             og_image_url = $8,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $9`,
-        [slug, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, row.id]
-      );
-      updatedCount++;
-      updatedIds.push(row.id);
-    }
-  }
-
-  return {
-    totalChecked: res.rows.length,
-    updatedCount,
-    aiProcessedCount,
-    updatedIds,
-    message: `Successfully synchronized metadata for ${updatedCount} marketplace items.`
-  };
-}
-
 export async function syncBulletinAdsMetadata() {
   if (!pool) {
     console.error('[SEOSync] Core Database pool is not initialized');
     return { totalChecked: 0, updatedCount: 0, updatedIds: [], message: 'Database not connected' };
   }
-
-  // Ensure metadata columns exist
-  await ensureTableColumns(pool, 'bulletin_ads', {
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
 
   const res = await pool.query(`
     SELECT id, title, description, category, hashtags,
@@ -592,7 +266,7 @@ export async function syncBulletinAdsMetadata() {
 
     let aiData: any = null;
     if (needsAiMetadata) {
-      aiData = await generateSeoWithAi('marketplace', {
+      aiData = await generateSeoWithAi('bulletin', {
         title_en: title,
         title_ar: title,
         description_en: description,
@@ -604,12 +278,12 @@ export async function syncBulletinAdsMetadata() {
     }
 
     if (!meta_title_en || !meta_title_en.trim()) {
-      meta_title_en = aiData?.meta_title_en || `${(title || 'Bulletin Ad').trim()} | Perplexta Bulletin`.slice(0, 255);
+      meta_title_en = aiData?.meta_title_en || `${(title || 'Viralbook Post').trim()} | Viralbook`.slice(0, 255);
       needsUpdate = true;
     }
 
     if (!meta_title_ar || !meta_title_ar.trim()) {
-      meta_title_ar = aiData?.meta_title_ar || `${(title || 'إعلان').trim()} | لوحة إعلانات بيربليكستا`.slice(0, 255);
+      meta_title_ar = aiData?.meta_title_ar || `${(title || 'منشور فايرال بوك').trim()} | فايرال بوك`.slice(0, 255);
       needsUpdate = true;
     }
 
@@ -662,72 +336,16 @@ export async function syncBulletinAdsMetadata() {
     updatedCount,
     aiProcessedCount,
     updatedIds,
-    message: `Successfully synchronized metadata for ${updatedCount} bulletin ads.`
+    message: `Successfully synchronized metadata for ${updatedCount} Viralbook items.`
   };
 }
 
 export async function auditContentSeoItems() {
   const db = pool;
-  const extDb = getExternalPool();
 
   if (!db) {
     throw new Error('Core database pool is not initialized');
   }
-
-  // Ensure metadata columns exist
-  await ensureTableColumns(extDb, 'blog_articles', {
-    slug: 'VARCHAR(255)',
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
-
-  await ensureTableColumns(db, 'marketplace_items', {
-    slug: 'VARCHAR(255)',
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
-
-  await ensureTableColumns(db, 'bulletin_ads', {
-    meta_title_en: 'VARCHAR(255)',
-    meta_title_ar: 'VARCHAR(255)',
-    meta_description_en: 'TEXT',
-    meta_description_ar: 'TEXT',
-    keywords_en: 'TEXT',
-    keywords_ar: 'TEXT',
-    og_image_url: 'TEXT'
-  });
-
-  const blogRes = await extDb.query(`
-    SELECT id, slug, title_en, title_ar, content_en, content_ar, category_en, category_ar, image_url,
-           meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url,
-           updated_at, created_at
-    FROM blog_articles
-    ORDER BY id DESC
-  `).catch((err: any) => {
-    console.warn('[SEOSync] Failed to query blog_articles:', err.message);
-    return { rows: [] };
-  });
-
-  const marketplaceRes = await db.query(`
-    SELECT id, slug, title_en, title_ar, description_en, description_ar, category_en, category_ar, image_url,
-           meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url,
-           updated_at, created_at
-    FROM marketplace_items
-    ORDER BY id DESC
-  `).catch((err: any) => {
-    console.warn('[SEOSync] Failed to query marketplace_items:', err.message);
-    return { rows: [] };
-  });
 
   const bulletinRes = await db.query(`
     SELECT id, title, description, category, image_url,
@@ -740,19 +358,9 @@ export async function auditContentSeoItems() {
     return { rows: [] };
   });
 
-  const calculateItemAudit = (row: any, type: 'blog' | 'marketplace' | 'bulletin') => {
+  const calculateItemAudit = (row: any) => {
     const missingFields: string[] = [];
-    let score = 0;
-
-    if (type !== 'bulletin') {
-        if (row.slug && row.slug.trim()) {
-          score += 15;
-        } else {
-          missingFields.push('slug');
-        }
-    } else {
-        score += 15; // Placeholder score for bulletin ads as they might not have slugs yet
-    }
+    let score = 15; // Baseline slug/identifier weight
 
     if (row.meta_title_en && row.meta_title_en.trim()) {
       score += 15;
@@ -800,12 +408,12 @@ export async function auditContentSeoItems() {
 
     return {
       id: row.id,
-      type,
-      title_en: row.title_en || row.title || 'Untitled',
-      title_ar: row.title_ar || row.title || 'بدون عنوان',
-      slug: row.slug || '',
-      category_en: row.category_en || row.category || '',
-      category_ar: row.category_ar || row.category || '',
+      type: 'bulletin' as const,
+      title_en: row.title || 'Untitled',
+      title_ar: row.title || 'بدون عنوان',
+      slug: `viralbook-${row.id}`,
+      category_en: row.category || '',
+      category_ar: row.category || '',
       image_url: row.image_url || row.og_image_url || '',
       meta_title_en: row.meta_title_en || '',
       meta_title_ar: row.meta_title_ar || '',
@@ -821,12 +429,9 @@ export async function auditContentSeoItems() {
     };
   };
 
-  const blogItems = blogRes.rows.map((r: any) => calculateItemAudit(r, 'blog'));
-  const marketplaceItems = marketplaceRes.rows.map((r: any) => calculateItemAudit(r, 'marketplace'));
-  const bulletinItems = bulletinRes.rows.map((r: any) => calculateItemAudit(r, 'bulletin'));
-  const allItems = [...blogItems, ...marketplaceItems, ...bulletinItems];
+  const allItems = bulletinRes.rows.map((r: any) => calculateItemAudit(r));
 
-  allItems.sort((a, b) => {
+  allItems.sort((a: any, b: any) => {
     if (a.requires_metadata_population !== b.requires_metadata_population) {
       return a.requires_metadata_population ? -1 : 1;
     }
@@ -834,17 +439,15 @@ export async function auditContentSeoItems() {
   });
 
   const totalItems = allItems.length;
-  const itemsMissingMetadata = allItems.filter(i => i.requires_metadata_population).length;
+  const itemsMissingMetadata = allItems.filter((i: any) => i.requires_metadata_population).length;
   const itemsFullyOptimized = totalItems - itemsMissingMetadata;
-  const totalScoreSum = allItems.reduce((acc, curr) => acc + curr.seo_score, 0);
+  const totalScoreSum = allItems.reduce((acc: number, curr: any) => acc + curr.seo_score, 0);
   const overallSeoHealthScore = totalItems > 0 ? parseFloat((totalScoreSum / totalItems).toFixed(1)) : 100;
   const estimatedTimeSeconds = Math.ceil(itemsMissingMetadata * 1.5);
 
   return {
     summary: {
       total_items: totalItems,
-      total_blog_articles: blogItems.length,
-      total_marketplace_items: marketplaceItems.length,
       items_missing_metadata: itemsMissingMetadata,
       items_fully_optimized: itemsFullyOptimized,
       overall_seo_health_score: overallSeoHealthScore,
@@ -854,87 +457,65 @@ export async function auditContentSeoItems() {
   };
 }
 
-export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'bulletin', id: number) {
-  const db = type === 'blog' ? getExternalPool() : pool;
+export async function syncSingleContentSeoItem(type: 'bulletin', id: number) {
+  const db = pool;
   if (!db) {
     throw new Error('Database pool is not initialized');
   }
 
-  const tableName = type === 'blog' ? 'blog_articles' : type === 'bulletin' ? 'bulletin_ads' : 'marketplace_items';
+  const tableName = 'bulletin_ads';
   const queryRes = await db.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
 
   if (queryRes.rows.length === 0) {
-    throw new Error(`${type} item with ID ${id} not found`);
+    throw new Error(`Item with ID ${id} not found`);
   }
 
   const row = queryRes.rows[0];
   let {
-    title_en,
-    title_ar,
-    content_en,
-    content_ar,
-    description_en,
-    description_ar,
-    category_en,
-    category_ar,
+    title,
+    description,
+    category,
     image_url,
     preview_url,
     technologies,
     features
   } = row;
 
-  const aiData = await generateSeoWithAi(type, {
-    title_en,
-    title_ar,
-    content_en,
-    content_ar,
-    description_en,
-    description_ar,
-    category_en,
-    category_ar,
+  const aiData = await generateSeoWithAi('bulletin', {
+    title_en: title,
+    title_ar: title,
+    content_en: description,
+    content_ar: description,
+    description_en: description,
+    description_ar: description,
+    category_en: category,
+    category_ar: category,
     technologies,
     features
   });
 
-  const slug = `item-${row.id}-${slugify(title_en || title_ar || 'item')}`;
-  const meta_title_en = aiData?.meta_title_en || `${(title_en || 'Item').trim()} | Perplexta Platform`.slice(0, 255);
-  const meta_title_ar = aiData?.meta_title_ar || `${(title_ar || 'عنصر').trim()} | منصة بيربليكستا`.slice(0, 255);
-  const meta_description_en = aiData?.meta_description_en || extractDescription(content_en || description_en || title_en || '');
-  const meta_description_ar = aiData?.meta_description_ar || extractDescription(content_ar || description_ar || title_ar || '');
-  const keywords_en = aiData?.keywords_en || extractKeywords(title_en || '', category_en || '', content_en || description_en || '', 'en');
-  const keywords_ar = aiData?.keywords_ar || extractKeywords(title_ar || '', category_ar || '', content_ar || description_ar || '', 'ar');
+  const slug = `viralbook-${row.id}-${slugify(title || 'post')}`;
+  const meta_title_en = aiData?.meta_title_en || `${(title || 'Viralbook Post').trim()} | Viralbook`.slice(0, 255);
+  const meta_title_ar = aiData?.meta_title_ar || `${(title || 'منشور فايرال بوك').trim()} | فايرال بوك`.slice(0, 255);
+  const meta_description_en = aiData?.meta_description_en || extractDescription(description || title || '');
+  const meta_description_ar = aiData?.meta_description_ar || extractDescription(description || title || '');
+  const keywords_en = aiData?.keywords_en || extractKeywords(title || '', category || '', description || '', 'en');
+  const keywords_ar = aiData?.keywords_ar || extractKeywords(title || '', category || '', description || '', 'ar');
   const og_image_url = (image_url && image_url.trim()) ? image_url.trim() : ((preview_url && preview_url.trim()) ? preview_url.trim() : '');
 
-  if (type === 'bulletin') {
-    await db.query(
-      `UPDATE ${tableName}
-       SET meta_title_en = $1,
-           meta_title_ar = $2,
-           meta_description_en = $3,
-           meta_description_ar = $4,
-           keywords_en = $5,
-           keywords_ar = $6,
-           og_image_url = $7,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8`,
-      [meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
-    );
-  } else {
-    await db.query(
-      `UPDATE ${tableName}
-       SET slug = $1,
-           meta_title_en = $2,
-           meta_title_ar = $3,
-           meta_description_en = $4,
-           meta_description_ar = $5,
-           keywords_en = $6,
-           keywords_ar = $7,
-           og_image_url = $8,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9`,
-      [slug, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
-    );
-  }
+  await db.query(
+    `UPDATE ${tableName}
+     SET meta_title_en = $1,
+         meta_title_ar = $2,
+         meta_description_en = $3,
+         meta_description_ar = $4,
+         keywords_en = $5,
+         keywords_ar = $6,
+         og_image_url = $7,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $8`,
+    [meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
+  );
 
   return {
     success: true,
@@ -953,23 +534,14 @@ export async function syncSingleContentSeoItem(type: 'blog' | 'marketplace' | 'b
   };
 }
 
-
-export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bulletin', id: number) {
-  const db = type === 'blog' ? getExternalPool() : pool;
+export async function getSmartSeoSuggestion(type: 'bulletin', id: number) {
+  const db = pool;
   if (!db) throw new Error('Database is not initialized');
 
-  const tableName = type === 'blog' ? 'blog_articles' : type === 'bulletin' ? 'bulletin_ads' : 'marketplace_items';
-  const query = type === 'blog' 
-    ? `SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, category_en, category_ar,
-              meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
-       FROM blog_articles WHERE id = $1`
-    : type === 'bulletin'
-    ? `SELECT id, title, description, category, image_url,
-              meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
-       FROM bulletin_ads WHERE id = $1`
-    : `SELECT id, slug, title_en, title_ar, description_en, description_ar, image_url, category_en, category_ar,
-              technologies, features, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
-       FROM marketplace_items WHERE id = $1`;
+  const tableName = 'bulletin_ads';
+  const query = `SELECT id, title, description, category, image_url,
+                        meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
+                 FROM bulletin_ads WHERE id = $1`;
 
   const res = await db.query(query, [id]);
   if (res.rows.length === 0) {
@@ -978,42 +550,40 @@ export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bull
 
   const row = res.rows[0];
 
-  const itemData = type === 'blog' ? {
-    title_en: row.title_en,
-    title_ar: row.title_ar,
-    content_en: row.content_en,
-    content_ar: row.content_ar,
-    category_en: row.category_en,
-    category_ar: row.category_ar
-  } : {
-    title_en: row.title_en,
-    title_ar: row.title_ar,
-    description_en: row.description_en,
-    description_ar: row.description_ar,
-    category_en: row.category_en,
-    category_ar: row.category_ar,
-    technologies: row.technologies,
-    features: row.features
+  const itemData = {
+    title_en: row.title,
+    title_ar: row.title,
+    description_en: row.description,
+    description_ar: row.description,
+    category_en: row.category,
+    category_ar: row.category
   };
 
-  const aiData = await generateSeoWithAi(type, itemData);
+  const aiData = await generateSeoWithAi('bulletin', itemData);
 
-  const suggestedTitleEn = aiData?.meta_title_en || `${(row.title_en || 'Perplexta Item').trim()} | Perplexta Platform`.slice(0, 255);
-  const suggestedTitleAr = aiData?.meta_title_ar || `${(row.title_ar || 'عنصر بيربليكستا').trim()} | منصة بيربليكستا`.slice(0, 255);
-  const suggestedDescEn = aiData?.meta_description_en || extractDescription(row.content_en || row.description_en || row.title_en || '');
-  const suggestedDescAr = aiData?.meta_description_ar || extractDescription(row.content_ar || row.description_ar || row.title_ar || '');
-  const suggestedKeywordsEn = aiData?.keywords_en || extractKeywords(row.title_en || '', row.category_en || '', row.content_en || row.description_en || '', 'en');
-  const suggestedKeywordsAr = aiData?.keywords_ar || extractKeywords(row.title_ar || '', row.category_ar || '', row.content_ar || row.description_ar || '', 'ar');
-  const suggestedSlug = row.slug && row.slug.trim() ? row.slug.trim() : `${type}-${row.id}-${slugify(row.title_en || row.title_ar || 'item')}`;
+  const rawTitle = row.title || 'Viralbook Item';
+  const rawTitleAr = row.title || 'منشور فايرال بوك';
+  const rawDesc = row.description || row.title || '';
+  const rawDescAr = row.description || row.title || '';
+  const rawCat = row.category || '';
+  const rawCatAr = row.category || '';
+
+  const suggestedTitleEn = aiData?.meta_title_en || `${rawTitle.trim()} | Viralbook`.slice(0, 255);
+  const suggestedTitleAr = aiData?.meta_title_ar || `${rawTitleAr.trim()} | فايرال بوك`.slice(0, 255);
+  const suggestedDescEn = aiData?.meta_description_en || extractDescription(rawDesc);
+  const suggestedDescAr = aiData?.meta_description_ar || extractDescription(rawDescAr);
+  const suggestedKeywordsEn = aiData?.keywords_en || extractKeywords(rawTitle, rawCat, rawDesc, 'en');
+  const suggestedKeywordsAr = aiData?.keywords_ar || extractKeywords(rawTitleAr, rawCatAr, rawDescAr, 'ar');
+  const suggestedSlug = `viralbook-${row.id}-${slugify(rawTitle)}`;
   const suggestedOgImage = row.og_image_url && row.og_image_url.trim() ? row.og_image_url.trim() : (row.image_url && row.image_url.trim() ? row.image_url.trim() : '');
 
   return {
     id: row.id,
     type,
-    item_title_en: row.title_en || '',
-    item_title_ar: row.title_ar || '',
-    category_en: row.category_en || '',
-    category_ar: row.category_ar || '',
+    item_title_en: rawTitle,
+    item_title_ar: rawTitleAr,
+    category_en: rawCat,
+    category_ar: rawCatAr,
     current: {
       meta_title_en: row.meta_title_en || '',
       meta_title_ar: row.meta_title_ar || '',
@@ -1021,7 +591,7 @@ export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bull
       meta_description_ar: row.meta_description_ar || '',
       keywords_en: row.keywords_en || '',
       keywords_ar: row.keywords_ar || '',
-      slug: row.slug || '',
+      slug: `viralbook-${row.id}`,
       og_image_url: row.og_image_url || ''
     },
     suggested: {
@@ -1039,7 +609,7 @@ export async function getSmartSeoSuggestion(type: 'blog' | 'marketplace' | 'bull
 }
 
 export async function applySmartSeoSuggestion(
-  type: 'blog' | 'marketplace' | 'bulletin',
+  type: 'bulletin',
   id: number,
   metadata: {
     meta_title_en?: string;
@@ -1052,10 +622,10 @@ export async function applySmartSeoSuggestion(
     og_image_url?: string;
   }
 ) {
-  const db = type === 'blog' ? getExternalPool() : pool;
+  const db = pool;
   if (!db) throw new Error('Database is not initialized');
 
-  const tableName = type === 'blog' ? 'blog_articles' : type === 'bulletin' ? 'bulletin_ads' : 'marketplace_items';
+  const tableName = 'bulletin_ads';
 
   const selectRes = await db.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
   if (selectRes.rows.length === 0) {
@@ -1063,71 +633,41 @@ export async function applySmartSeoSuggestion(
   }
   const existing = selectRes.rows[0];
 
-  const itemTitleEn = existing.title_en || existing.title || 'Item';
-  const itemTitleAr = existing.title_ar || existing.title || 'عنصر';
-  const itemDescEn = existing.content_en || existing.description_en || existing.description || '';
-  const itemDescAr = existing.content_ar || existing.description_ar || existing.description || '';
-  const itemCatEn = existing.category_en || existing.category || '';
-  const itemCatAr = existing.category_ar || existing.category || '';
+  const itemTitle = existing.title || 'Item';
+  const itemDesc = existing.description || '';
+  const itemCat = existing.category || '';
 
-  const meta_title_en = (metadata.meta_title_en !== undefined ? metadata.meta_title_en : existing.meta_title_en) || `${itemTitleEn} | Perplexta`;
-  const meta_title_ar = (metadata.meta_title_ar !== undefined ? metadata.meta_title_ar : existing.meta_title_ar) || `${itemTitleAr} | بيربليكستا`;
-  const meta_description_en = (metadata.meta_description_en !== undefined ? metadata.meta_description_en : existing.meta_description_en) || extractDescription(itemDescEn);
-  const meta_description_ar = (metadata.meta_description_ar !== undefined ? metadata.meta_description_ar : existing.meta_description_ar) || extractDescription(itemDescAr);
-  const keywords_en = (metadata.keywords_en !== undefined ? metadata.keywords_en : existing.keywords_en) || extractKeywords(itemTitleEn, itemCatEn, '', 'en');
-  const keywords_ar = (metadata.keywords_ar !== undefined ? metadata.keywords_ar : existing.keywords_ar) || extractKeywords(itemTitleAr, itemCatAr, '', 'ar');
-  const slug = (metadata.slug !== undefined ? metadata.slug : existing.slug) || `${type}-${id}-${slugify(itemTitleEn)}`;
+  const meta_title_en = (metadata.meta_title_en !== undefined ? metadata.meta_title_en : existing.meta_title_en) || `${itemTitle} | Viralbook`;
+  const meta_title_ar = (metadata.meta_title_ar !== undefined ? metadata.meta_title_ar : existing.meta_title_ar) || `${itemTitle} | فايرال بوك`;
+  const meta_description_en = (metadata.meta_description_en !== undefined ? metadata.meta_description_en : existing.meta_description_en) || extractDescription(itemDesc);
+  const meta_description_ar = (metadata.meta_description_ar !== undefined ? metadata.meta_description_ar : existing.meta_description_ar) || extractDescription(itemDesc);
+  const keywords_en = (metadata.keywords_en !== undefined ? metadata.keywords_en : existing.keywords_en) || extractKeywords(itemTitle, itemCat, '', 'en');
+  const keywords_ar = (metadata.keywords_ar !== undefined ? metadata.keywords_ar : existing.keywords_ar) || extractKeywords(itemTitle, itemCat, '', 'ar');
   const og_image_url = (metadata.og_image_url !== undefined ? metadata.og_image_url : existing.og_image_url) || existing.image_url || '';
 
-  if (type === 'bulletin') {
-      await db.query(
-        `UPDATE ${tableName}
-         SET meta_title_en = $1,
-             meta_title_ar = $2,
-             meta_description_en = $3,
-             meta_description_ar = $4,
-             keywords_en = $5,
-             keywords_ar = $6,
-             og_image_url = $7,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $8`,
-        [meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
-      );
-  } else {
-      await db.query(
-        `UPDATE ${tableName}
-         SET slug = $1,
-             meta_title_en = $2,
-             meta_title_ar = $3,
-             meta_description_en = $4,
-             meta_description_ar = $5,
-             keywords_en = $6,
-             keywords_ar = $7,
-             og_image_url = $8,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $9`,
-        [slug, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
-      );
-  }
+  await db.query(
+    `UPDATE ${tableName}
+     SET meta_title_en = $1,
+         meta_title_ar = $2,
+         meta_description_en = $3,
+         meta_description_ar = $4,
+         keywords_en = $5,
+         keywords_ar = $6,
+         og_image_url = $7,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = $8`,
+    [meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url, id]
+  );
 
   // Update dynamic route SEO metadata cache and persistent table
   try {
-    const routePaths: string[] = [];
-    if (type === 'bulletin') {
-      routePaths.push(`/bulletin/${id}`);
-    } else if (type === 'marketplace') {
-      routePaths.push(`/marketplace/${id}`);
-      if (slug) routePaths.push(`/marketplace/${slug}`);
-    } else if (type === 'blog') {
-      routePaths.push(`/blog/${id}`);
-      if (slug) routePaths.push(`/blog/${slug}`);
-    }
+    const routePaths = [`/viralbook/${id}`, `/bulletin/${id}`];
 
     for (const routePath of routePaths) {
       await upsertSeoMetadata({
         route_path: routePath,
-        entity_type: type,
-        entity_id: slug || String(id),
+        entity_type: 'viralbook',
+        entity_id: String(id),
         title_en: meta_title_en,
         title_ar: meta_title_ar,
         description_en: meta_description_en,
@@ -1146,7 +686,7 @@ export async function applySmartSeoSuggestion(
     success: true,
     id,
     type,
-    slug,
+    slug: `viralbook-${id}`,
     meta_title_en,
     meta_title_ar,
     meta_description_en,
@@ -1164,7 +704,6 @@ export async function syncDynamicRoutesToSeoMetadata(): Promise<{ syncedRoutes: 
   let count = 0;
 
   try {
-    // 1. Bulletin Ads: /bulletin/:id
     const bulletinRes = await pool.query(`
       SELECT id, title, description, image_url, meta_title_en, meta_title_ar,
              meta_description_en, meta_description_ar, keywords_en, keywords_ar, og_image_url
@@ -1172,6 +711,19 @@ export async function syncDynamicRoutesToSeoMetadata(): Promise<{ syncedRoutes: 
       WHERE deleted_at IS NULL AND (status IS NULL OR status = 'approved' OR status = 'active')
     `);
     for (const row of bulletinRes.rows) {
+      await upsertSeoMetadata({
+        route_path: `/viralbook/${row.id}`,
+        entity_type: 'viralbook',
+        entity_id: String(row.id),
+        title_en: row.meta_title_en || (row.title ? `${row.title} | Viralbook` : 'Viralbook Post | Perplexta'),
+        title_ar: row.meta_title_ar || (row.title ? `${row.title} | فايرال بوك` : 'منشور فايرال بوك | بيربليكستا'),
+        description_en: row.meta_description_en || (row.description ? extractDescription(row.description) : ''),
+        description_ar: row.meta_description_ar || (row.description ? extractDescription(row.description) : ''),
+        og_image_url: row.og_image_url || row.image_url || '',
+        keywords_en: row.keywords_en || 'viralbook, perplexta, viral, post, announcement',
+        keywords_ar: row.keywords_ar || 'فايرال بوك, إعلانات, بيربليكستا, خدمات, منشورات',
+        is_active: true
+      });
       await upsertSeoMetadata({
         route_path: `/bulletin/${row.id}`,
         entity_type: 'bulletin',
@@ -1188,108 +740,6 @@ export async function syncDynamicRoutesToSeoMetadata(): Promise<{ syncedRoutes: 
       count++;
     }
 
-    // 2. Marketplace Items: /marketplace/:id and /marketplace/:slug
-    const marketRes = await pool.query(`
-      SELECT id, slug, title_en, title_ar, description_en, description_ar, image_url, preview_url,
-             meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
-             keywords_en, keywords_ar, og_image_url
-      FROM marketplace_items
-    `);
-    for (const row of marketRes.rows) {
-      const titleEn = row.meta_title_en || (row.title_en ? `${row.title_en} | Perplexta Marketplace` : 'Marketplace Item');
-      const titleAr = row.meta_title_ar || (row.title_ar ? `${row.title_ar} | متجر بيربليكستا` : 'منتج في المتجر');
-      const descEn = row.meta_description_en || (row.description_en ? extractDescription(row.description_en) : '');
-      const descAr = row.meta_description_ar || (row.description_ar ? extractDescription(row.description_ar) : '');
-      const imgUrl = row.og_image_url || row.image_url || row.preview_url || '';
-      const kwEn = row.keywords_en || 'marketplace, software, tools';
-      const kwAr = row.keywords_ar || 'متجر, أدوات, برمجيات';
-
-      await upsertSeoMetadata({
-        route_path: `/marketplace/${row.id}`,
-        entity_type: 'marketplace',
-        entity_id: String(row.id),
-        title_en: titleEn,
-        title_ar: titleAr,
-        description_en: descEn,
-        description_ar: descAr,
-        og_image_url: imgUrl,
-        keywords_en: kwEn,
-        keywords_ar: kwAr,
-        is_active: true
-      });
-      count++;
-
-      if (row.slug) {
-        await upsertSeoMetadata({
-          route_path: `/marketplace/${row.slug}`,
-          entity_type: 'marketplace',
-          entity_id: row.slug,
-          title_en: titleEn,
-          title_ar: titleAr,
-          description_en: descEn,
-          description_ar: descAr,
-          og_image_url: imgUrl,
-          keywords_en: kwEn,
-          keywords_ar: kwAr,
-          is_active: true
-        });
-        count++;
-      }
-    }
-
-    // 3. Blog Articles: /blog/:slug and /blog/:id
-    const blogPool = getExternalPool() || pool;
-    if (blogPool) {
-      const blogRes = await blogPool.query(`
-        SELECT id, slug, title_en, title_ar, content_en, content_ar, image_url, og_image_url,
-               meta_title_en, meta_title_ar, meta_description_en, meta_description_ar,
-               keywords_en, keywords_ar
-        FROM blog_articles
-        WHERE is_published = true OR is_published IS NULL
-      `);
-      for (const row of blogRes.rows) {
-        const titleEn = row.meta_title_en || (row.title_en ? `${row.title_en} | Perplexta Blog` : 'Blog Article');
-        const titleAr = row.meta_title_ar || (row.title_ar ? `${row.title_ar} | مدونة بيربليكستا` : 'مقال المدونة');
-        const descEn = row.meta_description_en || (row.content_en ? extractDescription(row.content_en) : '');
-        const descAr = row.meta_description_ar || (row.content_ar ? extractDescription(row.content_ar) : '');
-        const imgUrl = row.og_image_url || row.image_url || '';
-        const kwEn = row.keywords_en || 'blog, article, perplexta';
-        const kwAr = row.keywords_ar || 'مدونة, مقال, بيربليكستا';
-
-        if (row.slug) {
-          await upsertSeoMetadata({
-            route_path: `/blog/${row.slug}`,
-            entity_type: 'blog',
-            entity_id: row.slug,
-            title_en: titleEn,
-            title_ar: titleAr,
-            description_en: descEn,
-            description_ar: descAr,
-            og_image_url: imgUrl,
-            keywords_en: kwEn,
-            keywords_ar: kwAr,
-            is_active: true
-          });
-          count++;
-        }
-
-        await upsertSeoMetadata({
-          route_path: `/blog/${row.id}`,
-          entity_type: 'blog',
-          entity_id: String(row.id),
-          title_en: titleEn,
-          title_ar: titleAr,
-          description_en: descEn,
-          description_ar: descAr,
-          og_image_url: imgUrl,
-          keywords_en: kwEn,
-          keywords_ar: kwAr,
-          is_active: true
-        });
-        count++;
-      }
-    }
-
     console.log(`[SEOSync] ✅ Synced ${count} dynamic routes to seo_metadata table.`);
   } catch (err: any) {
     console.error('[SEOSync] Error syncing dynamic routes to seo_metadata:', err.message);
@@ -1299,31 +749,21 @@ export async function syncDynamicRoutesToSeoMetadata(): Promise<{ syncedRoutes: 
 }
 
 export async function syncAllContentSeoMetadata() {
-  console.log('[SEOSync] 🚀 Initiating AI-assisted sync for missing metadata fields in blog_articles, marketplace_items & bulletin_ads...');
-  const blogResult = await syncBlogArticlesMetadata();
-  const marketplaceResult = await syncMarketplaceItemsMetadata();
+  console.log('[SEOSync] 🚀 Initiating AI-assisted sync for missing metadata fields in bulletin_ads...');
   const bulletinResult = await syncBulletinAdsMetadata();
   const dynamicRoutesResult = await syncDynamicRoutesToSeoMetadata();
 
-  const blogUpdated = blogResult.updatedCount || 0;
-  const marketplaceUpdated = marketplaceResult.updatedCount || 0;
   const bulletinUpdated = bulletinResult.updatedCount || 0;
-  const totalUpdated = blogUpdated + marketplaceUpdated + bulletinUpdated;
-  const totalAi = (blogResult.aiProcessedCount || 0) + (marketplaceResult.aiProcessedCount || 0) + (bulletinResult.aiProcessedCount || 0);
+  const totalAi = bulletinResult.aiProcessedCount || 0;
 
-  console.log(`[SEOSync] ✅ SEO Metadata sync completed. Total records updated: ${totalUpdated} (Blog: ${blogUpdated}, Marketplace: ${marketplaceUpdated}, Bulletin: ${bulletinUpdated}, AI Generated: ${totalAi}, Dynamic Routes Synced: ${dynamicRoutesResult.syncedRoutes})`);
+  console.log(`[SEOSync] ✅ SEO Metadata sync completed. Total records updated: ${bulletinUpdated} (Viralbook: ${bulletinUpdated}, AI Generated: ${totalAi}, Dynamic Routes Synced: ${dynamicRoutesResult.syncedRoutes})`);
 
   return {
     success: true,
-    totalUpdated,
+    totalUpdated: bulletinUpdated,
     totalAiProcessed: totalAi,
     dynamicRoutesSynced: dynamicRoutesResult.syncedRoutes,
-    blog: blogResult,
-    marketplace: marketplaceResult,
     bulletin: bulletinResult,
     timestamp: new Date().toISOString()
   };
 }
-
-
-

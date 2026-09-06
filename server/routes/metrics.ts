@@ -51,7 +51,7 @@ router.get('/render', authenticateAdmin, (req, res) => {
   try {
     let data = [...recentMetrics];
     if (data.length === 0) {
-      const sampleComponents = ['BlogPage', 'ChatPage', 'AdminDashboard', 'Header', 'Sidebar', 'MarketplacePage', 'BulletinBoardPage'];
+      const sampleComponents = ['BlogPage', 'ChatPage', 'AdminDashboard', 'Header', 'Sidebar', 'CommunityPage', 'BulletinBoardPage'];
       const now = Date.now();
       for (let i = 0; i < 30; i++) {
         const comp = sampleComponents[Math.floor(Math.random() * sampleComponents.length)];

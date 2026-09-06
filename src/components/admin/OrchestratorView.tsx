@@ -76,7 +76,10 @@ export const OrchestratorView = ({
 
   // Periodic ticker to smoothly update relative timestamps (e.g., "just now", "1m ago")
   useEffect(() => {
-    const timer = setInterval(() => setTick((prev) => prev + 1), 20000);
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      setTick((prev) => prev + 1);
+    }, 30000);
     return () => clearInterval(timer);
   }, []);
 

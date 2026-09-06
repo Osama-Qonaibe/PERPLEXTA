@@ -289,8 +289,16 @@ export const AdsManagementView: React.FC<{
   };
 
   const handleBulkReject = async () => {
-    const reason = window.prompt(`Reject ${selectedRequests.length} requests? Reason:`);
-    if (!reason) return;
+    const reason = await confirm({
+      title: isRtl ? 'رفض الطلبات المحددة' : 'Bulk Reject Requests',
+      description: isRtl ? `رفض ${selectedRequests.length} طلبات؟ يرجى كتابة سبب الرفض:` : `Reject ${selectedRequests.length} requests? Please enter rejection reason:`,
+      hasInput: true,
+      inputPlaceholder: isRtl ? 'سبب الرفض...' : 'Rejection reason...',
+      confirmLabel: isRtl ? 'تأكيد الرفض' : 'Confirm Bulk Reject',
+      variant: 'danger',
+      requiredInput: true,
+    });
+    if (!reason || typeof reason !== 'string') return;
     
     try {
       const res = await fetch('/api/admin/approval-queue/bulk-reject', {
@@ -1832,9 +1840,17 @@ export const AdsManagementView: React.FC<{
                                   {isRtl ? 'اعتماد' : 'APPROVE'}
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    const reason = window.prompt('Reason for rejection?');
-                                    if (reason) handleRejectApproval(req.id, reason);
+                                  onClick={async () => {
+                                    const reason = await confirm({
+                                      title: isRtl ? 'رفض الطلب' : 'Reject Request',
+                                      description: isRtl ? 'يرجى كتابة سبب الرفض:' : 'Reason for rejection:',
+                                      hasInput: true,
+                                      inputPlaceholder: isRtl ? 'سبب الرفض...' : 'Rejection reason...',
+                                      confirmLabel: isRtl ? 'تأكيد الرفض' : 'Reject',
+                                      variant: 'danger',
+                                      requiredInput: true,
+                                    });
+                                    if (reason && typeof reason === 'string') handleRejectApproval(req.id, reason);
                                   }}
                                   className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-theme"
                                 >

@@ -23,16 +23,11 @@ export async function ensureBulletinSeedData() {
     // Run one-off cleanup queries in background without delaying server startup
     setImmediate(async () => {
       try {
-        const extPool = getExternalPool();
-        if (extPool) {
-          extPool.query("UPDATE blog_articles SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'").catch(() => {});
-        }
         const cleanupQueries = [
           "ALTER TABLE bulletin_ad_likes ADD COLUMN IF NOT EXISTS reaction VARCHAR(20) DEFAULT 'like'",
           "ALTER TABLE bulletin_comment_likes ADD COLUMN IF NOT EXISTS reaction VARCHAR(20) DEFAULT 'like'",
           "UPDATE bulletin_ads SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
           "UPDATE bulletin_ads SET video_url = REPLACE(video_url, '/uploads/uploads/', '/uploads/') WHERE video_url LIKE '%/uploads/uploads/%'",
-          "UPDATE marketplace_items SET image_url = REPLACE(image_url, '/uploads/uploads/', '/uploads/') WHERE image_url LIKE '%/uploads/uploads/%'",
           "UPDATE users SET avatar = REPLACE(avatar, '/uploads/uploads/', '/uploads/') WHERE avatar LIKE '%/uploads/uploads/%'",
           "UPDATE bulletin_pages SET avatar_url = REPLACE(avatar_url, '/uploads/uploads/', '/uploads/') WHERE avatar_url LIKE '%/uploads/uploads/%'"
         ];

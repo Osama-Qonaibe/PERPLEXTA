@@ -3799,8 +3799,8 @@ router.post("/ads/sync-metadata", authenticateAdmin, async (req, res) => {
 router.post("/seo-content-audit/sync-item", authenticateAdmin, async (req, res) => {
   try {
     const { type, id } = req.body;
-    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
-      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    if (!type || !id || !['bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (bulletin) and numeric id are required' });
     }
     const result = await syncSingleContentSeoItem(type, parseInt(id, 10));
     res.json(result);
@@ -3813,8 +3813,8 @@ router.post("/seo-content-audit/sync-item", authenticateAdmin, async (req, res) 
 router.post("/seo-content-audit/suggest", authenticateAdmin, async (req, res) => {
   try {
     const { type, id } = req.body;
-    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
-      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    if (!type || !id || !['bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (bulletin) and numeric id are required' });
     }
     const suggestion = await getSmartSeoSuggestion(type, parseInt(id, 10));
     res.json(suggestion);
@@ -3827,8 +3827,8 @@ router.post("/seo-content-audit/suggest", authenticateAdmin, async (req, res) =>
 router.post("/seo-content-audit/apply", authenticateAdmin, async (req, res) => {
   try {
     const { type, id, meta_title_en, meta_title_ar, meta_description_en, meta_description_ar, keywords_en, keywords_ar, slug, og_image_url } = req.body;
-    if (!type || !id || !['blog', 'marketplace', 'bulletin'].includes(type)) {
-      return res.status(400).json({ error: 'Valid type (blog/marketplace/bulletin) and numeric id are required' });
+    if (!type || !id || !['bulletin'].includes(type)) {
+      return res.status(400).json({ error: 'Valid type (bulletin) and numeric id are required' });
     }
     const result = await applySmartSeoSuggestion(type, parseInt(id, 10), {
       meta_title_en,

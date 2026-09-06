@@ -7,14 +7,14 @@
    LAYER 1: BASE TOKENS (Raw scale values - never used directly in code)
    ========================================================================== */
 :root {
+  --scale-gray-7: #0f172a;
+  --scale-gray-6: #334155;
+  --scale-gray-5: #475569;
+  --scale-gray-4: #64748b;
+  --scale-gray-3: #cbd5e1;
+  --scale-gray-2: #e2e8f0;
+  --scale-gray-1: #f1f5f9;
   --scale-gray-0: #ffffff;
-  --scale-gray-1: #f6f8fa;
-  --scale-gray-2: #eaeef2;
-  --scale-gray-3: #d1d9e0;
-  --scale-gray-4: #99a1af;
-  --scale-gray-5: #6b7280;
-  --scale-gray-6: #454c53;
-  --scale-gray-7: #24292f;
   --scale-gray-8: #14171a;
 
   --scale-slate-accent: #334155;
@@ -33,8 +33,8 @@
   --font-sans: "Space Grotesk", "Tajawal", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  --theme-transition-duration: 180ms;
-  --theme-transition-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --theme-transition-duration: 0.3s;
+  --theme-transition-easing: ease;
   --ms-duration: var(--theme-transition-duration);
   --ms-easing: var(--theme-transition-easing);
 
@@ -52,10 +52,10 @@
   --size-md: 32px;
   --size-lg: 48px;
 
-  /* Elevation & Shadow Scale (Light Mode) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+  /* Elevation & Shadow Scale (Light Mode) - Flat & Lightweight */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.05);
 
   /* Z-Index Hierarchy */
   --z-dropdown: 100;
@@ -65,19 +65,19 @@
   /* ==========================================================================
      LAYER 2: FUNCTIONAL TOKENS (Light Mode)
      ========================================================================== */
-  /* Surface System Tokens (Light Mode) */
+  /* Surface System Tokens (Light Mode) - Soft, Flat & Weightless */
   --surface-page: #f8fafc;
-  --surface-card: #ffffff;
-  --surface-subtle: #f1f5f9;
-  --surface-inset: #e2e8f0;
+  --surface-card: transparent;
+  --surface-subtle: rgba(0, 0, 0, 0.02);
+  --surface-inset: rgba(0, 0, 0, 0.04);
 
   --bg-default: var(--surface-card);
   --bg-muted: var(--surface-subtle);
   --bg-inset: var(--surface-inset);
-  --bg-overlay: var(--scale-gray-2);
+  --bg-overlay: #f8fafc;
 
-  --border-default: var(--scale-gray-3);
-  --border-muted: color-mix(in srgb, var(--scale-gray-3) 70%, transparent);
+  --border-default: rgba(0, 0, 0, 0.07);
+  --border-muted: rgba(0, 0, 0, 0.04);
 
   --fg-default: var(--scale-gray-7);
   --fg-muted: var(--scale-gray-5);
@@ -155,29 +155,29 @@
    ========================================================================== */
 .dark,
 [data-theme="dark"] {
-  /* Surface System Tokens (Dark Mode) */
-  --surface-page: #0b0b0d;
-  --surface-card: #151517;
-  --surface-subtle: #1c1c1f;
-  --surface-inset: #232326;
+  /* Surface System Tokens (Dark Mode) - Soft, Weightless & Flat */
+  --surface-page: #0b0c0e;
+  --surface-card: transparent;
+  --surface-subtle: rgba(255, 255, 255, 0.02);
+  --surface-inset: rgba(255, 255, 255, 0.04);
 
   --bg-default: var(--surface-card);
   --bg-muted: var(--surface-subtle);
   --bg-inset: var(--surface-inset);
-  --bg-overlay: #232328;
+  --bg-overlay: rgba(11, 12, 14, 0.85);
 
-  --border-default: #3d444d;
-  --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-muted: rgba(255, 255, 255, 0.03);
 
-  --fg-default: #f0f6fc;
-  --fg-muted: #a8b0ba;
-  --fg-disabled: #768390;
+  --fg-default: #e2e8f0;
+  --fg-muted: #94a3b8;
+  --fg-disabled: #64748b;
   --fg-on-emphasis: #ffffff;
 
-  /* Elevation & Shadow Scale (Dark Mode) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.65);
+  /* Elevation & Shadow Scale (Dark Mode) - Flat & Lightweight */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.25);
 
   --fg-accent: #94a3b8;
   --bg-accent-emphasis: #64748b;
@@ -229,23 +229,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.light) {
-    /* Surface System Tokens (Dark Mode) */
-    --surface-page: #0b0b0d;
-    --surface-card: #151517;
-    --surface-subtle: #1c1c1f;
-    --surface-inset: #232326;
+    /* Surface System Tokens (Dark Mode) - Soft, Weightless & Flat */
+    --surface-page: #0b0c0e;
+    --surface-card: transparent;
+    --surface-subtle: rgba(255, 255, 255, 0.02);
+    --surface-inset: rgba(255, 255, 255, 0.04);
 
     --bg-default: var(--surface-card);
     --bg-muted: var(--surface-subtle);
     --bg-inset: var(--surface-inset);
-    --bg-overlay: #232328;
+    --bg-overlay: rgba(11, 12, 14, 0.85);
 
-    --border-default: #3d444d;
-    --border-muted: color-mix(in srgb, #3d444d 70%, transparent);
+    --border-default: rgba(255, 255, 255, 0.06);
+    --border-muted: rgba(255, 255, 255, 0.03);
 
-    --fg-default: #f0f6fc;
-    --fg-muted: #a8b0ba;
-    --fg-disabled: #768390;
+    --fg-default: #e2e8f0;
+    --fg-muted: #94a3b8;
+    --fg-disabled: #64748b;
     --fg-on-emphasis: #ffffff;
 
     /* Elevation & Shadow Scale (Dark Mode) */
@@ -352,8 +352,9 @@
 }
 
 @layer utilities {
-  .dark .bg-accent { color: #ffffff !important; }
-  .dark .bg-accent.text-white { color: #ffffff !important; }
+  .bg-accent { color: #ffffff !important; }
+  .bg-accent.text-white { color: #ffffff !important; }
+  .bg-accent.text-black { color: #ffffff !important; }
 }
 
 .transition-theme,
@@ -406,13 +407,13 @@ main,
   }
 }
 
-/* 2. Micro-Interactions: Gentle Fade-In (Duration <= 200ms), No Zooming/Jumping on Hover */
+/* 2. Micro-Interactions: Smooth Transitions across Colors, Backgrounds, and Borders (0.3s ease) */
 *,
 *::before,
 *::after {
   transition-property: color, background-color, border-color, opacity, shadow;
-  transition-duration: 180ms !important;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-duration: 0.3s !important;
+  transition-timing-function: ease !important;
 }
 
 /* Prevent zoom or jumping effects on hover across elements */
@@ -546,6 +547,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.25) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -556,12 +563,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(120, 120, 120, 0.2);
-  border-radius: 10px;
+  background: rgba(120, 120, 120, 0.25);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 120, 120, 0.4);
+  background: rgba(120, 120, 120, 0.45);
 }
 
 .scrollbar-none {
@@ -828,15 +835,23 @@ button, a {
 }
 
 /* ==========================================================================
-   PERPLEXTA ANTI-JITTER & LAYOUT STABILIZATION PROTOCOL
+   PERPLEXTA ANTI-JITTER & LAYOUT STABILIZATION PROTOCOL (STATE LOCKED)
    ========================================================================== */
 *, ::before, ::after {
   backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   overflow-anchor: none;
+  min-height: 100dvh;
 }
 
 .no-jitter, .gpu-stabilized {
@@ -846,12 +861,350 @@ body {
   perspective: 1000px;
 }
 
+/* ==========================================================================
+   FLOATING TOAST NOTIFICATION SYSTEM (UNIFIED STYLES & PLACEMENT)
+   ========================================================================== */
+
+/* 1. Global Floating Toast Containers */
+.toast-container-floating {
+  position: fixed;
+  top: 0.875rem;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.375rem;
+  max-width: 100%;
+  pointer-events: none;
+  contain: layout style;
+}
+
+.toast-container-floating.top-start {
+  inset-inline-start: 0.75rem;
+}
+
+.toast-container-floating.top-end {
+  inset-inline-end: 0.75rem;
+}
+
+/* 2. Unified Base Floating Toast Element */
+.toast-floating {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background-color: var(--surface-card);
+  background-color: color-mix(in srgb, var(--surface-card) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-main);
+  color: var(--text-primary);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  user-select: none;
+  contain: layout style paint;
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-easing),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .toast-floating {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 8px 12px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* 3. Toast Layout Variants */
+
+/* Card Variant (standard system notifications) */
+.toast-card-variant {
+  width: 100%;
+  max-width: 22.5rem;
+  border-radius: var(--radius-lg);
+  padding: 0.875rem;
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+/* Pill / Floating Bar Variant (compact notifications like ServiceUpdateToast) */
+.toast-pill-variant {
+  width: auto;
+  max-width: min(95vw, 28rem);
+  border-radius: var(--radius-full);
+  padding: 0.25rem 0.375rem 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+html[dir="rtl"] .toast-pill-variant {
+  padding: 0.25rem 0.75rem 0.25rem 0.375rem;
+}
+
+/* Service Update Toast Specific Placement & Styling Modifier */
+.toast-update {
+  position: fixed;
+  top: 0.875rem;
+  z-index: 10100;
+}
+
+html[dir="rtl"] .toast-update {
+  left: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  html[dir="rtl"] .toast-update {
+    left: 1.25rem;
+  }
+}
+
+html[dir="ltr"] .toast-update {
+  right: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  html[dir="ltr"] .toast-update {
+    right: 1.25rem;
+  }
+}
+
+/* 4. Sub-Elements & Typography */
+
+.toast-live-dot {
+  position: relative;
+  display: flex;
+  height: 0.375rem;
+  width: 0.375rem;
+  flex-shrink: 0;
+}
+
+.toast-live-dot-ping {
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  position: absolute;
+  display: inline-flex;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-accent-emphasis);
+  opacity: 0.75;
+}
+
+.toast-live-dot-core {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--radius-full);
+  height: 0.375rem;
+  width: 0.375rem;
+  background-color: var(--bg-accent-emphasis);
+}
+
+.toast-divider {
+  width: 1px;
+  height: 0.875rem;
+  background-color: var(--border-main);
+  flex-shrink: 0;
+}
+
+.toast-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-accent-emphasis);
+  color: var(--fg-on-emphasis);
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  border: none;
+}
+
+.toast-action-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-0.5px);
+}
+
+.toast-action-btn:active {
+  transform: scale(0.95);
+}
+
+.toast-action-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toast-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.toast-dismiss-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--surface-subtle);
+}
+
+.toast-side-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+html[dir="rtl"] .toast-side-bar {
+  right: 0;
+}
+
+html[dir="ltr"] .toast-side-bar {
+  left: 0;
+}
+
+.toast-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: color-mix(in srgb, var(--border-main) 30%, transparent);
+  overflow: hidden;
+}
+
+.toast-progress-fill {
+  height: 100%;
+  transition: width 0.075s linear;
+}
+
+/* ==========================================================================
+   MOBILE NAVIGATION FOOTER (HEADER-TO-FOOTER SYMMETRY & GEOMETRY ALIGNMENT)
+   ========================================================================== */
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  left: 0.75rem;
+  right: 0.75rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 40;
+  background-color: color-mix(in srgb, var(--bg-base) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-main);
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+  user-select: none;
+  contain: layout style paint;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-easing),
+              border-color var(--theme-transition-duration) var(--theme-transition-easing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-easing);
+}
+
+@media (min-width: 640px) {
+  .mobile-bottom-nav {
+    left: 1rem;
+    right: 1rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+}
+
+.dark .mobile-bottom-nav {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  min-width: 2rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  border-radius: var(--radius-md);
+  gap: 0.125rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.94);
+}
+
+.mobile-nav-item.active {
+  color: var(--fg-accent-emphasis, var(--text-primary));
+}
+
+.mobile-nav-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mobile-nav-label {
+  font-size: 0.53125rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.mobile-nav-center-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-accent-emphasis);
+  color: var(--fg-on-emphasis);
+  border: 1px solid color-mix(in srgb, var(--fg-on-emphasis) 20%, transparent);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.mobile-nav-center-action:active {
+  transform: scale(0.92);
+}
+
 /* Suppress jitter during state transitions and route updates */
 .stabilized-transition {
   transition: opacity var(--theme-transition-duration) var(--theme-transition-easing),
               background-color var(--theme-transition-duration) var(--theme-transition-easing),
               border-color var(--theme-transition-duration) var(--theme-transition-easing);
   contain: layout style paint;
+}
+
+/* Rigid layout state lock container */
+.layout-state-locked {
+  contain: layout style;
+  transform: translateZ(0);
 }
 
 /* ==========================================================================
@@ -868,5 +1221,93 @@ html:not(.lang-transitioning) body {
   opacity: 1;
   filter: blur(0px);
   transition: opacity 0.28s cubic-bezier(0.25, 1, 0.5, 1), filter 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ==========================================================================
+   MOBILE TYPOGRAPHY & RESPONSIVE UI OPTIMIZATION (MOBILE-FIRST PRECISION)
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* 1. Responsive Font Scaling via CSS Media Queries for Mobile Screens */
+  h1, .text-5xl, .text-4xl, .text-3xl {
+    font-size: clamp(1.25rem, 5vw, 1.5rem) !important;
+    line-height: 1.28 !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  h2, .text-2xl {
+    font-size: clamp(1.1rem, 4vw, 1.25rem) !important;
+    line-height: 1.32 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  h3, .text-xl {
+    font-size: clamp(0.98rem, 3.5vw, 1.1rem) !important;
+    line-height: 1.36 !important;
+  }
+
+  h4, .text-lg {
+    font-size: clamp(0.9rem, 3vw, 1rem) !important;
+    line-height: 1.4 !important;
+  }
+
+  .text-base {
+    font-size: 0.875rem !important;
+    line-height: 1.42 !important;
+  }
+
+  .text-sm {
+    font-size: 0.8125rem !important;
+    line-height: 1.38 !important;
+  }
+
+  .text-xs {
+    font-size: 0.725rem !important;
+    line-height: 1.35 !important;
+  }
+
+  /* 2. Responsive Mobile Container Padding & Margins Optimization */
+  .mobile-tight-padding,
+  main,
+  section,
+  .main-viewport-scroll {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Mobile Modals & Floating Cards */
+  [role="dialog"],
+  .modal-box,
+  .mobile-card-padding {
+    padding: 0.875rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Compact Input & Touch Target Alignment */
+  input[type="text"],
+  input[type="email"],
+  input[type="search"],
+  textarea {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Prevent awkward whitespace and line wraps on mobile chips & tags */
+  .mobile-nowrap,
+  .chip,
+  .badge,
+  .pill {
+    white-space: nowrap !important;
+    font-size: 0.75rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}
+
+#add-reel-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 

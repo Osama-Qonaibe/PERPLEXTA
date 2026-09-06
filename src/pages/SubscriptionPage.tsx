@@ -75,7 +75,7 @@ export const SubscriptionPage: React.FC = () => {
 
       verifyAndRefresh();
     } else if (params.get('canceled') === 'true') {
-      alert(dir === 'rtl' ? 'تم إلغاء عملية الدفع.' : 'Payment was canceled.');
+      toast.info(dir === 'rtl' ? 'تم إلغاء عملية الدفع.' : 'Payment was canceled.');
       navigate('/subscription', { replace: true });
     }
   }, [refreshUser, navigate, dir, token, plans, user]);
@@ -193,7 +193,7 @@ export const SubscriptionPage: React.FC = () => {
         await refreshUser();
         setResultModal('success');
       } else {
-        alert(res.error || 'Activation failed');
+        toast.error(res.error || 'Activation failed');
       }
       setLoading(null);
       return;
@@ -202,7 +202,7 @@ export const SubscriptionPage: React.FC = () => {
     setSelectedPlanForModal(plan);
     setLoading(`${planId}-stripe`);
     const res = await stripeCheckout(planId, billingCycle);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     setLoading(null);
   };
 
@@ -240,7 +240,7 @@ export const SubscriptionPage: React.FC = () => {
         console.error('[Analytics Error]:', e);
       }
     } else {
-      alert(res.error || 'Error');
+      toast.error(res.error || 'Error');
     }
     setLoading(null);
   };
@@ -519,7 +519,6 @@ export const SubscriptionPage: React.FC = () => {
                                 sovereign_search: <Search size={12} className="md:w-3.5 md:h-3.5" />,
                                 x402_api: <Key size={12} className="md:w-3.5 md:h-3.5" />,
                                 storage_mb: <Cloud size={12} className="md:w-3.5 md:h-3.5" />,
-                                marketplace_listings: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
                               };
                               return ALL_TOOLS.map((toolId) => {
                                 const limitVal = (plan.limits && plan.limits[toolId] !== undefined)

@@ -2,12 +2,12 @@ import { pool } from '../db/index.js';
 
 /**
  * Service utility to automatically log and verify all metadata updates and ownership transfers
- * for marketplace items and bulletin pages/ads within the user_activity_logs table.
+ * for bulletin pages/ads within the user_activity_logs table.
  */
 export async function logOwnershipAudit(
   userId: number | null,
   actionType: string,
-  targetType: 'bulletin_page' | 'marketplace_item' | 'bulletin_ad',
+  targetType: 'bulletin_page' | 'bulletin_ad',
   recordId: number,
   previousOwnerId: number | null,
   newOwnerId: number | null,

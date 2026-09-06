@@ -231,7 +231,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
             setDepositSuccessAmount(null);
             setRedirectCountdown(null);
             setActiveTab('transactions');
-            navigate('/settings?tab=wallet');
+            navigate('/settings/wallet');
             return null;
           }
           return prev - 1;

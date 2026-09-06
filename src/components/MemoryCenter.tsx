@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BrainCircuit, Plus, Trash2, Edit2, Save, X, Loader2, Info, User, AlertTriangle, Sparkles, MessageSquare, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { toast } from '../context/NotificationContext';
 import { ActionConfirmationModal } from './ActionConfirmationModal';
 
 interface Memory {
@@ -76,7 +77,7 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   const handleSaveNew = async () => {
     if (!newValue.trim()) return;
     if (isLimitReached) {
-      alert(t('memoryLimitReached'));
+      toast.error(t('memoryLimitReached'));
       return;
     }
     await onAdd(newValue, newCategory);

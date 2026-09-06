@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Info, ShieldAlert } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export interface ActionConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void> | void;
+  onConfirm: (inputValue?: string) => Promise<void> | void;
   title: string | { ar: string; en: string };
-  description: string | { ar: string; en: string };
+  description?: string | { ar: string; en: string };
   variant?: 'danger' | 'success' | 'warning' | 'info' | 'purple';
   confirmLabel?: string | { ar: string; en: string };
   cancelLabel?: string | { ar: string; en: string };
+  hasInput?: boolean;
+  inputPlaceholder?: string | { ar: string; en: string };
+  defaultValue?: string;
+  inputType?: string;
+  requiredInput?: boolean;
   extraContent?: React.ReactNode;
 }
 
@@ -24,10 +29,22 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
   variant = 'danger',
   confirmLabel,
   cancelLabel,
+  hasInput,
+  inputPlaceholder,
+  defaultValue = '',
+  inputType = 'text',
+  requiredInput = false,
   extraContent,
 }) => {
   const { theme, dir } = useAppContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inputValue, setInputValue] = useState(defaultValue);
+
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue(defaultValue);
+    }
+  }, [isOpen, defaultValue]);
 
   const getLocalizedValue = (val: string | { ar: string; en: string } | undefined, defaultVal: string): string => {
     if (!val) return defaultVal;
@@ -37,10 +54,11 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
 
   const currentTitle = getLocalizedValue(title, dir === 'rtl' ? 'هل أنت متأكد؟' : 'Are you sure?');
   const currentDescription = getLocalizedValue(description, '');
+  const currentPlaceholder = getLocalizedValue(inputPlaceholder, dir === 'rtl' ? 'اكتب هنا...' : 'Enter text here...');
   
   const defaultConfirmText = {
     danger: { ar: 'تأكيد الحذف', en: 'Confirm Delete' },
-    success: { ar: 'تأكيد الإجراء', en: 'Confirm Action' },
+    success: { ar: 'تأكيد الحفظ', en: 'Save & Confirm' },
     warning: { ar: 'تأكيد ومتابعة', en: 'Proceed' },
     info: { ar: 'فهمت ومتابعة', en: 'Acknowledge' },
     purple: { ar: 'تطهير السجلات', en: 'Prune Records' },
@@ -50,104 +68,126 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
   const currentCancelLabel = getLocalizedValue(cancelLabel, dir === 'rtl' ? 'إلغاء' : 'Cancel');
 
   const handleConfirm = async () => {
+    if (requiredInput && !inputValue.trim()) return;
     setIsSubmitting(true);
     try {
-      await onConfirm();
+      await onConfirm(hasInput ? inputValue : undefined);
     } catch (err) {
       console.error('[ActionConfirmationModal] confirmation failed:', err);
     } finally {
       setIsSubmitting(false);
-      onClose(); // Auto close on completion
+      onClose();
     }
   };
 
   const colorConfigs = {
     danger: {
-      accent: 'text-[var(--fg-danger)]',
-      icon: <AlertTriangle size={20} className="text-[var(--fg-danger)] shrink-0" />,
-      btnClass: 'bg-[var(--bg-danger-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
+      accent: 'text-red-500',
+      icon: <ShieldAlert size={22} className="text-red-500 shrink-0" />,
+      btnClass: 'bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold border border-red-500/20 shadow-lg shadow-red-900/20',
     },
     success: {
-      accent: 'text-[var(--fg-success)]',
-      icon: <CheckCircle size={20} className="text-[var(--fg-success)] shrink-0" />,
-      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
+      accent: 'text-emerald-400',
+      icon: <CheckCircle size={22} className="text-emerald-400 shrink-0" />,
+      btnClass: 'bg-white hover:bg-gray-100 active:scale-95 text-gray-900 font-bold shadow-md',
     },
     warning: {
-      accent: 'text-[var(--fg-attention)]',
-      icon: <AlertTriangle size={20} className="text-[var(--fg-attention)] shrink-0" />,
-      btnClass: 'bg-[var(--bg-attention-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
+      accent: 'text-amber-400',
+      icon: <AlertTriangle size={22} className="text-amber-400 shrink-0" />,
+      btnClass: 'bg-white hover:bg-gray-100 active:scale-95 text-gray-900 font-bold shadow-md',
     },
     info: {
-      accent: 'text-[var(--fg-info)]',
-      icon: <Info size={20} className="text-[var(--fg-info)] shrink-0" />,
-      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
+      accent: 'text-sky-400',
+      icon: <Info size={22} className="text-sky-400 shrink-0" />,
+      btnClass: 'bg-white hover:bg-gray-100 active:scale-95 text-gray-900 font-bold shadow-md',
     },
     purple: {
-      accent: 'text-[var(--text-primary)]',
-      icon: <AlertTriangle size={20} className="text-[var(--text-primary)] shrink-0" />,
-      btnClass: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90',
+      accent: 'text-purple-400',
+      icon: <AlertTriangle size={22} className="text-purple-400 shrink-0" />,
+      btnClass: 'bg-white hover:bg-gray-100 active:scale-95 text-gray-900 font-bold shadow-md',
     },
   }[variant];
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={isSubmitting ? undefined : onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/75 backdrop-blur-md transition-all"
           />
 
           {/* Modal Content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            initial={{ opacity: 0, scale: 0.94, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className="relative max-w-sm w-full p-6 rounded-xl border border-[var(--border-main)] bg-[var(--surface-card)] text-[var(--text-primary)] shadow-2xl transition-theme z-10"
+            exit={{ opacity: 0, scale: 0.94, y: 15 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="relative max-w-md w-full p-6 sm:p-7 rounded-2xl border border-white/10 bg-[#18181b] text-white shadow-2xl transition-theme z-10 font-sans"
+            style={{ direction: dir }}
           >
             {/* Header / Title */}
-            <h3 className={`text-base font-bold tracking-tight font-sans text-start flex items-center gap-2 ${colorConfigs.accent}`}>
+            <h3 className={`text-lg sm:text-xl font-bold tracking-tight text-start flex items-center gap-2.5 mb-2 ${colorConfigs.accent}`}>
               {colorConfigs.icon}
-              <span>{currentTitle}</span>
+              <span className="text-white">{currentTitle}</span>
             </h3>
 
             {/* Description */}
             {currentDescription && (
-              <p className="text-xs mt-2.5 font-sans leading-relaxed text-start text-[var(--text-secondary)]">
+              <p className="text-sm font-sans leading-relaxed text-start text-gray-300 mb-3">
                 {currentDescription}
               </p>
             )}
 
+            {/* Optional Input prompt */}
+            {hasInput && (
+              <div className="mt-3 mb-2">
+                <input
+                  type={inputType}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (!requiredInput || inputValue.trim())) {
+                      handleConfirm();
+                    }
+                  }}
+                  placeholder={currentPlaceholder}
+                  autoFocus
+                  className="w-full bg-[#27272a] border border-gray-700/80 focus:border-white/50 focus:ring-2 focus:ring-white/10 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm transition-all outline-none font-sans"
+                />
+              </div>
+            )}
+
             {/* Optional extra content slot */}
             {extraContent && (
-              <div className="mt-4">
+              <div className="mt-3">
                 {extraContent}
               </div>
             )}
 
             {/* Action buttons */}
-            <div className={`flex justify-end gap-2.5 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+            <div className={`flex items-center justify-end gap-3 mt-6 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme disabled:opacity-50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-[var(--border-main)]"
+                className="px-4.5 py-2.5 text-sm font-semibold rounded-xl text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all font-sans disabled:opacity-50"
               >
                 {currentCancelLabel}
               </button>
 
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (requiredInput && !inputValue.trim())}
                 onClick={handleConfirm}
-                className={`px-4 py-2 text-xs font-bold rounded-[4px] font-sans flex items-center justify-center gap-1.5 transition-theme disabled:opacity-80 min-w-[100px] ${colorConfigs.btnClass}`}
+                className={`px-5 py-2.5 text-sm font-bold rounded-xl font-sans flex items-center justify-center gap-2 transition-all disabled:opacity-50 min-w-[95px] ${colorConfigs.btnClass}`}
               >
                 {isSubmitting ? (
-                  <Loader2 size={13} className="animate-spin" />
+                  <Loader2 size={16} className="animate-spin" />
                 ) : null}
                 <span>{currentConfirmLabel}</span>
               </button>
@@ -158,3 +198,4 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
     </AnimatePresence>
   );
 };
+
