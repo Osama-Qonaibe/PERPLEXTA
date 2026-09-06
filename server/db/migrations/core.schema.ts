@@ -21,7 +21,8 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         marketplace_item_id INTEGER,
         metadata JSONB DEFAULT '{}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        file_data BYTEA
       )`
   },
   {
@@ -416,7 +417,8 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
         metadata JSONB DEFAULT '{}',
         file_version INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        file_data BYTEA
       )`
   },
   {
@@ -1134,7 +1136,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     token_count: { type: 'INTEGER', default: 0 },
     category: { type: 'VARCHAR(50)', default: "'document'" },
     tags: { type: 'TEXT[]', default: "'{}'" },
-    uploaded_by_role: { type: 'VARCHAR(50)', default: "'user'" }
+    uploaded_by_role: { type: 'VARCHAR(50)', default: "'user'" },
+    file_data: { type: 'BYTEA' }
   });
 
   await ensureColumnsBulk(targetPool, 'system_settings', {
@@ -1333,7 +1336,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
     user_id: { type: 'INTEGER' },
     blog_article_id: { type: 'INTEGER' },
     marketplace_item_id: { type: 'INTEGER' },
-    metadata: { type: 'JSONB', default: "'{}'" }
+    metadata: { type: 'JSONB', default: "'{}'" },
+    file_data: { type: 'BYTEA' }
   });
 
   await ensureColumnsBulk(targetPool, 'advertisements', {

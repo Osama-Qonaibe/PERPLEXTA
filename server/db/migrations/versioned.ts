@@ -1879,6 +1879,16 @@ export async function runVersionedMigrations(
         }
       }
     });
+
+    await runVersioned('v84_add_file_data_columns_to_user_files_and_media_assets', 'Ensure file_data BYTEA columns exist in user_files and media_assets for binary file DB fallback storage', async (tx) => {
+      await tx.query(`
+        ALTER TABLE user_files ADD COLUMN IF NOT EXISTS file_data BYTEA;
+      `);
+      await tx.query(`
+        ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS file_data BYTEA;
+      `);
+      console.log('[Migrations] Successfully ensured file_data BYTEA columns in user_files and media_assets.');
+    });
     
   console.log("[Migrations] All versioned migrations completed successfully.");
 }

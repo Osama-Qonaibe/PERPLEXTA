@@ -870,13 +870,13 @@ app.use('/uploads', async (req: express.Request, res: express.Response, next: ex
         try {
           if (pool) {
             let dbRes = await pool.query(
-              'SELECT file_data FROM user_files WHERE file_url = $1 AND file_data IS NOT NULL LIMIT 1',
-              [filename]
+              'SELECT file_data FROM user_files WHERE (file_url LIKE $1 OR file_name = $2) AND file_data IS NOT NULL LIMIT 1',
+              [`%${filename}%`, filename]
             );
             if (dbRes.rows.length === 0) {
               dbRes = await pool.query(
-                'SELECT file_data FROM media_assets WHERE original_filename = $1 AND file_data IS NOT NULL LIMIT 1',
-                [filename]
+                'SELECT file_data FROM media_assets WHERE (stored_path LIKE $1 OR original_filename = $2) AND file_data IS NOT NULL LIMIT 1',
+                [`%${filename}%`, filename]
               );
             }
             if (dbRes.rows.length > 0 && dbRes.rows[0].file_data) {
