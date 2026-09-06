@@ -864,7 +864,6 @@ app.use('/uploads', async (req: express.Request, res: express.Response, next: ex
       }
 
       if (!foundFile) {
-        console.warn(`[Uploads] File not found on disk: ${filename}. Checking database fallback...`);
         try {
           if (pool) {
             let dbRes = await pool.query(
