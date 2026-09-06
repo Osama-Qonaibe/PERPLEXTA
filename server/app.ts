@@ -803,13 +803,22 @@ app.use('/uploads', express.static(uploadsPath, {
   }
 }));
 
-// Express 4 and Express 5 compatible route (path-to-regexp v8+ disallows bare wildcard '*')
-app.get(['/uploads/:filename', '/uploads/:filename(.*)'], async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// Safe universal middleware handler for /uploads (avoids any path-to-regexp regex parsing errors across Express 4/5)
+app.use('/uploads', async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Only handle GET and HEAD requests for file delivery
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return next();
+  }
+
   try {
-    const rawFilename = (req.params.filename || req.params[0] || (req.params as any).path || '').toString();
-    const cleanRaw = rawFilename.replace(/^(\/)?(uploads\/)+/i, '');
+    const rawFilename = (req.path || '').toString();
+    const cleanRaw = rawFilename.replace(/^(\/)?(uploads\/)+/i, '').replace(/^\/+/, '');
     const cleanPathOnly = cleanRaw.split('?')[0];
     const filename = path.basename(cleanPathOnly);
+
+    if (!filename) {
+      return next();
+    }
     
     // Check primary uploads directory, then nested, then public/uploads
     let candidatePaths = [
