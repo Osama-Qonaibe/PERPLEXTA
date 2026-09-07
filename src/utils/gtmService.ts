@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import { applyNonce } from './csp';
 
 const CONSENT_KEY = 'perplexta_cookie_consent_granted';
@@ -8,7 +9,7 @@ const CONSENT_KEY = 'perplexta_cookie_consent_granted';
 export const getCookieConsent = (): boolean => {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(CONSENT_KEY) === 'true';
+    return secureStorage.getSync(CONSENT_KEY) === 'true';
   } catch (e) {
     return false;
   }
@@ -20,7 +21,7 @@ export const getCookieConsent = (): boolean => {
 export const setCookieConsent = (granted: boolean): void => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(CONSENT_KEY, granted ? 'true' : 'false');
+    secureStorage.set(CONSENT_KEY, granted ? 'true' : 'false');
   } catch (e) {}
   window.dispatchEvent(new CustomEvent('cookie-consent-changed', { detail: { granted } }));
 };
@@ -31,7 +32,7 @@ export const setCookieConsent = (granted: boolean): void => {
 export const isCookieConsentSet = (): boolean => {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(CONSENT_KEY) !== null;
+    return secureStorage.getSync(CONSENT_KEY) !== null;
   } catch (e) {
     return false;
   }

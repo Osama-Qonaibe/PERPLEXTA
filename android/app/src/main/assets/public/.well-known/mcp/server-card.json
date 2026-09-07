@@ -1,0 +1,27 @@
+{
+  "serverInfo": {
+    "name": "Perplexta Platform MCP Server",
+    "version": "1.0.0"
+  },
+  "transport": {
+    "type": "sse",
+    "endpoint": "https://perplexta.com/api/mcp/sse",
+    "url": "https://perplexta.com/api/mcp/sse"
+  },
+  "capabilities": {
+    "resources": {
+      "subscribe": true,
+      "listChanged": true
+    },
+    "prompts": {
+      "listChanged": true
+    },
+    "tools": {
+      "listChanged": true
+    }
+  },
+  "supportedProtocolVersions": [
+    "2024-11-05"
+  ],
+  "instructions": "The Perplexta Platform MCP server allows AI agents to interface with the professional elite technical analysis suites, query core and ledger databases, run semantic document searches, and invoke secure tools."
+}

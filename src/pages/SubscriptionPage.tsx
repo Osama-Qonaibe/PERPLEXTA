@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, ChevronDown, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key } from 'lucide-react';
+import { CheckCircle2, MessageSquare, LayoutGrid, ChevronRight, ChevronLeft, ChevronDown, Wallet, AlertCircle, X, Loader2, Copy, Share2, Search, Sparkles, Code2, Cloud, Cpu, Scale, FileText, Tv, Mic, Volume2, GraduationCap, Server, Key, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { ContentContainer } from '../components/ContentContainer';
@@ -515,6 +515,7 @@ export const SubscriptionPage: React.FC = () => {
                                 learning: <GraduationCap size={12} className="md:w-3.5 md:h-3.5" />,
                                 code: <Code2 size={12} className="md:w-3.5 md:h-3.5" />,
                                 canvas: <LayoutGrid size={12} className="md:w-3.5 md:h-3.5" />,
+                                perplexta_music: <Music size={12} className="md:w-3.5 md:h-3.5" />,
                                 sovereign_memory: <Server size={12} className="md:w-3.5 md:h-3.5" />,
                                 sovereign_search: <Search size={12} className="md:w-3.5 md:h-3.5" />,
                                 x402_api: <Key size={12} className="md:w-3.5 md:h-3.5" />,

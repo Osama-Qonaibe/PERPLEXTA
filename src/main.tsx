@@ -49,6 +49,9 @@ window.addEventListener('load', () => {
 // Initialize version auto-checker to prevent stale asset cache issues
 VersionManager.initAutoCheck();
 
+// Initialize Native Push Notifications
+// initPushNotifications();
+
 // Register Service Worker for app shell precaching and offline support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

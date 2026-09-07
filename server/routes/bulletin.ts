@@ -18,6 +18,18 @@ export async function ensureBulletinSeedData() {
   console.log('[Bulletin] Ensuring bulletin tables and columns schema state...');
   try {
     isBulletinTablesEnsured = true;
+
+    // Ensure bulletin_hashtags table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bulletin_hashtags (
+        id SERIAL PRIMARY KEY,
+        tag VARCHAR(100) UNIQUE NOT NULL,
+        use_count INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('[Bulletin] Schema integrity verified successfully (Clean state without default mock items).');
 
     // Run one-off cleanup queries in background without delaying server startup
@@ -49,6 +61,86 @@ const PRICING_TIERS: Record<number, number> = {
   15: 10.00,
   30: 18.00
 };
+
+async function saveHashtagsToDatabase(tagsStr: string) {
+  if (!tagsStr || typeof tagsStr !== 'string') return;
+  const tags = tagsStr.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  for (const tag of tags) {
+    try {
+      await pool.query(`
+        INSERT INTO bulletin_hashtags (tag, use_count, updated_at)
+        VALUES ($1, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT (tag) DO UPDATE 
+        SET use_count = bulletin_hashtags.use_count + 1, updated_at = CURRENT_TIMESTAMP
+      `, [tag]);
+    } catch (e) {
+      console.error('[Bulletin Hashtags] Error saving tag:', tag, e);
+    }
+  }
+}
+
+/**
+ * GET /api/bulletin/hashtags/trending
+ * Fetch trending hashtags
+ */
+router.get('/hashtags/trending', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT tag, use_count FROM bulletin_hashtags ORDER BY use_count DESC, updated_at DESC LIMIT 15');
+    if (r.rows.length > 0) {
+      return res.json({ success: true, tags: r.rows.map((row: any) => row.tag) });
+    }
+    const defaultTags = ['ببربليكستا', 'القدس', 'فلسطين', 'تجارة_إلكترونية', 'أعمال', 'تسويق', 'ترفيه', 'تكنولوجيا', 'صحة', 'رياضة'];
+    return res.json({ success: true, tags: defaultTags });
+  } catch (error: any) {
+    console.error('[Hashtags Trending] Fetch failed:', error);
+    const defaultTags = ['ببربليكستا', 'القدس', 'فلسطين', 'تجارة_إلكترونية', 'أعمال', 'تسويق', 'ترفيه', 'تكنولوجيا', 'صحة', 'رياضة'];
+    return res.json({ success: true, tags: defaultTags });
+  }
+});
+
+/**
+ * GET /api/bulletin/mentions/suggest
+ * Suggest users or sharing options for @ mentions
+ */
+router.get('/mentions/suggest', authenticateToken, async (req: any, res) => {
+  try {
+    const query = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
+    const baseMentions = [
+      { id: 'everyone', name: 'الجميع', username: 'الجميع', type: 'broadcast', labelAr: 'الجميع (📢 @الجميع)', labelEn: 'Everyone (📢 @everyone)' },
+      { id: 'followers', name: 'المتابعين', username: 'المتابعين', type: 'broadcast', labelAr: 'المتابعين (👥 @المتابعين)', labelEn: 'Followers (👥 @followers)' }
+    ];
+
+    let dbMatches: any[] = [];
+    if (pool) {
+      if (query) {
+        const usersRes = await pool.query(
+          'SELECT id, name, email as username FROM users WHERE name ILIKE $1 OR email ILIKE $1 LIMIT 5',
+          [`%${query}%`]
+        );
+        dbMatches = usersRes.rows.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          username: u.username ? u.username.split('@')[0] : u.name,
+          type: 'user'
+        }));
+      } else {
+        const usersRes = await pool.query('SELECT id, name, email as username FROM users LIMIT 3');
+        dbMatches = usersRes.rows.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          username: u.username ? u.username.split('@')[0] : u.name,
+          type: 'user'
+        }));
+      }
+    }
+
+    const results = [...baseMentions, ...dbMatches];
+    return res.json({ success: true, results });
+  } catch (error: any) {
+    console.error('[Mentions Suggest] Fetch failed:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 
 /**
@@ -600,6 +692,13 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       createdAd.media_gallery = normGallery;
     }
 
+    // Save hashtags to database
+    try {
+      await saveHashtagsToDatabase(parsedHashtags);
+    } catch (tagErr) {
+      console.error('[Bulletin API] Error saving hashtags to DB:', tagErr);
+    }
+
     try {
       // 1. Author Confirmation Notification
       await createNotification(
@@ -651,9 +750,8 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
       if (hasEveryoneMention) {
         try {
           const activeUsersRes = await pool.query(
-            'SELECT id FROM users WHERE id != $1 ORDER BY updated_at DESC NULLS LAST LIMIT 100',
-            [userId]
           );
+            [userId]
           for (const row of activeUsersRes.rows) {
             const uId = Number(row.id);
             if (uId && uId !== Number(userId)) {
@@ -693,7 +791,7 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
             mentionMsgEn,
             mentionMsgAr,
             { ad_id: createdAd.id, author_id: userId, page_id: validPageId }
-          );
+        );
         } catch (mErr) {
           console.error(`[Bulletin API] Error notifying user ${recipientId}:`, mErr);
         }
@@ -1083,7 +1181,7 @@ router.post('/ads/:id/comments', authenticateToken, async (req: any, res) => {
             adOwnerId,
             'new_comment',
             'New Comment on Your Reel/Ad',
-            'تعليق جديد على مقطعك أو إعلانك',
+            'تعليق جديد',
             `${authorName} commented on "${adTitle}": "${content.substring(0, 40)}..."`,
             `قام ${authorName} بالتعليق على "${adTitle}": "${content.substring(0, 40)}..."`,
             { adId, commentId: insertRes.rows[0].id }
@@ -1605,12 +1703,11 @@ router.get('/verify-boost-session', authenticateToken, async (req: any, res) => 
               {
                 userName: user.name || 'User',
                 adTitle: origAdTitle,
-                boostTier: tierName || 'Stripe Premium Boost',
                 boostPrice: costNum.toFixed(2),
                 boostedUntil: formattedBoostedUntil
               },
+          );
               user.language || 'en'
-            );
           }
         } catch (emailErr) {
           console.error('[Bulletin Stripe Boost API] Email send error:', emailErr);
@@ -1993,13 +2090,14 @@ router.post('/pages/:id/follow', authenticateToken, async (req: any, res) => {
           const { dispatchNotification } = await import('../services/notifications.js');
           await dispatchNotification(
             pageOwnerId,
-            'new_follower',
+            'new_page_follower',
             'New Page Follower',
             'متابع جديد لصفحتك',
             `${followerName} started following your page "${pageName}"`,
             `بدأ ${followerName} متابعة صفحتك "${pageName}"`,
             { pageId, followerId: userId }
           );
+          // await notifyNewFollower(pageOwnerId, followerName);
         }
       } catch (nErr) {
         console.error('[Bulletin API] Page follow notification error:', nErr);
@@ -2385,6 +2483,8 @@ router.post('/ads/:id/direct-messages', authenticateToken, async (req: any, res)
         };
         io.to(`user_${recipientId}`).emit('ad_direct_message', socketPayload);
         io.to(`user_${senderId}`).emit('ad_direct_message', socketPayload);
+      // Send push notification
+      // await notifyNewMessage(recipientId, senderName, message ? message.trim() : 'Media attachment', adId.toString());
       }
     } catch (sErr) {
       console.warn('[Bulletin Direct Messages] Socket emit warning:', sErr);
@@ -2713,7 +2813,7 @@ router.post('/ads/:id/share', async (req, res) => {
             `${sName} shared your post "${ad.title || 'إعلان'}".`,
             `قام ${sName} بمشاركة منشورك "${ad.title || 'إعلان'}" على المنصة.`,
             { ad_id: adId }
-          );
+        );
         } catch (nErr) {
           console.error('[Bulletin API] Share notification error:', nErr);
         }
@@ -2725,7 +2825,8 @@ router.post('/ads/:id/share', async (req, res) => {
         for (const recipientId of uniqueTargets) {
           try {
             const sName = sharer_name || 'أحد الأصدقاء';
-            await createNotification(
+            const { dispatchNotification } = await import('../services/notifications.js');
+            await dispatchNotification(
               recipientId,
               'bulletin_shared_post',
               'A post was shared with you',
@@ -3319,6 +3420,13 @@ router.put('/ads/:id', authenticateToken, async (req: any, res) => {
     const updatedAd = updateRes.rows[0];
     if (normGallery.length > 0) {
       updatedAd.media_gallery = normGallery;
+    }
+
+    // Save hashtags to database
+    try {
+      await saveHashtagsToDatabase(parsedHashtags);
+    } catch (tagErr) {
+      console.error('[Bulletin API] Error saving hashtags to DB on edit:', tagErr);
     }
 
     res.json({ success: true, message: 'تم تحديث الإعلان بنجاح', ad: updatedAd });

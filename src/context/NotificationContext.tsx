@@ -53,6 +53,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 // Global Bridge Handlers for direct toast calls across the workspace
 let globalShowNotification: ((options: NotificationOptions) => string) | null = null;
 let globalDismissNotification: ((id: string) => void) | null = null;
+let globalClearAllNotifications: (() => void) | null = null;
 
 // Track recent notifications to prevent duplicate toasts
 const recentNotificationsCache = new Map<string, number>();
@@ -81,6 +82,9 @@ export const toast = {
   },
   dismiss: (id?: string) => {
     if (id && globalDismissNotification) globalDismissNotification(id);
+  },
+  clear: () => {
+    if (globalClearAllNotifications) globalClearAllNotifications();
   },
 };
 
@@ -154,11 +158,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     globalShowNotification = showNotification;
     globalDismissNotification = dismissNotification;
+    globalClearAllNotifications = clearAllNotifications;
     return () => {
       globalShowNotification = null;
       globalDismissNotification = null;
+      globalClearAllNotifications = null;
     };
-  }, [showNotification, dismissNotification]);
+  }, [showNotification, dismissNotification, clearAllNotifications]);
 
   const success = useCallback((message: string, title?: string, options?: Omit<NotificationOptions, 'message' | 'type' | 'title'>) => {
     return showNotification({ message, title, type: 'success', ...options });
@@ -257,28 +263,28 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
     switch (item.type) {
       case 'success':
         return {
-          icon: <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0" />,
+          icon: <CheckCircle2 size={15} className="text-emerald-500 flex-shrink-0" />,
           barBg: 'bg-emerald-500',
           badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
           defaultTitle: isRtl ? 'تم بنجاح' : 'Success',
         };
       case 'error':
         return {
-          icon: <AlertOctagon size={18} className="text-red-500 flex-shrink-0" />,
+          icon: <AlertOctagon size={15} className="text-red-500 flex-shrink-0" />,
           barBg: 'bg-red-500',
           badgeBg: 'bg-red-500/10 text-red-500 border-red-500/20',
           defaultTitle: isRtl ? 'حدث خطأ' : 'Error',
         };
       case 'warning':
         return {
-          icon: <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />,
+          icon: <AlertTriangle size={15} className="text-amber-500 flex-shrink-0" />,
           barBg: 'bg-amber-500',
           badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
           defaultTitle: isRtl ? 'تنبيه' : 'Warning',
         };
       case 'loading':
         return {
-          icon: <Loader2 size={18} className="text-amber-400 animate-spin flex-shrink-0" />,
+          icon: <Loader2 size={15} className="text-amber-400 animate-spin flex-shrink-0" />,
           barBg: 'bg-amber-400',
           badgeBg: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
           defaultTitle: isRtl ? 'جاري التحديث...' : 'Updating...',
@@ -286,7 +292,7 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
       case 'info':
       default:
         return {
-          icon: <Sparkles size={18} className="text-sky-500 flex-shrink-0" />,
+          icon: <Sparkles size={15} className="text-sky-500 flex-shrink-0" />,
           barBg: 'bg-sky-500',
           badgeBg: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
           defaultTitle: isRtl ? 'ملاحظة' : 'Notice',
@@ -310,12 +316,12 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
       {/* Accent side bar indicator */}
       <div className={`toast-side-bar ${themeConfig.barBg}`} />
 
-      <div className="flex items-start gap-3 pl-1 pr-1 w-full">
+      <div className="flex items-start gap-2.5 pl-0.5 pr-0.5 w-full">
         <div className="mt-0.5 flex-shrink-0">
           {item.image ? (
             <NotificationIconRenderer 
               src={item.image} 
-              size={24} 
+              size={20} 
               className="rounded-lg border border-[var(--border-main)]"
               fallbackIcon={item.icon || themeConfig.icon} 
             />
@@ -325,33 +331,33 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-0.5">
-            <h4 className="text-xs font-bold font-sans text-[var(--text-primary)] truncate">
+          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+            <h4 className="text-[11px] font-extrabold font-sans text-[var(--text-primary)] truncate">
               {item.title || themeConfig.defaultTitle}
             </h4>
             <button
               type="button"
               onClick={() => onDismiss(item.id)}
-              className="toast-dismiss-btn p-0.5"
+              className="toast-dismiss-btn p-0.5 opacity-70 hover:opacity-100 transition-opacity"
               title={isRtl ? 'إغلاق' : 'Close'}
             >
-              <X size={14} />
+              <X size={11} />
             </button>
           </div>
 
-          <p className="text-xs text-[var(--text-secondary)] font-sans leading-relaxed break-words">
+          <p className="text-[10px] md:text-[10.5px] text-[var(--text-secondary)] font-sans leading-normal break-words">
             {item.message}
           </p>
 
           {item.action && (
-            <div className="mt-2 flex justify-end">
+            <div className="mt-1.5 flex justify-end">
               <button
                 type="button"
                 onClick={() => {
                   item.action?.onClick();
                   onDismiss(item.id);
                 }}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme cursor-pointer"
+                className="px-2 py-0.5 text-[9.5px] font-bold rounded bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme cursor-pointer"
               >
                 {item.action.label}
               </button>

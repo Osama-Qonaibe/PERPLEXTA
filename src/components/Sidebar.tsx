@@ -10,7 +10,7 @@ import { SkeletonLoader } from './SkeletonLoader';
 import { resolveImageUrl } from '../utils/imageResolver';
 import { motion, AnimatePresence } from 'motion/react';
 import { SIDEBAR_TRANSITION } from '../constants/motions';
-import { useSwipeToClose, useSwipeNavigation } from '../utils/swipe';
+import { useSwipeToClose } from '../utils/swipe';
 import { FloatingPopover } from './FloatingPopover';
 import { triggerHaptic } from '../utils/haptics';
 const sidebarTransition = SIDEBAR_TRANSITION;
@@ -36,21 +36,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
   
   const language = activeLanguage || globalLang;
   const dir = language === 'ar' ? 'rtl' : 'ltr';
-
-  const swipeHandlers = useSwipeToClose({
-    onSwipeClose: () => setIsSidebarOpen(false),
-    direction: 'horizontal',
-    dir: dir as 'rtl' | 'ltr',
-    isMobile
-  });
-
-  useSwipeNavigation({
-    isOpen: isSidebarOpen,
-    onOpen: () => setIsSidebarOpen(true),
-    onClose: () => setIsSidebarOpen(false),
-    dir: dir as 'rtl' | 'ltr',
-    isMobile
-  });
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -327,15 +312,13 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
     
     if (isAlreadyAtNewChat) {
       window.dispatchEvent(new Event('clear-chat'));
-      if (isMobile) setIsSidebarOpen(false);
+      setIsSidebarOpen(false);
       return;
     }
 
     navigate('/chat');
     window.dispatchEvent(new Event('clear-chat'));
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
+    setIsSidebarOpen(false);
   };
 
   return (
@@ -349,9 +332,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           opacity: isMobile && !isSidebarOpen ? 0 : 1
         }}
         transition={sidebarSpring}
-        onTouchStart={swipeHandlers.onTouchStart}
-        onTouchMove={swipeHandlers.onTouchMove}
-        onTouchEnd={swipeHandlers.onTouchEnd}
         className={`fixed z-[150] select-none bg-[var(--bg-base)] transition-theme flex flex-col ${
           isMobile 
             ? `top-[calc(56px+env(safe-area-inset-top,0px)+12px)] bottom-[calc(var(--safe-area-spacing)+10px+env(safe-area-inset-bottom,0px))] start-2 rounded-2xl border border-[var(--border-main)] shadow-2xl shadow-black/40 overflow-hidden ${
@@ -374,25 +354,6 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
             : 'calc(100dvh - (56px + env(safe-area-inset-top, 0px) + 6px))' 
         }}
       >
-        <button 
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            triggerHaptic('selection');
-            setIsSidebarOpen(!isSidebarOpen);
-          }} 
-          className={`absolute top-5 ${dir === 'rtl' ? '-left-3' : '-right-3'} z-[170] items-center justify-center w-6 h-6 rounded-[6px] bg-[var(--bg-surface)] border border-[var(--border-main)] shadow-sm text-[var(--text-secondary)] hover:text-accent hover:border-accent/40 active:scale-90 transition-theme cursor-pointer pointer-events-auto ${
-            isMobile ? 'hidden' : 'flex'
-          }`}
-          title={isSidebarOpen ? (language === 'ar' ? 'تصغير' : 'Collapse') : (language === 'ar' ? 'توسيع' : 'Expand')}
-        >
-          {isSidebarOpen ? (
-            dir === 'rtl' ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />
-          ) : (
-            dir === 'rtl' ? <ChevronLeft size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />
-          )}
-        </button>
-
         <div className="w-full h-full overflow-hidden relative flex flex-col items-stretch px-0">
           <div 
             className="h-full flex flex-col flex-nowrap justify-between"
@@ -414,9 +375,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     to={item.path}
                     onClick={() => {
                       triggerHaptic('selection');
-                      if (isMobile) {
-                        setIsSidebarOpen(false);
-                      }
+                      setIsSidebarOpen(false);
                     }}
                   >
                     {({ isActive }) => {

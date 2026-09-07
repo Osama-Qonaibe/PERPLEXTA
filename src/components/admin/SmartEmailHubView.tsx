@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useState, useEffect, useCallback } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -249,7 +250,7 @@ const SmartEmailHubView = ({
   const handleTestConnection = async () => {
     setIsTestingConnection(true);
     try {
-      const token = localStorage.getItem("app_token");
+      const token = secureStorage.getSync("app_token");
       const res = await fetch("/api/mail-services-v3/verify", {
         method: "POST",
         headers: {
@@ -323,7 +324,7 @@ const SmartEmailHubView = ({
 
     setIsSavingTemplate(true);
     try {
-      const token = localStorage.getItem("app_token");
+      const token = secureStorage.getSync("app_token");
       const res = await fetch("/api/mail-services-v3/templates", {
         method: "POST",
         headers: {
@@ -354,7 +355,7 @@ const SmartEmailHubView = ({
     const isConfirmed = await confirm({ title: "Delete Template", description: "Are you sure you want to delete this template?", variant: "danger" as const });
     if (!isConfirmed) return;
     try {
-      const token = localStorage.getItem("app_token");
+      const token = secureStorage.getSync("app_token");
       const res = await fetch(`/api/mail-services-v3/templates/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },

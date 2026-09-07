@@ -15,6 +15,30 @@ export const MainLayout: React.FC = () => {
 
   const sidebarWidth = isMobile ? 0 : (isSidebarOpen ? 180 : 50);
 
+  // 1. Automatically collapse sidebar when clicking anywhere outside of it in the project
+  React.useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (!isSidebarOpen) return;
+      const target = e.target as HTMLElement;
+      // If click target is outside the sidebar 'aside' element, collapse it
+      if (target && !target.closest('aside')) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleDocumentClick, { capture: true });
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick, { capture: true });
+    };
+  }, [isSidebarOpen, setIsSidebarOpen]);
+
+  // 2. Automatically collapse sidebar upon navigating or route change
+  React.useEffect(() => {
+    if (isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname, location.search]);
+
   const onPanEnd = (_: any, info: any) => {
     if (!isMobile) return;
     const threshold = 50;
@@ -34,8 +58,7 @@ export const MainLayout: React.FC = () => {
     <div 
       className="flex h-[100dvh] w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme"
     >
-      {/* Hide Header on mobile when visiting /viralbook or /bulletin so the feed header acts as the primary display header */}
-      <div className={isViralbook ? 'hidden lg:block' : 'block'}>
+      <div className="block">
         <Header activeLanguage={language} />
       </div>
       <Sidebar activeLanguage={language} />
@@ -47,7 +70,7 @@ export const MainLayout: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={SIDEBAR_TRANSITION}
-            className={`fixed ${isViralbook ? 'top-0' : 'top-[calc(56px+env(safe-area-inset-top,0px)+6px)]'} bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer`}
+            className={`fixed top-[calc(56px+env(safe-area-inset-top,0px)+6px)] bottom-0 left-0 right-0 z-[140] bg-black/60 backdrop-blur-[6px] cursor-pointer`}
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -66,7 +89,7 @@ export const MainLayout: React.FC = () => {
         }}
         onClick={() => { if (isMobile && isSidebarOpen) setIsSidebarOpen(false); }}
       >
-        <main className={`flex-1 overflow-hidden relative ${isViralbook ? 'pt-0 lg:pt-[calc(56px+env(safe-area-inset-top,0px)+6px)]' : 'pt-[calc(56px+env(safe-area-inset-top,0px)+6px)]'} bg-[var(--bg-base)] transition-theme flex h-[calc(100dvh-var(--safe-area-spacing))] lg:h-full`}>
+        <main className={`flex-1 overflow-hidden relative pt-[calc(56px+env(safe-area-inset-top,0px)+6px)] bg-[var(--bg-base)] transition-theme flex h-[calc(100dvh-var(--safe-area-spacing))] lg:h-full`}>
           <div className="flex-1 h-full overflow-y-auto scrollbar-none relative min-w-0 touch-pan-y overscroll-y-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Outlet />
           </div>

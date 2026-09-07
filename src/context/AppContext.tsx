@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
@@ -1586,7 +1587,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [language, setLanguage] = useState<Language>(() => {
-    try { return (localStorage.getItem('language') as Language) || 'en'; } catch (e) { return 'en'; }
+    try { return (secureStorage.getSync('language') as Language) || 'en'; } catch (e) { return 'en'; }
   });
   const [languageTransitioning, setLanguageTransitioning] = useState<boolean>(false);
   const { theme, setTheme: setThemeContext, resolvedTheme, themeTransitioning } = useTheme();
@@ -1623,13 +1624,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showInactivityWarning]);
 
   const extendSession = () => {
-    localStorage.setItem('perplexta_last_activity', Date.now().toString());
+    secureStorage.set('perplexta_last_activity', Date.now().toString());
     setShowInactivityWarning(false);
   };
 
   const [user, setUser] = useState<User | null>(() => {
     try {
-      const stored = localStorage.getItem('app_user_profile');
+      const stored = secureStorage.getSync('app_user_profile');
       if (stored && stored !== 'null' && stored !== 'undefined') {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object') return parsed;
@@ -1665,9 +1666,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     userRef.current = user;
     try {
       if (user) {
-        localStorage.setItem('app_user_profile', JSON.stringify(user));
+        secureStorage.set('app_user_profile', JSON.stringify(user));
       } else {
-        localStorage.removeItem('app_user_profile');
+        secureStorage.remove('app_user_profile');
       }
     } catch (e) {
 
@@ -1676,7 +1677,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [token, setToken] = useState<string | null>(() => {
     try {
-      const rawToken = localStorage.getItem('app_token');
+      const rawToken = secureStorage.getSync('app_token');
       if (!rawToken || rawToken === 'null' || rawToken === 'undefined' || rawToken === '') return null;
       return rawToken;
     } catch (e) {
@@ -1686,7 +1687,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [refreshToken, setRefreshTokenState] = useState<string | null>(() => {
     try {
-      const rawRT = localStorage.getItem('app_refresh_token');
+      const rawRT = secureStorage.getSync('app_refresh_token');
       if (!rawRT || rawRT === 'null' || rawRT === 'undefined' || rawRT === '') return null;
       return rawRT;
     } catch (e) {
@@ -1696,7 +1697,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [usePollingFallback, setUsePollingFallback] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('socket_polling_fallback') === 'true';
+      return secureStorage.getSync('socket_polling_fallback') === 'true';
     } catch (e) {
       return false;
     }
@@ -1709,7 +1710,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const [balance, setBalance] = useState<number>(() => {
     try {
-      const stored = localStorage.getItem('app_user_profile');
+      const stored = secureStorage.getSync('app_user_profile');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object' && parsed.points !== undefined) {
@@ -1723,7 +1724,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [balanceUSD, setBalanceUSD] = useState<number>(() => {
     try {
-      const stored = localStorage.getItem('app_user_profile');
+      const stored = secureStorage.getSync('app_user_profile');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object' && parsed.balance !== undefined) {
@@ -1746,7 +1747,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [economySettings, setEconomySettings] = useState<any>(() => {
     try {
-      const cached = localStorage.getItem('app_economy_settings');
+      const cached = secureStorage.getSync('app_economy_settings');
       if (cached) return JSON.parse(cached);
     } catch {}
     return { 
@@ -1784,7 +1785,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeUpgradePrompt = () => {};
   const [rememberMe, setRememberMe] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('app_remember_me') === 'true' || localStorage.getItem('app_remember') === 'true';
+      return secureStorage.getSync('app_remember_me') === 'true' || secureStorage.getSync('app_remember') === 'true';
     } catch (e) {
       return false;
     }
@@ -1800,7 +1801,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(async () => {
       // 3. Apply the language swap in the dark (when the content is fully invisible)
       setLanguage(lang);
-      localStorage.setItem('language', lang); 
+      secureStorage.set('language', lang); 
       
       if (token) {
         try {
@@ -1838,7 +1839,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
-      const saved = localStorage.getItem('perplexta_sidebar_open');
+      const saved = secureStorage.getSync('perplexta_sidebar_open');
       if (saved !== null) return saved === 'true';
     } catch (e) {}
     return false;
@@ -1848,7 +1849,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsSidebarOpenState((prev) => {
       const next = typeof isOpen === 'function' ? isOpen(prev) : isOpen;
       try {
-        localStorage.setItem('perplexta_sidebar_open', String(next));
+        secureStorage.set('perplexta_sidebar_open', String(next));
       } catch (e) {}
       return next;
     });
@@ -1885,14 +1886,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isSyncingAuth.current = true;
 
     const { token: newToken, refreshToken: newRefreshToken, lang: authLang, ...info } = userData;
-    localStorage.setItem('app_token', newToken);
+    secureStorage.set('app_token', newToken);
     setToken(newToken);
     if (newRefreshToken) {
-      localStorage.setItem('app_refresh_token', newRefreshToken);
+      secureStorage.set('app_refresh_token', newRefreshToken);
       setRefreshTokenState(newRefreshToken);
     }
     setUser(info);
-    localStorage.setItem('last_active_tool', 'chat');
+    secureStorage.set('last_active_tool', 'chat');
     setIsAuthModalOpen(false); 
 
     try {
@@ -1903,13 +1904,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (authLang && (authLang === 'ar' || authLang === 'en')) {
       setLanguage(authLang as any);
-      localStorage.setItem('language', authLang);
+      secureStorage.set('language', authLang);
     }
 
-    const targetRefRaw = userData.ref || localStorage.getItem('app_ref');
+    const targetRefRaw = userData.ref || secureStorage.getSync('app_ref');
 
     const targetRef = targetRefRaw && targetRefRaw.startsWith('/') && !targetRefRaw.startsWith('//') ? targetRefRaw : null;
-    localStorage.removeItem('app_ref');
+    secureStorage.remove('app_ref');
 
     const currentPath = window.location.pathname;
 
@@ -1931,7 +1932,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSamePage) {
         triggerAuthSuccessToast('login');
       } else {
-        localStorage.setItem('app_force_refresh', '1');
+        secureStorage.set('app_force_refresh', '1');
         window.location.href = targetRef || '/';
       }
     }, 50);
@@ -1961,10 +1962,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.location.search.includes('oauth=1');
 
     if (urlToken && !isSensitivePage && urlToken !== token && isOAuthCallback) {
-      localStorage.setItem('app_token', urlToken);
+      secureStorage.set('app_token', urlToken);
       setToken(urlToken);
       if (urlRefreshToken) {
-        localStorage.setItem('app_refresh_token', urlRefreshToken);
+        secureStorage.set('app_refresh_token', urlRefreshToken);
         setRefreshTokenState(urlRefreshToken);
       }
 
@@ -1999,7 +2000,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const ref = getParam('ref');
-    if (ref) localStorage.setItem('app_ref', ref);
+    if (ref) secureStorage.set('app_ref', ref);
 
     const messageListener = (event: MessageEvent) => {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
@@ -2016,15 +2017,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const storageListener = (event: StorageEvent) => {
       if (event.key === 'app_oauth_trigger' && event.newValue) {
-        const storedToken = localStorage.getItem('app_token');
-        const userDataJson = localStorage.getItem('app_oauth_user');
+        const storedToken = secureStorage.getSync('app_token');
+        const userDataJson = secureStorage.getSync('app_oauth_user');
         if (storedToken && userDataJson) {
           try {
             const userData = JSON.parse(userDataJson);
             const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
             handleAuthSuccess(processedUser);
-            localStorage.removeItem('app_oauth_user');
-            localStorage.removeItem('app_oauth_trigger');
+            secureStorage.remove('app_oauth_user');
+            secureStorage.remove('app_oauth_trigger');
           } catch (e) {  }
         }
       }
@@ -2070,7 +2071,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return refreshPromiseRef.current;
     }
 
-    const currentRefreshToken = localStorage.getItem('app_refresh_token');
+    const currentRefreshToken = secureStorage.getSync('app_refresh_token');
     if (!currentRefreshToken) {
       return null;
     }
@@ -2080,7 +2081,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newToken = await performSilentTokenRefresh();
         if (newToken) {
           setToken(newToken);
-          const freshRefreshToken = localStorage.getItem('app_refresh_token');
+          const freshRefreshToken = secureStorage.getSync('app_refresh_token');
           if (freshRefreshToken) {
             setRefreshTokenState(freshRefreshToken);
           }
@@ -2252,7 +2253,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setBalanceUSD(Number(userProfile.balance || 0));
         if (userProfile.language) setLanguage(userProfile.language as Language);
         if (userProfile.theme) {
-          const localTheme = localStorage.getItem('perplexta_theme');
+          const localTheme = secureStorage.getSync('perplexta_theme');
           if (!localTheme) {
             setThemeContext(userProfile.theme as Theme);
           }
@@ -2285,9 +2286,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const profileFetched = useRef(false);
   useEffect(() => {
 
-    const loggedOutToast = localStorage.getItem('app_logged_out_toast');
+    const loggedOutToast = secureStorage.getSync('app_logged_out_toast');
     if (loggedOutToast === '1') {
-      localStorage.removeItem('app_logged_out_toast');
+      secureStorage.remove('app_logged_out_toast');
       // SILENCED FOR STORE COMPLIANCE
     }
   }, [language]);
@@ -2300,11 +2301,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    const forceRefresh = localStorage.getItem('app_force_refresh') === '1';
+    const forceRefresh = secureStorage.getSync('app_force_refresh') === '1';
 
     if (!profileFetched.current || forceRefresh) {
       profileFetched.current = true;
-      localStorage.removeItem('app_force_refresh');
+      secureStorage.remove('app_force_refresh');
       fetchUserProfile();
     }
 
@@ -2317,12 +2318,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loginWithGoogle = async () => {
     try {
       const currentPath = window.location.pathname + window.location.search;
-      const ref = localStorage.getItem('app_ref') || (currentPath !== '/' ? currentPath : '/chat');
-      const lang = localStorage.getItem('language') || 'en';
+      const ref = secureStorage.getSync('app_ref') || (currentPath !== '/' ? currentPath : '/chat');
+      const lang = secureStorage.getSync('language') || 'en';
       const currentTheme = theme || 'dark';
 
-      localStorage.setItem('app_ref', ref);
-      localStorage.removeItem('app_oauth_syncing');
+      secureStorage.set('app_ref', ref);
+      secureStorage.remove('app_oauth_syncing');
 
       const authSessionId = 'auth_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
@@ -2385,8 +2386,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         } catch (pollErr) {}
 
-        const storedToken = localStorage.getItem('app_token');
-        const userDataJson = localStorage.getItem('app_oauth_user');
+        const storedToken = secureStorage.getSync('app_token');
+        const userDataJson = secureStorage.getSync('app_oauth_user');
 
         if (storedToken && userDataJson) {
           clearInterval(pollInterval);
@@ -2394,8 +2395,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const userData = JSON.parse(userDataJson);
             const processedUser = userData.user ? { token: userData.token, ...userData.user } : userData;
             handleAuthSuccess(processedUser);
-            localStorage.removeItem('app_oauth_user');
-            localStorage.removeItem('app_oauth_trigger');
+            secureStorage.remove('app_oauth_user');
+            secureStorage.remove('app_oauth_trigger');
             if (popup && !popup.closed) {
               try {
                 popup.close();
@@ -2425,12 +2426,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (res.ok) {
           setToken(data.token);
           if (data.refreshToken) {
-            localStorage.setItem('app_refresh_token', data.refreshToken);
+            secureStorage.set('app_refresh_token', data.refreshToken);
             setRefreshTokenState(data.refreshToken);
           }
           setUser(data.user);
-          localStorage.setItem('app_token', data.token);
-          localStorage.setItem('last_active_tool', 'chat');
+          secureStorage.set('app_token', data.token);
+          secureStorage.set('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           navigate('/chat');
           triggerAuthSuccessToast('login');
@@ -2474,12 +2475,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (res.ok) {
           setToken(data.token);
           if (data.refreshToken) {
-            localStorage.setItem('app_refresh_token', data.refreshToken);
+            secureStorage.set('app_refresh_token', data.refreshToken);
             setRefreshTokenState(data.refreshToken);
           }
           setUser(data.user);
-          localStorage.setItem('app_token', data.token);
-          localStorage.setItem('last_active_tool', 'chat');
+          secureStorage.set('app_token', data.token);
+          secureStorage.set('last_active_tool', 'chat');
           setIsAuthModalOpen(false);
           navigate('/chat');
           triggerAuthSuccessToast('signup');
@@ -2534,10 +2535,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (forceRedirect) {
-      localStorage.setItem('app_logged_out_toast', '1');
+      secureStorage.set('app_logged_out_toast', '1');
       window.location.replace('/');
     } else {
-      localStorage.removeItem('app_loader_type');
+      secureStorage.remove('app_loader_type');
     }
   }, [socket, queryClient]);
 
@@ -2549,7 +2550,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const storedToken = token;
-    const storedRefreshToken = localStorage.getItem('app_refresh_token');
+    const storedRefreshToken = secureStorage.getSync('app_refresh_token');
 
     if (storedToken) {
       fetch(`${API_BASE_URL}/api/auth/logout`, {
@@ -2571,7 +2572,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    localStorage.setItem('perplexta_last_activity', Date.now().toString());
+    secureStorage.set('perplexta_last_activity', Date.now().toString());
 
     let lastWriteTime = Date.now();
     const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000;
@@ -2582,14 +2583,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const now = Date.now();
       
       if (showWarningRef.current) {
-        localStorage.setItem('perplexta_last_activity', now.toString());
+        secureStorage.set('perplexta_last_activity', now.toString());
         lastWriteTime = now;
         setShowInactivityWarning(false);
         return;
       }
 
       if (now - lastWriteTime > 15000) {
-        localStorage.setItem('perplexta_last_activity', now.toString());
+        secureStorage.set('perplexta_last_activity', now.toString());
         lastWriteTime = now;
       }
     };
@@ -2600,9 +2601,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const interval = setInterval(() => {
-      const lastActivityStr = localStorage.getItem('perplexta_last_activity');
+      const lastActivityStr = secureStorage.getSync('perplexta_last_activity');
       if (!lastActivityStr) {
-        localStorage.setItem('perplexta_last_activity', Date.now().toString());
+        secureStorage.set('perplexta_last_activity', Date.now().toString());
         return;
       }
 
@@ -2643,7 +2644,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     let saved = null;
     try {
-      saved = localStorage.getItem('site_settings');
+      saved = secureStorage.getSync('site_settings');
     } catch (e) {}
     if (saved) {
       try {
@@ -2673,14 +2674,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem('site_settings', JSON.stringify(siteSettings));
+    secureStorage.set('site_settings', JSON.stringify(siteSettings));
   }, [siteSettings]);
 
 
 
   const [plans, setPlans] = useState<any[]>(() => {
     try {
-      const cached = localStorage.getItem('app_plans_cache');
+      const cached = secureStorage.getSync('app_plans_cache');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -2751,7 +2752,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!usePollingFallback) {
 
         try {
-          localStorage.setItem('socket_polling_fallback', 'true');
+          secureStorage.set('socket_polling_fallback', 'true');
         } catch (e) {
 
         }
@@ -3230,7 +3231,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const ecoData = await fetchWithRetry('/api/system/economy', options, 1, 300);
           setEconomySettings(ecoData);
           try {
-            localStorage.setItem('app_economy_settings', JSON.stringify(ecoData));
+            secureStorage.set('app_economy_settings', JSON.stringify(ecoData));
           } catch {}
         } catch (ecoError) {
           console.error('[AppContext] Economy fetch error:', ecoError);
@@ -3277,7 +3278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           setPlans(formattedPlans);
           try {
-            localStorage.setItem('app_plans_cache', JSON.stringify(formattedPlans));
+            secureStorage.set('app_plans_cache', JSON.stringify(formattedPlans));
           } catch {}
         } catch (error) {
           console.error('[AppContext] Plans fetch error:', error);
@@ -3294,7 +3295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     document.documentElement.dir = dir;
     document.documentElement.lang = language;
-    localStorage.setItem('language', language);
+    secureStorage.set('language', language);
 
     applyLanguageFont(language, siteSettings.fontLoadingConfig);
     ThemeSync.apply(theme);

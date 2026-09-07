@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -26,15 +27,15 @@ export const PwaInstallSuccessService: React.FC = () => {
 
   useEffect(() => {
     const isStandaloneMode = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
-    const alreadyCelebrated = localStorage.getItem('perplexta_install_celebrated') === 'true';
+    const alreadyCelebrated = secureStorage.getSync('perplexta_install_celebrated') === 'true';
 
     if (isStandaloneMode && alreadyCelebrated) {
       return;
     }
 
     const handleInstalled = () => {
-      if (localStorage.getItem('perplexta_install_celebrated') === 'true') return;
-      localStorage.setItem('perplexta_install_celebrated', 'true');
+      if (secureStorage.getSync('perplexta_install_celebrated') === 'true') return;
+      secureStorage.set('perplexta_install_celebrated', 'true');
       setShowModal(true);
       setCountdown(5);
       setAutoRedirectPaused(false);

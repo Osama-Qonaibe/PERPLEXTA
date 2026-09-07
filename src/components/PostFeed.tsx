@@ -114,7 +114,7 @@ const renderRichPostText = (text: string | null | undefined, searchQuery?: strin
           return (
             <span
               key={idx}
-              className="font-bold text-accent dark:text-accent hover:underline cursor-pointer inline-block mx-0.5"
+              className="font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer inline-block mx-0.5"
             >
               <HighlightText text={word} query={searchQuery} />
             </span>
@@ -489,7 +489,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
     <div className="grid grid-cols-1 gap-4 w-full touch-pan-y">
       {visibleAds.map((ad, index) => {
         const isTextExpanded = !!expandedTextIds[ad.id];
-        const isLongText = ad.description && ad.description.length > 140;
+        const isLongText = ad.description && ad.description.length > 100;
 
         return (
           <motion.article
@@ -505,9 +505,9 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             <div className="p-3 sm:p-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.04]">
               <div className="flex items-center gap-2.5 min-w-0">
                 <BulletinAvatar
-                  src={ad.author_avatar}
-                  alt={ad.author_name}
-                  size="md"
+                  src={ad.page_id ? (ad.page_avatar || ad.author_avatar) : ad.author_avatar}
+                  alt={ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
+                  size="sm"
                   isPage={Boolean(ad.page_id)}
                   onClick={() =>
                     ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)
@@ -515,7 +515,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 />
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <h4
                       onClick={() =>
                         ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)
@@ -524,9 +524,15 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                         ad.page_id ? 'cursor-pointer hover:text-accent transition-colors' : ''
                       }`}
                     >
-                      {ad.author_name}
+                      {ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
                     </h4>
                     <CheckCircle2 size={13} className="text-blue-500 shrink-0" />
+                    {(ad.owner_id || ad.user_id) && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[8px] text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0" title={isRtl ? 'حساب مالك موثق مسجل' : 'Verified Owner Account'}>
+                        <CheckCircle2 size={10} className="text-emerald-500" />
+                        {isRtl ? 'مالك موثق' : 'Verified Owner'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 pt-0.5">
                     <span className="flex items-center gap-0.5 font-medium">
@@ -702,10 +708,15 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 const cleanDesc = (ad.description || '').trim();
 
                 // Determine if title is truly distinct from description
+                const cleanTitleStripped = cleanTitle.replace(/\.\.\.$/, '').trim();
                 const isTitleSameAsDesc = !cleanTitle || !cleanDesc ||
                   cleanTitle.toLowerCase() === cleanDesc.toLowerCase() ||
-                  cleanDesc.toLowerCase().startsWith(cleanTitle.toLowerCase()) ||
-                  cleanTitle.toLowerCase().startsWith(cleanDesc.toLowerCase());
+                  cleanDesc.toLowerCase().startsWith(cleanTitleStripped.toLowerCase()) ||
+                  cleanTitleStripped.toLowerCase().startsWith(cleanDesc.toLowerCase()) ||
+                  !ad.ad_format ||
+                  ad.ad_format === 'post' ||
+                  ad.ad_format === 'feed' ||
+                  ad.title === 'منشور جديد';
 
                 const showTitleHeader = !isTitleSameAsDesc;
                 const postBodyText = cleanDesc || cleanTitle;
@@ -719,8 +730,10 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     )}
 
                     <div className="text-[11px] text-gray-700 dark:text-gray-300 leading-relaxed space-y-1">
-                      <div className={isLongText && !isTextExpanded ? 'line-clamp-3' : ''}>
-                        {renderRichPostText(postBodyText, searchQuery)}
+                      <div className="whitespace-pre-wrap">
+                        {isLongText && !isTextExpanded
+                          ? renderRichPostText(postBodyText.slice(0, 100) + '...', searchQuery)
+                          : renderRichPostText(postBodyText, searchQuery)}
                       </div>
 
                       {isLongText && (
@@ -764,7 +777,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                           {uniqueTags.map((tag, idx) => (
                             <span
                               key={`tag-${ad.id}-${tag}-${idx}`}
-                              className="text-[10px] font-extrabold text-accent dark:text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
+                              className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer bg-blue-500/5 dark:bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/10 dark:border-blue-500/20"
                             >
                               <HighlightText text={String(tag).startsWith('#') ? String(tag) : `#${String(tag)}`} query={searchQuery} />
                             </span>
@@ -775,13 +788,59 @@ export const PostFeed: React.FC<PostFeedProps> = ({
 
                     {/* Tagged users and broadcast mentions separated list */}
                     {ad.tagged_users && Array.isArray(ad.tagged_users) && ad.tagged_users.length > 0 && (() => {
+                      const processedTags: string[] = [];
+                      const uniqueTaggedElements: any[] = [];
+
+                      ad.tagged_users.forEach((tag: any) => {
+                        let tagStr = typeof tag === 'object' && tag !== null ? (tag.username || tag.name || tag.id) : String(tag);
+                        if (!tagStr) return;
+                        tagStr = tagStr.trim();
+                        
+                        // Normalize name to deduplicate things like 'الجميع' and '@الجميع'
+                        const normalized = tagStr.replace(/^@/, '').toLowerCase();
+                        
+                        // Also normalize broadcast words
+                        let normKey = normalized;
+                        if (normalized === 'الجميع' || normalized === 'everyone') {
+                          normKey = 'everyone';
+                        } else if (normalized === 'متابعين' || normalized === 'followers' || normalized.includes('متابعين')) {
+                          normKey = 'followers';
+                        }
+
+                        if (!processedTags.includes(normKey)) {
+                          processedTags.push(normKey);
+                          uniqueTaggedElements.push({ tagStr, normKey });
+                        }
+                      });
+
+                      const combinedText = `${cleanTitle} ${cleanDesc}`.toLowerCase();
+                      const filteredElements = uniqueTaggedElements.filter(item => {
+                        const isEveryone = item.normKey === 'everyone';
+                        const isFollowers = item.normKey === 'followers';
+
+                        if (isEveryone) {
+                          return !combinedText.includes('@الجميع') && !combinedText.includes('@everyone');
+                        }
+                        if (isFollowers) {
+                          return (
+                            !combinedText.includes('@المتابعين') &&
+                            !combinedText.includes('@متابعين') &&
+                            !combinedText.includes('@followers') &&
+                            !combinedText.includes('@اشارة')
+                          );
+                        }
+
+                        const cleanName = item.tagStr.replace(/^@/, '').toLowerCase();
+                        return !combinedText.includes(`@${cleanName}`);
+                      });
+
+                      if (filteredElements.length === 0) return null;
+
                       return (
                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          {ad.tagged_users.map((tag: any, idx: number) => {
-                            const tagStr = typeof tag === 'object' && tag !== null ? (tag.name || tag.username || tag.id) : String(tag);
-                            if (!tagStr) return null;
-                            const isEveryone = tagStr === '@الجميع' || tagStr === '@everyone' || tagStr === 'الجميع' || tagStr === 'everyone';
-                            const isFollowers = tagStr === '@اشارة للمتابعين' || tagStr === '@followers' || tagStr === 'متابعين' || tagStr === 'followers' || tagStr.includes('متابعين');
+                          {filteredElements.map((item, idx) => {
+                            const isEveryone = item.normKey === 'everyone';
+                            const isFollowers = item.normKey === 'followers';
                             return (
                               <span
                                 key={`tagged-${ad.id}-${idx}`}
@@ -793,7 +852,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                                     : 'bg-accent/10 text-accent dark:text-accent border-accent/25'
                                 }`}
                               >
-                                {isEveryone ? '📢 @الجميع' : isFollowers ? '👥 @المتابعين' : `@${tagStr.replace(/^@/, '')}`}
+                                {isEveryone ? '📢 @الجميع' : isFollowers ? '👥 @المتابعين' : `@${item.tagStr.replace(/^@/, '')}`}
                               </span>
                             );
                           })}
@@ -888,39 +947,32 @@ export const PostFeed: React.FC<PostFeedProps> = ({
             )}
 
             {/* ========================================================== */}
-            {/* ROW 1: PAGE / AUTHOR NAME + DYNAMIC CONTACT ACTION BUTTON */}
+            {/* ROW 1: PAGE CATEGORY BADGE + DYNAMIC CONTACT ACTION BUTTON */}
             {/* ========================================================== */}
             <div className="p-3 sm:px-4 bg-gray-50/60 dark:bg-white/[0.02] flex items-center justify-between gap-3 border-t border-gray-100 dark:border-white/[0.04]">
-              <div 
-                onClick={() => ad.page_id && onOpenPageDetail && onOpenPageDetail(ad.page_id)}
-                className={`flex items-center gap-2.5 min-w-0 ${ad.page_id ? 'cursor-pointer group' : ''}`}
-              >
-                <BulletinAvatar
-                  src={ad.author_avatar}
-                  alt={ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
-                  size="sm"
-                  isPage={Boolean(ad.page_id)}
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-black text-gray-900 dark:text-gray-100 truncate group-hover:text-accent transition-colors">
-                      {ad.page_id ? (ad.page_name || ad.author_name) : ad.author_name}
+              {ad.page_id ? (
+                <div 
+                  onClick={() => onOpenPageDetail && ad.page_id && onOpenPageDetail(Number(ad.page_id))}
+                  className="flex items-center gap-2 min-w-0 cursor-pointer"
+                >
+                  {ad.category && !['عام', 'general', 'عام / general', 'عام / General'].includes(ad.category.trim().toLowerCase()) ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-accent/10 text-accent border border-accent/20 tracking-wide whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                      {ad.category}
                     </span>
-                    <CheckCircle2 size={13} className="text-blue-500 shrink-0" />
-                    {(ad.owner_id || ad.user_id) && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[8px] text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0" title={isRtl ? 'حساب مالك موثق مسجل' : 'Verified Owner Account'}>
-                        <CheckCircle2 size={10} className="text-emerald-500" />
-                        {isRtl ? 'مالك موثق' : 'Verified Owner'}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 block truncate">
-                    {ad.page_id 
-                      ? (isRtl ? 'صفحة تجارية موثقة' : 'Verified Business Page')
-                      : (ad.location_city || (isRtl ? 'معلن معتمد' : 'Verified Poster'))}
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wide whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      {isRtl ? 'صفحة تجارية موثقة' : 'Verified Business'}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold hidden sm:inline-block whitespace-nowrap">
+                    {isRtl ? '• نشاط معتمد' : '• Verified Merchant'}
                   </span>
                 </div>
-              </div>
+              ) : (
+                <div className="min-w-0" /> // Keep it completely clean for personal posts without confusing details
+              )}
 
               {/* Dynamic Contact Action Button (Based on Post Settings) */}
               <div className="shrink-0">
@@ -1024,20 +1076,33 @@ export const PostFeed: React.FC<PostFeedProps> = ({
               )}
             </AnimatePresence>
 
-            {/* Stats Row (Likes, Comments, Shares) */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-gray-800/60 text-[13px] text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1.5">
-                 <div className="flex -space-x-1 rtl:space-x-reverse">
-                   <div className="w-5 h-5 rounded-[6px] bg-blue-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c] z-10"><ThumbsUp size={10} className="fill-current" /></div>
-                   <div className="w-5 h-5 rounded-[6px] bg-red-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-[#1a1a1c]"><Heart size={10} className="fill-current" /></div>
-                 </div>
-                 <span className="font-semibold ms-1 text-gray-700 dark:text-gray-200">{formatCompactCount(ad.likes_count)}</span>
+            {/* Stats Row (Likes, Comments, Shares) - Only shown if there is active engagement */}
+            {(ad.likes_count > 0 || ad.comments_count > 0 || (ad.shares_count || 0) > 0) && (
+              <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 dark:border-gray-800/60 text-[13px] text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  {ad.likes_count > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-[6px] bg-accent/10 dark:bg-accent/20 flex items-center justify-center ring-1 ring-accent/25 z-10 text-[11px] select-none">
+                        {(() => {
+                          const activeReactId = postReactions[ad.id] || ad.user_reaction;
+                          const activeReaction = FB_REACTIONS.find((r) => r.id === activeReactId);
+                          return activeReaction ? activeReaction.emoji : '👍';
+                        })()}
+                      </div>
+                      <span className="font-semibold text-gray-700 dark:text-gray-200">{formatCompactCount(ad.likes_count)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 font-semibold">
+                  {ad.comments_count > 0 && (
+                    <span>{formatCompactCount(ad.comments_count)} {isRtl ? 'تعليق' : 'Comments'}</span>
+                  )}
+                  {(ad.shares_count || 0) > 0 && (
+                    <span>{formatCompactCount(ad.shares_count)} {isRtl ? 'مشاركة' : 'Shares'}</span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3 font-semibold">
-                 <span>{formatCompactCount(ad.comments_count)} {isRtl ? 'تعليق' : 'Comments'}</span>
-                 <span>{formatCompactCount(ad.shares_count || 0)} {isRtl ? 'مشاركة' : 'Shares'}</span>
-              </div>
-            </div>
+            )}
 
             {/* Action Bar (Like, Comment, Share, Save) */}
             <div className="flex items-center justify-between px-2 py-1 border-t border-gray-100 dark:border-gray-800/60 relative z-20">

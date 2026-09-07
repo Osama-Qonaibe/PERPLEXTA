@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 /**
  * Perplexta Media Coordinator
  * Central authority to manage single-stream audio/video playback across the entire platform.
@@ -29,13 +30,13 @@ let currentVolumeState: number = 1.0; // Max volume by default
 // Initialize cached mute and volume states from localStorage if available
 if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
   try {
-    const savedMuted = localStorage.getItem(MEDIA_MUTED_STORAGE_KEY);
+    const savedMuted = secureStorage.getSync(MEDIA_MUTED_STORAGE_KEY);
     if (savedMuted !== null) {
       currentMuteState = savedMuted === 'true';
     } else {
       currentMuteState = false; // Default to unmuted/sound-active
     }
-    const savedVol = localStorage.getItem(MEDIA_VOLUME_STORAGE_KEY);
+    const savedVol = secureStorage.getSync(MEDIA_VOLUME_STORAGE_KEY);
     if (savedVol !== null) {
       const parsedVol = parseFloat(savedVol);
       if (!isNaN(parsedVol) && parsedVol >= 0 && parsedVol <= 1) {
@@ -51,7 +52,7 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 export function getGlobalVolumeState(): number {
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
-      const saved = localStorage.getItem(MEDIA_VOLUME_STORAGE_KEY);
+      const saved = secureStorage.getSync(MEDIA_VOLUME_STORAGE_KEY);
       if (saved !== null) {
         const parsed = parseFloat(saved);
         if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
@@ -73,7 +74,7 @@ export function setGlobalVolumeState(volume: number, syncToBackend: boolean = tr
 
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem(MEDIA_VOLUME_STORAGE_KEY, String(currentVolumeState));
+      secureStorage.set(MEDIA_VOLUME_STORAGE_KEY, String(currentVolumeState));
     } catch (_) {}
   }
 
@@ -103,7 +104,7 @@ export function setGlobalVolumeState(volume: number, syncToBackend: boolean = tr
 export function getGlobalMuteState(): boolean {
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
-      const saved = localStorage.getItem(MEDIA_MUTED_STORAGE_KEY);
+      const saved = secureStorage.getSync(MEDIA_MUTED_STORAGE_KEY);
       if (saved !== null) {
         currentMuteState = saved === 'true';
         return currentMuteState;
@@ -122,8 +123,8 @@ export function setGlobalMuteState(muted: boolean, syncToBackend: boolean = true
 
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
-      localStorage.setItem(MEDIA_MUTED_STORAGE_KEY, String(currentMuteState));
-      localStorage.setItem('reels_muted', String(currentMuteState));
+      secureStorage.set(MEDIA_MUTED_STORAGE_KEY, String(currentMuteState));
+      secureStorage.set('reels_muted', String(currentMuteState));
     } catch (_) {}
   }
 
@@ -168,7 +169,7 @@ export function setGlobalMuteState(muted: boolean, syncToBackend: boolean = true
   // Persist preference to user profile in database if user is authenticated
   if (syncToBackend && typeof window !== 'undefined') {
     try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const token = secureStorage.getSync('auth_token') || secureStorage.getSync('token');
       if (token && token !== 'null' && token !== 'undefined') {
         fetch('/api/users/profile', {
           method: 'PUT',

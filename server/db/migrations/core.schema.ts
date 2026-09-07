@@ -423,7 +423,7 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
     name: 'system_logs',
     query: `CREATE TABLE IF NOT EXISTS system_logs (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         action VARCHAR(255),
         type VARCHAR(100) DEFAULT 'info',
         description TEXT,
@@ -991,6 +991,20 @@ export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
       )`
   },
   {
+    name: 'push_tokens',
+    query: `CREATE TABLE IF NOT EXISTS push_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        platform VARCHAR(10) NOT NULL CHECK (platform IN ('android', 'ios')),
+        token TEXT NOT NULL UNIQUE,
+        device_name TEXT,
+        app_version TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        is_active BOOLEAN DEFAULT true
+    )`
+  },
+  {
     name: 'api_performance_logs',
     query: `CREATE TABLE IF NOT EXISTS api_performance_logs (
         id SERIAL PRIMARY KEY,
@@ -1459,6 +1473,8 @@ export async function applyCoreColumnEnforcements(targetPool: QueryClient) {
 }
 
 export const CORE_INDEXES: string[] = [
+  `CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_push_tokens_active ON push_tokens(is_active) WHERE is_active = true`,
   `CREATE UNIQUE INDEX IF NOT EXISTS referral_invitations_pkey ON referral_invitations(id)`,
   `CREATE INDEX IF NOT EXISTS idx_referral_invitations_referrer ON referral_invitations(referrer_id)`,
   `CREATE INDEX IF NOT EXISTS idx_referral_invitations_email ON referral_invitations(email)`,

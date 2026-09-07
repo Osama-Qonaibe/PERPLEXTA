@@ -13,6 +13,7 @@ export const ALL_TOOLS = [
   "learning",
   "code",
   "canvas",
+  "perplexta_music",
   "sovereign_memory",
   "sovereign_search",
   "x402_api",

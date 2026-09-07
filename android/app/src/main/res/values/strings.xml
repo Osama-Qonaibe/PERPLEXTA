@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">perplexta</string>
+    <string name="title_activity_main">perplexta</string>
+    <string name="package_name">com.perplexta.app</string>
+    <string name="custom_url_scheme">com.perplexta.app</string>
+</resources>

@@ -425,7 +425,7 @@ export default function App() {
 
               <Route path="share/:id" element={<SharedSnapshotPage />} />
 
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/settings/:tab?" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />

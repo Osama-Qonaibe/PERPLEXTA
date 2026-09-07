@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import { auth } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 

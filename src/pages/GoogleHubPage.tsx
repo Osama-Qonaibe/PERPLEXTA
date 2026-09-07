@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { 
@@ -204,7 +205,7 @@ const GoogleHubPage: React.FC = () => {
 
   const fetchChatNotifications = async () => {
     try {
-      const chatToken = localStorage.getItem('google_chat_token');
+      const chatToken = secureStorage.getSync('google_chat_token');
       if (!chatToken) return;
 
       const response = await fetch('/api/google-chat/unread-count', {
@@ -228,7 +229,7 @@ const GoogleHubPage: React.FC = () => {
       setIsLoadingConnections(true);
       const response = await fetch('/api/google-integrations', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${secureStorage.getSync('token')}`
         }
       });
       if (response.ok) {
@@ -255,7 +256,7 @@ const GoogleHubPage: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${secureStorage.getSync('token')}`
         },
         body: JSON.stringify({
           is_connected: true,
@@ -280,7 +281,7 @@ const GoogleHubPage: React.FC = () => {
       const response = await fetch(`/api/google-integrations/${toolId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${secureStorage.getSync('token')}`
         }
       });
 
@@ -301,7 +302,7 @@ const GoogleHubPage: React.FC = () => {
       const response = await fetch('/api/google-integrations/revoke-all', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${secureStorage.getSync('token')}`
         }
       });
 
@@ -312,7 +313,7 @@ const GoogleHubPage: React.FC = () => {
           unreadCount: 0
         })));
         
-        localStorage.removeItem('google_chat_token');
+        secureStorage.remove('google_chat_token');
         
         toast.success(isRtl ? 'تم سحب جميع صلاحيات الوصول بنجاح' : 'All access tokens revoked successfully', {
           description: isRtl ? 'تم قطع الاتصال بكافة خدمات قوقل وتأمين حسابك.' : 'All Google services disconnected and account secured.',

@@ -209,6 +209,7 @@ const TOOL_NAMES: Record<string, { en: string; ar: string }> = {
   video:              { en: 'Cinematic Video Generator',   ar: 'مولد الفيديو السينمائي'  },
   tts:                { en: 'Voice Synthesis Engine',      ar: 'محرك التوليد الصوتي'     },
   stt:                { en: 'Speech Transcription',        ar: 'التحويل الصوتي للنص'     },
+  perplexta_music:    { en: 'Music & Songs',               ar: 'الموسيقى والأغاني'      },
 };
 
 function getToolFriendlyName(toolId: string, lang: 'en' | 'ar'): string {

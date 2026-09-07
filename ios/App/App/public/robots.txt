@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /terms
+Allow: /privacy
+Allow: /about
+Allow: /subscription
+Allow: /viralbook
+Allow: /bulletin
+Disallow: /chat
+Disallow: /chat/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin-community
+Disallow: /admin-community/
+Disallow: /settings
+Disallow: /settings/
+Disallow: /rewards
+Disallow: /rewards/
+Disallow: /wallet
+Disallow: /wallet/
+Disallow: /reset-password
+Disallow: /api/
+
+# Dynamic Sitemap location
+Sitemap: https://perplexta.com/sitemap.xml

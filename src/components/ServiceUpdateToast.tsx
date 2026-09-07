@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, X } from 'lucide-react';
@@ -12,8 +13,8 @@ export const ServiceUpdateToast: React.FC = () => {
 
   useEffect(() => {
     // Check if user recently dismissed or updated within the last 30 minutes
-    const lastDismissed = localStorage.getItem('perplexta_update_dismissed');
-    const updateApplied = localStorage.getItem('perplexta_update_applied');
+    const lastDismissed = secureStorage.getSync('perplexta_update_dismissed');
+    const updateApplied = secureStorage.getSync('perplexta_update_applied');
     const now = Date.now();
     
     if (lastDismissed && now - parseInt(lastDismissed, 10) < 30 * 60 * 1000) {
@@ -38,7 +39,7 @@ export const ServiceUpdateToast: React.FC = () => {
   }, []);
 
   const close = () => {
-    localStorage.setItem('perplexta_update_dismissed', Date.now().toString());
+    secureStorage.set('perplexta_update_dismissed', Date.now().toString());
     setVisible(false);
   };
 
@@ -46,7 +47,7 @@ export const ServiceUpdateToast: React.FC = () => {
     setIsUpdating(true);
     
     // Save session state to prevent repetitive update prompts
-    localStorage.setItem('perplexta_update_applied', Date.now().toString());
+    secureStorage.set('perplexta_update_applied', Date.now().toString());
     sessionStorage.setItem('perplexta_session_synced', 'true');
 
     try {

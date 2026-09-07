@@ -1,0 +1,14 @@
+{
+	"appId": "com.perplexta.app",
+	"appName": "perplexta",
+	"webDir": "dist",
+	"plugins": {
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	}
+}

@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -852,7 +853,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
   }, [token, isRtl, onOpenUploadReels, onUploadReelClick]);
 
   useEffect(() => {
-    localStorage.setItem('reels_muted', String(isMuted));
+    secureStorage.set('reels_muted', String(isMuted));
   }, [isMuted]);
 
   useEffect(() => {
@@ -1721,71 +1722,88 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-gray-100/90 via-gray-200/85 to-gray-100/95 dark:from-black/80 dark:via-zinc-950/85 dark:to-black/95 backdrop-blur-2xl" />
       </div>
 
-      {/* Floating Glassmorphism Tabs Switcher ("لك" | "المتابَعون") - Separated & Professional */}
-      <div className="absolute top-3 inset-x-0 z-50 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-[4px] bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-200 dark:border-white/15 shadow-2xl">
-          <button
-            onClick={() => {
-              setActiveTab('for_you');
-              setActiveIndex(0);
-            }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[var(--radius-sm)] transition-theme cursor-pointer ${
-              activeTab === 'for_you'
-                ? 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
-            }`}
-          >
-            {isRtl ? 'لك' : 'For You'}
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('following');
-              setActiveIndex(0);
-            }}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[var(--radius-sm)] transition-theme cursor-pointer ${
-              activeTab === 'following'
-                ? 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]'
-            }`}
-          >
-            {isRtl ? 'المتابَعون' : 'Following'}
-          </button>
-        </div>
-      </div>
-
       {/* Top Floating Navigation Header Overlay - Clean, Spacious & Centered on Desktop */}
-      <header className="absolute top-0 inset-x-0 z-40 px-3 sm:px-8 py-3 flex items-center justify-between bg-gradient-to-b from-white/90 via-white/50 dark:from-black/90 dark:via-black/50 to-transparent pointer-events-auto">
+      <header className="absolute top-0 inset-x-0 z-40 px-6 sm:px-8 pt-5 pb-3 flex items-center justify-between bg-gradient-to-b from-white/90 via-white/50 dark:from-black/90 dark:via-black/50 to-transparent pointer-events-auto">
         {/* Top Left: Mobile Back Button */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 md:gap-3 min-w-0 md:min-w-[120px] flex-shrink-0">
           {onClose && (
             <button
               onClick={onClose}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme text-xs font-bold cursor-pointer"
+              className="flex items-center gap-1.5 px-1 py-1 text-gray-900 dark:text-white hover:text-accent transition-colors text-[10px] sm:text-xs font-extrabold cursor-pointer whitespace-nowrap"
               title={isRtl ? 'رجوع' : 'Back'}
             >
-              {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+              {isRtl ? <ArrowRight size={14} className="sm:w-4 sm:h-4" /> : <ArrowLeft size={14} className="sm:w-4 sm:h-4" />}
               <span>{isRtl ? 'رجوع' : 'Back'}</span>
             </button>
           )}
         </div>
 
+        {/* Centered Switcher: Borderless & Flat Navigation Tabs */}
+        <div className="flex items-center gap-3 sm:gap-6 h-9 flex-shrink-0">
+          <button
+            onClick={() => {
+              setActiveTab('for_you');
+              setActiveIndex(0);
+            }}
+            className="relative h-full flex flex-col justify-center items-center px-1 text-[10px] sm:text-xs font-bold transition-colors cursor-pointer select-none whitespace-nowrap"
+          >
+            <span className={`transition-colors duration-200 ${
+              activeTab === 'for_you'
+                ? 'text-gray-900 dark:text-white font-extrabold'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}>
+              {isRtl ? 'لك' : 'For You'}
+            </span>
+            {activeTab === 'for_you' && (
+              <motion.div
+                layoutId="activeTabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('following');
+              setActiveIndex(0);
+            }}
+            className="relative h-full flex flex-col justify-center items-center px-1 text-[10px] sm:text-xs font-bold transition-colors cursor-pointer select-none whitespace-nowrap"
+          >
+            <span className={`transition-colors duration-200 ${
+              activeTab === 'following'
+                ? 'text-gray-900 dark:text-white font-extrabold'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}>
+              {isRtl ? 'المتابَعون' : 'Following'}
+            </span>
+            {activeTab === 'following' && (
+              <motion.div
+                layoutId="activeTabUnderline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+        </div>
+
         {/* Top Right: Search + Upload + Volume Slider + Close */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4 sm:gap-3 min-w-0 md:min-w-[120px] flex-shrink-0 justify-end">
           {/* Search Button (Desktop) */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer border border-gray-200/50 dark:border-transparent shadow-sm"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900 dark:text-white hover:text-accent transition-all active:scale-95 cursor-pointer"
             title={isRtl ? 'بحث في مقاطع ريلز' : 'Search Reels'}
           >
-            <Search size={18} className="drop-shadow-sm" />
+            <Search size={18} />
           </button>
 
           <button
             onClick={handleUploadReelClick}
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer border border-gray-200/50 dark:border-transparent shadow-sm"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900 dark:text-white hover:text-accent transition-all active:scale-95 cursor-pointer"
             title={isRtl ? 'رفع مقطع ريلز جديد' : 'Upload New Reel'}
           >
-            <Plus size={22} className="drop-shadow-sm" />
+            <Plus size={22} />
           </button>
 
           {/* Volume Control with Hover Expandable Slider on Desktop */}
@@ -1796,7 +1814,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
           >
             <button
               onClick={toggleMute}
-              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-[4px] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer border border-gray-200/50 dark:border-transparent shadow-sm"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-gray-900 dark:text-white hover:text-accent transition-all active:scale-95 cursor-pointer"
               title={isMuted ? (isRtl ? 'تشغيل الصوت (M)' : 'Unmute (M)') : (isRtl ? 'كتم الصوت (M)' : 'Mute (M)')}
             >
               {isMuted ? (
@@ -1839,7 +1857,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="hidden md:flex w-9 h-9 sm:w-10 sm:h-10 items-center justify-center rounded-[4px] hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer border border-gray-200/50 dark:border-transparent shadow-sm"
+              className="hidden md:flex w-9 h-9 sm:w-10 sm:h-10 items-center justify-center text-gray-900 dark:text-white hover:text-accent transition-all active:scale-95 cursor-pointer"
               title={isRtl ? 'إغلاق (Esc)' : 'Close (Esc)'}
             >
               <X size={19} />
@@ -2173,7 +2191,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                         <BulletinAvatar
                           src={reel.author_avatar}
                           alt={reel.author_name}
-                          size="md"
+                          size="sm"
                           isPage={Boolean(reel.page_id)}
                         />
                       </div>
@@ -2362,7 +2380,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                       <BulletinAvatar
                         src={reel.author_avatar}
                         alt={reel.author_name}
-                        size="md"
+                        size="sm"
                         isPage={Boolean(reel.page_id)}
                       />
                     </div>

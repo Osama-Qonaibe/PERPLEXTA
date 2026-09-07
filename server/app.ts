@@ -1337,6 +1337,7 @@ import recommendationsRoutes from './routes/recommendations.js';
 import googleChatRoutes from './routes/google-chat.js';
 import googleIntegrationsRoutes from './routes/google-integrations.js';
 import aiRoutes from './routes/ai.js';
+import pushRoutes from "./routes/push.js";
 import gpuProvidersRoutes from './routes/gpuProviders.js';
 import ownershipRoutes from './routes/ownership.js';
 
@@ -1548,6 +1549,7 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/google-chat', googleChatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use("/api/push", pushRoutes);
 
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';

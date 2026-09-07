@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import { QueryClient } from '@tanstack/react-query';
 
 export interface PurgeSessionOptions {
@@ -21,30 +22,30 @@ export const SessionPurge = {
     let theme: string | null = null;
     let lang: string | null = null;
     try {
-      theme = preserveTheme ? localStorage.getItem('perplexta_theme') : null;
-      lang = preserveLanguage ? localStorage.getItem('language') : null;
+      theme = preserveTheme ? secureStorage.getSync('perplexta_theme') : null;
+      lang = preserveLanguage ? secureStorage.getSync('language') : null;
     } catch (e) {
       console.warn('SessionPurge: Failed to read theme or language preference', e);
     }
 
     try {
-      localStorage.clear();
+      secureStorage.remove("ALL_KEYS");
       sessionStorage.clear();
     } catch (e) {
       console.error('SessionPurge: Failed to clear local or session storage', e);
     }
 
     if (preserveTheme && theme) {
-      try { localStorage.setItem('perplexta_theme', theme); } catch (e) {}
+      try { secureStorage.set('perplexta_theme', theme); } catch (e) {}
     }
     if (preserveLanguage && lang) {
-      try { localStorage.setItem('language', lang); } catch (e) {}
+      try { secureStorage.set('language', lang); } catch (e) {}
     }
 
     // Default defaults for fresh session
     try {
-      localStorage.setItem('last_active_tool', 'chat');
-      localStorage.setItem('last_active_model', 'fast');
+      secureStorage.set('last_active_tool', 'chat');
+      secureStorage.set('last_active_model', 'fast');
     } catch (e) {}
 
     // Purge browser CacheStorage if available

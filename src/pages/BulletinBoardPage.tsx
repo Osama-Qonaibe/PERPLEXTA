@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -255,13 +256,13 @@ export const BulletinBoardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedCountry, setSelectedCountry] = useState<string>(() => {
-    return localStorage.getItem('perplexta_user_country') || 'فلسطين';
+    return secureStorage.getSync('perplexta_user_country') || 'فلسطين';
   });
   const [selectedCity, setSelectedCity] = useState<string>(() => {
-    return localStorage.getItem('perplexta_user_city') || 'all';
+    return secureStorage.getSync('perplexta_user_city') || 'all';
   });
   const [selectedRadius, setSelectedRadius] = useState<string>(() => {
-    return localStorage.getItem('perplexta_user_radius') || '10';
+    return secureStorage.getSync('perplexta_user_radius') || '10';
   });
   const [isLocationFlyoutOpen, setIsLocationFlyoutOpen] = useState<boolean>(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState<string>('');
@@ -339,10 +340,10 @@ export const BulletinBoardPage: React.FC = () => {
   const handleSelectAutocompleteResult = (result: LocationSearchResult) => {
     if (result.country) {
       setSelectedCountry(result.country);
-      localStorage.setItem('perplexta_user_country', result.country);
+      secureStorage.set('perplexta_user_country', result.country);
     }
     setSelectedCity(result.city);
-    localStorage.setItem('perplexta_user_city', result.city);
+    secureStorage.set('perplexta_user_city', result.city);
     setLocationSearchQuery('');
     setAutocompleteResults([]);
     setIsLocationFlyoutOpen(false);
@@ -378,8 +379,8 @@ export const BulletinBoardPage: React.FC = () => {
   const handleSelectCity = (city: string, radius = selectedRadius) => {
     setSelectedCity(city);
     setSelectedRadius(radius);
-    localStorage.setItem('perplexta_user_city', city);
-    localStorage.setItem('perplexta_user_radius', radius);
+    secureStorage.set('perplexta_user_city', city);
+    secureStorage.set('perplexta_user_radius', radius);
     setIsLocationFlyoutOpen(false);
     toast.success(
       isRtl
@@ -764,6 +765,87 @@ export const BulletinBoardPage: React.FC = () => {
     aspect_ratio: 'grid' as string
   });
 
+  const [suggestionType, setSuggestionType] = useState<'none' | 'hashtag' | 'mention'>('none');
+  const [suggestionQuery, setSuggestionQuery] = useState('');
+  const [trendingHashtags, setTrendingHashtags] = useState<string[]>([]);
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/bulletin/hashtags/trending')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          setTrendingHashtags(data.tags);
+        }
+      })
+      .catch(err => console.error('[Hashtags client] Fetch failed:', err));
+  }, []);
+
+  useEffect(() => {
+    if (suggestionType !== 'mention') return;
+    const url = `/api/bulletin/mentions/suggest?q=${encodeURIComponent(suggestionQuery)}`;
+    fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          setMentionSuggestions(data.results);
+        }
+      })
+      .catch(err => console.error('[Mentions client] Fetch failed:', err));
+  }, [suggestionType, suggestionQuery, token]);
+
+  const handleComposerTextChange = (text: string) => {
+    if (text.length > 1000) return;
+    setAdFormData(prev => ({ ...prev, description: text }));
+
+    const lastWord = text.split(/[\s\n]+/).pop() || '';
+    if (lastWord.startsWith('#')) {
+      setSuggestionType('hashtag');
+      setSuggestionQuery(lastWord.slice(1));
+    } else if (lastWord.startsWith('@')) {
+      setSuggestionType('mention');
+      setSuggestionQuery(lastWord.slice(1));
+    } else {
+      setSuggestionType('none');
+      setSuggestionQuery('');
+    }
+  };
+
+  const handleSelectSuggestion = (selectedVal: string) => {
+    const text = adFormData.description;
+    const words = text.split(/([\s\n]+)/);
+    
+    let replaced = false;
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (words[i].trim().startsWith('#') && suggestionType === 'hashtag') {
+        words[i] = selectedVal.startsWith('#') ? selectedVal : `#${selectedVal}`;
+        replaced = true;
+        break;
+      }
+      if (words[i].trim().startsWith('@') && suggestionType === 'mention') {
+        words[i] = selectedVal.startsWith('@') ? selectedVal : `@${selectedVal}`;
+        
+        const cleanName = selectedVal.replace(/^@/, '');
+        if (!adFormData.tagged_users.includes(cleanName)) {
+          setAdFormData(prev => ({
+            ...prev,
+            tagged_users: [...prev.tagged_users, cleanName]
+          }));
+        }
+        
+        replaced = true;
+        break;
+      }
+    }
+    
+    const newText = words.join('') + ' ';
+    setAdFormData(prev => ({ ...prev, description: newText }));
+    setSuggestionType('none');
+    setSuggestionQuery('');
+  };
+
   const [isMediaManagerOpen, setIsMediaManagerOpen] = useState(false);
 
   const [isTrimmerModalOpen, setIsTrimmerModalOpen] = useState(false);
@@ -962,6 +1044,19 @@ export const BulletinBoardPage: React.FC = () => {
 
   const [boostingAd, setBoostingAd] = useState<BulletinAd | null>(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState<boolean>(false);
+
+  const isAnyModalOpen = isAdModalOpen || isAdModalOpen || isStoryViewerOpen || isLiveStreamOpen || isStoryModalOpen || isAudienceModalOpen || isPageModalOpen || isAddToPostModalOpen || isBoostModalOpen || isGiftModalOpen;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.classList.add('layout-locked');
+    } else {
+      document.body.classList.remove('layout-locked');
+    }
+    return () => {
+      document.body.classList.remove('layout-locked');
+    };
+  }, [isAnyModalOpen]);
 
   const handleOpenBoostModal = (ad: BulletinAd) => {
     if (!user || !token) {
@@ -1984,8 +2079,10 @@ export const BulletinBoardPage: React.FC = () => {
         : [];
       const mergedHashtags = Array.from(new Set([...existingHashtags, ...textHashtags]));
 
-      const textMentions = (desc.match(/@[\p{L}\p{N}_]+/gu) || []).map(m => m.trim());
-      const existingMentions = Array.isArray(adFormData.tagged_users) ? adFormData.tagged_users : [];
+      const textMentions = (desc.match(/@[\p{L}\p{N}_]+/gu) || []).map(m => m.replace(/^@/, '').trim()).filter(Boolean);
+      const existingMentions = (Array.isArray(adFormData.tagged_users) ? adFormData.tagged_users : [])
+        .map(m => String(m).replace(/^@/, '').trim())
+        .filter(Boolean);
       const mergedMentions = Array.from(new Set([...existingMentions, ...textMentions]));
 
       const payload = {
@@ -2008,10 +2105,12 @@ export const BulletinBoardPage: React.FC = () => {
       const data = await res.json();
 
       if (data.success) {
+        toast.clear();
         if (isEditMode) {
-          toast.success(isRtl ? 'تم تحديث المنشور بنجاح!' : 'Post updated successfully!');
+          toast.success(isRtl ? 'تم تحديث المنشور بنجاح! ✨' : 'Post updated successfully! ✨');
+        } else {
+          toast.success(isRtl ? 'تم نشر منشورك بنجاح! 🎉' : 'Your post has been published successfully! 🎉');
         }
-        // Create mode relies on the backend socket notification to avoid duplicates
         setIsAdModalOpen(false);
         setIsEditMode(false);
         setEditingAdId(null);
@@ -2043,6 +2142,9 @@ export const BulletinBoardPage: React.FC = () => {
         if (selectedPageDetail) {
           handleOpenPageDetail(selectedPageDetail.page.id);
         }
+        // Redirect to homepage feed and scroll to top
+        setActiveTab('board');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         toast.error(data.error || 'فشل نشر المنشور');
       }
@@ -2087,7 +2189,7 @@ export const BulletinBoardPage: React.FC = () => {
     );
 
     try {
-      const authToken = token || localStorage.getItem('app_token') || '';
+      const authToken = token || secureStorage.getSync('app_token') || '';
       const newItems: MediaGalleryItem[] = [];
       let imagesUploaded = 0;
       let videosUploaded = 0;
@@ -2243,7 +2345,7 @@ export const BulletinBoardPage: React.FC = () => {
       }).catch(() => {});
     };
 
-    const authToken = token || localStorage.getItem('app_token') || '';
+    const authToken = token || secureStorage.getSync('app_token') || '';
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/files/upload', true);
     xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
@@ -2548,116 +2650,6 @@ export const BulletinBoardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] transition-theme pb-[calc(var(--safe-area-spacing)+6px+env(safe-area-inset-bottom,0px))]">
       
-      {/* MOBILE ADS & SOCIAL HEADER (Facebook Pro Mobile UI Style) */}
-      <div className="block lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[var(--bg-base)]/95 backdrop-blur-md border-b border-[var(--border-main)] px-3 sm:px-4 h-[calc(56px+env(safe-area-inset-top,0px)+6px)] pt-[calc(env(safe-area-inset-top,0px)+6px)] transition-theme flex items-center">
-        <div className="w-full flex justify-between items-center h-[50px]">
-        {isMobileSearchOpen ? (
-          /* Expandable Mobile Interactive Search Bar */
-          <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }} className="flex items-center gap-2 w-full">
-            <button
-              type="button"
-              onClick={() => setIsMobileSearchOpen(false)}
-              className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-700 dark:text-gray-200 border border-[var(--border-main)] transition-all active:scale-95 shrink-0 shadow-none"
-              title={isRtl ? 'إغلاق البحث' : 'Close search'}
-            >
-              {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
-            </button>
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isRtl ? 'بحث...' : 'Search...'}
-                autoFocus
-                className="w-full ps-8 pe-7 h-8 text-[12px] font-bold rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] border border-[var(--border-main)] text-[var(--text-primary)] focus:outline-none focus:border-accent"
-              />
-              <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-            <button
-              type="submit"
-              className="h-8 px-2.5 sm:px-3 rounded-[8px] bg-accent text-white font-bold text-[12px] hover:opacity-90 active:scale-95 transition-all shrink-0"
-            >
-              {isRtl ? 'بحث' : 'Search'}
-            </button>
-          </form>
-        ) : (
-          /* Standard Compact Facebook Style Header with Professional Back Button */
-          <div className="flex items-center justify-between gap-2 w-full">
-            {/* Start Side: Professional Back Button + Platform Logo & Title */}
-            <div className="flex items-center gap-2 min-w-0">
-              {/* Professional Back Button */}
-              <button
-                type="button"
-                onClick={handleMobileBack}
-                className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-800 dark:text-gray-100 flex items-center justify-center border border-[var(--border-main)] active:scale-95 transition-all shadow-none shrink-0"
-                title={isRtl ? 'رجوع' : 'Back'}
-                aria-label="Back"
-              >
-                {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
-              </button>
-
-              {/* Brand Logo & Name */}
-              <div 
-                onClick={() => { setSelectedPageDetail(null); setActiveTab('board'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="flex items-center gap-2 cursor-pointer transition-theme select-none min-w-0"
-              >
-                <div className="w-8 h-8 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-bold border border-accent/20 shrink-0">
-                  <Megaphone size={14} />
-                </div>
-                <h2 className="text-sm sm:text-base font-black tracking-tight flex items-center gap-1.5 leading-none text-gray-900 dark:text-gray-100 truncate">
-                  <span>{isRtl ? 'فايرال بوك' : 'Viralbook'}</span>
-                  <ShieldCheck size={14} className="text-accent shrink-0" />
-                </h2>
-              </div>
-            </div>
-
-            {/* End Side: Search + Messages/Inquiries Shortcut */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Search Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setIsMobileSearchOpen(true)}
-                className="w-8 h-8 rounded-[8px] bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-accent transition-theme border border-[var(--border-main)] active:scale-95 shadow-none"
-                title={isRtl ? 'البحث بالمنصة' : 'Search Platform'}
-                aria-label="Search"
-              >
-                <Search size={14} />
-              </button>
-
-              {/* Inquiries / Messages Shortcut with unread badge */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (!token) { setIsAuthModalOpen(true); return; }
-                  setSelectedPageDetail(null);
-                  setActiveTab('inquiries');
-                }}
-                className={`relative w-8 h-8 rounded-[8px] flex items-center justify-center transition-theme border border-[var(--border-main)] active:scale-95 shadow-none ${
-                  activeTab === 'inquiries' && !selectedPageDetail
-                    ? 'bg-accent/10 text-accent border-accent/40'
-                    : 'bg-gray-100 dark:bg-[var(--bg-secondary)] hover:bg-gray-200 dark:hover:bg-[var(--surface-subtle)] text-gray-600 dark:text-gray-300 hover:text-accent'
-                }`}
-                title={isRtl ? 'الرسائل والاستفسارات' : 'Messages'}
-                aria-label="Messages"
-              >
-                <MessageSquare size={14} />
-                {inquiriesList.length > 0 && (
-                  <span className="absolute -top-1 -end-1 min-w-[15px] h-[15px] px-0.5 rounded-[4px] bg-red-500 text-white text-[8px] font-black flex items-center justify-center ring-2 ring-white dark:ring-[#18181b] animate-bounce">
-                    {inquiriesList.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-        </div>
-      </div>
-
       {/* Top Banner / Hero Header Section - Hidden on Mobile and in Analytics/Pages full view */}
       {activeTab !== 'analytics' && activeTab !== 'pages' && !selectedPageDetail && (
         <div className="hidden lg:block relative border-b border-gray-200/80 dark:border-gray-800/80 bg-gradient-to-b from-gray-500/10 via-transparent to-transparent py-8 px-6 lg:px-8">
@@ -2681,7 +2673,7 @@ export const BulletinBoardPage: React.FC = () => {
       )}
 
       {/* Main Container - Facebook 3-Column Layout */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-20 lg:pb-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] lg:pt-6 pb-28 lg:pb-8">
         
         {/* Header Search & Sort Toolbar - Hidden on Mobile (moved to sidebar) */}
         {!selectedPageDetail && (
@@ -3052,7 +3044,7 @@ export const BulletinBoardPage: React.FC = () => {
                           <BulletinAvatar
                             src={page.avatar_url}
                             alt={page.name}
-                            size="xl"
+                            size="lg"
                             isPage={true}
                           />
                           <div className="mb-1 min-w-0">
@@ -3512,7 +3504,7 @@ export const BulletinBoardPage: React.FC = () => {
                     onClick={() => {
                       sessionStorage.clear();
                       sessionStorage.removeItem('perplexta_bulletin_scroll_y');
-                      localStorage.removeItem('perplexta_bulletin_scroll_y');
+                      secureStorage.remove('perplexta_bulletin_scroll_y');
                       window.location.reload();
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-colors text-start"
@@ -3526,7 +3518,7 @@ export const BulletinBoardPage: React.FC = () => {
               )}
             </AnimatePresence>
             {/* Subtle Motion-Blurred Pointer Trail Indicator */}
-            {mousePos.isInside && (
+            {mousePos.isInside && !isAnyModalOpen && (
               <div 
                 className="absolute pointer-events-none z-30 transition-theme ease-out rounded-[4px] bg-accent/20 blur-[2px]"
                 style={{
@@ -3620,12 +3612,12 @@ export const BulletinBoardPage: React.FC = () => {
                 </div>
 
                 {/* Page Profile Header */}
-                <div className="px-6 -mt-14 pb-4 space-y-4">
+                <div className="px-6 -mt-10 pb-4 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <BulletinAvatar
                       src={selectedPageDetail.page.avatar_url}
                       alt={selectedPageDetail.page.name}
-                      size="xl"
+                      size="lg"
                       isPage={true}
                     />
 
@@ -4812,16 +4804,97 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="py-1 sm:py-2">
                       <textarea
                         value={adFormData.description}
-                        onChange={(e) => setAdFormData(prev => ({ ...prev, description: e.target.value }))}
+                        onChange={(e) => handleComposerTextChange(e.target.value)}
                         placeholder={
                           isRtl
                             ? `بمَ تفكر اليوم، ${user?.name ? user.name.split(' ')[0] : ''}؟`
                             : `What's on your mind, ${user?.name ? user.name.split(' ')[0] : ''}?`
                         }
-                        className="w-full text-sm sm:text-lg bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none min-h-[80px] sm:min-h-[140px] text-gray-900 dark:text-gray-100 p-1 placeholder-gray-400 dark:placeholder-zinc-500 font-normal leading-relaxed"
+                        className="w-full text-sm sm:text-lg bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none min-h-[80px] sm:min-h-[140px] text-gray-900 dark:text-gray-100 p-1 placeholder-gray-400 dark:placeholder-zinc-500 font-normal leading-relaxed mb-1"
                         rows={3}
                         autoFocus
                       />
+                      
+                      {/* Character Counter */}
+                      <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-zinc-500 font-mono px-1 pb-1">
+                        <span>
+                          {isRtl ? 'الحد الأقصى 1000 حرف' : 'Max 1000 chars'}
+                        </span>
+                        <span className={adFormData.description.length >= 900 ? 'text-red-500 font-bold' : ''}>
+                          {adFormData.description.length} / 1000
+                        </span>
+                      </div>
+
+                      {/* Suggestions Overlay */}
+                      {suggestionType !== 'none' && (
+                        <div className="my-2 p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl shadow-lg max-h-[160px] overflow-y-auto z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                          <div className="flex items-center justify-between px-2 pb-1.5 border-b border-gray-100 dark:border-zinc-800 text-[10px] text-gray-400 dark:text-zinc-500 font-extrabold">
+                            <span>
+                              {suggestionType === 'hashtag'
+                                ? (isRtl ? 'اقتراحات وسوم شائعة (#)' : 'Trending Hashtags (#)')
+                                : (isRtl ? 'خيارات المنشن والإشارة (@)' : 'Mentions & Sharing Precision (@)')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSuggestionType('none');
+                                setSuggestionQuery('');
+                              }}
+                              className="hover:text-red-500 font-black text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="divide-y divide-gray-50 dark:divide-zinc-800/50 mt-1">
+                            {suggestionType === 'hashtag' && (
+                              trendingHashtags
+                                .filter(tag => !suggestionQuery || tag.toLowerCase().includes(suggestionQuery.toLowerCase()))
+                                .map((tag, idx) => (
+                                  <button
+                                    key={`has-${idx}`}
+                                    type="button"
+                                    onClick={() => handleSelectSuggestion(tag)}
+                                    className="w-full text-right sm:text-left rtl:text-right ltr:text-left px-2 py-1.5 text-xs hover:bg-blue-500/5 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 transition-colors font-semibold text-gray-700 dark:text-zinc-300 flex items-center gap-2"
+                                  >
+                                    <span className="text-blue-500 dark:text-blue-400 font-bold">#</span>
+                                    <span>{tag}</span>
+                                  </button>
+                                ))
+                            )}
+
+                            {suggestionType === 'mention' && (
+                              mentionSuggestions
+                                .filter(item => {
+                                  const q = suggestionQuery.toLowerCase();
+                                  return !suggestionQuery || item.name.toLowerCase().includes(q) || item.username.toLowerCase().includes(q);
+                                })
+                                .map((item, idx) => {
+                                  const isBroadcast = item.type === 'broadcast';
+                                  return (
+                                    <button
+                                      key={`men-${idx}`}
+                                      type="button"
+                                      onClick={() => handleSelectSuggestion(item.username)}
+                                      className="w-full text-right sm:text-left rtl:text-right ltr:text-left px-2 py-1.5 text-xs hover:bg-blue-500/5 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 transition-colors font-semibold text-gray-700 dark:text-zinc-300 flex items-center justify-between"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={isBroadcast ? 'text-purple-500' : 'text-blue-500'}>
+                                          {isBroadcast ? '📢' : '@'}
+                                        </span>
+                                        <span>{isRtl && item.labelAr ? item.labelAr : item.name}</span>
+                                      </div>
+                                      {!isBroadcast && (
+                                        <span className="text-[9px] text-gray-400 dark:text-zinc-500 font-mono">
+                                          @{item.username}
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* If no media is selected yet, show a beautiful, high-fidelity drag-and-drop media upload card */}
@@ -6180,7 +6253,7 @@ export const BulletinBoardPage: React.FC = () => {
                   onChange={(e) => {
                     const c = e.target.value;
                     setSelectedCountry(c);
-                    localStorage.setItem('perplexta_user_country', c);
+                    secureStorage.set('perplexta_user_country', c);
                     handleSelectCity('all');
                   }}
                   className="w-full px-3 py-2 text-xs font-bold rounded-xl bg-gray-50 dark:bg-zinc-800/90 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-accent transition-theme cursor-pointer shadow-2xs"
@@ -6361,7 +6434,7 @@ export const BulletinBoardPage: React.FC = () => {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedRadius(val);
-                        localStorage.setItem('perplexta_user_radius', val);
+                        secureStorage.set('perplexta_user_radius', val);
                       }}
                       className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent hover:accent-accent-400 transition-theme"
                     />
@@ -6381,7 +6454,7 @@ export const BulletinBoardPage: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setSelectedRadius(r);
-                          localStorage.setItem('perplexta_user_radius', r);
+                          secureStorage.set('perplexta_user_radius', r);
                         }}
                         className={`flex-1 py-1 rounded-lg text-[10px] font-extrabold transition-theme border ${
                           selectedRadius === r
@@ -6445,7 +6518,7 @@ export const BulletinBoardPage: React.FC = () => {
       </AnimatePresence>
 
       {/* FIXED BOTTOM NAVIGATION BAR (Header-to-Footer Symmetry) */}
-      <nav className="lg:hidden mobile-bottom-nav">
+      <nav className="lg:!hidden mobile-bottom-nav">
         {/* Tab 1: Home / Feed */}
         <button
           type="button"

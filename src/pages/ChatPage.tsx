@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useVideoPlayback } from '../hooks/useVideoPlayback';
 import { useTypingDebounce } from '../hooks/useTypingDebounce';
@@ -164,7 +165,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
     }, 800);
 
     try {
-      const savedImages = JSON.parse(localStorage.getItem('saved_ai_images') || '[]');
+      const savedImages = JSON.parse(secureStorage.getSync('saved_ai_images') || '[]');
       if (savedImages.includes(rawSrc) || savedImages.includes(cleanUrl)) {
         setIsSaved(true);
       }
@@ -223,15 +224,15 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
   const handleSaveToggle = () => {
     if (!cleanUrl) return;
     try {
-      const savedImages = JSON.parse(localStorage.getItem('saved_ai_images') || '[]');
+      const savedImages = JSON.parse(secureStorage.getSync('saved_ai_images') || '[]');
       if (isSaved) {
         const updated = savedImages.filter((item: string) => item !== rawSrc && item !== cleanUrl);
-        localStorage.setItem('saved_ai_images', JSON.stringify(updated));
+        secureStorage.set('saved_ai_images', JSON.stringify(updated));
         setIsSaved(false);
         toast.success(dir === 'rtl' ? 'تمت إزالة الصورة من المحفوظات' : 'Image removed from bookmarks');
       } else {
         savedImages.push(cleanUrl);
-        localStorage.setItem('saved_ai_images', JSON.stringify(savedImages));
+        secureStorage.set('saved_ai_images', JSON.stringify(savedImages));
         setIsSaved(true);
         toast.success(dir === 'rtl' ? 'تم حفظ الصورة في المحفوظات!' : 'Image saved to bookmarks!');
       }
@@ -2634,7 +2635,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     setGeneratedAudioMime(null);
     setIsTrackSaved(false);
     try {
-      const token = localStorage.getItem('token');
+      const token = secureStorage.getSync('token');
       const response = await fetch('/api/tools/generate-music', {
         method: 'POST',
         headers: {
@@ -2685,7 +2686,7 @@ const InteractiveAudioPlayer = ({ body, fullContent, dir, theme, coverImageUrl }
     if (!generatedAudioBase64) return;
     setIsSavingTrack(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = secureStorage.getSync('token');
       const response = await fetch('/api/tools/save-music', {
         method: 'POST',
         headers: {
@@ -4220,14 +4221,14 @@ export const ChatPage: React.FC = () => {
   const { id: routeChatId } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState(() => {
-    return localStorage.getItem('draft_query') || '';
+    return secureStorage.getSync('draft_query') || '';
   });
   const [isFocused, setIsFocused] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'fast' | 'thinking' | 'pro'>(() => {
-    return (localStorage.getItem('last_active_model') as any) || 'fast';
+    return (secureStorage.getSync('last_active_model') as any) || 'fast';
   });
   const [selectedTool, setSelectedTool] = useState<string>(() => {
-    return localStorage.getItem('last_active_tool') || 'chat';
+    return secureStorage.getSync('last_active_tool') || 'chat';
   });
 
   const prevUserRef = useRef<any>(user);
@@ -4235,14 +4236,14 @@ export const ChatPage: React.FC = () => {
     if (user && !prevUserRef.current) {
       setSelectedTool('chat');
       setSelectedModel('fast');
-      localStorage.setItem('last_active_tool', 'chat');
-      localStorage.setItem('last_active_model', 'fast');
+      secureStorage.set('last_active_tool', 'chat');
+      secureStorage.set('last_active_model', 'fast');
     }
     if (!user && prevUserRef.current) {
       setSelectedTool('chat');
       setSelectedModel('fast');
-      localStorage.setItem('last_active_tool', 'chat');
-      localStorage.setItem('last_active_model', 'fast');
+      secureStorage.set('last_active_tool', 'chat');
+      secureStorage.set('last_active_model', 'fast');
     }
     prevUserRef.current = user;
   }, [user]);
@@ -4289,10 +4290,10 @@ export const ChatPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAdvancedToolsOpen, setIsAdvancedToolsOpen] = useState(() => {
-    return localStorage.getItem('perplexta_advanced_tools_open') === 'true';
+    return secureStorage.getSync('perplexta_advanced_tools_open') === 'true';
   });
   const [forensicMode, setForensicMode] = useState(() => {
-    return localStorage.getItem('perplexta_forensic_mode') === 'true';
+    return secureStorage.getSync('perplexta_forensic_mode') === 'true';
   });
   const [isAnalyzingForensic, setIsAnalyzingForensic] = useState(false);
   const [forensicReport, setForensicReport] = useState<any | null>(null);
@@ -4307,7 +4308,7 @@ export const ChatPage: React.FC = () => {
   const [isChatMessagesLoading, setIsChatMessagesLoading] = useState<boolean>(() => {
     try {
       if (!routeChatId || routeChatId === 'new') return false;
-      const cached = localStorage.getItem(`perplexta_chat_messages_${routeChatId}`);
+      const cached = secureStorage.getSync(`perplexta_chat_messages_${routeChatId}`);
       return !cached;
     } catch {
       return false;
@@ -4380,8 +4381,8 @@ export const ChatPage: React.FC = () => {
 
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
-      const activeId = routeChatId && routeChatId !== 'new' ? routeChatId : localStorage.getItem('last_chat_id');
-      const cached = activeId ? localStorage.getItem(`perplexta_chat_messages_${activeId}`) : null;
+      const activeId = routeChatId && routeChatId !== 'new' ? routeChatId : secureStorage.getSync('last_chat_id');
+      const cached = activeId ? secureStorage.getSync(`perplexta_chat_messages_${activeId}`) : null;
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -4402,7 +4403,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     if (chatId) {
       try {
-        localStorage.setItem(`perplexta_chat_messages_${chatId}`, JSON.stringify(messages));
+        secureStorage.set(`perplexta_chat_messages_${chatId}`, JSON.stringify(messages));
       } catch {}
     }
   }, [messages, chatId]);
@@ -4412,12 +4413,12 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (!query) {
-      localStorage.setItem('draft_query', '');
+      secureStorage.set('draft_query', '');
       return;
     }
 
     const handler = setTimeout(() => {
-      localStorage.setItem('draft_query', query);
+      secureStorage.set('draft_query', query);
     }, 500); 
 
     return () => {
@@ -4426,19 +4427,19 @@ export const ChatPage: React.FC = () => {
   }, [query]);
 
   useEffect(() => {
-    localStorage.setItem('last_active_model', selectedModel);
+    secureStorage.set('last_active_model', selectedModel);
   }, [selectedModel]);
 
   useEffect(() => {
-    localStorage.setItem('last_active_tool', selectedTool);
+    secureStorage.set('last_active_tool', selectedTool);
   }, [selectedTool]);
 
   useEffect(() => {
-    localStorage.setItem('perplexta_advanced_tools_open', String(isAdvancedToolsOpen));
+    secureStorage.set('perplexta_advanced_tools_open', String(isAdvancedToolsOpen));
   }, [isAdvancedToolsOpen]);
 
   useEffect(() => {
-    localStorage.setItem('perplexta_forensic_mode', String(forensicMode));
+    secureStorage.set('perplexta_forensic_mode', String(forensicMode));
   }, [forensicMode]);
 
   const handleUserTyping = () => {
@@ -4478,7 +4479,7 @@ export const ChatPage: React.FC = () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const authToken = token || localStorage.getItem('app_token');
+      const authToken = token || secureStorage.getSync('app_token');
       const response = await fetch('/api/files/analyze-forensic', {
         method: 'POST',
         headers: {
@@ -4542,13 +4543,13 @@ export const ChatPage: React.FC = () => {
   }, [isGenerating, chatId, routeChatId]);
 
   const [videoSettings, setVideoSettings] = useState(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('perplexta_video_aspect_ratio') : null;
+    const saved = typeof window !== 'undefined' ? secureStorage.getSync('perplexta_video_aspect_ratio') : null;
     return {
       aspectRatio: saved || '9:16'
     };
   });
   const [imageSettings, setImageSettings] = useState(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('perplexta_image_aspect_ratio') : null;
+    const saved = typeof window !== 'undefined' ? secureStorage.getSync('perplexta_image_aspect_ratio') : null;
     return {
       aspectRatio: saved || '1:1',
       quality: 'HD',
@@ -4556,7 +4557,7 @@ export const ChatPage: React.FC = () => {
     };
   });
   const [isAspectBarCollapsed, setIsAspectBarCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && localStorage.getItem('perplexta_aspect_bar_collapsed') === 'true';
+    return typeof window !== 'undefined' && secureStorage.getSync('perplexta_aspect_bar_collapsed') === 'true';
   });
   const [audioSettings, setAudioSettings] = useState({
     mood: 'Epic',
@@ -4567,7 +4568,7 @@ export const ChatPage: React.FC = () => {
 
   // Sync user media preferences from Core Database
   useEffect(() => {
-    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('app_token') : null);
+    const authToken = token || (typeof window !== 'undefined' ? secureStorage.getSync('app_token') : null);
     if (!authToken) return;
 
     fetch('/api/users/media-preferences', {
@@ -4578,11 +4579,11 @@ export const ChatPage: React.FC = () => {
         if (data.success && data.preferences) {
           if (data.preferences.image?.aspectRatio) {
             setImageSettings(prev => ({ ...prev, aspectRatio: data.preferences.image.aspectRatio }));
-            localStorage.setItem('perplexta_image_aspect_ratio', data.preferences.image.aspectRatio);
+            secureStorage.set('perplexta_image_aspect_ratio', data.preferences.image.aspectRatio);
           }
           if (data.preferences.video?.aspectRatio) {
             setVideoSettings(prev => ({ ...prev, aspectRatio: data.preferences.video.aspectRatio }));
-            localStorage.setItem('perplexta_video_aspect_ratio', data.preferences.video.aspectRatio);
+            secureStorage.set('perplexta_video_aspect_ratio', data.preferences.video.aspectRatio);
           }
         }
       })
@@ -4598,13 +4599,13 @@ export const ChatPage: React.FC = () => {
 
     if (isVideo) {
       setVideoSettings(prev => ({ ...prev, aspectRatio: ratio }));
-      localStorage.setItem('perplexta_video_aspect_ratio', ratio);
+      secureStorage.set('perplexta_video_aspect_ratio', ratio);
     } else {
       setImageSettings(prev => ({ ...prev, aspectRatio: ratio }));
-      localStorage.setItem('perplexta_image_aspect_ratio', ratio);
+      secureStorage.set('perplexta_image_aspect_ratio', ratio);
     }
 
-    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('app_token') : null);
+    const authToken = token || (typeof window !== 'undefined' ? secureStorage.getSync('app_token') : null);
     if (authToken) {
       fetch('/api/users/media-preferences', {
         method: 'PUT',
@@ -4716,8 +4717,8 @@ export const ChatPage: React.FC = () => {
   }, [isGenerating, messages.length]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(() => { const cached = localStorage.getItem(`draft_edit_index_${routeChatId || 'new'}`); return cached ? parseInt(cached, 10) : null; });
-  const [editValue, setEditValue] = useState(() => localStorage.getItem(`draft_edit_value_${routeChatId || 'new'}`) || '');
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(() => { const cached = secureStorage.getSync(`draft_edit_index_${routeChatId || 'new'}`); return cached ? parseInt(cached, 10) : null; });
+  const [editValue, setEditValue] = useState(() => secureStorage.getSync(`draft_edit_value_${routeChatId || 'new'}`) || '');
   const [showPinnedModal, setShowPinnedModal] = useState(false);
   const [copiedPromptIndex, setCopiedPromptIndex] = useState<number | null>(null);
 
@@ -4734,11 +4735,11 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (editingMessageIndex !== null) {
-      localStorage.setItem(`draft_edit_index_${routeChatId || 'new'}`, editingMessageIndex.toString());
-      localStorage.setItem(`draft_edit_value_${routeChatId || 'new'}`, editValue);
+      secureStorage.set(`draft_edit_index_${routeChatId || 'new'}`, editingMessageIndex.toString());
+      secureStorage.set(`draft_edit_value_${routeChatId || 'new'}`, editValue);
     } else {
-      localStorage.removeItem(`draft_edit_index_${routeChatId || 'new'}`);
-      localStorage.removeItem(`draft_edit_value_${routeChatId || 'new'}`);
+      secureStorage.remove(`draft_edit_index_${routeChatId || 'new'}`);
+      secureStorage.remove(`draft_edit_value_${routeChatId || 'new'}`);
     }
   }, [editingMessageIndex, editValue, routeChatId]);
 
@@ -5361,15 +5362,15 @@ export const ChatPage: React.FC = () => {
     } else {
       setMessages([]);
       setChatId(null);
-      localStorage.removeItem('last_chat_id');
+      secureStorage.remove('last_chat_id');
     }
   }, [routeChatId, token, isAuthReady, isGenerating]);
 
   useEffect(() => {
     if (chatId) {
-      localStorage.setItem('last_chat_id', chatId);
+      secureStorage.set('last_chat_id', chatId);
     } else {
-      localStorage.removeItem('last_chat_id');
+      secureStorage.remove('last_chat_id');
     }
   }, [chatId]);
 
@@ -5905,10 +5906,10 @@ export const ChatPage: React.FC = () => {
          dynamicVideoSettings.aspectRatio = aspectMatch[1];
          if (toolToUse === 'video') {
            setVideoSettings(prev => ({ ...prev, aspectRatio: aspectMatch[1] }));
-           localStorage.setItem('perplexta_video_aspect_ratio', aspectMatch[1]);
+           secureStorage.set('perplexta_video_aspect_ratio', aspectMatch[1]);
          } else if (toolToUse === 'image') {
            setImageSettings(prev => ({ ...prev, aspectRatio: aspectMatch[1] }));
-           localStorage.setItem('perplexta_image_aspect_ratio', aspectMatch[1]);
+           secureStorage.set('perplexta_image_aspect_ratio', aspectMatch[1]);
          }
       }
 
@@ -5970,7 +5971,7 @@ export const ChatPage: React.FC = () => {
       abortControllerRef.current = new AbortController();
 
       try {
-        const authToken = token || localStorage.getItem('app_token');
+        const authToken = token || secureStorage.getSync('app_token');
 
         let currentChatId = chatId;
         if (!currentChatId) {
@@ -6143,7 +6144,7 @@ export const ChatPage: React.FC = () => {
                 content: currentQuery,
                 toolId: toolToUse,
                 modelId: activeDropdown === 'model' ? selectedModel : undefined,
-                token: token || localStorage.getItem('app_token'),
+                token: token || secureStorage.getSync('app_token'),
                 timestamp: Date.now()
               };
               store.add(payload);
@@ -6377,7 +6378,7 @@ export const ChatPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsAspectBarCollapsed(true);
-                      localStorage.setItem('perplexta_aspect_bar_collapsed', 'true');
+                      secureStorage.set('perplexta_aspect_bar_collapsed', 'true');
                     }}
                     title={dir === 'rtl' ? 'طي شريط الأبعاد' : 'Collapse ratio bar'}
                     className="p-1 sm:p-1.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-transparent hover:border-[var(--border-main)] transition-colors shrink-0"
@@ -6395,7 +6396,7 @@ export const ChatPage: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setIsAspectBarCollapsed(false);
-                    localStorage.setItem('perplexta_aspect_bar_collapsed', 'false');
+                    secureStorage.set('perplexta_aspect_bar_collapsed', 'false');
                   }}
                   title={dir === 'rtl' ? 'توسيع شريط الأبعاد' : 'Expand ratio bar'}
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[10px] sm:text-xs font-mono font-semibold text-[var(--text-secondary)] hover:text-accent hover:border-accent/30 hover:bg-[var(--surface-subtle)] transition-all shadow-xs"
@@ -6744,7 +6745,7 @@ export const ChatPage: React.FC = () => {
                             const isHidden = limit?.isHidden === true;
                             const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
                             const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
-                            const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+                            const isLocked = currentPlan ? isZeroLimit && !hasBalance : false;
                             const isSelected = selectedTool === tool.id;
 
                             return (
@@ -6835,7 +6836,7 @@ export const ChatPage: React.FC = () => {
                           const isHidden = limit?.isHidden === true;
                           const isZeroLimit = limit?.daily === 0 && limit?.monthly === 0;
                           const hasBalance = (balance && balance > 0) || (balanceUSD && balanceUSD > 0);
-                          const isLocked = currentPlan ? (isHidden || isZeroLimit) && !hasBalance : false;
+                          const isLocked = currentPlan ? isZeroLimit && !hasBalance : false;
                           const isSelected = selectedModel === model.id && isModelActive;
 
                           return (

@@ -1140,7 +1140,7 @@ router.post('/register-agent', async (req, res) => {
 
     const checkUris = Array.isArray(redirect_uris) ? redirect_uris : (redirect_uris ? [redirect_uris] : []);
 
-    await pool.query(`
+    await getSecurityPool().query(`
       INSERT INTO registered_agents (
         client_id, client_secret, client_name, identity_type, credential_type, 
         redirect_uris, jwks_uri, user_agent, signature_keys, user_id
@@ -1175,7 +1175,7 @@ router.get('/agents', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const agentsRes = await pool.query(
+    const agentsRes = await getSecurityPool().query(
       'SELECT id, client_id, client_name, identity_type, credential_type, redirect_uris, jwks_uri, user_agent, created_at FROM registered_agents WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
@@ -1191,7 +1191,7 @@ router.delete('/agents/:client_id', authenticateToken, async (req: any, res) => 
     const userId = req.user.id;
     const { client_id } = req.params;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const deleteRes = await pool.query(
+    const deleteRes = await getSecurityPool().query(
       'DELETE FROM registered_agents WHERE client_id = $1 AND user_id = $2 RETURNING id',
       [client_id, userId]
     );
@@ -1228,7 +1228,7 @@ router.post('/token', async (req, res) => {
       return res.status(401).json({ error: 'invalid_client', message: 'Client credentials must be provided in either body or Authorization header.' });
     }
 
-    const agentRes = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
+    const agentRes = await getSecurityPool().query('SELECT * FROM registered_agents WHERE client_id = $1', [clientId]);
     if (agentRes.rows.length === 0) {
       return res.status(401).json({ error: 'invalid_client', message: 'A client with this client_id is not registered.' });
     }
@@ -1265,7 +1265,7 @@ router.post('/claim', async (req, res) => {
   try {
     const { client_id, assertion } = req.body;
     if (!client_id) return res.status(400).json({ error: 'client_id is required' });
-    const agentCheck = await pool.query('SELECT * FROM registered_agents WHERE client_id = $1', [client_id]);
+    const agentCheck = await getSecurityPool().query('SELECT * FROM registered_agents WHERE client_id = $1', [client_id]);
     if (agentCheck.rows.length === 0) {
       return res.status(404).json({ error: 'No registered agent found matching the provided client_id.' });
     }
@@ -1284,7 +1284,7 @@ router.post('/revoke', async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'token parameter is required for revocation.' });
     if (token.startsWith('agent_client_')) {
-      await pool.query('DELETE FROM registered_agents WHERE client_id = $1', [token]);
+      await getSecurityPool().query('DELETE FROM registered_agents WHERE client_id = $1', [token]);
     } else {
       try {
         addToBlacklistCache(token);
@@ -1304,7 +1304,7 @@ router.get('/user', authenticateToken, async (req: any, res) => {
     if (!authUser) return res.status(401).json({ error: 'Unauthorized', message: 'No authenticated user context verified.' });
 
     if (authUser.isAgent) {
-      const agentRes = await pool.query('SELECT id, client_id, client_name, identity_type, credential_type, jwks_uri, user_agent, created_at FROM registered_agents WHERE client_id = $1', [authUser.client_id]);
+      const agentRes = await getSecurityPool().query('SELECT id, client_id, client_name, identity_type, credential_type, jwks_uri, user_agent, created_at FROM registered_agents WHERE client_id = $1', [authUser.client_id]);
       if (agentRes.rows.length === 0) return res.status(404).json({ error: 'Agent profile not found.' });
       return res.json({
         sub: authUser.client_id, client_id: authUser.client_id, name: authUser.name,

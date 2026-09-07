@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 let isRefreshing = false;
@@ -27,7 +28,7 @@ export const apiClient: AxiosInstance = axios.create({
 // Request Interceptor: Dynamically attach Bearer token from storage
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('app_token');
+    const token = secureStorage.getSync('app_token');
     if (token && config.headers) {
       if (typeof (config.headers as any).set === 'function') {
         (config.headers as any).set('Authorization', `Bearer ${token}`);
@@ -41,7 +42,7 @@ apiClient.interceptors.request.use(
 );
 
 export const performSilentTokenRefresh = async (): Promise<string | null> => {
-  const currentRefreshToken = localStorage.getItem('app_refresh_token');
+  const currentRefreshToken = secureStorage.getSync('app_refresh_token');
   if (!currentRefreshToken) {
     return null;
   }
@@ -57,9 +58,9 @@ export const performSilentTokenRefresh = async (): Promise<string | null> => {
       const newAccessToken = response.data.token;
       const newRefreshToken = response.data.refreshToken;
 
-      localStorage.setItem('app_token', newAccessToken);
+      secureStorage.set('app_token', newAccessToken);
       if (newRefreshToken) {
-        localStorage.setItem('app_refresh_token', newRefreshToken);
+        secureStorage.set('app_refresh_token', newRefreshToken);
       }
 
       window.dispatchEvent(
@@ -73,8 +74,8 @@ export const performSilentTokenRefresh = async (): Promise<string | null> => {
     return null;
   } catch (err: any) {
     if (err?.response?.status === 401 || err?.response?.status === 403) {
-      localStorage.removeItem('app_token');
-      localStorage.removeItem('app_refresh_token');
+      secureStorage.remove('app_token');
+      secureStorage.remove('app_refresh_token');
       window.dispatchEvent(new CustomEvent('app_session_expired'));
     }
     return null;

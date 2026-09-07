@@ -1,3 +1,4 @@
+import { secureStorage } from "@/lib/storage";
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ThemeSync } from '../utils/ThemeSync';
 
@@ -15,7 +16,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeEngineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('perplexta_theme') as Theme) || (localStorage.getItem('theme') as Theme) || 'system';
+      return (secureStorage.getSync('perplexta_theme') as Theme) || (secureStorage.getSync('theme') as Theme) || 'system';
     } catch {
       return 'system';
     }
@@ -28,8 +29,8 @@ export const ThemeEngineProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setThemeTransitioning(true);
     setThemeState(newTheme);
     try {
-      localStorage.setItem('perplexta_theme', newTheme);
-      localStorage.setItem('theme', newTheme);
+      secureStorage.set('perplexta_theme', newTheme);
+      secureStorage.set('theme', newTheme);
     } catch (e) {}
     const res = ThemeSync.resolve(newTheme);
     setResolvedTheme(res);

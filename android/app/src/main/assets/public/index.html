@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <meta id="theme-color-meta" name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Perplexta" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="Perplexta AI" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <style>
+      :root,
+      :root.dark,
+      :root[data-theme="dark"] {
+        --pwa-theme-color: #0b0c0e;
+        --pwa-bg-color: #0b0c0e;
+        color-scheme: dark;
+      }
+      :root.light,
+      :root[data-theme="light"] {
+        --pwa-theme-color: #f8fafc;
+        --pwa-bg-color: #f8fafc;
+        color-scheme: light;
+      }
+      html {
+        background-color: var(--pwa-bg-color);
+        color-scheme: dark light;
+      }
+      body {
+        background-color: var(--pwa-bg-color);
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    
+    <!-- Google Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- PWA Setup & Icons -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Perplexta</title>
+    <meta name="description" content="Professional Elite AI Analytics & Strategic Intelligence Platform" />
+    <meta property="og:title" content="Perplexta" />
+    <meta property="og:description" content="Professional Elite AI Analytics & Strategic Intelligence Platform" />
+
+    <script src="/init-theme.js"></script>
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      window.__deferredPwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__deferredPwaPrompt = e;
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('pwa-prompt-captured'));
+        }
+      });
+    </script>
+    <script type="module" crossorigin src="/assets/index-UR0euZKA.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-query-DM-PSnEu.js">
+    <link rel="modulepreload" crossorigin href="/assets/recharts-VJXqqDIX.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CO8PSrDz.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body class="layout-locked">
+    <div id="root"></div>
+    <!-- Deferred Script Loader for Non-Essential Third-Party Analytics & WebMCP -->
+    <script>
+      (function() {
+        function loadDeferredScripts() {
+          const deferredScripts = [
+            '/telemetry.js'
+          ];
+          deferredScripts.forEach(function(src) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+          });
+        }
+
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(function() {
+            setTimeout(loadDeferredScripts, 1500);
+          }, { timeout: 4000 });
+        } else {
+          window.addEventListener('load', function() {
+            setTimeout(loadDeferredScripts, 2000);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

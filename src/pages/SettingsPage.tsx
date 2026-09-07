@@ -447,7 +447,7 @@ export const SettingsPage: React.FC = () => {
       {/* Mobile Bottom Navigation Bar */}
       <nav 
         dir={dir}
-        className="md:hidden mobile-bottom-nav"
+        className="md:!hidden mobile-bottom-nav"
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
