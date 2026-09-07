@@ -1,104 +1,146 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { ShieldCheck, BookOpen, Cpu, CreditCard, Lock, FileText, Zap } from 'lucide-react';
+import { 
+  ShieldCheck, Cpu, CreditCard, Sparkles, 
+  ChevronRight, ChevronLeft, ArrowUpRight,
+  MessageSquare, Terminal
+} from 'lucide-react';
 import { resolveImageUrl } from '../utils/imageResolver';
 
-export const StudioPage = () => {
-  const { theme, language, siteSettings } = useAppContext();
+export const StudioPage: React.FC = () => {
+  const { theme, language, siteSettings, dir } = useAppContext();
+  const navigate = useNavigate();
   const siteName = language === 'ar' ? siteSettings.siteNameAr : siteSettings.siteName;
   const logo = theme === 'dark' ? siteSettings.logoBase64 : (siteSettings.logoLightBase64 || siteSettings.logoBase64);
 
+  const studioFeatures = [
+    {
+      id: 'chat_engine',
+      icon: <MessageSquare className="w-5 h-5 text-accent" />,
+      title: language === 'ar' ? 'المحادثة والتحليل الذكي' : 'Smart Chat & Reasoning',
+      desc: language === 'ar' ? 'محركات ذكاء اصطناعي متعددة مع نظام التوجيه والتبديل الصامت.' : 'Multi-model AI engines with dynamic failover orchestration.',
+      action: () => navigate('/chat'),
+      badge: language === 'ar' ? 'نشط' : 'Active'
+    },
+    {
+      id: 'bulletin_hub',
+      icon: <Sparkles className="w-5 h-5 text-accent" />,
+      title: language === 'ar' ? 'منصة فيرال بوك والمجتمع' : 'ViralBook Community Hub',
+      desc: language === 'ar' ? 'مجتمع تفاعلي، ريلز، وقنوات تجارية موثقة بدقة متناهية.' : 'Interactive feed, verified commercial pages, and short reels.',
+      action: () => navigate('/bulletin'),
+      badge: language === 'ar' ? 'شائع' : 'Trending'
+    },
+    {
+      id: 'api_portal',
+      icon: <Terminal className="w-5 h-5 text-accent" />,
+      title: language === 'ar' ? 'بوابة المطورين والـ API' : 'Developer & API Portal',
+      desc: language === 'ar' ? 'مفاتيح API، توجيه الروبوتات، والتحليلات البرمجية المستقلة.' : 'API keys, autonomous bots routing, and programmatic workflows.',
+      action: () => navigate('/settings/developer'),
+      badge: language === 'ar' ? 'للمطورين' : 'Devs'
+    },
+    {
+      id: 'wallet_economy',
+      icon: <CreditCard className="w-5 h-5 text-accent" />,
+      title: language === 'ar' ? 'المحفظة والاشتراكات' : 'Wallet & Plans',
+      desc: language === 'ar' ? 'نظام مالي مدقق بسجل غير قابل للتعديل لشحن النقاط والترقية.' : 'Audited ledger financial system for credits and tier upgrades.',
+      action: () => navigate('/settings/wallet'),
+      badge: language === 'ar' ? 'آمن' : 'Secure'
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans">
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-[var(--bg-primary)]/80 border-b border-[var(--border-main)]">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[var(--surface-page)] text-[var(--text-primary)] font-sans pb-24 md:pb-12">
+      {/* Native App Bar Header */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[var(--surface-page)]/90 border-b border-[var(--border-main)] pt-[env(safe-area-inset-top,0px)]">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {logo ? (
-              <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-8 h-8 rounded-[8px] object-cover" />
-            ) : (
-              <div className="w-8 h-8 rounded-[8px] bg-[var(--bg-secondary)] border border-[var(--border-main)] flex items-center justify-center">
-                <Cpu className="w-4 h-4 text-accent" />
-              </div>
-            )}
-            <h1 className="text-xl font-black text-[var(--text-primary)] uppercase tracking-widest">
-              {language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio'}
-            </h1>
+            <button 
+              onClick={() => navigate(-1)} 
+              className="h-9 px-3 flex items-center gap-1 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-primary)] hover:text-accent transition-theme active:scale-95 cursor-pointer"
+            >
+              {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              <span className="text-xs font-bold">{dir === 'rtl' ? 'رجوع' : 'Back'}</span>
+            </button>
+            <div className="flex items-center gap-2">
+              {logo ? (
+                <img src={resolveImageUrl(logo, 'general')} alt={siteName} className="w-7 h-7 rounded-[6px] object-cover" />
+              ) : (
+                <div className="w-7 h-7 rounded-[6px] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center">
+                  <Cpu className="w-3.5 h-3.5 text-accent" />
+                </div>
+              )}
+              <h1 className="text-sm font-bold tracking-wide uppercase">
+                {language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio'}
+              </h1>
+            </div>
           </div>
-          <nav className="flex items-center gap-6">
-            <a href="#overview" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'نظرة عامة' : 'Overview'}</a>
-            <a href="#api" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'الربط البرمجي' : 'API'}</a>
-            <a href="#subscription" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'الاشتراكات' : 'Subscription'}</a>
-            <a href="#legal" className="text-sm font-bold text-gray-400 hover:text-accent transition-colors">{language === 'ar' ? 'القوانين' : 'Legal'}</a>
-          </nav>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12 space-y-20">
-        <section className="text-center space-y-6">
-          <h2 className="text-5xl font-black uppercase tracking-tight">
-            {language === 'ar' ? 'استوديو بيربليكستا: البنية التقنية السيادية' : 'PERPLEXTA Studio: Sovereign Technical Architecture'}
-          </h2>
-          <p className="max-w-2xl mx-auto text-gray-500 text-lg">
-            {language === 'ar' ? 'مساحة متكاملة للمطورين لاستكشاف الأدوات، الربط البرمجي، والاشتراكات النخبة.' : 'A comprehensive workspace for developers to explore tools, API integration, and premium elite subscriptions.'}
-          </p>
-        </section>
-
-        <section id="overview" className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
-            <BookOpen className="text-accent mb-4" size={32} />
-            <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الأدوات وسير العمل' : 'Tools & Workflows'}</h3>
-            <p className="text-gray-400">
-              {language === 'ar' 
-                ? 'منصة سيادية متكاملة مصممة خصيصاً للشركات والتجار لحماية الأرباح والقضاء على الهدر المالي. نجمع لك توليد المحتوى الذكي بالذكاء الاصطناعي مع نظام إعلاني محلي موجه جغرافياً، لخلق بيئة تجارية نقية خالية من الحسابات الوهمية.'
-                : 'A sovereign platform designed for businesses and merchants to protect profits and eliminate financial waste. We combine intelligent AI content generation with local geo-targeted advertising for a pure, bot-free commercial environment.'}
-            </p>
-          </div>
-          <div id="api" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
-            <Cpu className="text-accent mb-4" size={32} />
-            <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الربط البرمجي API' : 'API Integration'}</h3>
-            <p className="text-gray-400">
-              {language === 'ar'
-                ? 'بوابتك التقنية لربط منظومتك وأنظمتك الخارجية مباشرة مع محركات بيربليكستا السيادية. استمتع بواقع برمجي مرن وآمن يتيح لك أتمتة العمليات التجارية وتكامل خدماتك بأعلى معايير الأمان.'
-                : 'Your technical gateway to link your systems directly with Perplexta sovereign engines. Enjoy a flexible, secure API environment to automate commercial processes and integrate services with top-tier security.'}
-            </p>
-          </div>
-          <div id="subscription" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
-            <CreditCard className="text-accent mb-4" size={32} />
-            <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'الاشتراكات' : 'Subscriptions'}</h3>
-            <p className="text-gray-400">
-              {language === 'ar'
-                ? 'وداعاً للعمولات المرتفعة والمصاريف الإعلانية المرهقة التي تلتهم أرباحك. اختر البنية التي تناسب حجم مشروعك، وتمتع بصلاحيات غير محدودة تضعك في قمة المنافسة.'
-                : 'Say goodbye to high commissions and exhausting advertising expenses that eat your profits. Choose the plan that fits your project size and enjoy unlimited powers that put you at the top of the competition.'}
-            </p>
-          </div>
-          <div id="legal" className="p-8 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-main)] hover:border-accent/50 transition-theme">
-            <ShieldCheck className="text-accent mb-4" size={32} />
-            <h3 className="text-xl font-bold mb-2">{language === 'ar' ? 'القوانين' : 'Legal'}</h3>
-            <p className="text-gray-400">
-              {language === 'ar'
-                ? 'بيئة عمل تحترم السيادة الرقمية والخصوصية التامة. اطلع على البروتوكولات المنظمة لاستخدام المنصة، وحقوق التجار والمستخدمين، لضمان معاملات تجارية آمنة وشفافة.'
-                : 'A workspace that respects digital sovereignty and absolute privacy. Review the protocols organizing platform usage, merchant and user rights, ensuring safe, transparent commercial transactions.'}
-            </p>
-          </div>
-        </section>
-
-        <footer className="pt-10 border-t border-gray-250/20 dark:border-gray-800/40 space-y-10">
-          <div className="text-center">
-            <p className="text-lg md:text-xl font-black text-gray-900 dark:text-white tracking-widest uppercase font-mono">
-              {language === 'ar' ? "فيرال لينك اب - نبتكر لنحمي بياناتك" : "VIRALLINKUP - INNOVATING TO PROTECT YOUR DATA"}
-            </p>
-          </div>
-
-          <div className="p-6 md:p-8 rounded-[var(--radius)] border border-gray-200/60 dark:border-gray-800/60 bg-gray-50/20 dark:bg-gray-900/10 space-y-4 max-w-4xl mx-auto shadow-inner">
-            <div className="flex items-center gap-3 text-gray-900 dark:text-white">
-              <ShieldCheck className="w-5 h-5 text-accent " />
-              <h3 className="text-base md:text-lg font-black">{language === 'ar' ? "حقوق الملكية الفكرية" : "Intellectual Property Rights"}</h3>
+      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* Banner Section */}
+        <section className="p-5 sm:p-7 rounded-[var(--radius)] bg-gradient-to-br from-[var(--surface-card)] to-[var(--surface-subtle)] border border-[var(--border-main)] shadow-xs relative overflow-hidden">
+          <div className="max-w-2xl relative z-10 space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--bg-accent-muted)] border border-[var(--border-accent)]/30 text-accent text-[11px] font-bold">
+              <Sparkles size={12} />
+              <span>{language === 'ar' ? 'بيئة الإنتاج والتحليل' : 'Production & Suite'}</span>
             </div>
-            <p className="text-xs md:text-sm leading-relaxed text-gray-600 dark:text-gray-300 font-semibold font-sans">
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight">
+              {language === 'ar' ? 'منظومة الاستوديو والأدوات المتقدمة' : 'Sovereign Studio & Tooling System'}
+            </h2>
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
               {language === 'ar' 
-                ? "جميع الحقوق البرمجية، العلامة التجارية، ومنطق الربط الذكي الخاص بـ بيربليكستا وكافة مشاريعنا هي حقوق محفوظة لشركة فيرال لينك اب المحدودة. أي محاولة لإعادة الإنتاج أو الاستخدام غير المصرح به تعرض الفاعل للمساءلة القانونية الدولية"
-                : "All software rights, trademarks, and the smart connection logic of PERPLEXTA and all our projects are reserved rights of VIRALLINKUP LTD. Any attempt at reproduction or unauthorized use exposes the actor to international legal accountability"}
+                ? 'استكشف مسارات العمل، محركات الذكاء الاصطناعي، وخدمات المجتمع والمطورين ضمن بنية أداء عالية السرعة.' 
+                : 'Explore workflows, AI generation capabilities, community hubs, and developer integrations with ultra-low latency.'}
+            </p>
+          </div>
+        </section>
+
+        {/* Feature Navigation Cards Grid */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {studioFeatures.map((feat) => (
+            <div 
+              key={feat.id}
+              onClick={feat.action}
+              className="p-4 rounded-[var(--radius)] bg-[var(--surface-card)] border border-[var(--border-main)] hover:border-accent/50 active:scale-[0.99] transition-all cursor-pointer flex flex-col justify-between group shadow-xs"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    {feat.icon}
+                  </div>
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[var(--surface-subtle)] text-[var(--text-muted)] border border-[var(--border-main)]">
+                    {feat.badge}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] group-hover:text-accent transition-colors flex items-center gap-1">
+                    {feat.title}
+                    <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">
+                    {feat.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Sovereign IP & Security Anchor */}
+        <footer className="pt-4 border-t border-[var(--border-main)] space-y-4 text-center">
+          <div className="p-4 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] max-w-2xl mx-auto space-y-2">
+            <div className="flex items-center justify-center gap-2 text-[var(--text-primary)]">
+              <ShieldCheck className="w-4 h-4 text-accent" />
+              <h4 className="text-xs font-bold uppercase tracking-wider">
+                {language === 'ar' ? 'السيادة الرقمية وحماية البيانات' : 'Digital Sovereignty & Security'}
+              </h4>
+            </div>
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              {language === 'ar'
+                ? 'كافة المحركات وأنظمة الربط والتشفير محمية بنظام تشفير سيادي معزول لضمان خصوصية بيانات المستخدمين وأمان المعاملات.'
+                : 'All engines, orchestration layers, and encryption routines are isolated to guarantee absolute data privacy and security.'}
             </p>
           </div>
         </footer>

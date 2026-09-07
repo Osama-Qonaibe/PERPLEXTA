@@ -15,11 +15,11 @@ export const HEADER_SIZING = {
   contentHeight: 'h-[50px]',
   buttonBox: 'w-8 h-8',
   buttonPill: 'w-8 sm:w-auto px-0 sm:px-2 md:px-2.5 h-8',
-  buttonRadius: 'rounded-[8px]',
+  buttonRadius: 'rounded-[var(--radius-sm)]',
   iconSize: 14,
   logoMobile: 'w-8 h-8',
   logoDesktop: 'w-8.5 h-8.5',
-  logoRadius: 'rounded-[8px]',
+  logoRadius: 'rounded-[var(--radius-sm)]',
 } as const;
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
@@ -159,7 +159,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const isAdminPath = location.pathname.startsWith('/admin');
   const isMobileView = windowWidth < 1024;
-  const shouldShowMenuButton = !isSidebarOpen && !isAdminPath && isMobileView;
+  const shouldShowMenuButton = !isSidebarOpen;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -199,7 +199,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 h-[calc(56px+env(safe-area-inset-top,0px)+6px)] pt-[calc(env(safe-area-inset-top,0px)+6px)] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
+    <header className={`fixed top-0 left-0 right-0 h-[calc(50px+env(safe-area-inset-top,0px))] lg:h-[calc(56px+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] z-[80] transition-theme flex items-center bg-[var(--bg-base)]`}>
       <div className={`absolute inset-0 z-[-1] border-b border-[var(--border-main)] transition-theme`} />
       
       <div className="w-full flex justify-between items-center h-[50px]">
@@ -268,19 +268,27 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 ) : null}
               </NavLink>
               
-              {shouldShowMenuButton && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerHaptic('medium');
-                    setIsSidebarOpen(true);
-                  }} 
-                  className="flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0 hover:bg-[var(--bg-secondary)]"
-                  title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
-                >
-                  <Menu size={15} className="text-[var(--text-primary)] group-hover:text-accent transition-theme" />
-                </button>
-              )}
+              <AnimatePresence>
+                {!isSidebarOpen && (
+                  <motion.button 
+                    key="header-menu-open-btn"
+                    initial={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.85 }}
+                    transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerHaptic('medium');
+                      setIsSidebarOpen(true);
+                    }} 
+                    className="hidden lg:flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0 hover:bg-[var(--bg-secondary)] cursor-pointer"
+                    title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
+                    aria-label="Open Sidebar"
+                  >
+                    <Menu size={18} className="text-[var(--text-primary)] group-hover:text-accent transition-theme" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
           </div>
         </div>
 

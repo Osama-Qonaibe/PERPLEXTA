@@ -58,6 +58,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Send,
+  Palette,
   Terminal,
   Shield,
   ShieldCheck,
@@ -494,37 +495,68 @@ export const CommandCenterView = ({
 
   return (
     <div className="space-y-6">
+      {/* Theme Studio Banner Card */}
+      <div 
+        onClick={() => navigate('/admin/theme')}
+        className="p-6 rounded-[var(--radius-lg)] border border-[var(--border-accent)] bg-gradient-to-r from-[var(--surface-card)] to-[var(--surface-subtle)] hover:opacity-95 transition-all cursor-pointer shadow-md flex items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] shadow-sm">
+            <Palette size={28} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-lg font-black text-[var(--text-primary)]">
+                {language === 'ar' ? 'استوديو المظهر والثيمات (Theme Studio)' : 'Theme Studio & Appearance Control'}
+              </h2>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)]">
+                {language === 'ar' ? 'جديد' : 'NEW'}
+              </span>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {language === 'ar' 
+                ? 'تحكم دقيق وشامل في كل لون وكل سطر للوضع الداكن والفاتح، مع تطبيق فوري وقاعدة بيانات صارمة.' 
+                : 'Sovereign color token control for dark and light themes with instant database application.'}
+            </p>
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--surface-page)] text-[var(--text-primary)] font-bold text-sm border border-[var(--border-main)] shadow-xs">
+          <span>{language === 'ar' ? 'فتح الاستوديو' : 'Open Studio'}</span>
+          <ArrowRight size={16} className={language === 'ar' ? 'rotate-180' : ''} />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, idx) => (
           <div
             key={`cmd-kpi-${idx}-${kpi.title}`}
-            className={`p-5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] transition-theme hover:shadow-md`}
+            className="p-5 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] transition-theme shadow-xs hover:shadow-sm"
           >
             <div className="flex justify-between items-start mb-4">
               <div
-                className={`p-2.5 rounded-md bg-[var(--bg-primary)] text-accent `}
+                className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] border border-[var(--border-main)]"
               >
                 {kpi.icon}
               </div>
               <span
-                className={`text-sm font-medium px-2 py-1 rounded-sm ${kpi.isPositive ? "bg-accent/10 text-accent" : "bg-red-500/10 text-red-500"}`}
+                className={`text-xs font-bold px-2 py-1 rounded-[var(--radius-xs)] ${kpi.isPositive ? "bg-[var(--surface-subtle)] text-[var(--fg-accent)]" : "bg-red-500/10 text-red-500"}`}
               >
                 {kpi.trend}
               </span>
             </div>
-            <h3 className="text-[var(--text-secondary)] text-sm font-medium mb-1 transition-theme">
+            <h3 className="text-[var(--text-secondary)] text-xs font-semibold mb-1 transition-theme">
               {kpi.title}
             </h3>
-            <p className="text-2xl font-bold">{kpi.value}</p>
+            <p className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">{kpi.value}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Launchpad & SEO Operations Hub */}
-      <div className="p-5 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] space-y-4 shadow-sm transition-theme">
+      <div className="p-5 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] space-y-4 shadow-xs transition-theme">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Sparkles size={18} className="text-accent" />
+            <Sparkles size={18} className="text-[var(--fg-accent)]" />
             <h2 className="text-sm font-black uppercase tracking-wider text-[var(--text-primary)]">
               {language === 'ar' ? 'اختصارات الأقسام والعمليات السريعة' : 'Command Operations & Quick Launchpad'}
             </h2>
@@ -534,24 +566,36 @@ export const CommandCenterView = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-3">
+          <button
+            onClick={() => navigate('/admin/theme')}
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-accent)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer shadow-xs"
+          >
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--fg-accent)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
+              <Palette size={18} />
+            </div>
+            <span className="text-xs font-bold text-[var(--fg-accent)] leading-tight">
+              {language === 'ar' ? 'استوديو المظهر' : 'Theme Studio'}
+            </span>
+          </button>
+
           <button
             onClick={() => navigate('/admin/seo')}
-            className="p-3 rounded-md border border-accent/40 bg-accent/10 hover:bg-accent/20 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer shadow-sm hover:shadow"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-accent/20 text-accent group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--fg-accent)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Globe size={18} />
             </div>
-            <span className="text-xs font-bold text-accent leading-tight">
+            <span className="text-xs font-bold text-[var(--fg-accent)] leading-tight">
               {language === 'ar' ? 'مركز السيو' : 'SEO Audit'}
             </span>
           </button>
 
           <button
             onClick={() => navigate('/admin/orchestrator')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Cpu size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -561,9 +605,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/databases')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Database size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -573,9 +617,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/keys')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Key size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -585,9 +629,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/radar')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <ShieldCheck size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -597,9 +641,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/finance')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Landmark size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -609,9 +653,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/plans')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <CreditCard size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -621,9 +665,9 @@ export const CommandCenterView = ({
 
           <button
             onClick={() => navigate('/admin/users')}
-            className="p-3 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] hover:border-accent/40 transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
+            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
           >
-            <div className="p-2 rounded bg-black/10 dark:bg-white/10 text-[var(--text-primary)] group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--text-primary)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
               <Users size={18} />
             </div>
             <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
@@ -635,15 +679,15 @@ export const CommandCenterView = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div
-          className={`p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col`}
+          className="p-6 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] flex flex-col shadow-xs"
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Cpu className="text-accent" size={20} />
-              <h2 className="text-lg font-bold">{t("resourceUtilization")}</h2>
+              <Cpu className="text-[var(--fg-accent)]" size={20} />
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">{t("resourceUtilization")}</h2>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black text-accent/50 uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+            <div className="flex items-center gap-2 text-[10px] font-black text-[var(--fg-accent)]/70 uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-[var(--fg-accent)] animate-pulse" />
               Live Diagnostics
             </div>
           </div>
@@ -651,54 +695,54 @@ export const CommandCenterView = ({
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("cpuLoad")}</span>
-                <span className="text-accent">
+                <span className="text-[var(--fg-accent)] font-bold">
                   {serverHealth?.cpu || 0}%
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--surface-subtle)] rounded-full overflow-hidden border border-[var(--border-main)]">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.cpu || 0}%` }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
+                  className="h-full bg-[var(--bg-accent-emphasis)]"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("memoryAllocation")}</span>
-                <span className="text-accent">
+                <span className="text-[var(--fg-accent)] font-bold">
                   {serverHealth?.memory?.used || 0}MB
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--surface-subtle)] rounded-full overflow-hidden border border-[var(--border-main)]">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${serverHealth?.memory?.percent || 0}%` }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
+                  className="h-full bg-[var(--bg-accent-emphasis)]"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
                 <span className="text-[var(--text-muted)]">{t("systemLoad")}</span>
-                <span className="text-accent">
+                <span className="text-[var(--fg-accent)] font-bold">
                   {serverHealth?.load
                     ? serverHealth.load[0].toFixed(2)
                     : "0.00"}
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[var(--bg-overlay)] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[var(--surface-subtle)] rounded-full overflow-hidden border border-[var(--border-main)]">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{
                     width: `${Math.min(100, (serverHealth?.load?.[0] || 0) * 10)}%`,
                   }}
-                  className="h-full bg-accent shadow-[0_0_10px_rgba(156,163,175,0.5)]"
+                  className="h-full bg-[var(--bg-accent-emphasis)]"
                 />
               </div>
             </div>
             <div className="pt-2 flex justify-center">
-              <p className="text-[10px] text-[var(--text-muted)]/60 font-medium uppercase tracking-tighter">
+              <p className="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-tighter">
                 {t("serverMonitoringActive")}
               </p>
             </div>
@@ -706,17 +750,17 @@ export const CommandCenterView = ({
         </div>
 
         <div
-          className={`p-6 rounded-lg border border-accent/20 bg-accent/5 flex flex-col`}
+          className="p-6 rounded-[var(--radius-md)] border border-[var(--border-accent)] bg-[var(--surface-card)] flex flex-col shadow-xs"
         >
           <div className="flex items-center gap-3 mb-6">
-            <Activity className="text-accent" size={20} />
-            <h2 className="text-lg font-bold text-accent dark:text-accent">
+            <Activity className="text-[var(--fg-accent)]" size={20} />
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
               {t("systemUptime")}
             </h2>
           </div>
           <div className="flex-1 flex flex-col justify-center items-center py-10">
-            <p className="text-4xl font-black text-accent">100%</p>
-            <p className="text-xs text-accent/60 dark:text-accent/60 mt-2 font-medium">
+            <p className="text-4xl font-black text-[var(--fg-accent)]">100%</p>
+            <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">
               {t("stableOperationalProtocol")}
             </p>
           </div>
@@ -724,18 +768,18 @@ export const CommandCenterView = ({
       </div>
 
       {/* Database Pool Connectivity Monitors */}
-      <div className="p-6 rounded-lg border border-[var(--border-main)] bg-[var(--bg-secondary)] flex flex-col gap-6 shadow-sm transition-theme">
+      <div className="p-6 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] flex flex-col gap-6 shadow-xs transition-theme">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Database className="text-accent " size={20} />
-            <h2 className="text-lg font-bold">
+            <Database className="text-[var(--fg-accent)]" size={20} />
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">
               {language === "ar" ? "مراقب اتصال قواعد البيانات النشطة" : "Database Pool Connectivity Monitor"}
             </h2>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black text-accent/50 uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-[10px] font-black text-[var(--fg-accent)]/70 uppercase tracking-widest">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--fg-accent)] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--fg-accent)]"></span>
             </span>
             {language === "ar" ? "التحقق المباشر من البث المباشر" : "Active Pool Polling"}
           </div>
@@ -750,19 +794,19 @@ export const CommandCenterView = ({
             return (
               <div 
                 key={dbId}
-                className="p-4 rounded-md border border-[var(--border-main)] bg-[var(--bg-overlay)] flex flex-col gap-3 relative overflow-hidden transition-theme hover:border-accent/30"
+                className="p-4 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] flex flex-col gap-3 relative overflow-hidden transition-theme hover:border-[var(--border-accent)]"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Database size={16} className={`${isConnected ? 'text-accent ' : isLoading ? 'text-gray-400 animate-pulse' : 'text-red-500 animate-pulse'}`} />
-                    <span className="font-bold text-xs uppercase tracking-tight">
+                    <span className="font-bold text-xs uppercase tracking-tight text-[var(--text-primary)]">
                       {dbId === 'core' && (language === "ar" ? "قاعدة البيانات الأساسية" : "Core DB")}
                       {dbId === 'ledger' && (language === "ar" ? "دفتر الأرباح المالي" : "Ledger DB")}
                       {dbId === 'external' && (language === "ar" ? "قاعدة المجتمع والمدونة" : "External DB")}
                       {dbId === 'security' && (language === "ar" ? "قاعدة الأمان والحماية" : "Security DB")}
                     </span>
                   </div>
-                  <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${isConnected ? 'bg-accent/10 text-accent' : isLoading ? 'bg-gray-500/10 text-gray-500' : 'bg-red-500/10 text-red-500'}`}>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[var(--radius-xs)] ${isConnected ? 'bg-accent/10 text-accent' : isLoading ? 'bg-gray-500/10 text-gray-500' : 'bg-red-500/10 text-red-500'}`}>
                     {isLoading ? (language === "ar" ? "جاري الاستعلام" : "Loading") : isConnected ? (language === "ar" ? "متصل" : "Connected") : (language === "ar" ? "غير متصل" : "Offline")}
                   </span>
                 </div>

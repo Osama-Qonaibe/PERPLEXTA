@@ -274,18 +274,18 @@ export const SettingsPage: React.FC = () => {
     <div className={`h-screen w-full flex flex-col md:flex-row overflow-hidden bg-[var(--bg-base)] text-[var(--text-primary)]`}>
       
       {/* Mobile Top Header - Native App Style */}
-      <div className="flex md:hidden sticky top-0 z-40 w-full h-14 px-4 items-center justify-between border-b backdrop-blur-xl bg-[var(--bg-base)]/95 border-[var(--border)]/60 shrink-0 select-none">
+      <div className="flex md:hidden sticky top-0 z-40 w-full h-14 px-4 items-center justify-between border-b backdrop-blur-xl bg-[var(--surface-page)]/95 border-[var(--border-main)] shrink-0 select-none pt-[env(safe-area-inset-top,0px)]">
         <div className="flex items-center gap-2.5">
           <button 
-            onClick={() => navigate('/chat')} 
-            className="h-9 px-2.5 flex items-center gap-1 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-primary)] hover:text-accent transition-theme active:scale-95 cursor-pointer"
+            onClick={() => navigate(-1)} 
+            className="h-9 px-3 flex items-center gap-1 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-primary)] hover:text-accent transition-theme active:scale-95 cursor-pointer"
           >
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-            <span className="text-xs font-black">{dir === 'rtl' ? 'رجوع' : 'Back'}</span>
+            <span className="text-xs font-bold">{dir === 'rtl' ? 'رجوع' : 'Back'}</span>
           </button>
           <div className="flex flex-col">
-            <h1 className="text-sm font-black tracking-tight uppercase leading-none">{t('settings')}</h1>
-            <span className="text-[9px] font-bold text-accent tracking-wider">{tabs.find(t => t.id === activeTab)?.label}</span>
+            <h1 className="text-sm font-bold tracking-tight uppercase leading-none">{t('settings')}</h1>
+            <span className="text-[10px] font-bold text-accent tracking-wider">{tabs.find(t => t.id === activeTab)?.label}</span>
           </div>
         </div>
 
@@ -368,7 +368,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Content Area - With Sticky Header */}
-      <div className="flex-1 flex flex-col overflow-hidden relative min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden relative min-w-0 pb-16 md:pb-0">
         {/* Sticky Desktop Page Header */}
         <div className="hidden md:flex sticky top-0 z-30 w-full h-20 px-6 md:px-12 items-center border-b backdrop-blur-xl transition-theme flex-none bg-[var(--bg-base)]/80 border-[var(--border)]/40">
           <div className="flex items-center gap-4">
@@ -382,7 +382,7 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-3 sm:p-6 md:p-12 pb-[calc(var(--safe-area-spacing)+24px+env(safe-area-inset-bottom,0px))] md:pb-12`}>
+        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-3 sm:p-6 md:p-12 pb-24 md:pb-12`}>
           <div className="max-w-5xl mx-auto w-full">
             <AnimatePresence>
               <motion.div
@@ -444,45 +444,56 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav 
-        dir={dir}
-        className="md:!hidden mobile-bottom-nav"
+      {/* Mobile Bottom Navigation Footer Bar (Matching MobileNavigation.tsx style) */}
+      <nav
+        aria-label="Settings Mobile Bottom Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[120] select-none bg-[var(--surface-page)]/95 backdrop-blur-md border-t border-[var(--border-main)] transition-colors duration-200 pb-[env(safe-area-inset-bottom,0px)]"
       >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={`settings-mobile-nav-${tab.id}`}
-              type="button"
-              onClick={() => handleTabChange(tab.id)}
-              className={`mobile-nav-item flex-1 ${isActive ? 'active text-accent' : ''}`}
-            >
-              <div className="mobile-nav-icon">
-                <span className={`transition-transform duration-200 stroke-[2.2] ${isActive ? 'scale-105 text-accent' : ''}`}>
-                  {tab.icon}
-                </span>
-                {isActive && (
+        <div className="h-[52px] px-2 flex items-center justify-around max-w-lg mx-auto">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            const Icon = tab.icon.type;
+            return (
+              <button
+                key={`settings-bottom-nav-${tab.id}`}
+                onClick={() => handleTabChange(tab.id)}
+                className="relative flex-1 h-full flex flex-col items-center justify-center gap-1 cursor-pointer focus:outline-none active:scale-95 transition-transform"
+              >
+                {active && (
                   <motion.div
-                    layoutId="settings-mobile-nav-indicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    layoutId="settings-bottom-nav-active-indicator"
+                    className="absolute top-1 w-7 h-1 rounded-full bg-[var(--bg-accent-emphasis)]"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
-              </div>
-              <span className={`mobile-nav-label ${isActive ? 'opacity-100 font-extrabold' : 'opacity-80'}`}>{tab.label}</span>
-            </button>
-          );
-        })}
+
+                <div className={`relative flex items-center justify-center mt-1 text-xs transition-colors duration-150 ${active ? 'text-accent' : 'text-[var(--text-muted)]'}`}>
+                  {tab.icon}
+                </div>
+
+                <span
+                  className={`text-[10px] tracking-tight transition-colors duration-150 leading-none ${
+                    active 
+                      ? 'text-accent font-bold' 
+                      : 'text-[var(--text-muted)] font-medium'
+                  }`}
+                >
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
+      {/* Toast Notification Container */}
       <AnimatePresence>
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className={`fixed bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
+            className={`fixed bottom-20 md:bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
               (toast as any).type === 'success' 
                 ? 'bg-accent/10 border-accent/20 text-accent' 
                 : 'bg-red-500/10 border-red-500/20 text-red-500'

@@ -4224,4 +4224,46 @@ router.put("/economy/settings", authenticateAdmin, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/theme-customizations
+ * Fetch theme customizations for light and dark modes
+ */
+router.get("/theme-customizations", authenticateAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT theme_mode, tokens FROM admin_theme_customizations');
+    const customizations: Record<string, any> = { light: {}, dark: {} };
+    for (const row of result.rows) {
+      customizations[row.theme_mode] = row.tokens || {};
+    }
+    res.json({ success: true, customizations });
+  } catch (err: any) {
+    console.error('[Theme] Get error:', err);
+    res.status(500).json({ error: 'Failed to fetch theme customizations' });
+  }
+});
+
+/**
+ * POST /api/admin/theme-customizations
+ * Save or update theme customizations for a specific mode (light or dark)
+ */
+router.post("/theme-customizations", authenticateAdmin, async (req, res) => {
+  try {
+    const { theme_mode, tokens } = req.body;
+    if (!theme_mode || !['light', 'dark'].includes(theme_mode)) {
+      return res.status(400).json({ error: 'Invalid theme_mode. Must be light or dark.' });
+    }
+    await pool.query(
+      `INSERT INTO admin_theme_customizations (theme_mode, tokens, updated_at)
+       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (theme_mode)
+       DO UPDATE SET tokens = EXCLUDED.tokens, updated_at = CURRENT_TIMESTAMP`,
+      [theme_mode, JSON.stringify(tokens || {})]
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Theme] Save error:', err);
+    res.status(500).json({ error: 'Failed to save theme customizations' });
+  }
+});
+
 export default router;

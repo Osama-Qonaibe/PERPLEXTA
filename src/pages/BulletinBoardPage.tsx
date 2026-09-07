@@ -18,6 +18,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { BulletinAd, BulletinAdComment, BulletinPage, MediaGalleryItem } from '../../server/db/types';
 import { UserAdAnalyticsView } from '../components/UserAdAnalyticsView';
 import { PostFeed } from '../components/PostFeed';
+import { BoardFeed } from '../components/bulletin/BoardFeed';
+import { SavedPostsTab } from '../components/bulletin/SavedPostsTab';
+import { InquiriesTab } from '../components/bulletin/InquiriesTab';
+import { LiveStreamModal } from '../components/bulletin/LiveStreamModal';
 import { AdMessengerHub } from '../components/AdMessengerHub';
 import { BoostPostModal } from '../components/BoostPostModal';
 import { RecommendationWidget } from '../components/RecommendationWidget';
@@ -2713,7 +2717,7 @@ export const BulletinBoardPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRtl ? 'بحث...' : 'Search...'}
-                  className="w-full ps-8 pe-3 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme"
+                  className="w-full ps-8 pe-3 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none transition-theme"
                 />
                 <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               </form>
@@ -2722,7 +2726,7 @@ export const BulletinBoardPage: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                  className="px-2.5 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:border-accent focus:outline-none transition-theme shrink-0"
+                  className="px-2.5 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none transition-theme shrink-0"
                 >
                   <option value="latest">{isRtl ? 'الأحدث' : 'Latest'}</option>
                   <option value="popular">{isRtl ? 'الأكثر تفاعلاً' : 'Popular'}</option>
@@ -3861,319 +3865,77 @@ export const BulletinBoardPage: React.FC = () => {
                 {/* TAB 1: SOCIAL AD FEED & FACEBOOK POST CREATOR TRIGGER      */}
                 {/* ========================================================== */}
                 {activeTab === 'board' && (
-                  <div className="space-y-4 sm:space-y-6">
-
-                    {/* Mobile Smart Quick-Filter Bar (Location Pill + GPS Button) */}
-                    <div className="lg:hidden flex items-center justify-between gap-2 py-1 px-1">
-                      <div className="flex items-center gap-1.5 w-full justify-between">
-                        <button
-                          type="button"
-                          onClick={() => setIsLocationFlyoutOpen(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-800 dark:text-gray-200 hover:text-accent text-[11px] font-extrabold border border-gray-200 dark:border-gray-800 transition-theme shadow-2xs truncate"
-                        >
-                          <MapPin size={12} className="text-accent shrink-0" />
-                          <span className="truncate">
-                            {selectedCity === 'all' 
-                              ? (isRtl ? '📍 كافة المدن والمحافظات' : '📍 All Cities') 
-                              : `${selectedCity}${selectedRadius !== 'all' ? ` (+${selectedRadius}كم)` : ''}`}
-                          </span>
-                          <ChevronDown size={11} className="text-gray-400 shrink-0" />
-                        </button>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={handleDetectGpsLocation}
-                            disabled={isDetectingGps}
-                            className="px-2.5 py-1.5 rounded-[4px] bg-accent/10 text-accent dark:text-accent hover:bg-accent/20 text-[11px] font-bold flex items-center gap-1 border border-accent/20 transition-theme disabled:opacity-50 shrink-0"
-                            title={isRtl ? 'استخدام موقعي الحالي (GPS)' : 'GPS Location'}
-                          >
-                            {isDetectingGps ? <Loader2 size={12} className="animate-spin text-accent" /> : <Compass size={12} />}
-                            <span className="text-[10px] font-extrabold">{isRtl ? 'موقعي' : 'GPS'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={triggerFeedRefresh}
-                            disabled={isRefreshing}
-                            className="px-2.5 py-1.5 rounded-[4px] bg-white dark:bg-[#1a1a1c] hover:bg-accent/10 text-gray-700 dark:text-gray-300 hover:text-accent text-[11px] font-bold flex items-center gap-1 border border-gray-200 dark:border-gray-800 transition-theme disabled:opacity-50 shrink-0 shadow-2xs"
-                            title={isRtl ? 'تحديث خلاصة الإعلانات' : 'Refresh Feed'}
-                          >
-                            <RefreshCw size={12} className={isRefreshing ? "animate-spin text-accent" : ""} />
-                            <span className="text-[10px] font-extrabold">{isRtl ? 'تحديث' : 'Refresh'}</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stories / Reels Highlights Carousel Bar (Facebook Native 9:16 Style) */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] space-y-2.5">
-                      <div className="flex items-center gap-5 px-1 border-b border-gray-100 dark:border-white/[0.04] pb-2">
-                        <button
-                          onClick={() => setActiveTab('board')}
-                          className={`text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${activeTab === 'board' ? 'text-accent' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          <Camera size={14} />
-                          <span>{isRtl ? 'قصص' : 'Stories'}</span>
-                        </button>
-                        <button
-                          onClick={() => setActiveTab('reels')}
-                          className={`text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${(activeTab as string) === 'reels' ? 'text-accent' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                          <Clapperboard size={14} />
-                          <span>{isRtl ? 'ريلز' : 'Reels'}</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none pb-1 pt-0.5 px-0.5">
-                        {/* Tile 1: Create Story */}
-                        <div
-                          onClick={() => {
-                            if (!token) {
-                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                              return;
-                            }
-                            setIsStoryModalOpen(true);
-                          }}
-                          className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-xl overflow-hidden bg-gray-50 dark:bg-transparent border border-gray-200/60 dark:border-white/[0.06] shrink-0 cursor-pointer group hover:border-accent/40 transition-all duration-300 flex flex-col"
-                        >
-                          <div className="relative w-full h-[65%] bg-gray-100 dark:bg-white/[0.02] flex justify-center items-center overflow-hidden">
-                            {user?.avatar?.includes('dicebear') ? (
-                               <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-zinc-800 dark:to-zinc-900 flex justify-center items-center">
-                                  <BulletinAvatar src={user?.avatar} alt={user?.name} size="lg" className="shadow-md scale-110" />
-                               </div>
-                            ) : (
-                               <img
-                                  src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                                  alt={user?.name || 'User'}
-                                  className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
-                               />
-                            )}
-                            <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors pointer-events-none z-10" />
-                          </div>
-                          
-                          <div className="relative w-full h-[35%] bg-white dark:bg-transparent flex flex-col items-center justify-end pb-2 sm:pb-2.5">
-                            <div className="absolute -top-3.5 sm:-top-4 z-20">
-                              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent text-white border-2 border-white dark:border-black flex items-center justify-center shadow-sm transition-transform group-hover:scale-110">
-                                <Plus size={16} className="stroke-[3]" />
-                              </div>
-                            </div>
-                            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 text-center px-1">
-                               {isRtl ? 'إنشاء قصة' : 'Create Story'}
-                            </span>
-                          </div>
-                        </div>
-                        {/* User & Merchant Stories */}
-                        {representativeStories.map((story: any, sIdx: number) => {
-                          // Find index in orderedStories for the viewer
-                          const viewerStartIndex = orderedStories.findIndex((s: any) => s.id === story.id);
-                          
-                          return (
-                            <div
-                              key={`rep-story-${story.id || 'st'}-${sIdx}`}
-                              onClick={() => {
-                                if (previewingVideoStoryId === story.id) return;
-                                setSelectedStoryIndex(viewerStartIndex);
-                                setIsStoryViewerOpen(true);
-                              }}
-                              className="relative w-28 h-44 sm:w-32 sm:h-52 rounded-xl overflow-hidden bg-gray-50 dark:bg-transparent border border-gray-200/60 dark:border-white/[0.06] shrink-0 cursor-pointer group hover:border-accent/40 transition-all duration-300 flex flex-col justify-center items-center"
-                            >
-                              <div className="relative w-full h-full overflow-hidden bg-gray-100 dark:bg-transparent flex flex-col justify-center items-center">
-                                {/* Ambient Blurred Background */}
-                                <img
-                                  src={getMediaUrl(story.image_url)}
-                                  alt=""
-                                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-125 saturate-150"
-                                />
-                                
-                                {/* Centered Proper Image */}
-                                <img
-                                  src={getMediaUrl(story.image_url)}
-                                  alt={story.title}
-                                  className="absolute inset-0 w-full h-full object-contain transition-transform group-hover:scale-105 duration-500 opacity-80 group-hover:opacity-100 z-0"
-                                />
-                                
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/5 transition-colors pointer-events-none z-10" />
-                                
-                                {/* Video icon if it's a video story */}
-                                {story.video_url && (
-                                  <div className="absolute top-2 end-2 bg-black/40 p-1 rounded-md backdrop-blur-md border border-white/10 shadow-xs pointer-events-auto z-20">
-                                    <Video size={11} className="text-white" />
-                                  </div>
-                                )}
-
-                                {/* Top-Corner Story Ring Avatar */}
-                                <div className="absolute top-2 start-2 z-20 pointer-events-auto">
-                                  <div 
-                                    className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-accent via-teal-400 to-blue-500 shadow-md transition-transform group-hover:scale-110"
-                                    onPointerDown={(e) => {
-                                      e.stopPropagation();
-                                      storyPressTimerRef.current = setTimeout(() => {
-                                        if ("vibrate" in navigator) navigator.vibrate([40]);
-                                        setPreviewingVideoStoryId(story.id);
-                                      }, 400);
-                                    }}
-                                    onPointerUp={(e) => {
-                                      if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
-                                      if (previewingVideoStoryId === story.id) {
-                                        e.stopPropagation();
-                                        setPreviewingVideoStoryId(null);
-                                      }
-                                    }}
-                                    onPointerLeave={() => {
-                                      if (storyPressTimerRef.current) clearTimeout(storyPressTimerRef.current);
-                                      setPreviewingVideoStoryId(null);
-                                    }}
-                                  >
-                                    <img
-                                      src={getMediaUrl(story.author_avatar)}
-                                      alt={story.author_name}
-                                      className="w-full h-full rounded-full object-cover border-[1.5px] border-white dark:border-black"
-                                    />
-                                  </div>
-                                </div>
-                                
-                                {/* Name positioned at the very bottom center */}
-                                <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/70 via-black/30 to-transparent z-20 pointer-events-none flex flex-col justify-end items-center">
-                                  <div className="flex items-center gap-1 justify-center w-full">
-                                    <span className="text-[10px] font-bold text-white truncate drop-shadow text-center max-w-[80px]">
-                                      {story.page_id ? story.page_name : story.author_name}
-                                    </span>
-                                    {story.page_id && <CheckCircle2 size={10} className="text-blue-400 fill-blue-400/20 shrink-0" />}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Facebook Post Creation Bar (Composer Box) */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] space-y-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <BulletinAvatar
-                          src={user?.avatar}
-                          alt={user?.name || 'User'}
-                          size="md"
-                        />
-                        <button
-                          onClick={() => {
-                            if (!token) {
-                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                              return;
-                            }
-                            setIsAdModalOpen(true);
-                          }}
-                          className="flex-1 text-start px-4 py-2 sm:py-2.5 rounded-full bg-gray-100/70 dark:bg-white/[0.04] hover:bg-gray-200/50 dark:hover:bg-white/[0.07] text-xs text-gray-500 dark:text-gray-400 font-medium transition-theme border border-transparent hover:border-gray-200 dark:hover:border-white/[0.06] cursor-pointer"
-                        >
-                          {isRtl ? 'بم تفكر اليوم؟' : "What's on your mind?"}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/[0.04] pt-2 text-[11px] sm:text-xs text-gray-500">
-                        <button
-                          onClick={() => {
-                            if (!token) {
-                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                              return;
-                            }
-                            setIsStreamSetupOpen(true);
-                          }}
-                          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-red-500/10 hover:text-red-500 font-bold transition-theme text-red-500 whitespace-nowrap cursor-pointer"
-                        >
-                          <Radio size={14} className="text-red-500 shrink-0" />
-                          <span>{isRtl ? 'بث مباشر' : 'Live Stream'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!token) {
-                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                              return;
-                            }
-                            openPostUploadModal();
-                          }}
-                          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-blue-500/10 hover:text-blue-500 font-bold transition-theme text-blue-500 whitespace-nowrap cursor-pointer"
-                        >
-                          <Video size={14} className="text-blue-500 shrink-0" />
-                          <span>{isRtl ? 'فيديو أو صورة' : 'Photo/Video'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!token) {
-                              toast.error(isRtl ? 'يرجى تسجيل الدخول أولاً' : 'Please log in first');
-                              return;
-                            }
-                            openReelUploadModal();
-                          }}
-                          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-purple-500/10 hover:text-purple-500 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer"
-                        >
-                          <Clapperboard size={14} className="text-purple-500 shrink-0" />
-                          <span>{isRtl ? 'ريلز' : 'Reels'}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Ads Feed Grid */}
-                    <PostFeed
-                      ads={ads}
-                      loading={loading}
-                      hasMore={hasMoreAds}
-                      loadingMore={loadingMoreAds}
-                      onLoadMore={handleLoadMoreAds}
-                      onOpenReelFeed={(adId) => {
-                        if (adId) {
-                          setActiveReelModalId(adId);
-                        } else {
-                          setActiveTab('reels');
-                        }
-                      }}
-                      isRtl={isRtl}
-                      token={token}
-                      user={user}
-                      searchQuery={searchQuery}
-                      onReportAd={handleReportAd}
-                      onToggleLike={handleToggleLike}
-                      onToggleComments={toggleComments}
-                      onToggleCommentLike={handleToggleCommentLike}
-                      expandedAdId={expandedAdId}
-                      commentsMap={commentsMap}
-                      loadingCommentsAdId={loadingCommentsAdId}
-                      newCommentText={newCommentText}
-                      setNewCommentText={setNewCommentText}
-                      onAddComment={handleAddComment}
-                       replyToCommentId={replyToCommentId}
-                       setReplyToCommentId={setReplyToCommentId}
-                      onMessageAdvertiser={handleMessageAdvertiser}
-                      messagingAdId={messagingAdId}
-                      onInquire={setInquireAd}
-                      onWhatsApp={handleWhatsAppClick}
-                      onShare={handleShareAd}
-                      onOpenPageDetail={handleOpenPageDetail}
-                      onOpenLightbox={handleOpenLightbox}
-                      onCreateAdClick={openPostUploadModal}
-                      onBoostAd={handleOpenBoostModal}
-                      onEditAd={handleEditAd}
-                      onDeleteAd={handleDeleteAd}
-                      onToggleSave={handleToggleSave}
-                      onArchiveAd={(archivedAd) => {
-                        setAds(prev => prev.filter(a => a.id !== archivedAd.id));
-                        setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
-                      }}
-                      onTrashAd={(trashedAd) => {
-                        setAds(prev => prev.filter(a => a.id !== trashedAd.id));
-                        setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
-                      }}
-                      onUpdateAd={(updatedAd) => {
-                        setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
-                        setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
-                      }}
-                    />
-                  </div>
+                  <BoardFeed
+                    isRtl={isRtl}
+                    selectedCity={selectedCity}
+                    selectedRadius={selectedRadius}
+                    setIsLocationFlyoutOpen={setIsLocationFlyoutOpen}
+                    handleDetectGpsLocation={handleDetectGpsLocation}
+                    isDetectingGps={isDetectingGps}
+                    triggerFeedRefresh={triggerFeedRefresh}
+                    isRefreshing={isRefreshing}
+                    storiesProps={{
+                      isRtl,
+                      activeTab,
+                      setActiveTab,
+                      token,
+                      user,
+                      setIsStoryModalOpen,
+                      representativeStories,
+                      orderedStories,
+                      previewingVideoStoryId,
+                      setPreviewingVideoStoryId,
+                      setSelectedStoryIndex,
+                      setIsStoryViewerOpen,
+                      storyPressTimerRef,
+                      getMediaUrl,
+                    }}
+                    composerProps={{
+                      user,
+                      token,
+                      isRtl,
+                      setIsAdModalOpen,
+                      setIsStreamSetupOpen,
+                      openPostUploadModal,
+                      openReelUploadModal,
+                    }}
+                    ads={ads}
+                    loading={loading}
+                    hasMoreAds={hasMoreAds}
+                    loadingMoreAds={loadingMoreAds}
+                    handleLoadMoreAds={handleLoadMoreAds}
+                    setActiveReelModalId={setActiveReelModalId}
+                    setActiveTab={setActiveTab}
+                    searchQuery={searchQuery}
+                    token={token}
+                    user={user}
+                    handleReportAd={handleReportAd}
+                    handleToggleLike={handleToggleLike}
+                    toggleComments={toggleComments}
+                    handleToggleCommentLike={handleToggleCommentLike}
+                    expandedAdId={expandedAdId}
+                    commentsMap={commentsMap}
+                    loadingCommentsAdId={loadingCommentsAdId}
+                    newCommentText={newCommentText}
+                    setNewCommentText={setNewCommentText}
+                    handleAddComment={handleAddComment}
+                    replyToCommentId={replyToCommentId}
+                    setReplyToCommentId={setReplyToCommentId}
+                    handleMessageAdvertiser={handleMessageAdvertiser}
+                    messagingAdId={messagingAdId}
+                    setInquireAd={setInquireAd}
+                    handleWhatsAppClick={handleWhatsAppClick}
+                    handleShareAd={handleShareAd}
+                    handleOpenPageDetail={handleOpenPageDetail}
+                    handleOpenLightbox={handleOpenLightbox}
+                    openPostUploadModal={openPostUploadModal}
+                    handleOpenBoostModal={handleOpenBoostModal}
+                    handleEditAd={handleEditAd}
+                    handleDeleteAd={handleDeleteAd}
+                    handleToggleSave={handleToggleSave}
+                    setAds={setAds}
+                    setSavedAds={setSavedAds}
+                  />
                 )}
 
 
@@ -4182,159 +3944,58 @@ export const BulletinBoardPage: React.FC = () => {
                 {/* TAB: SAVED POSTS                                          */}
                 {/* ========================================================== */}
                 {activeTab === 'saved' && (
-                  <div className="space-y-4">
-                    <div className="bg-white dark:bg-transparent p-4 rounded-2xl border border-gray-200/80 dark:border-white/[0.06] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
-                           <Bookmark size={20} />
-                         </div>
-                         <div>
-                           <h2 className="text-sm font-extrabold text-gray-900 dark:text-white">
-                             {isRtl ? 'المنشورات المحفوظة' : 'Saved Posts'}
-                           </h2>
-                           <p className="text-[10px] text-gray-500 font-bold">
-                             {isRtl ? `لديك ${savedAds.length} منشورات محفوظة` : `You have ${savedAds.length} saved posts`}
-                           </p>
-                         </div>
-                      </div>
-                      <button 
-                         onClick={() => setActiveTab('board')}
-                         className="text-xs font-bold text-accent hover:underline"
-                      >
-                         {isRtl ? 'استعراض المزيد' : 'Browse More'}
-                      </button>
-                    </div>
-
-                    <PostFeed
-                      ads={savedAds}
-                      loading={loadingSaved}
-                      hasMore={false}
-                      loadingMore={false}
-                      onLoadMore={() => {}}
-                      isRtl={isRtl}
-                      token={token}
-                      user={user}
-                      searchQuery={''}
-                      onReportAd={handleReportAd}
-                      onToggleLike={handleToggleLike}
-                      onToggleComments={toggleComments}
-                      onToggleCommentLike={handleToggleCommentLike}
-                      expandedAdId={expandedAdId}
-                      commentsMap={commentsMap}
-                      loadingCommentsAdId={loadingCommentsAdId}
-                      newCommentText={newCommentText}
-                      setNewCommentText={setNewCommentText}
-                      onAddComment={handleAddComment}
-                       replyToCommentId={replyToCommentId}
-                       setReplyToCommentId={setReplyToCommentId}
-                      onMessageAdvertiser={handleMessageAdvertiser}
-                      messagingAdId={messagingAdId}
-                      onInquire={setInquireAd}
-                      onWhatsApp={handleWhatsAppClick}
-                      onShare={handleShareAd}
-                      onOpenPageDetail={handleOpenPageDetail}
-                      onOpenLightbox={handleOpenLightbox}
-                      onCreateAdClick={openPostUploadModal}
-                      onBoostAd={handleOpenBoostModal}
-                      onEditAd={handleEditAd}
-                      onDeleteAd={handleDeleteAd}
-                      onToggleSave={handleToggleSave}
-                      onArchiveAd={(archivedAd) => {
-                        setAds(prev => prev.filter(a => a.id !== archivedAd.id));
-                        setSavedAds(prev => prev.filter(a => a.id !== archivedAd.id));
-                      }}
-                      onTrashAd={(trashedAd) => {
-                        setAds(prev => prev.filter(a => a.id !== trashedAd.id));
-                        setSavedAds(prev => prev.filter(a => a.id !== trashedAd.id));
-                      }}
-                      onUpdateAd={(updatedAd) => {
-                        setAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
-                        setSavedAds(prev => prev.map(a => a.id === updatedAd.id ? { ...a, ...updatedAd } : a));
-                      }}
-                    />
-                  </div>
+                  <SavedPostsTab
+                    savedAds={savedAds}
+                    loadingSaved={loadingSaved}
+                    isRtl={isRtl}
+                    token={token}
+                    user={user}
+                    setActiveTab={setActiveTab}
+                    handleReportAd={handleReportAd}
+                    handleToggleLike={handleToggleLike}
+                    toggleComments={toggleComments}
+                    handleToggleCommentLike={handleToggleCommentLike}
+                    expandedAdId={expandedAdId}
+                    commentsMap={commentsMap}
+                    loadingCommentsAdId={loadingCommentsAdId}
+                    newCommentText={newCommentText}
+                    setNewCommentText={setNewCommentText}
+                    handleAddComment={handleAddComment}
+                    replyToCommentId={replyToCommentId}
+                    setReplyToCommentId={setReplyToCommentId}
+                    handleMessageAdvertiser={handleMessageAdvertiser}
+                    messagingAdId={messagingAdId}
+                    setInquireAd={setInquireAd}
+                    handleWhatsAppClick={handleWhatsAppClick}
+                    handleShareAd={handleShareAd}
+                    handleOpenPageDetail={handleOpenPageDetail}
+                    handleOpenLightbox={handleOpenLightbox}
+                    openPostUploadModal={openPostUploadModal}
+                    handleOpenBoostModal={handleOpenBoostModal}
+                    handleEditAd={handleEditAd}
+                    handleDeleteAd={handleDeleteAd}
+                    handleToggleSave={handleToggleSave}
+                    setAds={setAds}
+                    setSavedAds={setSavedAds}
+                  />
                 )}
 
                 {/* ========================================================== */}
                 {/* TAB 3: CUSTOMER INQUIRIES & DIRECT MESSAGES INBOX           */}
                 {/* ========================================================== */}
                 {activeTab === 'inquiries' && (
-                  <div className="space-y-4">
-                    <div className="bg-white dark:bg-transparent p-3 rounded-2xl border border-gray-200/80 dark:border-white/[0.06]">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setActiveTab('board')}
-                            className="w-9 h-9 shrink-0 rounded-xl bg-gray-100 dark:bg-white/[0.05] flex items-center justify-center text-gray-500 hover:text-accent hover:bg-accent dark:hover:bg-accent/10 transition-theme"
-                            title={isRtl ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
-                          >
-                            {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
-                          </button>
-                          <h2 className="text-base font-extrabold flex items-center gap-2 truncate">
-                            <MessageSquare size={18} className="text-accent shrink-0" />
-                            <span className="truncate">{isRtl ? 'صندوق الرسائل' : 'Messenger'}</span>
-                          </h2>
-                        </div>
-                        {!selectedInboxAd && (
-                          <div className="relative w-full sm:w-64 shrink-0">
-                            <input
-                              type="text"
-                              value={inquiriesSearchTerm}
-                              onChange={e => setInquiriesSearchTerm(e.target.value)}
-                              placeholder={isRtl ? 'ابحث عن محادثة أو مرسل...' : 'Search messages, senders...'}
-                              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-gray-50 dark:bg-black/30 border border-gray-200/80 dark:border-white/[0.08] rounded-xl text-xs focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none transition-theme dark:text-white`}
-                            />
-                            <Search size={14} className={`absolute ${isRtl ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-400`} />
-                          </div>
-                        )}
-                        {selectedInboxAd && (
-                          <button
-                            onClick={() => setSelectedInboxAd(null)}
-                            className="px-3.5 py-2 shrink-0 rounded-xl bg-gray-100 dark:bg-white/[0.05] text-xs font-bold hover:bg-gray-200 dark:hover:bg-white/[0.1] transition-theme flex items-center gap-1.5 w-full sm:w-auto justify-center"
-                          >
-                            {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
-                            <span>{isRtl ? 'رجوع للقائمة' : 'Back to List'}</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {inquiriesLoading ? (
-                      <div className="text-center py-16 bg-white dark:bg-transparent rounded-[24px] border border-gray-200/80 dark:border-white/[0.06] flex items-center justify-center gap-3">
-                        <Loader2 size={20} className="animate-spin text-accent" />
-                        <span className="text-sm font-bold text-gray-500">{isRtl ? 'جاري تحميل صندوق الرسائل...' : 'Loading messenger...'}</span>
-                      </div>
-                    ) : inquiriesList.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-24 px-4 bg-white dark:bg-transparent rounded-[24px] border border-gray-200/80 dark:border-white/[0.06] space-y-5 text-center">
-                        <div className="w-20 h-20 rounded-[4px] bg-gray-50 dark:bg-white/[0.03] flex items-center justify-center">
-                          <MessageSquare size={32} className="text-gray-400 dark:text-gray-500" />
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                            {isRtl ? 'لا توجد رسائل حالياً' : 'No Messages Yet'}
-                          </h3>
-                          <p className="text-xs font-medium text-gray-500 max-w-sm mx-auto leading-relaxed">
-                            {isRtl 
-                              ? 'عندما تتلقى استفسارات أو رسائل حول إعلاناتك، ستظهر هنا في صندوق المحادثات المشفرة، لضمان خصوصية تواصلك.'
-                              : 'When you receive inquiries or messages about your ads, they will appear here in your encrypted inbox, ensuring communication privacy.'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setActiveTab('board')}
-                          className="mt-4 px-6 py-2.5 rounded-xl bg-accent text-white hover:bg-accent text-xs font-bold transition-theme flex items-center gap-2"
-                        >
-                          {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
-                          <span>{isRtl ? 'العودة للصفحة الرئيسية' : 'Back to Main Feed'}</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <AdMessengerHub
-                        inquiries={filteredInquiriesList}
-                        onRefresh={fetchInquiries}
-                        isRtl={isRtl}
-                      />
-                    )}
-                  </div>
+                  <InquiriesTab
+                    isRtl={isRtl}
+                    setActiveTab={setActiveTab}
+                    selectedInboxAd={selectedInboxAd}
+                    setSelectedInboxAd={setSelectedInboxAd}
+                    inquiriesSearchTerm={inquiriesSearchTerm}
+                    setInquiriesSearchTerm={setInquiriesSearchTerm}
+                    inquiriesLoading={inquiriesLoading}
+                    inquiriesList={inquiriesList}
+                    filteredInquiriesList={filteredInquiriesList}
+                    fetchInquiries={fetchInquiries}
+                  />
                 )}
                 </>
               )}
@@ -4346,300 +4007,39 @@ export const BulletinBoardPage: React.FC = () => {
       {/* ========================================================== */}
       {/* LIVE STREAM MODAL                                          */}
       {/* ========================================================== */}
-      <AnimatePresence>
-        {isLiveStreamOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-md sm:p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 100 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 100 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onPanEnd={(e, info) => {
-                if (info.offset.y < -50 && currentFeedIndex < streamFeed.length - 1) {
-                  setCurrentFeedIndex(i => i + 1);
-                } else if (info.offset.y > 50 && currentFeedIndex > 0) {
-                  setCurrentFeedIndex(i => i - 1);
-                }
-              }}
-              className="relative w-full h-full sm:h-[85vh] sm:max-w-4xl sm:rounded-[24px] overflow-hidden bg-black shadow-2xl flex flex-col touch-none"
-            >
-              {/* Header */}
-              <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-6 pt-12 sm:px-8 sm:pt-8 bg-gradient-to-b from-black/95 via-black/40 to-transparent">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      if (streamRef.current) {
-                        streamRef.current.getTracks().forEach(track => track.stop());
-                        streamRef.current = null;
-                      }
-                      setIsLiveStreamOpen(false);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-red-600/10 hover:bg-red-600/20 backdrop-blur-md border border-red-500/20 text-white transition-theme group shadow-lg shrink-0"
-                    title={isRtl ? 'خروج من البث' : 'Exit Stream'}
-                  >
-                    <ArrowRight size={16} className={isRtl ? "" : "rotate-180"} />
-                    <span className="text-[10px] font-black tracking-tight">{isRtl ? 'خروج' : 'EXIT'}</span>
-                  </button>
-                  
-                  <div className="flex flex-col overflow-hidden">
-                    <h3 className="text-xs font-black text-white truncate max-w-[120px] sm:max-w-[250px] drop-shadow-md">
-                      {streamTitleInput || streamFeed[currentFeedIndex]?.title || (isRtl ? 'بث مباشر غير معنون' : 'Untitled Live Stream')}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-accent text-white text-[8px] font-black rounded-[2px] animate-pulse">
-                        <Radio size={8} />
-                        {isRtl ? 'مباشر' : 'LIVE'}
-                      </span>
-                      <span className="text-[9px] font-bold text-gray-300 truncate">
-                        @{user?.name || streamFeed[currentFeedIndex]?.host || (isRtl ? 'مستخدم' : 'User')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <div className="flex items-center gap-1.5 text-white text-xs font-bold drop-shadow-md">
-                    <Eye size={14} className="text-accent" />
-                    <span className="tabular-nums font-black">{liveViewers + (streamFeed[currentFeedIndex]?.viewers || 0)}</span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      const nextMuted = !isMuted;
-                      setIsMuted(nextMuted);
-                      setGlobalMuteState(nextMuted);
-                    }}
-                    className="w-9 h-9 rounded-[4px] bg-black/60 hover:bg-black/80 backdrop-blur-md flex items-center justify-center text-white transition-theme border border-white/10 shadow-xl"
-                    title={isMuted ? (isRtl ? 'تفعيل الصوت' : 'Unmute') : (isRtl ? 'كتم الصوت' : 'Mute')}
-                  >
-                    {isMuted ? <VolumeX size={18} className="text-red-400" /> : <Volume2 size={18} className="text-accent " />}
-                  </button>
-
-                  <div className="hidden sm:flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-[4px] border border-white/10 shadow-xl">
-                    <Wallet size={12} className="text-yellow-400" />
-                    <span className="text-[11px] font-black text-white">{walletBalance}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Camera Stream Container */}
-              <div className="absolute inset-0 w-full h-full bg-gray-950 flex items-center justify-center overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentFeedIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="w-full h-full"
-                  >
-                    {!streamRef.current && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-                        <div className="text-center space-y-4">
-                          <div className="w-16 h-16 rounded-[4px] bg-gray-900 flex items-center justify-center mx-auto border-2 border-dashed border-gray-700 animate-spin-slow">
-                            <Camera size={24} className="text-gray-600" />
-                          </div>
-                          <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase">
-                            {isRtl ? 'جاري تهيئة البث...' : 'Initializing Stream...'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted={isMuted}
-                      className="w-full h-full object-cover transition-theme"
-                    />
-                  </motion.div>
-                </AnimatePresence>
-                
-                {/* Visual Enhancer Overlay */}
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/40 via-transparent to-black/60 z-10" />
-              </div>
-
-              {/* Overlay Content */}
-              <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-end">
-                <AnimatePresence mode="wait">
-                  {showLikeAnimation && (
-                    <motion.div
-                      key="like-anim"
-                      initial={{ opacity: 0, scale: 0, y: 0 }}
-                      animate={{ opacity: 1, scale: 1.5, y: -200 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-red-500 z-50 pointer-events-none"
-                    >
-                      <Heart size={80} fill="currentColor" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className="flex items-end justify-between px-6 pb-12 sm:px-8 sm:pb-8 bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-32 w-full pointer-events-auto">
-                  
-                  {/* Left Side: Comments Stream & Host Info */}
-                  <div className="w-[75%] sm:w-[80%] space-y-4">
-                    {/* Host & Title Info */}
-                    <div className="space-y-1.5 mb-6">
-                      <div className="flex items-center gap-2">
-                        <div className="px-2 py-0.5 bg-accent/10 border border-accent/20 rounded-[4px]">
-                          <span className="text-[9px] font-black text-accent uppercase tracking-widest">
-                            {streamFeed[currentFeedIndex]?.type === 'live' ? (isRtl ? 'بث مباشر' : 'LIVE') : (isRtl ? 'ريلز' : 'REEL')}
-                          </span>
-                        </div>
-                        <h3 className="text-white font-black text-base drop-shadow-2xl tracking-tight">
-                          {streamTitleInput ? (user?.name || (isRtl ? 'أنت' : 'You')) : streamFeed[currentFeedIndex]?.host}
-                        </h3>
-                      </div>
-                      <p className="text-white/90 text-xs font-bold line-clamp-1 drop-shadow-xl pr-4">
-                        {streamTitleInput || streamFeed[currentFeedIndex]?.title}
-                      </p>
-                    </div>
-
-                    <div className="max-h-[30vh] overflow-y-auto pr-3 space-y-3 scrollbar-hide flex flex-col justify-end [mask-image:linear-gradient(to_bottom,transparent,black_20%)]">
-                      {liveComments.map((comment, idx) => (
-                        <motion.div 
-                          key={`live-comment-${comment.id || idx}-${idx}`}
-                          initial={{ opacity: 0, x: -30 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="bg-black/60 backdrop-blur-md rounded-[4px] p-2.5 inline-block max-w-fit border border-white/10 shadow-2xl"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 rounded-[4px] bg-accent/20 flex items-center justify-center border border-accent/30">
-                              <span className="text-[9px] font-black text-accent">{comment.user.charAt(0).toUpperCase()}</span>
-                            </div>
-                            <span className="text-accent font-black text-[10px] uppercase tracking-tighter ">{comment.user}</span>
-                          </div>
-                          <p className="text-white text-[12px] mt-1 leading-relaxed drop-shadow-sm font-bold">{comment.text}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                    
-                    {/* Bottom: Comment Input Area (Refined Alignment) */}
-                    <form onSubmit={handleSendLiveComment} className="flex items-center gap-2 mt-6">
-                      <div className="flex-1 relative group">
-                        <input
-                          type="text"
-                          value={newLiveComment}
-                          onChange={e => setNewLiveComment(e.target.value)}
-                          placeholder={isRtl ? 'قل شيئاً جميلاً...' : 'Say something nice...'}
-                          className="w-full bg-black/40 border border-white/10 rounded-[4px] pl-4 pr-10 py-3 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-accent-500/50 backdrop-blur-xl transition-theme group-hover:bg-black/60 shadow-inner"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30">
-                          <MessageCircle size={16} />
-                        </div>
-                      </div>
-                      <button 
-                        type="submit"
-                        disabled={!newLiveComment.trim()}
-                        className="w-10 h-10 rounded-[4px] bg-accent flex items-center justify-center text-white hover:bg-accent disabled:opacity-20 disabled:bg-gray-800 transition-theme shrink-0 shadow-[0_0_20px_rgba(156,163,175,0.3)]"
-                      >
-                        <Send size={16} className={isRtl ? 'rotate-180 -ml-0.5' : 'ml-0.5'} />
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Right Side: Interaction Buttons (Social Stack) */}
-                  <div className="flex flex-col items-center gap-4 mb-1 pr-1">
-                    <button onClick={() => setIsGiftModalOpen(true)} className="group flex flex-col items-center gap-1 transition-theme">
-                      <div className="w-10 h-10 rounded-[4px] bg-yellow-400/10 backdrop-blur-md border border-yellow-400/30 flex items-center justify-center text-yellow-400 group-hover:bg-yellow-400 group-hover:text-black transition-theme shadow-xl">
-                        <Gift size={20} />
-                      </div>
-                      <span className="text-[9px] text-white font-black uppercase tracking-widest drop-shadow-2xl">{isRtl ? 'هدايا' : 'Gifts'}</span>
-                    </button>
-
-                    <button onClick={handleLiveLike} className="group flex flex-col items-center gap-1 transition-theme">
-                      <div className="w-10 h-10 rounded-[4px] bg-red-500/10 backdrop-blur-md border border-red-500/30 flex items-center justify-center text-white group-hover:bg-red-500 transition-theme shadow-xl">
-                        <Heart size={20} className={liveLikes > 0 ? "fill-current text-red-500 group-hover:text-white" : ""} />
-                      </div>
-                      <span className="text-[9px] text-white font-black drop-shadow-2xl">{liveLikes > 1000 ? (liveLikes/1000).toFixed(1) + 'K' : liveLikes}</span>
-                    </button>
-
-                    <button className="group flex flex-col items-center gap-1 transition-theme">
-                      <div className="w-10 h-10 rounded-[4px] bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-accent hover:text-white transition-theme shadow-xl group-hover:border-accent/50">
-                        <Share2 size={20} />
-                      </div>
-                      <span className="text-[9px] text-white font-black uppercase tracking-widest drop-shadow-2xl">{isRtl ? 'مشاركة' : 'Share'}</span>
-                    </button>
-
-                    <div className="w-9 h-9 rounded-[4px] border-2 border-accent p-0.5 animate-pulse shadow-[0_0_15px_rgba(156,163,175,0.5)] bg-black/20">
-                      <img 
-                        src={user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"} 
-                        alt="host" 
-                        className="w-full h-full rounded-[2px] object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gift Modal Overlay */}
-              <AnimatePresence>
-                {isGiftModalOpen && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 100 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 100 }}
-                    className="absolute bottom-0 inset-x-0 bg-gray-900 rounded-t-[32px] p-6 z-50 border-t border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pointer-events-auto"
-                  >
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-white font-extrabold text-lg flex items-center gap-2">
-                        <Gift className="text-yellow-400" size={20} />
-                        {isRtl ? 'إرسال هدية للمنشئ' : 'Send Gift to Creator'}
-                      </h3>
-                      <button onClick={() => setIsGiftModalOpen(false)} className="text-gray-400 hover:text-white bg-white/5 p-2 rounded-[4px]">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-4 gap-3 mb-6">
-                      {giftsCatalog.length > 0 ? (
-                        giftsCatalog.map((gift, gIdx) => (
-                          <button
-                            key={`gift-opt-${gift.id}-${gIdx}`}
-                            onClick={() => handleSendGift(gift)}
-                            className="flex flex-col items-center justify-center p-3 bg-gray-800 rounded-2xl border border-gray-700 hover:border-accent hover:bg-gray-700 transition-theme group"
-                          >
-                            <span className="text-3xl mb-2 transition-theme">{gift.icon}</span>
-                            <span className="text-[10px] text-white font-bold mb-1 truncate w-full text-center">
-                              {isRtl ? gift.name_ar : gift.name_en}
-                            </span>
-                            <span className="text-[10px] text-yellow-400 flex items-center gap-1 font-black">
-                              {gift.points} <Wallet size={10} />
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="col-span-4 py-8 text-center text-gray-500 text-xs">
-                          {isRtl ? 'جاري تحميل الهدايا...' : 'Loading gifts...'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-700">
-                      <div className="flex items-center gap-2 text-gray-300">
-                        <Wallet size={18} className="text-accent" />
-                        <span className="text-sm">{isRtl ? 'رصيدك الحالي:' : 'Your Balance:'}</span>
-                      </div>
-                      <span className="text-accent font-extrabold text-lg">{walletBalance}</span>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Instructions Hint for Mobile */}
-              <div className="absolute left-1/2 bottom-4 -translate-x-1/2 pointer-events-none z-30 flex flex-col items-center opacity-40">
-                <div className="w-1 h-8 rounded-[4px] bg-white/20 relative overflow-hidden">
-                  <motion.div 
-                    animate={{ y: [-32, 32] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                    className="w-full h-1/2 bg-accent"
-                  />
-                </div>
-                <span className="text-[8px] text-white font-black mt-1 tracking-tighter uppercase">{isRtl ? 'اسحب للأعلى للتمرير' : 'SWIPE UP'}</span>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <LiveStreamModal
+        isOpen={isLiveStreamOpen}
+        onClose={() => {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+          setIsLiveStreamOpen(false);
+        }}
+        isRtl={isRtl}
+        user={user}
+        walletBalance={walletBalance}
+        streamTitleInput={streamTitleInput}
+        streamFeed={streamFeed}
+        currentFeedIndex={currentFeedIndex}
+        setCurrentFeedIndex={setCurrentFeedIndex}
+        streamRef={streamRef}
+        videoRef={videoRef}
+        isMuted={isMuted}
+        setIsMuted={setIsMuted}
+        liveViewers={liveViewers}
+        liveLikes={liveLikes}
+        handleLiveLike={handleLiveLike}
+        showLikeAnimation={showLikeAnimation}
+        liveComments={liveComments}
+        newLiveComment={newLiveComment}
+        setNewLiveComment={setNewLiveComment}
+        handleSendLiveComment={handleSendLiveComment}
+        isGiftModalOpen={isGiftModalOpen}
+        setIsGiftModalOpen={setIsGiftModalOpen}
+        giftsCatalog={giftsCatalog}
+        handleSendGift={handleSendGift}
+      />
 
       {/* ========================================================== */}
       {/* MODAL 1: CREATE NEW CAMPAIGN AD (META-STYLE POSTING)       */}

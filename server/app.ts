@@ -1551,6 +1551,21 @@ app.use('/api/google-chat', googleChatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use("/api/push", pushRoutes);
 
+app.get('/api/theme-customizations', async (req, res) => {
+  try {
+    const targetPool = pool || getDatabasePool('core');
+    if (!targetPool) return res.json({ success: true, customizations: {} });
+    const result = await targetPool.query('SELECT theme_mode, tokens FROM admin_theme_customizations');
+    const customizations: Record<string, any> = {};
+    for (const row of result.rows) {
+      customizations[row.theme_mode] = row.tokens || {};
+    }
+    res.json({ success: true, customizations });
+  } catch (err) {
+    res.json({ success: true, customizations: {} });
+  }
+});
+
 function escapeHtmlAttribute(str: string): string {
   if (!str) return '';
   return String(str)

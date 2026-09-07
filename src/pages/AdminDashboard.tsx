@@ -63,6 +63,7 @@ import {
   Star,
   MessageSquare,
   Sparkles,
+  Palette,
   Brain,
   Globe,
   Smartphone,
@@ -140,6 +141,7 @@ interface MemoryConsolidationReportItem {
 
 import { MemoryCenterView } from "../components/admin/MemoryCenterView";
 import { SystemSettingsView } from "../components/admin/SystemSettingsView";
+import { ThemeStudioView } from "../components/admin/ThemeStudioView";
 
 // --- Compliance Audit Logs View ---
 import { ComplianceAuditLogsView } from "../components/admin/ComplianceAuditLogsView";
@@ -332,6 +334,8 @@ export const AdminDashboard: React.FC = () => {
         return t("referralDashboard");
       case "seo":
         return language === "ar" ? "تدقيق الميتاداتا والسيو" : "SEO Audit & AI Population";
+      case "theme":
+        return language === "ar" ? "استوديو المظهر والثيمات" : "Theme Studio & Tokens";
       case "metrics":
         return language === "ar" ? "مقاييس الأداء ورندر المكونات" : "Render & Latency Metrics";
       default:
@@ -405,6 +409,10 @@ export const AdminDashboard: React.FC = () => {
         return language === "ar"
           ? "مراقبة وتوليد الميتاداتا وفحص جاهزية محركات البحث"
           : "METADATA AUDITING, AI GENERATION & REAL-TIME PROGRESS MONITORING";
+      case "theme":
+        return language === "ar"
+          ? "تحكم دقيق وشامل في كل لون وكل سطر في الثيمات"
+          : "SOVEREIGN CONTROL OVER EVERY COLOR TOKEN AND THEME SURFACE";
       case "metrics":
         return language === "ar"
           ? "مراقبة زمن الانتقال وتتبع أداء المكونات برمجياً"
@@ -452,6 +460,8 @@ export const AdminDashboard: React.FC = () => {
         return <UserPlus size={28} className={iconClass} />;
       case "seo":
         return <Globe size={28} className={iconClass} />;
+      case "theme":
+        return <Palette size={28} className={iconClass} />;
       default:
         return <Settings2 size={28} className={iconClass} />;
     }
@@ -524,15 +534,13 @@ export const AdminDashboard: React.FC = () => {
     >
       {/* Sticky Admin Header - Elite Command Layer */}
       <div
-        className={`sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme ${
-          theme === "dark" ? "bg-[var(--bg-base)]/95" : "bg-[var(--bg-surface)]/95"
-        } backdrop-blur-md border-b border-[var(--border)] flex items-center justify-between`}
+        className="sticky top-[72px] z-20 -mx-6 md:-mx-8 px-6 md:px-8 py-3 mb-4 transition-theme bg-[var(--surface-page)]/95 backdrop-blur-md border-b border-[var(--border-main)] flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
           {path !== "dashboard" && (
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className="p-2.5 rounded-md transition-theme flex items-center justify-center bg-[var(--bg-surface)] hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:shadow-md"
+              className="p-2.5 rounded-[var(--radius-sm)] transition-theme flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border-main)] shadow-xs"
               title={t("back")}
             >
               {dir === "rtl" ? (
@@ -544,7 +552,7 @@ export const AdminDashboard: React.FC = () => {
           )}
           <div className="flex items-center gap-4">
             <div
-              className="p-2.5 rounded-md bg-[var(--bg-surface)] shadow-sm border border-[var(--border)] transition-theme"
+              className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-card)] shadow-xs border border-[var(--border-main)] transition-theme text-[var(--text-primary)]"
             >
               {getIcon()}
             </div>
@@ -552,7 +560,7 @@ export const AdminDashboard: React.FC = () => {
               <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-none text-[var(--text-primary)] transition-theme">
                 {getTitle()}
               </h1>
-              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1 opacity-60">
+              <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-1 opacity-70">
                 {getSubTitle()}
               </p>
             </div>
@@ -563,7 +571,7 @@ export const AdminDashboard: React.FC = () => {
           {showAddButton && (
             <button
               onClick={handleAddClick}
-              className="flex items-center gap-2 bg-accent hover:bg-accent text-white px-5 py-2.5 rounded-md transition-theme font-bold text-sm shadow-[0_5px_15px_rgba(156,163,175,0.3)] hover:shadow-[0_8px_20px_rgba(156,163,175,0.5)] active:scale-95"
+              className="flex items-center gap-2 bg-[var(--bg-accent-emphasis)] hover:opacity-90 text-[var(--fg-on-emphasis)] px-5 py-2.5 rounded-[var(--radius-sm)] transition-theme font-bold text-sm shadow-sm active:scale-95 cursor-pointer"
             >
               <Plus size={18} />
               {getAddButtonText()}
@@ -573,7 +581,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsPulseOpen(!isPulseOpen)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-[var(--border)] bg-[var(--bg-surface)] transition-theme hover:bg-gray-50/5 cursor-pointer select-none active:scale-95"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-xs)] border border-[var(--border-main)] bg-[var(--surface-card)] transition-theme hover:bg-[var(--surface-subtle)] cursor-pointer select-none active:scale-95"
             >
               <div className="relative flex items-center justify-center">
                 <div 
@@ -602,16 +610,12 @@ export const AdminDashboard: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-lg border shadow-2xl transition-theme ${
-                      theme === 'dark' 
-                        ? 'bg-[#0f0f11] border-gray-800/80 text-white' 
-                        : 'bg-white border-gray-200 text-gray-900'
-                    }`}
+                    className={`absolute ${language === 'ar' ? 'left-0' : 'right-0'} top-full mt-2 w-96 z-50 p-4 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[var(--text-primary)] shadow-2xl transition-theme`}
                   >
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border)]">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[var(--border-main)]">
                       <div className="flex items-center gap-2">
                         <Activity size={16} className={pulseGlowClass} />
-                        <span className="text-[11px] font-black uppercase tracking-wider">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-[var(--text-primary)]">
                           {language === 'ar' ? 'فحص تشخيصي للنبض' : 'Pulse System Diagnostics'}
                         </span>
                       </div>
@@ -620,7 +624,7 @@ export const AdminDashboard: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="mb-4 bg-black/10 dark:bg-black/40 rounded p-2 border border-[var(--border)] overflow-hidden">
+                    <div className="mb-4 bg-[var(--surface-subtle)] rounded-[var(--radius-xs)] p-2 border border-[var(--border-main)] overflow-hidden">
                       <svg className="w-full h-10 stroke-current opacity-90" viewBox="0 0 100 20" fill="none">
                         <motion.path
                           d="M 0,10 Q 15,10 20,10 T 30,10 T 32,5 T 34,15 T 36,1 T 38,19 T 40,10 T 50,10 T 60,10 T 62,3 T 64,17 T 66,10 T 80,10 T 90,10 T 100,10"
@@ -637,29 +641,29 @@ export const AdminDashboard: React.FC = () => {
 
                     <div className="space-y-3">
                       <div>
-                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border-main)]/60 pb-0.5">
                           {language === 'ar' ? 'عقد قواعد البيانات ومزامنتها' : 'Database Node Synchronization'}
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-[10px]">
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                          <div className="p-1.5 rounded-[var(--radius-xs)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'قاعدة البيانات المركزية' : 'Core Engine DB'}</span>
                             <span className={`font-black ${pulseData?.databases?.core?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.core?.status === 'connected' ? `Connected (${pulseData.databases.core.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                          <div className="p-1.5 rounded-[var(--radius-xs)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'دفتر الحسابات والمالية' : 'Ledger Vault DB'}</span>
                             <span className={`font-black ${pulseData?.databases?.ledger?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.ledger?.status === 'connected' ? `Connected (${pulseData.databases.ledger.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                          <div className="p-1.5 rounded-[var(--radius-xs)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'السحابة الخارجية' : 'External Sync Registry'}</span>
                             <span className={`font-black ${pulseData?.databases?.external?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.external?.status === 'connected' ? `Connected (${pulseData.databases.external.latencyMs}ms)` : 'Offline'}
                             </span>
                           </div>
-                          <div className="p-1.5 rounded bg-gray-50/5 border border-[var(--border)] flex flex-col justify-between">
+                          <div className="p-1.5 rounded-[var(--radius-xs)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex flex-col justify-between">
                             <span className="text-[8px] text-[var(--text-muted)] font-bold">{language === 'ar' ? 'حماية وأمن البيانات' : 'Security Registry'}</span>
                             <span className={`font-black ${pulseData?.databases?.security?.status === 'connected' ? 'text-accent' : 'text-rose-500'}`}>
                               {pulseData?.databases?.security?.status === 'connected' ? `Connected (${pulseData.databases.security.latencyMs}ms)` : 'Offline'}
@@ -669,35 +673,35 @@ export const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border)]/40 pb-0.5">
+                        <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 border-b border-[var(--border-main)]/60 pb-0.5">
                           {language === 'ar' ? 'العمليات الخلفية النشطة' : 'Background Process Handlers'}
                         </div>
                         <div className="space-y-1 text-[9px] text-[var(--text-muted)] font-medium font-sans">
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                          <div className="flex justify-between items-center bg-[var(--surface-subtle)] px-2 py-1 rounded-[var(--radius-xs)]">
                             <span>{language === 'ar' ? 'الصيانة والمسح اليومي' : 'Daily Maintenance & Trash Purge'}</span>
                             <span className={`font-bold ${pulseData?.cronTasks?.dailyMaintenance?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.dailyMaintenance?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.dailyMaintenance ? `${formatPulseRelative(pulseData.cronTasks.dailyMaintenance.lastRun)}` : 'Pending'}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                          <div className="flex justify-between items-center bg-[var(--surface-subtle)] px-2 py-1 rounded-[var(--radius-xs)]">
                             <span>{language === 'ar' ? 'نبض المزامنة الذكية' : 'Database Pulse Tracker'}</span>
                             <span className={`font-bold ${pulseData?.cronTasks?.databaseHeartbeat?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.databaseHeartbeat?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.databaseHeartbeat ? `${formatPulseRelative(pulseData.cronTasks.databaseHeartbeat.lastRun)}` : 'Pending'}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                          <div className="flex justify-between items-center bg-[var(--surface-subtle)] px-2 py-1 rounded-[var(--radius-xs)]">
                             <span>{language === 'ar' ? 'تنظيف الجلسات المؤقتة' : 'Auth Token & Session Purge'}</span>
                             <span className={`font-bold ${pulseData?.cronTasks?.expiredTokensCleanup?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.expiredTokensCleanup?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.expiredTokensCleanup ? `${formatPulseRelative(pulseData.cronTasks.expiredTokensCleanup.lastRun)}` : 'Pending'}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                          <div className="flex justify-between items-center bg-[var(--surface-subtle)] px-2 py-1 rounded-[var(--radius-xs)]">
                             <span>{language === 'ar' ? 'تدقيق الاشتراكات الفعالة' : 'Subscription Renewal Audits'}</span>
                             <span className={`font-bold ${pulseData?.cronTasks?.subscriptionAudit?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.subscriptionAudit?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.subscriptionAudit ? `${formatPulseRelative(pulseData.cronTasks.subscriptionAudit.lastRun)}` : 'Pending'}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center bg-gray-50/5 px-2 py-1 rounded">
+                          <div className="flex justify-between items-center bg-[var(--surface-subtle)] px-2 py-1 rounded-[var(--radius-xs)]">
                             <span>{language === 'ar' ? 'ضغط وتقليص ذاكرة الذكاء' : 'Memory Distillation Cycle'}</span>
                             <span className={`font-bold ${pulseData?.cronTasks?.memoryCompaction?.status === 'success' ? 'text-accent' : pulseData?.cronTasks?.memoryCompaction?.status === 'running' ? 'text-amber-400' : 'text-purple-400'}`}>
                               {pulseData?.cronTasks?.memoryCompaction ? `${formatPulseRelative(pulseData.cronTasks.memoryCompaction.lastRun)}` : 'Pending'}
@@ -706,14 +710,14 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="pt-1.5 border-t border-[var(--border)]/40">
+                      <div className="pt-1.5 border-t border-[var(--border-main)]/60">
                         <div className="grid grid-cols-2 gap-4 text-[9px] text-[var(--text-muted)] font-bold">
                           <div>
                             <div className="flex justify-between mb-1">
                               <span>CPU UTILIZATION</span>
                               <span>{pulseData?.cpu ?? 0}%</span>
                             </div>
-                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                            <div className="h-1 bg-[var(--border-main)] rounded-full overflow-hidden">
                               <div className="h-full bg-accent" style={{ width: `${pulseData?.cpu ?? 0}%` }} />
                             </div>
                           </div>
@@ -722,7 +726,7 @@ export const AdminDashboard: React.FC = () => {
                               <span>HEAP ALLOC</span>
                               <span>{pulseData?.memory?.percent ?? 0}%</span>
                             </div>
-                            <div className="h-1 bg-[var(--border)] rounded-full overflow-hidden">
+                            <div className="h-1 bg-[var(--border-main)] rounded-full overflow-hidden">
                               <div className="h-full bg-purple-500" style={{ width: `${pulseData?.memory?.percent ?? 0}%` }} />
                             </div>
                           </div>
@@ -740,11 +744,11 @@ export const AdminDashboard: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`relative transition-theme ${
-          ["dashboard", "radar", "databases", "orchestrator", "keys", "gpu", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo"].includes(
+          ["dashboard", "radar", "databases", "orchestrator", "keys", "gpu", "finance", "plans", "users", "emails", "broadcast", "settings", "audit", "referrals", "ads", "metrics", "seo", "theme"].includes(
             path,
           )
             ? ""
-            : `p-6 md:p-8 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-xl`
+            : `p-6 md:p-8 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-card)] shadow-xl`
         }`}
       >
         <ErrorBoundary name="Admin Command Panels">
@@ -813,6 +817,8 @@ export const AdminDashboard: React.FC = () => {
             <AdsManagementView theme={theme} t={t} dir={dir} language={language} />
           ) : path === "seo" ? (
             <SeoCenterView theme={theme} t={t} dir={dir} language={language} showToast={showToast} />
+          ) : path === "theme" ? (
+            <ThemeStudioView t={t} showToast={showToast} token={token} language={language} />
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <div className="mb-6 opacity-50">{getIcon()}</div>

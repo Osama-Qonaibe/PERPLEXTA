@@ -106,12 +106,12 @@ export const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
           : (language === 'ar' ? 'تفعيل الثيم الداكن' : 'Switch to Dark Mode')
       }
       aria-pressed={isDark}
-      className={`flex items-center justify-center gap-2 ${buttonDimensions} rounded-[10px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-hover)] transition-theme group shrink-0 cursor-pointer ${className}`}
+      className={`flex items-center justify-center gap-2 ${buttonDimensions} rounded-[var(--radius-sm)] bg-transparent border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] transition-all group shrink-0 cursor-pointer ${className}`}
     >
       {isDark ? (
-        <Sun size={iconSize} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-theme" />
+        <Sun size={iconSize} className="text-[var(--text-secondary)] group-hover:text-[var(--fg-accent)] transition-colors" />
       ) : (
-        <Moon size={iconSize} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-theme" />
+        <Moon size={iconSize} className="text-[var(--text-secondary)] group-hover:text-[var(--fg-accent)] transition-colors" />
       )}
       {showLabel && (
         <span className="text-xs font-bold text-[var(--text-primary)]">

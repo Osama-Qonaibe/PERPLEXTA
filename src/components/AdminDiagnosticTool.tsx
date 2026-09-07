@@ -110,14 +110,14 @@ export const AdminDiagnosticTool: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius)] border border-[var(--border-main)] space-y-6">
+    <div className="p-6 bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-            <Smartphone className="w-5 h-5 text-accent" />
+          <h2 className="text-xl font-bold text-[var(--fg-primary)] flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-[var(--accent)]" />
             {isAr ? 'لوحة تشخيص وتدقيق PWA والمنصة' : 'PWA & Platform Diagnostic Hub'}
           </h2>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">
+          <p className="text-xs text-[var(--fg-secondary)] mt-1">
             {isAr 
               ? 'فحص تفصيلي لـ display-mode: standalone، سلامة ملف manifest.json، استجابة Service Worker، ومزامنة إشعارات التثبيت والتعليمات.'
               : 'Inspect display-mode: standalone, manifest JSON parsing, service worker status, and synchronized installation/instruction notifications.'}
@@ -127,7 +127,7 @@ export const AdminDiagnosticTool: React.FC = () => {
         <button
           onClick={runDiagnostics}
           disabled={isRunning}
-          className="px-4 py-2 bg-[var(--bg-accent-emphasis)] text-white text-xs font-bold rounded-[var(--radius)] hover:opacity-90 flex items-center gap-2 transition-all disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold rounded-[var(--radius-md)] hover:opacity-90 flex items-center gap-2 transition-colors duration-base disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${isRunning ? 'animate-spin' : ''}`} />
           {isAr ? 'إعادة الفحص التشخيصي' : 'Run Full Diagnostics'}
@@ -137,85 +137,85 @@ export const AdminDiagnosticTool: React.FC = () => {
       {/* Grid of Key Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Display Mode Card */}
-        <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--surface-canvas)] border border-[var(--border-default)] space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--fg-muted)]">
             <span>{isAr ? 'وضع العرض (Display Mode)' : 'Display Mode'}</span>
-            {pwa.isStandalone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+            {pwa.isStandalone ? <CheckCircle2 className="w-4 h-4 text-[var(--status-success)]" /> : <AlertTriangle className="w-4 h-4 text-[var(--status-warning)]" />}
           </div>
-          <p className="text-sm font-bold text-[var(--text-primary)]">
+          <p className="text-sm font-bold text-[var(--fg-primary)]">
             {pwa.isStandalone ? 'standalone (Active App)' : 'browser (Tab Mode)'}
           </p>
-          <p className="text-[10px] text-[var(--text-secondary)]">
+          <p className="text-[10px] text-[var(--fg-secondary)]">
             {pwa.isStandalone ? (isAr ? 'يعمل كتطبيق مستقل بنجاح' : 'Running as standalone app') : (isAr ? 'يعمل داخل تبويب المتصفح' : 'Running inside browser tab')}
           </p>
         </div>
 
         {/* Manifest Status Card */}
-        <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--surface-canvas)] border border-[var(--border-default)] space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--fg-muted)]">
             <span>{isAr ? 'ملف الـ Manifest' : 'Manifest Parse Status'}</span>
             {manifestStatus === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--status-success)]" />
             ) : manifestStatus === 'error' ? (
-              <XCircle className="w-4 h-4 text-rose-500" />
+              <XCircle className="w-4 h-4 text-[var(--status-danger)]" />
             ) : (
-              <RefreshCw className="w-4 h-4 animate-spin text-accent" />
+              <RefreshCw className="w-4 h-4 animate-spin text-[var(--accent)]" />
             )}
           </div>
-          <p className="text-sm font-bold text-[var(--text-primary)]">
+          <p className="text-sm font-bold text-[var(--fg-primary)]">
             {manifestStatus === 'success' ? (isAr ? 'صحيح وخالٍ من الأخطاء' : 'Valid JSON & Parsed') : manifestStatus === 'error' ? 'Parsing Error' : 'Checking...'}
           </p>
-          <p className="text-[10px] text-[var(--text-secondary)]">
+          <p className="text-[10px] text-[var(--fg-secondary)]">
             {manifestError || (manifestData ? `${manifestData.icons?.length || 0} icons defined` : 'Loading manifest.json')}
           </p>
         </div>
 
         {/* Platform & Install Notification Card */}
-        <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--surface-canvas)] border border-[var(--border-default)] space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--fg-muted)]">
             <span>{isAr ? 'نوع الإشعار المعروض' : 'Notification Mode'}</span>
-            {pwa.canInstall ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <Smartphone className="w-4 h-4 text-blue-500" />}
+            {pwa.canInstall ? <ShieldCheck className="w-4 h-4 text-[var(--status-success)]" /> : <Smartphone className="w-4 h-4 text-[var(--status-info)]" />}
           </div>
-          <p className="text-sm font-bold text-[var(--text-primary)]">
+          <p className="text-sm font-bold text-[var(--fg-primary)]">
             {pwa.canInstall ? (pwa.hasPrompt ? 'Installation Notification' : 'Instruction Guide Fallback') : 'Installed / Dismissed'}
           </p>
-          <p className="text-[10px] text-[var(--text-secondary)]">
-            Platform: <span className="font-semibold text-accent">{pwa.mobilePlatform}</span>
+          <p className="text-[10px] text-[var(--fg-secondary)]">
+            Platform: <span className="font-semibold text-[var(--accent)]">{pwa.mobilePlatform}</span>
           </p>
         </div>
 
         {/* Service Worker Card */}
-        <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--surface-canvas)] border border-[var(--border-default)] space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--fg-muted)]">
             <span>{isAr ? 'عامل الخدمة (Service Worker)' : 'Service Worker'}</span>
-            {swStatus === 'active' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+            {swStatus === 'active' ? <CheckCircle2 className="w-4 h-4 text-[var(--status-success)]" /> : <AlertTriangle className="w-4 h-4 text-[var(--status-warning)]" />}
           </div>
-          <p className="text-sm font-bold text-[var(--text-primary)]">
+          <p className="text-sm font-bold text-[var(--fg-primary)]">
             {swStatus === 'active' ? 'Active & Registered' : swStatus}
           </p>
-          <p className="text-[10px] text-[var(--text-secondary)] truncate">
+          <p className="text-[10px] text-[var(--fg-secondary)] truncate">
             {swDetails || 'Checking SW...'}
           </p>
         </div>
       </div>
 
       {/* Verification Details & Synchronization Explanation */}
-      <div className="p-4 rounded-[var(--radius)] bg-accent/5 border border-accent/20 flex items-start gap-3">
-        <Cpu className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+      <div className="p-4 rounded-[var(--radius-md)] bg-[var(--accent-subtle)] border border-[var(--accent-subtle)] flex items-start gap-3">
+        <Cpu className="w-5 h-5 text-[var(--accent)] shrink-0 mt-0.5" />
         <div className="space-y-1 text-xs">
-          <h4 className="font-bold text-[var(--text-primary)]">
+          <h4 className="font-bold text-[var(--fg-primary)]">
             {isAr ? 'التحقق من تزامن إشعارات التثبيت والتعليمات (Sync & Notification Verification)' : 'Installation & Instruction Notification Synchronization'}
           </h4>
-          <p className="text-[var(--text-secondary)] leading-relaxed">
+          <p className="text-[var(--fg-secondary)] leading-relaxed">
             {isAr
               ? 'النظام يطابق إشعارات التثبيت والتعليمات بدقة مع قدرات المتصفح والجهاز: الأجهزة التي تدعم التثبيت التلقائي (مثل Android Chrome و Desktop Chrome) تعرض إشعار/زر التثبيت المباشر (Installation Notification)، بينما الأجهزة المقيدة أو التي لا تدعم التثبيت المباشر (مثل iOS Safari) تعرض دليل التعليمات خطوة بخطوة (Instruction Notification). كلا الإشعارين متزامنان تماماً مع حالة تثبيت التطبيق الفعلية.'
               : 'The system precisely routes installation vs instruction notifications based on device capabilities: automated environments (Android/Desktop Chrome) trigger direct Installation notifications, while unsupported or restricted platforms (iOS Safari) present step-by-step instruction guides. Fully synchronized with actual installation status.'}
           </p>
           <div className="pt-2 flex items-center gap-4 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--status-success)]">
               <CheckCircle2 className="w-3.5 h-3.5" /> {isAr ? 'دعم التثبيت التلقائي' : 'Native Install Supported'}: {pwa.hasPrompt ? 'Yes' : 'No (Instruction Mode Active)'}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-accent">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--accent)]">
               <Smartphone className="w-3.5 h-3.5" /> {isAr ? 'التصنيف' : 'Platform'}: {pwa.mobilePlatform}
             </span>
           </div>
@@ -224,16 +224,16 @@ export const AdminDiagnosticTool: React.FC = () => {
 
       {/* Live Console Diagnostic Logs */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-bold text-[var(--text-primary)]">
+        <div className="flex items-center justify-between text-xs font-bold text-[var(--fg-primary)]">
           <span className="flex items-center gap-1.5">
-            <Terminal className="w-4 h-4 text-accent" />
+            <Terminal className="w-4 h-4 text-[var(--accent)]" />
             {isAr ? 'سجل تشخيص وحدة التحكم والأخطاء (Diagnostic & Console Logs)' : 'Real-time Diagnostic & Console Logs'}
           </span>
-          <span className="text-[10px] text-[var(--text-muted)] font-mono">
+          <span className="text-[10px] text-[var(--fg-muted)] font-mono">
             {logs.length} events logged
           </span>
         </div>
-        <div className="p-3 bg-black/90 text-emerald-400 font-mono text-[11px] rounded-[var(--radius)] h-44 overflow-y-auto space-y-1 border border-gray-800 shadow-inner">
+        <div className="p-3 bg-black text-[var(--status-success)] font-mono text-[11px] rounded-[var(--radius-md)] h-44 overflow-y-auto space-y-1 border border-[var(--border-default)] shadow-inner">
           {logs.map((log, idx) => (
             <div key={idx} className="leading-relaxed whitespace-pre-wrap">
               {log}
@@ -243,14 +243,14 @@ export const AdminDiagnosticTool: React.FC = () => {
       </div>
 
       {checkCompleted && missingFiles.length > 0 && (
-        <div className="p-4 rounded-[var(--radius)] bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs space-y-2">
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--status-danger-subtle)] border border-[var(--status-danger-subtle)] text-[var(--status-danger)] text-xs space-y-2">
           <p className="font-bold">{isAr ? 'تم اكتشاف ملفات مفقودة:' : 'Missing assets detected:'}</p>
           <ul className="list-disc pl-5">
             {missingFiles.map(f => <li key={f}>{f}</li>)}
           </ul>
           <button
             onClick={repairAssets}
-            className="px-3 py-1.5 bg-rose-600 text-white rounded font-bold flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-[var(--status-danger)] text-[var(--fg-on-accent)] rounded-[var(--radius-md)] font-bold flex items-center gap-1.5"
           >
             <Wrench className="w-3.5 h-3.5" /> {isAr ? 'إصلاح ومزامنة الملفات' : 'Repair Assets & Reload'}
           </button>

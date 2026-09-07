@@ -5,68 +5,65 @@ export default {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
-      colors: {
-        // Surfaces
-        'surface-page': 'var(--surface-page)',
-        'surface-card': 'var(--surface-card)',
-        'surface-subtle': 'var(--surface-subtle)',
-        'surface-inset': 'var(--surface-inset)',
-
-        // Text / Foreground
-        'fg-default': 'var(--fg-default)',
-        'fg-muted': 'var(--fg-muted)',
-        'fg-disabled': 'var(--fg-disabled)',
-        'fg-accent': 'var(--fg-accent)',
-        'fg-on-emphasis': 'var(--fg-on-emphasis)',
-
-        // Background
-        'bg-primary': 'var(--bg-default)',
-        'bg-secondary': 'var(--bg-muted)',
-        'bg-accent': 'var(--bg-accent-emphasis)',
-        'bg-accent-muted': 'var(--bg-accent-muted)',
-        'bg-inset': 'var(--bg-inset)',
-
-        // Borders
-        'border-default': 'var(--border-default)',
-        'border-muted': 'var(--border-muted)',
-        'border-accent': 'var(--border-accent-emphasis)',
-
-        // Status Colors
-        'success-fg': 'var(--fg-success)',
-        'success-bg': 'var(--bg-success-muted)',
-        'danger-fg': 'var(--fg-danger)',
-        'danger-bg': 'var(--bg-danger-muted)',
-        'warning-fg': 'var(--fg-attention)',
-        'warning-bg': 'var(--bg-attention-muted)',
-        'info-fg': 'var(--fg-info)',
-        'info-bg': 'var(--bg-info-muted)',
-      },
-
       fontFamily: {
-        sans: [
-          'Tajawal',
-          'Space Grotesk',
-          'ui-sans-serif',
-          'system-ui',
-          'sans-serif',
-        ],
-        mono: [
-          'JetBrains Mono',
-          'ui-monospace',
-          'SFMono-Regular',
-          'Menlo',
-          'Monaco',
-          'Consolas',
-          'monospace',
-        ],
+        sans: ['Tajawal', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Cormorant Garamond', 'Tajawal', 'serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
+      colors: {
+        'surface-page': 'var(--surface-page)',
+        'surface-canvas': 'var(--surface-canvas)',
+        'surface-card': 'var(--surface-card)',
+        'surface-raised': 'var(--surface-raised)',
+        'surface-input': 'var(--surface-input)',
+        'surface-overlay': 'var(--surface-overlay)',
 
+        'fg-primary': 'var(--fg-primary)',
+        'fg-secondary': 'var(--fg-secondary)',
+        'fg-muted': 'var(--fg-muted)',
+        'fg-on-accent': 'var(--fg-on-accent)',
+        'fg-success': 'var(--fg-success)',
+        'fg-warning': 'var(--fg-warning)',
+        'fg-danger': 'var(--fg-danger)',
+        'fg-info': 'var(--fg-info)',
+
+        'border-subtle': 'var(--border-subtle)',
+        'border-default': 'var(--border-default)',
+        'border-strong': 'var(--border-strong)',
+        'border-focus': 'var(--border-focus)',
+
+        'accent': 'var(--accent)',
+        'accent-hover': 'var(--accent-hover)',
+        'accent-subtle': 'var(--accent-subtle)',
+        'accent-foreground': 'var(--accent-foreground)',
+
+        'status-success': 'var(--status-success)',
+        'status-success-subtle': 'var(--status-success-subtle)',
+        'status-warning': 'var(--status-warning)',
+        'status-warning-subtle': 'var(--status-warning-subtle)',
+        'status-danger': 'var(--status-danger)',
+        'status-danger-subtle': 'var(--status-danger-subtle)',
+        'status-info': 'var(--status-info)',
+        'status-info-subtle': 'var(--status-info-subtle)',
+      },
       borderRadius: {
-        xs: 'var(--radius-xs)',
         sm: 'var(--radius-sm)',
         md: 'var(--radius-md)',
         lg: 'var(--radius-lg)',
-        full: 'var(--radius-full, 9999px)',
+        xl: 'var(--radius-xl)',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+      },
+      transitionDuration: {
+        fast: 'var(--motion-fast)',
+        base: 'var(--motion-base)',
+        slow: 'var(--motion-slow)',
+      },
+      transitionTimingFunction: {
+        ease: 'var(--motion-ease)',
       },
     },
   },

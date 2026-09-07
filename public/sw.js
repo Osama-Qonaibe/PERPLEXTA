@@ -39,3 +39,20 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// 5. Service Worker Background Sync Strategy
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-chat-messages') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({
+            type: 'SYNC_CHAT_MESSAGES',
+            timestamp: Date.now()
+          });
+        }
+      })
+    );
+  }
+});
+
+

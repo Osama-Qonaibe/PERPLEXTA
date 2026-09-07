@@ -116,22 +116,22 @@ export const AdminRenderMetricsView: React.FC = () => {
   }));
 
   return (
-    <div className={`p-6 space-y-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+    <div className="p-6 space-y-6 text-[var(--fg-primary)]">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-gray-200 dark:border-gray-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-[var(--border-default)]">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Activity className="w-6 h-6 text-accent animate-pulse" />
+            <Activity className="w-6 h-6 text-[var(--accent)] animate-pulse" />
             <span>مراقبة زمن الانتقال وأداء المكونات (Render & Latency Telemetry)</span>
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-[var(--fg-secondary)] mt-1">
             لوحة تحكم المشرفين لمراقبة مقاييس أداء مكونات الواجهة وزمن الاستجابة عبر جلسات المستخدمين الحية
           </p>
         </div>
         <button
           onClick={fetchMetrics}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent text-white rounded-lg text-sm font-medium transition-theme shadow-sm disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-[var(--fg-on-accent)] rounded-[var(--radius-md)] text-sm font-bold transition-colors duration-base shadow-sm disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>تحديث البيانات / Refresh</span>
@@ -140,40 +140,40 @@ export const AdminRenderMetricsView: React.FC = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+        <div className="p-5 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-default)] shadow-sm">
+          <div className="flex items-center justify-between text-[var(--fg-muted)] mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">إجمالي عمليات الرندر</span>
-            <Cpu className="w-5 h-5 text-accent" />
+            <Cpu className="w-5 h-5 text-[var(--accent)]" />
           </div>
           <div className="text-3xl font-bold font-mono">{totalRenders}</div>
-          <p className="text-xs text-gray-500 mt-1">عبر الفلتر المحدد</p>
+          <p className="text-xs text-[var(--fg-secondary)] mt-1">عبر الفلتر المحدد</p>
         </div>
 
-        <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+        <div className="p-5 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-default)] shadow-sm">
+          <div className="flex items-center justify-between text-[var(--fg-muted)] mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">متوسط زمن الاستجابة (Latency)</span>
-            <Clock className="w-5 h-5 text-cyan-500" />
+            <Clock className="w-5 h-5 text-[var(--status-info)]" />
           </div>
           <div className="text-3xl font-bold font-mono">{avgDuration} ms</div>
-          <p className="text-xs text-accent mt-1">أداء ممتاز واستجابة فورية</p>
+          <p className="text-xs text-[var(--accent)] mt-1">أداء ممتاز واستجابة فورية</p>
         </div>
 
-        <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+        <div className="p-5 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-default)] shadow-sm">
+          <div className="flex items-center justify-between text-[var(--fg-muted)] mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">أقصى زمن رندر مسجل</span>
-            <Zap className="w-5 h-5 text-amber-500" />
+            <Zap className="w-5 h-5 text-[var(--status-warning)]" />
           </div>
           <div className="text-3xl font-bold font-mono">{maxDuration} ms</div>
-          <p className="text-xs text-gray-500 mt-1">ذروة التحميل القياسية</p>
+          <p className="text-xs text-[var(--fg-secondary)] mt-1">ذروة التحميل القياسية</p>
         </div>
 
-        <div className={`p-5 rounded-xl border ${isDark ? 'bg-zinc-900/60 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
-          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+        <div className="p-5 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-default)] shadow-sm">
+          <div className="flex items-center justify-between text-[var(--fg-muted)] mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">الجلسات النشطة</span>
-            <Users className="w-5 h-5 text-purple-500" />
+            <Users className="w-5 h-5 text-[var(--status-info)]" />
           </div>
           <div className="text-3xl font-bold font-mono">{sessionsList.length}</div>
-          <p className="text-xs text-gray-500 mt-1">جلسات مستخدمين نشطة</p>
+          <p className="text-xs text-[var(--fg-secondary)] mt-1">جلسات مستخدمين نشطة</p>
         </div>
       </div>
 

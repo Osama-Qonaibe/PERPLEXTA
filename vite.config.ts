@@ -65,13 +65,16 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: path.resolve(rootDir, 'dist'),
       emptyOutDir: true,
-      chunkSizeWarningLimit: 2000,
+      sourcemap: false,
+      minify: 'esbuild',
+      chunkSizeWarningLimit: 3000,
       rollupOptions: {
         input: 'index.html',
         output: {
           manualChunks: {
-            'react-query': ['@tanstack/react-query'],
-            'recharts': ['recharts']
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'charts': ['recharts', 'd3'],
+            'query': ['@tanstack/react-query']
           }
         }
       }

@@ -36,6 +36,7 @@ import { stripProtocolMarkers, extractFollowUpsClient, formatActionableSuggestio
 import { fileToBase64 } from '../utils/fileUtils';
 import { formatExactTimestamp } from '../utils/adminUtils';
 import { ChatService } from '../services/chatService';
+import { enqueueOfflineMessage, initBackgroundSyncListener, QueuedChatMessage } from '../utils/offlineQueue';
 
 import { ResponseSkeleton } from '../components/ResponseSkeleton';
 import { VisitorShell } from '../components/VisitorShell';
@@ -4347,6 +4348,24 @@ export const ChatPage: React.FC = () => {
     }
   }, [isGenerating, ledgerNotice]);
 
+  // Service Worker Background Sync & Reconnection Auto-Dispatch
+  useEffect(() => {
+    const cleanup = initBackgroundSyncListener(async (queuedItem: QueuedChatMessage) => {
+      if (queuedItem && queuedItem.content) {
+        if (queuedItem.chatId && routeChatId !== queuedItem.chatId) {
+          navigate(`/chat/${queuedItem.chatId}`);
+        }
+        await handleSendOrStop(queuedItem.content);
+        return true;
+      }
+      return false;
+    });
+
+    return () => {
+      cleanup();
+    };
+  }, [routeChatId, navigate]);
+
   useEffect(() => {
     if (isGenerating) {
       setLedgerNotice(null);
@@ -5844,6 +5863,29 @@ export const ChatPage: React.FC = () => {
       const currentQuery = overrideQuery || query;
       if (!currentQuery.trim() && !selectedFile) return;
 
+      // Check Offline Status for Background Sync Strategy
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        let toolToUse = selectedFile ? 'perplexta_analysis' : (activeDropdown === 'model' 
+          ? (selectedModel === 'fast' ? 'chat_fast' : selectedModel === 'pro' ? 'chat_pro' : selectedModel === 'thinking' ? 'chat_reasoning' : 'chat')
+          : selectedTool);
+
+        enqueueOfflineMessage({
+          chatId: chatId || null,
+          content: currentQuery,
+          tool: toolToUse
+        });
+
+        toast.info(
+          dir === 'rtl'
+            ? 'أنت غير متصل بالإنترنت. تم حفظ رسالتك في طابور المزامنة وستُرسل تلقائياً فور عودة الاتصال!'
+            : 'You are currently offline. Your message is queued and will be dispatched automatically once reconnected!'
+        );
+
+        setQuery('');
+        resetWriting();
+        return;
+      }
+
       const MAX_USER_PROMPT_LIMIT = 16000;
       if (currentQuery.length > MAX_USER_PROMPT_LIMIT) {
         toast.error(
@@ -6291,7 +6333,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const renderInputArea = () => (
-    <div className="w-full flex flex-col box-border min-w-0 px-3 sm:px-6 max-w-3xl mx-auto pb-safe">
+    <div className="w-full flex flex-col box-border min-w-0 px-2 sm:px-6 max-w-3xl mx-auto">
 
       <div className="relative w-full">
 
@@ -6414,32 +6456,8 @@ export const ChatPage: React.FC = () => {
         )}
 
         <motion.div 
-          className={`relative w-full flex flex-col rounded-md border box-border min-w-0 transition-all bg-transparent ${
-            isWriting
-              ? 'duration-100 border-accent/40 shadow-[0_0_0_1px_rgba(16,185,129,0.15)]'
-              : isFocused 
-                ? 'duration-300 border-accent/40 shadow-[0_0_0_4px_rgba(156,163,175,0.03)] border-[var(--border-main)]' 
-                : 'duration-300 border-[var(--border-main)]'
-          }`}
+          className={`relative w-full flex flex-col rounded-[var(--radius-md)] border box-border min-w-0 transition-all bg-[var(--surface-card)] border-[var(--border-outer-input)] hover:border-[var(--border-accent)]`}
         >
-          {/* Subtle pulse indicator on the container border during isWriting mode */}
-          <div 
-            className={`absolute top-0 left-0 right-0 h-[2px] rounded-t-md overflow-hidden pointer-events-none z-20 transition-opacity ${
-              isWriting ? 'duration-100 opacity-100' : 'duration-300 opacity-0'
-            }`}
-          >
-            <motion.div 
-              className="w-full h-full bg-gradient-to-r from-transparent via-accent to-transparent"
-              animate={isWriting ? {
-                x: ['-100%', '100%'],
-                opacity: [0.5, 1, 0.5]
-              } : {}}
-              transition={isWriting ? {
-                x: { duration: 1.8, repeat: Infinity, ease: 'easeInOut' },
-                opacity: { duration: 1.2, repeat: Infinity, ease: 'easeInOut' }
-              } : {}}
-            />
-          </div>
 
         {isRecording && (
           <div className="px-3.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border-b border-dashed border-red-500/20 flex flex-col gap-2.5 transition-theme">
@@ -6487,7 +6505,7 @@ export const ChatPage: React.FC = () => {
               </div>
             </div>
             {/* Real-time speech-to-text text preview area */}
-            <div className="text-[14px] text-[var(--text-secondary)] italic min-h-[36px] bg-black/5 dark:bg-black/25 rounded px-3 py-2 flex items-center justify-between gap-3 border border-[var(--border-main)]/30">
+            <div className="text-[14px] text-[var(--text-secondary)] italic min-h-[36px] bg-black/5 dark:bg-black/25 rounded px-3 py-2 flex items-center justify-between gap-3 border-0">
               <span className="truncate max-w-[80%]">
                 {interimText ? (
                   <span className="text-[var(--text-primary)] font-bold not-italic">{interimText}</span>
@@ -6518,10 +6536,10 @@ export const ChatPage: React.FC = () => {
 
         {selectedFile && (
           <div className="px-2 pt-2 flex items-start gap-2">
-            <div className={`relative group p-1 rounded-sm border transition-theme bg-transparent border-[var(--border)] flex-shrink-0`}>
+            <div className={`relative group p-1 rounded-sm border-0 transition-theme bg-transparent flex-shrink-0`}>
               <div className="flex items-center gap-2 px-1.5 py-1 min-w-[120px]">
                 {previewUrl && selectedFile.type.startsWith('image/') ? (
-                  <div className="w-8 h-8 rounded-sm overflow-hidden border border-[var(--border)] bg-[var(--bg-base)]">
+                  <div className="w-8 h-8 rounded-sm overflow-hidden border-0 bg-[var(--bg-base)]">
                     <img src={previewUrl} alt="preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 ) : (
@@ -6555,7 +6573,7 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {selectedFile.type === 'application/pdf' && (
-              <div className="flex items-center gap-3 self-center pl-2 border-l border-[var(--border)] ml-2 h-10 select-none">
+              <div className="flex items-center gap-3 self-center pl-2 border-l-0 ml-2 h-10 select-none">
                 <button
                   type="button"
                   onClick={triggerForensicDiagnostic}
@@ -6592,22 +6610,17 @@ export const ChatPage: React.FC = () => {
           <div className="flex-shrink-0 flex items-center">
             <motion.button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 flex items-center justify-center rounded-[8px] transition-theme group shadow-none
+              className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] transition-all group shadow-none
                 ${!isGenerating && !query.trim() 
                   ? 'cursor-not-allowed opacity-40 grayscale' 
-                  : 'hover:bg-accent/5 hover:border-accent/20 active:scale-95'
-                } border border-transparent`}
+                  : 'hover:bg-[var(--bg-accent-muted)] hover:border-[var(--border-accent)] active:scale-95'
+                } border border-[var(--border-main)] bg-[var(--surface-subtle)]`}
               disabled={!isGenerating && !query.trim()}
               animate={isGenerating ? {
-                boxShadow: [
-                  "0 0 0px rgba(16, 185, 129, 0)",
-                  "0 0 16px rgba(16, 185, 129, 0.4)",
-                  "0 0 0px rgba(16, 185, 129, 0)"
-                ],
                 borderColor: [
-                  "rgba(16, 185, 129, 0.1)",
-                  "rgba(16, 185, 129, 0.4)",
-                  "rgba(16, 185, 129, 0.1)"
+                  "var(--border-main)",
+                  "var(--border-accent)",
+                  "var(--border-main)"
                 ]
               } : {}}
               transition={isGenerating ? {
@@ -6618,17 +6631,17 @@ export const ChatPage: React.FC = () => {
             >
               {isGenerating ? (
                 <div className="relative flex items-center justify-center w-7 h-7">
-                   <div className="absolute inset-0 rounded-[4px] border-2 border-accent/10 border-t-accent-500 animate-spin w-4 h-4 m-auto" />
-                   <Square size={9} className="text-accent relative z-10" fill="currentColor" />
+                   <div className="absolute inset-0 rounded-[var(--radius-xs)] border-2 border-accent/20 border-t-accent animate-spin w-4 h-4 m-auto" />
+                   <Square size={9} className="text-[var(--fg-accent)] relative z-10" fill="currentColor" />
                 </div>
               ) : (
                 <div className={`${dir === 'rtl' ? 'transform -scale-x-100' : ''} flex items-center justify-center`}>
                   <Send 
-                    size={16} 
-                    className={`transition-theme ${
+                    size={15} 
+                    className={`transition-colors ${
                       query.trim() 
-                        ? 'text-accent scale-100' 
-                        : 'text-gray-400 group-hover:text-accent'
+                        ? 'text-[var(--fg-accent)] scale-100' 
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
                     }`} 
                   />
                 </div>
@@ -6701,7 +6714,7 @@ export const ChatPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t border-[var(--border-main)]/60 transition-all ease-in-out">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t-0 transition-all ease-in-out">
           <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap min-w-0">
             <div ref={toolsMenuRef} className="relative shrink-0">
               {(() => {
@@ -6718,22 +6731,24 @@ export const ChatPage: React.FC = () => {
                         }
                       }}
                       disabled={isInputDisabled}
-                      className={`flex items-center gap-1 md:gap-1.5 px-1.5 sm:px-2 md:px-2.5 h-7 sm:h-8 rounded-[8px] flex-nowrap transition-all border border-transparent bg-transparent hover:bg-[var(--surface-subtle)] ${
-                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
-                      }`}
+                      className={`flex items-center gap-1 md:gap-1.5 px-2 h-7 sm:h-8 rounded-[var(--radius-sm)] flex-nowrap transition-all border ${
+                        isToolActive
+                          ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]'
+                          : 'border-transparent bg-transparent hover:bg-[var(--surface-subtle)] text-[var(--text-primary)]'
+                      } ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
                         isToolActive 
-                          ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-105' 
+                          ? 'text-[var(--fg-accent)] scale-105' 
                           : 'text-[var(--text-muted)]'
                       }`}>
                         {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { 
                           size: 13, 
-                          className: `w-3.5 h-3.5 ${isToolActive ? 'text-emerald-500 dark:text-emerald-400' : ''}` 
+                          className: `w-3.5 h-3.5 ${isToolActive ? 'text-[var(--fg-accent)]' : ''}` 
                         })}
                       </span>
                       <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
-                        isToolActive ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : 'text-[var(--text-primary)]'
+                        isToolActive ? 'text-[var(--fg-accent)] font-extrabold' : 'text-[var(--text-primary)]'
                       }`}>{currentTool.label}</span>
                     </button>
 
@@ -6810,22 +6825,24 @@ export const ChatPage: React.FC = () => {
                         }
                       }}
                       disabled={isInputDisabled}
-                      className={`flex items-center gap-1 md:gap-1.5 px-1.5 sm:px-2 md:px-2.5 h-7 sm:h-8 rounded-[8px] flex-nowrap transition-all border border-transparent bg-transparent hover:bg-[var(--surface-subtle)] ${
-                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
-                      }`}
+                      className={`flex items-center gap-1 md:gap-1.5 px-2 h-7 sm:h-8 rounded-[var(--radius-sm)] flex-nowrap transition-all border ${
+                        isModelActive 
+                          ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]' 
+                          : 'border-transparent bg-transparent hover:bg-[var(--surface-subtle)] text-[var(--text-primary)]'
+                      } ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
                         isModelActive 
-                          ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-105' 
+                          ? 'text-[var(--fg-accent)] scale-105' 
                           : 'text-[var(--text-muted)]'
                       }`}>
                         {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { 
                           size: 13, 
-                          className: `w-3.5 h-3.5 ${isModelActive ? 'text-emerald-500 dark:text-emerald-400' : ''}` 
+                          className: `w-3.5 h-3.5 ${isModelActive ? 'text-[var(--fg-accent)]' : ''}` 
                         })}
                       </span>
                       <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
-                        isModelActive ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : 'text-[var(--text-primary)]'
+                        isModelActive ? 'text-[var(--fg-accent)] font-extrabold' : 'text-[var(--text-primary)]'
                       }`}>{currentModel.label}</span>
                     </button>
 
@@ -6913,7 +6930,7 @@ export const ChatPage: React.FC = () => {
       </div>
 
       {user && token && (
-        <div className="text-center mt-2 mb-1 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-8 line-clamp-1 md:line-clamp-none">
+        <div className="text-center mt-1 mb-0.5 text-[8px] md:text-[10px] font-bold uppercase tracking-wider md:tracking-widest text-[var(--text-muted)]/80 px-4 line-clamp-1 md:line-clamp-none">
           {dir === 'rtl' ? (
             <>
               <span className="md:hidden">{t('appName')} قد يخطئ. فدقق.</span>
@@ -7246,7 +7263,7 @@ export const ChatPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.15, ease: "easeOut" } }}
                 transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="flex-1 flex flex-col items-center justify-center min-h-[65vh] py-12 md:py-16 selection:bg-accent/10 w-full relative overflow-hidden"
+                className="flex-1 flex flex-col items-center justify-center min-h-0 py-4 sm:py-8 md:py-12 selection:bg-accent/10 w-full relative overflow-hidden"
               >
 
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-500/10[0.02] via-transparent to-transparent pointer-events-none select-none" />
@@ -7819,7 +7836,7 @@ export const ChatPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-[calc(20px+env(safe-area-inset-bottom,0px))] sm:pb-4 pt-2.5 bg-transparent relative">
+      <div className="w-full flex-shrink-0 px-0 md:px-4 pb-[calc(6px+env(safe-area-inset-bottom,0px))] sm:pb-3 pt-1 bg-transparent relative">
         <AnimatePresence>
           {showScrollToBottom && (
             <motion.button

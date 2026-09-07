@@ -722,12 +722,12 @@ export const ApiKeysVaultView = ({
         createPortal(
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <div
-              className={`w-full max-w-md rounded-lg shadow-2xl overflow-hidden bg-[var(--bg-surface)] border border-[var(--border)] transition-theme`}
+              className="w-full max-w-md rounded-[var(--radius-md)] shadow-xl overflow-hidden bg-[var(--surface-card)] border border-[var(--border-main)] transition-theme"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3
-                    className={`text-lg font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                    className="text-lg font-bold text-[var(--text-primary)]"
                   >
                     {syncModal.type === "models"
                       ? t("syncModels")
@@ -738,7 +738,7 @@ export const ApiKeysVaultView = ({
                   </h3>
                   <button
                     onClick={() => setSyncModal(null)}
-                    className="text-gray-400 hover:text-gray-500 transition-theme"
+                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-theme cursor-pointer"
                   >
                     <X size={20} />
                   </button>
@@ -748,9 +748,9 @@ export const ApiKeysVaultView = ({
                   <div className="flex flex-col items-center justify-center py-8 space-y-4">
                     <RefreshCw
                       size={32}
-                      className="text-accent animate-spin"
+                      className="text-[var(--fg-accent)] animate-spin"
                     />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-[var(--text-muted)]">
                       {t("syncingData")}
                     </p>
                   </div>
@@ -758,15 +758,15 @@ export const ApiKeysVaultView = ({
 
                 {syncModal.status === "success" && (
                   <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center">
-                    <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-2">
-                      <CheckCircle size={32} className="text-accent" />
+                    <div className="w-16 h-16 rounded-full bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center mb-2">
+                      <CheckCircle size={32} className="text-[var(--fg-accent)]" />
                     </div>
                     <h4
-                      className={`text-xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                      className="text-xl font-bold text-[var(--text-primary)]"
                     >
                       {t("syncSuccess")}
                     </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-[var(--text-muted)]">
                       {syncModal.type === "models"
                         ? t("syncModelsFound", {
                             count: syncModal.count || 0,
@@ -876,44 +876,44 @@ export const ApiKeysVaultView = ({
         {providers.map((provider, pIdx) => (
           <div
             key={`prov-card-${provider.id || pIdx}-${pIdx}`}
-            className={`p-6 rounded-lg border transition-theme relative group overflow-hidden bg-[var(--bg-secondary)] border-[var(--border-main)] hover:shadow-lg`}
+            className="p-6 rounded-[var(--radius-md)] border transition-theme relative group overflow-hidden bg-[var(--surface-card)] border-[var(--border-main)] hover:border-[var(--border-accent)] shadow-xs hover:shadow-sm"
           >
             {/* Provider Logo Accent (Faded in Background) */}
-            <div className="absolute -top-4 -right-4 opacity-5 dark:opacity-[0.03] pointer-events-none group-hover:scale-110 transition-theme">
+            <div className="absolute -top-4 -right-4 opacity-5 dark:opacity-[0.03] pointer-events-none group-hover:scale-105 transition-theme">
               <Key size={120} />
             </div>
 
             <div className="flex justify-between items-start mb-6 relative z-10">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-md bg-[var(--bg-primary)] flex items-center justify-center text-accent `}
+                  className="w-10 h-10 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center text-[var(--fg-accent)]"
                 >
                   <Key size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white leading-tight flex items-center gap-2">
+                  <h3 className="font-bold text-[var(--text-primary)] leading-tight flex items-center gap-2">
                     {provider.name}
                     {provider.isActive && (
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="px-1.5 py-0.5 rounded-xs bg-accent/10 text-accent text-[8px] font-black uppercase tracking-widest border border-accent/20"
+                        className="px-1.5 py-0.5 rounded-[var(--radius-xs)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] text-[8px] font-black uppercase tracking-widest border border-[var(--border-accent)]"
                       >
                         Trusted
                       </motion.div>
                     )}
                     {providerModels[provider.id] && providerModels[provider.id].length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-xs bg-sky-500/10 text-sky-500 text-[8px] font-black uppercase tracking-widest border border-sky-500/20">
+                      <span className="px-1.5 py-0.5 rounded-[var(--radius-xs)] bg-sky-500/10 text-sky-500 text-[8px] font-black uppercase tracking-widest border border-sky-500/20">
                         {providerModels[provider.id].length} {language === "ar" ? "موديل" : "Models"}
                       </span>
                     )}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <div
-                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-accent shadow-[0_0_5px_rgba(156,163,175,1)] animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,1)]") : "bg-gray-400"}`}
+                      className={`w-1.5 h-1.5 rounded-full ${provider.status === "active" ? (provider.isActive ? "bg-[var(--fg-accent)] animate-pulse" : "bg-red-500") : "bg-gray-400"}`}
                     ></div>
                     <span
-                      className={`text-[9px] font-black uppercase tracking-widest ${provider.status === "active" ? (provider.isActive ? t("statusActive") : language === "ar" ? "غير صالح" : "Invalid") : t("statusMissing")}`}
+                      className={`text-[9px] font-black uppercase tracking-widest ${provider.status === "active" ? (provider.isActive ? "text-[var(--fg-accent)]" : "text-red-500") : "text-[var(--text-muted)]"}`}
                     >
                       {provider.status === "active"
                         ? provider.isActive
@@ -932,7 +932,7 @@ export const ApiKeysVaultView = ({
                   href={provider.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-2 rounded-sm border transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-gray-400 hover:text-accent hover:border-accent/30`}
+                  className="p-2 rounded-[var(--radius-xs)] border transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--fg-accent)] hover:border-[var(--border-accent)]"
                   title={`Go to ${provider.name} Dashboard`}
                 >
                   <ExternalLink size={16} />
@@ -940,7 +940,7 @@ export const ApiKeysVaultView = ({
                 {(provider.status === "active" || provider.key) && (
                   <button
                     onClick={() => handleDeleteKey(provider.id, provider.name)}
-                    className={`p-2 rounded-sm border transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-red-500/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30`}
+                    className="p-2 rounded-[var(--radius-xs)] border transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-red-500/50 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30 cursor-pointer"
                     title={t("keyDeleteConfirm").split("?")[0] + "?"}
                   >
                     <Trash2 size={16} />

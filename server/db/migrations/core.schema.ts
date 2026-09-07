@@ -4,6 +4,15 @@ import { ensureColumnsBulk, ensureForeignKey } from './helpers.js';
 
 export const CORE_SCHEMA_TABLES: { name: string; query: string }[] = [
   {
+    name: 'admin_theme_customizations',
+    query: `CREATE TABLE IF NOT EXISTS admin_theme_customizations (
+        id SERIAL PRIMARY KEY,
+        theme_mode VARCHAR(10) NOT NULL UNIQUE,
+        tokens JSONB DEFAULT '{}',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`
+  },
+  {
     name: 'media_assets',
     query: `CREATE TABLE IF NOT EXISTS media_assets (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -600,11 +600,11 @@ export const OrchestratorView = ({
       ) : (
         <div className="space-y-6">
           {/* Top Bar: Visual Sync Status Indicator & Developer On-Demand Trigger */}
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-main)] shadow-sm space-y-3">
+          <div className="p-5 rounded-[var(--radius-md)] bg-[var(--surface-card)] border border-[var(--border-main)] shadow-xs space-y-4 transition-theme">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               {/* Left Side: Sync Status Indicator & Database Health */}
               <div className="flex items-start sm:items-center gap-3.5">
-                <div className="p-2.5 rounded-xl bg-accent/10 text-accent shrink-0 border border-accent/20 relative">
+                <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] shrink-0 border border-[var(--border-main)] relative">
                   <Database size={20} />
                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -614,15 +614,15 @@ export const OrchestratorView = ({
 
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-black text-[var(--text-primary)]">
+                    <span className="text-sm font-bold text-[var(--text-primary)]">
                       {language === "ar" ? "حالة مزامنة الأوركسترا" : "Orchestrator Sync Status"}
                     </span>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-xs)] text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                       <span>{language === "ar" ? "قاعدة البيانات متزامنة" : "Database Synced"}</span>
                     </div>
 
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25" title={language === "ar" ? "خدمة استكشاف خوادم الـ GPU المسجلة تعمل تلقائياً وبشكل دوري" : "Automated GPU endpoint discovery service is active and running"}>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-xs)] text-[11px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25" title={language === "ar" ? "خدمة استكشاف خوادم الـ GPU المسجلة تعمل تلقائياً وبشكل دوري" : "Automated GPU endpoint discovery service is active and running"}>
                       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
                       <span>{language === "ar" ? "استكشاف الـ GPU التلقائي" : "Auto GPU Discovery"}</span>
                       {discoveryStatus?.discoveredModelsCount !== undefined && (
@@ -633,9 +633,9 @@ export const OrchestratorView = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--text-muted)]">
                     <div className="flex items-center gap-1.5 font-medium">
-                      <Clock size={13} className="text-accent/80 shrink-0" />
+                      <Clock size={13} className="text-[var(--fg-accent)] shrink-0" />
                       <span>
                         {language === "ar" ? "آخر مزامنة لقاعدة البيانات:" : "Last Successful Sync:"}{" "}
                         <strong className="text-[var(--text-primary)] font-semibold">
@@ -645,15 +645,15 @@ export const OrchestratorView = ({
                         </strong>
                       </span>
                       {lastSyncTimestamp && (
-                        <span className="text-[11px] text-gray-400 font-mono" title={new Date(lastSyncTimestamp).toISOString()}>
+                        <span className="text-[11px] text-[var(--text-muted)] font-mono" title={new Date(lastSyncTimestamp).toISOString()}>
                           ({formatSyncDateTime(lastSyncTimestamp)})
                         </span>
                       )}
                     </div>
 
-                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">•</span>
+                    <span className="hidden sm:inline text-[var(--border-main)]">•</span>
 
-                    <div className="flex items-center gap-1.5 text-[11px] text-gray-400 font-mono">
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] font-mono">
                       <span>
                         {language === "ar"
                           ? `${syncStats?.totalModelsCount ?? totalAvailableModels} نموذج متاح`
@@ -676,14 +676,14 @@ export const OrchestratorView = ({
                   id="orchestrator-manual-sync-trigger"
                   onClick={handleSyncModelsOnDemand}
                   disabled={isSyncingModels}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all border border-accent/40 bg-accent/10 text-accent hover:bg-accent hover:text-white active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0 shadow-sm cursor-pointer group"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] text-xs font-bold transition-all border border-[var(--border-accent)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] hover:bg-[var(--surface-card)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0 shadow-xs cursor-pointer group"
                   title={
                     language === "ar"
                       ? "تحديث فوري لقوائم النماذج المسجلة ومزامنتها مع قاعدة البيانات عند الطلب"
                       : "Manual on-demand trigger to query providers, update database models, and refresh listings"
                   }
                 >
-                  <RefreshCw size={14} className={isSyncingModels ? "animate-spin text-accent" : "group-hover:rotate-180 transition-transform duration-500"} />
+                  <RefreshCw size={14} className={isSyncingModels ? "animate-spin text-[var(--fg-accent)]" : "group-hover:rotate-180 transition-transform duration-500"} />
                   <span>
                     {isSyncingModels
                       ? (language === "ar" ? "جاري تحديث النماذج..." : "Refreshing Models...")
@@ -694,19 +694,19 @@ export const OrchestratorView = ({
             </div>
 
             {/* Bottom info note */}
-            <div className="pt-2 border-t border-[var(--border-main)]/60 text-[11px] text-gray-400 flex flex-wrap items-center justify-between gap-2">
+            <div className="pt-2 border-t border-[var(--border-main)] text-[11px] text-[var(--text-muted)] flex flex-wrap items-center justify-between gap-2">
               <span>
                 {language === "ar"
                   ? "يتم الحفظ الدائم في PostgreSQL Core & Vault وقراءة النماذج محلياً لمنع الاستيقاظ غير الضروري لخوادم الـ GPU."
                   : "Configurations persist in PostgreSQL Core & Vault; models are read locally to prevent idle worker wakeups."}
               </span>
-              <span className="font-mono text-[10px] text-gray-400 bg-[var(--surface-subtle)] px-2 py-0.5 rounded border border-[var(--border-main)]">
+              <span className="font-mono text-[10px] text-[var(--text-muted)] bg-[var(--surface-subtle)] px-2 py-0.5 rounded-[var(--radius-xs)] border border-[var(--border-main)]">
                 {language === "ar" ? "أدوات المطورين • On-Demand" : "Developer Tools • On-Demand"}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2.5 pt-1 no-scrollbar scroll-smooth border-b border-[var(--border-main)]/50">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2.5 pt-1 no-scrollbar scroll-smooth border-b border-[var(--border-main)]">
             {categories.map((cat) => {
               const CatIcon = cat.icon;
               const count = tools.filter((t) => cat.filter(t.id)).length;
@@ -716,17 +716,17 @@ export const OrchestratorView = ({
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all whitespace-nowrap border shrink-0 cursor-pointer ${
                     isActive
-                      ? "bg-accent text-white border-accent shadow-md shadow-accent/20"
-                      : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-main)] hover:border-accent/40 hover:text-accent"
+                      ? "bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] border-[var(--border-accent)] shadow-xs"
+                      : "bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-main)] hover:border-[var(--border-accent)] hover:text-[var(--fg-accent)]"
                   }`}
                 >
-                  <CatIcon size={15} className={isActive ? "text-white" : "text-gray-400"} />
+                  <CatIcon size={15} className={isActive ? "text-[var(--fg-on-emphasis)]" : "text-[var(--text-muted)]"} />
                   <span>{language === "ar" ? cat.labelAr : cat.labelEn}</span>
                   <span
                     className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                      isActive ? "bg-white/20 text-white" : "bg-[var(--bg-primary)] text-gray-400"
+                      isActive ? "bg-white/20 text-white" : "bg-[var(--surface-subtle)] text-[var(--text-muted)]"
                     }`}
                   >
                     {count}
@@ -743,10 +743,10 @@ export const OrchestratorView = ({
             return (
               <div
                 key={`orch-tool-${tool.id || tIdx}-${tIdx}`}
-                className={`p-6 rounded-lg border transition-theme relative bg-[var(--bg-secondary)] border-[var(--border-main)] hover:border-accent/20 hover:shadow-lg group/tool z-10 hover:z-20 focus-within:z-40 [&:has([data-dropdown-open="true"])]:z-40`}
+                className="p-6 rounded-[var(--radius-md)] border transition-theme relative bg-[var(--surface-card)] border-[var(--border-main)] hover:border-[var(--border-accent)] shadow-xs hover:shadow-sm group/tool z-10 hover:z-20 focus-within:z-40 [&:has([data-dropdown-open='true'])]:z-40"
               >
-                <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
-                  <div className="absolute -top-6 -right-6 opacity-[0.03] dark:opacity-[0.02] group-hover/tool:scale-110 transition-theme">
+                <div className="absolute inset-0 overflow-hidden rounded-[var(--radius-md)] pointer-events-none">
+                  <div className="absolute -top-6 -right-6 opacity-[0.03] dark:opacity-[0.02] group-hover/tool:scale-105 transition-theme">
                     <Icon size={140} />
                   </div>
                 </div>
@@ -754,7 +754,7 @@ export const OrchestratorView = ({
                 <div className="flex items-center justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-1.5 rounded-md bg-accent text-white shadow-[0_4px_10px_rgba(156,163,175,0.3)]`}
+                      className="p-2 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] border border-[var(--border-main)]"
                     >
                       <Icon size={20} />
                     </div>
@@ -771,10 +771,10 @@ export const OrchestratorView = ({
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div
-                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-accent shadow-[0_0_5px_rgba(156,163,175,1)]" : "bg-gray-400"}`}
+                          className={`w-1.5 h-1.5 rounded-full ${tool.isActive ? "bg-[var(--fg-accent)] animate-pulse" : "bg-gray-400"}`}
                         ></div>
                         <span
-                          className={`text-[9px] font-black uppercase tracking-widest ${tool.isActive ? "text-accent" : "text-gray-400"}`}
+                          className={`text-[9px] font-black uppercase tracking-widest ${tool.isActive ? "text-[var(--fg-accent)]" : "text-[var(--text-muted)]"}`}
                         >
                           {tool.isActive
                             ? language === "ar"
@@ -800,8 +800,8 @@ export const OrchestratorView = ({
                         }}
                         className={`w-11 h-6 rounded-full p-1 transition-theme cursor-pointer ${
                           tool.isActive
-                            ? "bg-accent/20 border border-accent/30"
-                            : "bg-[var(--bg-secondary)]/50 border border-[var(--border-main)]"
+                            ? "bg-[var(--surface-subtle)] border border-[var(--border-accent)]"
+                            : "bg-[var(--surface-subtle)] border border-[var(--border-main)]"
                         }`}
                         title={
                           tool.isActive
@@ -813,16 +813,16 @@ export const OrchestratorView = ({
                         animate={{
                           x: tool.isActive ? (dir === "rtl" ? -20 : 20) : 0,
                         }}
-                        className={`w-4 h-4 rounded-full shadow-md ${tool.isActive ? "bg-accent" : "bg-[var(--bg-secondary)]"}`}
+                        className={`w-4 h-4 rounded-full shadow-xs ${tool.isActive ? "bg-[var(--fg-accent)]" : "bg-[var(--text-muted)]"}`}
                       />
                     </button>
                       <button
                         onClick={() => handleSave(tool.id)}
                         disabled={tool.isSaving}
-                        className={`p-2 rounded-sm transition-theme ${tool.isSaving ? "text-accent" : "text-gray-400 hover:text-accent hover:bg-accent/10"}`}
+                        className={`p-2 rounded-[var(--radius-xs)] transition-theme cursor-pointer ${tool.isSaving ? "text-[var(--fg-accent)]" : "text-[var(--text-muted)] hover:text-[var(--fg-accent)] hover:bg-[var(--surface-subtle)]"}`}
                       >
                       {tool.isSaving ? (
-                        <RefreshCw size={18} className="animate-spin" />
+                        <RefreshCw size={18} className="animate-spin text-[var(--fg-accent)]" />
                       ) : (
                         <Save size={18} />
                       )}
@@ -839,7 +839,7 @@ export const OrchestratorView = ({
                   const healthStatus = linkedGpu?.health_status;
 
                   return (
-                    <div className="mb-5 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between gap-2 relative z-10">
+                    <div className="mb-5 px-3 py-2 rounded-[var(--radius-sm)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between gap-2 relative z-10">
                       <div className="flex items-center gap-2 min-w-0">
                         <Zap size={13} className="shrink-0 text-emerald-500" />
                         <span className="font-semibold text-[11px] truncate">
@@ -849,7 +849,7 @@ export const OrchestratorView = ({
                         </span>
                       </div>
                       {healthStatus && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/15 font-mono shrink-0">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-[var(--radius-xs)] bg-emerald-500/15 font-mono shrink-0">
                           {healthStatus}
                         </span>
                       )}
@@ -858,8 +858,8 @@ export const OrchestratorView = ({
                 })()}
 
                 <div className="space-y-6 relative z-10">
-                  <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
+                  <div className="space-y-2.5 p-4 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-1 block">
                       {language === "ar" ? "رسم تشغيل الخدمة الثابت (Flat Execution Base)" : "Flat Execution Base Cost"}
                     </label>
                     <div className="relative">
@@ -869,18 +869,17 @@ export const OrchestratorView = ({
                         onChange={(e) =>
                           handleChange(tool.id, "costPerUsage", e.target.value)
                         }
-                        className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-accent focus:ring-1 focus:ring-accent-500/30`}
+                        className="w-full h-11 px-9 rounded-[var(--radius-xs)] border text-sm font-bold focus:outline-none transition-theme bg-[var(--surface-card)] border-[var(--border-main)] text-[var(--fg-accent)] focus:border-[var(--border-accent)]"
                       />
                       <div
-                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-accent/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-[var(--fg-accent)] ${dir === "rtl" ? "right-0" : "left-0"}`}
                       >
                         <Coins
                           size={16}
-                          className=""
                         />
                       </div>
                       <div
-                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
+                        className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
                       >
                         {t("points")}
                       </div>
@@ -888,8 +887,8 @@ export const OrchestratorView = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
+                    <div className="space-y-2.5 p-4 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+                      <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-1 block">
                         {language === "ar" ? "سعر مدخلات /1K توكن" : "Input /1k Token Cost"}
                       </label>
                       <div className="relative">
@@ -899,26 +898,25 @@ export const OrchestratorView = ({
                           onChange={(e) =>
                             handleChange(tool.id, "costPer1kInputTokens", e.target.value)
                           }
-                          className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-sky-500 focus:ring-1 focus:ring-sky-500/30`}
+                          className="w-full h-11 px-9 rounded-[var(--radius-xs)] border text-sm font-bold focus:outline-none transition-theme bg-[var(--surface-card)] border-[var(--border-main)] text-[var(--fg-accent)] focus:border-[var(--border-accent)]"
                         />
                         <div
-                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-sky-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[var(--fg-accent)] ${dir === "rtl" ? "right-0" : "left-0"}`}
                         >
                           <Coins
                             size={16}
-                            className="drop-shadow-[0_0_5px_rgba(14,165,233,0.3)]"
                           />
                         </div>
                         <div
-                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
                         >
                           {t("points")}
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2.5 p-4 rounded-md bg-[var(--bg-primary)]/50 border border-[var(--border-main)]/50 shadow-inner">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-1 block">
+                    <div className="space-y-2.5 p-4 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+                      <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-1 block">
                         {language === "ar" ? "سعر مخرجات /1K توكن" : "Output /1k Token Cost"}
                       </label>
                       <div className="relative">
@@ -928,18 +926,17 @@ export const OrchestratorView = ({
                           onChange={(e) =>
                             handleChange(tool.id, "costPer1kOutputTokens", e.target.value)
                           }
-                          className={`w-full h-11 px-9 rounded-md border text-sm font-black focus:outline-none transition-theme bg-[var(--bg-primary)] border-[var(--border-main)] text-indigo-500 focus:ring-1 focus:ring-indigo-500/30`}
+                          className="w-full h-11 px-9 rounded-[var(--radius-xs)] border text-sm font-bold focus:outline-none transition-theme bg-[var(--surface-card)] border-[var(--border-main)] text-[var(--fg-accent)] focus:border-[var(--border-accent)]"
                         />
                         <div
-                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-indigo-500/50 ${dir === "rtl" ? "right-0" : "left-0"}`}
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[var(--fg-accent)] ${dir === "rtl" ? "right-0" : "left-0"}`}
                         >
                           <Coins
                             size={16}
-                            className="drop-shadow-[0_0_5px_rgba(99,102,241,0.3)]"
                           />
                         </div>
                         <div
-                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
+                          className={`absolute top-1/2 -translate-y-1/2 px-3 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest pointer-events-none ${dir === "rtl" ? "left-0" : "right-0"}`}
                         >
                           {t("points")}
                         </div>

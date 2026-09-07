@@ -3,12 +3,26 @@ import { Outlet } from 'react-router-dom';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { Header } from '../components/Header';
 import { AuthModal } from '../components/AuthModal';
+import { DesktopOnlyNotice } from '../components/mobile/DesktopOnlyNotice';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 
 export const AdminLayout: React.FC = () => {
   const { dir, language, isMobile } = useAppContext();
+
+  // Guard: If viewed on mobile, display native lightweight notice instead of heavy ERP tables
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-[100dvh] w-full overflow-hidden relative bg-[var(--bg-base)] text-[var(--text-primary)]">
+        <Header activeLanguage={language} />
+        <main className="flex-1 overflow-y-auto pt-[calc(56px+env(safe-area-inset-top,0px)+6px)] flex items-center justify-center p-4">
+          <DesktopOnlyNotice />
+        </main>
+        <AuthModal />
+      </div>
+    );
+  }
 
   return (
     <div 

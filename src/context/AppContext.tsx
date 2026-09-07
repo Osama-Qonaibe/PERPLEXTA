@@ -1836,22 +1836,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const saved = secureStorage.getSync('perplexta_sidebar_open');
-      if (saved !== null) return saved === 'true';
-    } catch (e) {}
-    return false;
-  });
+  const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(false);
 
   const setIsSidebarOpen = useCallback((isOpen: boolean | ((prev: boolean) => boolean)) => {
     setIsSidebarOpenState((prev) => {
-      const next = typeof isOpen === 'function' ? isOpen(prev) : isOpen;
-      try {
-        secureStorage.set('perplexta_sidebar_open', String(next));
-      } catch (e) {}
-      return next;
+      return typeof isOpen === 'function' ? isOpen(prev) : isOpen;
     });
   }, []);
 

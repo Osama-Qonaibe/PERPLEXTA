@@ -1,6 +1,6 @@
 {
   "name": "Perplexta",
-  "description": "Professional Elite AI Analytics & Strategic Intelligence Platform",
+  "description": "Professional Elite AI Analytics & Strategic Intelligence",
   "requestFramePermissions": [
     "camera",
     "microphone"

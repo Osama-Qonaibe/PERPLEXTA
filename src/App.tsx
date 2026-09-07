@@ -96,6 +96,7 @@ import { InactivityWarningModal } from './components/InactivityWarningModal';
 import { ServiceUpdateToast } from './components/ServiceUpdateToast';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { PwaInstallSuccessService } from './components/PwaInstallSuccessService';
+import { CriticalResourcePreloader } from './utils/criticalResourcePreloader';
 import { DiagnosticMobileOverlay } from './components/DiagnosticMobileOverlay';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -382,6 +383,7 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <InactivityWarningModal />
       <GlobalLoadingOverlay />
       <PwaInstallSuccessService />
+      <CriticalResourcePreloader />
 
       <motion.div
         initial={{ opacity: 0 }}

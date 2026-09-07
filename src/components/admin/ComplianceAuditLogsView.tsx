@@ -226,12 +226,10 @@ export const ComplianceAuditLogsView = ({
   return (
     <div className="space-y-6 font-sans" dir={isRtl ? "rtl" : "ltr"}>
       {/* Search & Audit Filters Bar */}
-      <form onSubmit={handleSearch} className={`p-4 rounded-lg border flex flex-col md:flex-row gap-4 items-end justify-between ${
-        theme === "dark" ? "bg-[#18181b] border-gray-800" : "bg-white border-gray-100"
-      }`}>
+      <form onSubmit={handleSearch} className="p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] flex flex-col md:flex-row gap-4 items-end justify-between">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-[var(--fg-muted)] uppercase tracking-wider">
               {isRtl ? "تصفية حسب العملية الإدارية" : "Search Admin Action"}
             </span>
             <div className="relative">
@@ -240,17 +238,13 @@ export const ComplianceAuditLogsView = ({
                 value={actionFilter}
                 onChange={(e) => setActionFilter(e.target.value)}
                 placeholder={isRtl ? "مثال: UPDATE, POST..." : "e.g., CREATE_PLAN, HTTP_POST..."}
-                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
-                  theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
-                }`}
+                className="w-full text-xs font-medium px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] text-[var(--fg-primary)] border border-[var(--border-default)] outline-none focus:border-[var(--border-focus)] font-sans"
               />
             </div>
           </div>
           
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-[var(--fg-muted)] uppercase tracking-wider">
               {isRtl ? "البريد الإلكتروني للـ دكتور" : "Search Admin Email"}
             </span>
             <div className="relative">
@@ -259,11 +253,7 @@ export const ComplianceAuditLogsView = ({
                 value={emailFilter}
                 onChange={(e) => setEmailFilter(e.target.value)}
                 placeholder={isRtl ? "البحث بالبريد..." : "e.g., admin@perplexta.com"}
-                className={`w-full text-xs font-medium px-4 py-2.5 rounded-md border outline-none font-sans ${
-                  theme === "dark" 
-                    ? "bg-[#0f0f11] text-white border-gray-800 focus:border-accent/50" 
-                    : "bg-gray-50 text-gray-900 border-gray-200 focus:border-accent/50"
-                }`}
+                className="w-full text-xs font-medium px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] text-[var(--fg-primary)] border border-[var(--border-default)] outline-none focus:border-[var(--border-focus)] font-sans"
               />
             </div>
           </div>
@@ -273,7 +263,7 @@ export const ComplianceAuditLogsView = ({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent text-white rounded-md text-xs font-bold cursor-pointer transition-theme shadow-[0_4px_12px_rgba(156,163,175,0.3)] disabled:opacity-50"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] rounded-[var(--radius-md)] text-xs font-bold cursor-pointer transition-colors duration-base disabled:opacity-50"
           >
             {loading ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
             {isRtl ? "تطبيق التصفية" : "Apply Filter"}
@@ -283,11 +273,7 @@ export const ComplianceAuditLogsView = ({
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className={`px-4 py-2.5 border rounded-md text-xs font-bold cursor-pointer transition-theme ${
-              theme === "dark" 
-                ? "border-gray-800 text-gray-300 hover:bg-gray-800"
-                : "border-gray-200 text-gray-600 hover:bg-gray-100"
-            }`}
+            className="px-4 py-2.5 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--fg-secondary)] hover:bg-[var(--surface-input)] rounded-[var(--radius-md)] text-xs font-bold cursor-pointer transition-colors duration-base"
           >
             {isRtl ? "إعادة تعيين" : "Reset"}
           </button>
@@ -300,7 +286,7 @@ export const ComplianceAuditLogsView = ({
           {selectedLogIds.length > 0 && (
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/20 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm animate-in zoom-in-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--status-danger-subtle)] text-[var(--status-danger)] hover:opacity-90 border border-[var(--status-danger-subtle)] rounded-[var(--radius-md)] text-xs font-bold transition-colors duration-base cursor-pointer"
             >
               <Trash2 size={13} />
               {isRtl 
@@ -312,29 +298,25 @@ export const ComplianceAuditLogsView = ({
 
         <button
           onClick={handleClearAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/30 rounded-md text-xs font-bold transition-theme cursor-pointer shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--status-danger-subtle)] text-[var(--status-danger)] hover:opacity-90 border border-[var(--status-danger-subtle)] rounded-[var(--radius-md)] text-xs font-bold transition-colors duration-base cursor-pointer"
         >
-          <AlertTriangle size={13} className="text-purple-500" />
+          <AlertTriangle size={13} />
           {isRtl ? "تطهير كافة السجلات" : "Purge All Logs"}
         </button>
       </div>
 
       {/* Main Audit Logs Table Container */}
-      <div className={`rounded-xl border overflow-hidden shadow-sm transition-theme ${
-        theme === "dark" ? "bg-[#18181b] border-gray-800/60" : "bg-white border-gray-100"
-      }`}>
+      <div className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden shadow-sm transition-colors duration-base">
         <div className="overflow-x-auto min-w-full">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
-              <tr className={`border-b text-[10px] uppercase font-black tracking-wider text-gray-400 ${
-                theme === "dark" ? "border-gray-800 bg-[#0f0f11]/40" : "border-gray-100 bg-gray-50/60"
-              }`}>
+              <tr className="border-b border-[var(--border-default)] text-[10px] uppercase font-black tracking-wider text-[var(--fg-muted)] bg-[var(--surface-canvas)]">
                 <th className="py-3.5 px-4 text-center w-12">
                   <input
                     type="checkbox"
                     checked={logs.length > 0 && logs.every((log) => selectedLogIds.includes(log.id))}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
+                    className="rounded border-[var(--border-default)] text-[var(--accent)] focus:ring-[var(--border-focus)] cursor-pointer h-4 w-4"
                   />
                 </th>
                 <th className="py-3.5 px-4 text-center">{isRtl ? "الوقت (UTC)" : "Timestamp (UTC)"}</th>
@@ -345,17 +327,17 @@ export const ComplianceAuditLogsView = ({
                 <th className="py-3.5 px-4 text-center">{isRtl ? "التفاصيل" : "Compliance Audit"}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
+            <tbody className="divide-y divide-[var(--border-subtle)] text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
-                    <RefreshCw className="animate-spin inline-block mr-2 text-accent" size={18} />
+                  <td colSpan={7} className="py-12 text-center text-[var(--fg-muted)]">
+                    <RefreshCw className="animate-spin inline-block mr-2 text-[var(--accent)]" size={18} />
                     {isRtl ? "جاري جلب سجل التدقيق الأمني..." : "Ingesting secure compliance records..."}
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                  <td colSpan={7} className="py-12 text-center text-[var(--fg-muted)]">
                     {isRtl ? "لا توجد سجلات مطابقة لمعايير الاستعلام أمنياً." : "No matching compliant audit trail records found."}
                   </td>
                 </tr>
@@ -363,10 +345,10 @@ export const ComplianceAuditLogsView = ({
                 logs.map((log) => (
                   <tr 
                     key={log.id} 
-                    className={`transition-theme ${
+                    className={`transition-colors duration-base ${
                       selectedLogIds.includes(log.id)
-                        ? "bg-accent/5 hover:bg-accent/10"
-                        : theme === "dark" ? "hover:bg-zinc-900/40" : "hover:bg-gray-50/40"
+                        ? "bg-[var(--accent-subtle)]"
+                        : "hover:bg-[var(--surface-canvas)]"
                     }`}
                   >
                     <td className="py-3.5 px-4 text-center w-12">
@@ -374,41 +356,41 @@ export const ComplianceAuditLogsView = ({
                         type="checkbox"
                         checked={selectedLogIds.includes(log.id)}
                         onChange={() => toggleSelectLog(log.id)}
-                        className="rounded border-gray-300 text-accent focus:ring-accent-500 cursor-pointer h-4 w-4"
+                        className="rounded border-[var(--border-default)] text-[var(--accent)] focus:ring-[var(--border-focus)] cursor-pointer h-4 w-4"
                       />
                     </td>
-                    <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap opacity-80">
+                    <td className="py-3.5 px-4 text-center text-[10px] font-mono whitespace-nowrap text-[var(--fg-secondary)]">
                       {formatDate(log.created_at)}
                     </td>
                     <td className="py-3.5 px-4 font-medium max-w-[180px] truncate">
                       <div className="flex flex-col">
-                        <span className="font-bold text-[var(--text-primary)]">{log.admin_email || ("ID: " + log.admin_id)}</span>
-                        <span className="text-[9px] opacity-40 font-mono">UID: {log.admin_id || "SYSTEM"}</span>
+                        <span className="font-bold text-[var(--fg-primary)]">{log.admin_email || ("ID: " + log.admin_id)}</span>
+                        <span className="text-[9px] text-[var(--fg-muted)] font-mono">UID: {log.admin_id || "SYSTEM"}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-tight ${
+                      <span className={`px-2 py-0.5 rounded-[var(--radius-sm)] text-[10px] font-black uppercase tracking-tight ${
                         log.action.startsWith("HTTP_") 
                           ? log.action.includes("POST") 
-                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/10"
+                            ? "bg-[var(--status-info-subtle)] text-[var(--status-info)] border border-[var(--status-info-subtle)]"
                             : log.action.includes("DELETE")
-                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/10"
-                              : "bg-purple-500/10 text-purple-400 border border-purple-500/10"
-                          : "bg-accent/10 text-accent border border-accent/10"
+                              ? "bg-[var(--status-danger-subtle)] text-[var(--status-danger)] border border-[var(--status-danger-subtle)]"
+                              : "bg-[var(--status-warning-subtle)] text-[var(--status-warning)] border border-[var(--status-warning-subtle)]"
+                          : "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
                       }`}>
                         {log.action}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-mono text-[11px] opacity-80">{log.target_resource || "GLOBAL"}</span>
+                      <span className="font-mono text-[11px] text-[var(--fg-secondary)]">{log.target_resource || "GLOBAL"}</span>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="font-mono text-[11px] opacity-75">{log.ip_address || "LOCAL_EXEC"}</span>
+                      <span className="font-mono text-[11px] text-[var(--fg-secondary)]">{log.ip_address || "LOCAL_EXEC"}</span>
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="px-3 py-1 border border-accent/20 rounded-md text-[10px] font-bold text-accent hover:border-accent hover:bg-accent/10 cursor-pointer transition-theme"
+                        className="px-3 py-1 border border-[var(--border-default)] rounded-[var(--radius-md)] text-[10px] font-bold text-[var(--accent)] hover:bg-[var(--accent-subtle)] cursor-pointer transition-colors duration-base"
                       >
                         {isRtl ? "عرض التفاصيل" : "Inspect Payload"}
                       </button>
@@ -421,10 +403,8 @@ export const ComplianceAuditLogsView = ({
         </div>
 
         {/* Database Audit Pagination Bar */}
-        <div className={`p-4 border-t flex items-center justify-between text-xs ${
-          theme === "dark" ? "border-gray-800/60 bg-[#0f0f11]/20" : "border-gray-100 bg-gray-50/30"
-        }`}>
-          <div className="text-gray-400 font-bold">
+        <div className="p-4 border-t border-[var(--border-default)] flex items-center justify-between text-xs bg-[var(--surface-canvas)]">
+          <div className="text-[var(--fg-muted)] font-bold">
             {isRtl 
               ? `عرض ${logs.length} سجل من إجمالي ${total}`
               : `Showing ${logs.length} of ${total} compliance log records`}
@@ -434,33 +414,21 @@ export const ComplianceAuditLogsView = ({
             <button
               disabled={offset === 0}
               onClick={() => setOffset(Math.max(0, offset - limit))}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
-                offset === 0 ? "cursor-not-allowed" : "cursor-pointer"
-              } ${
-                theme === "dark" 
-                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
-              }`}
+              className="p-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--fg-primary)] flex items-center justify-center transition-colors duration-base disabled:opacity-40 select-none cursor-pointer"
             >
               {isRtl ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
             </button>
             <button
               disabled={offset + limit >= total}
               onClick={() => setOffset(offset + limit)}
-              className={`p-2 rounded-md border flex items-center justify-center transition-theme disabled:opacity-40 select-none ${
-                offset + limit >= total ? "cursor-not-allowed" : "cursor-pointer"
-              } ${
-                theme === "dark" 
-                  ? "border-gray-800 text-gray-300 hover:bg-zinc-800"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-100"
-              }`}
+              className="p-2 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--fg-primary)] flex items-center justify-center transition-colors duration-base disabled:opacity-40 select-none cursor-pointer"
             >
               {isRtl ? <ArrowLeft size={14} /> : <ArrowRight size={14} />}
             </button>
           </div>
         </div>
       </div>
-
+      
       {/* JSON Expand Payload Modal -- Pure Emerald Glow Premium Transition */}
       <AnimatePresence>
         {selectedLog && (
@@ -471,7 +439,7 @@ export const ComplianceAuditLogsView = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedLog(null)}
-              className="fixed inset-0 bg-black/65 backdrop-blur-[4px] z-0 cursor-pointer"
+              className="fixed inset-0 bg-[var(--surface-overlay)] backdrop-blur-[4px] z-0 cursor-pointer"
             />
 
             {/* Modal Drawer */}
@@ -480,21 +448,19 @@ export const ComplianceAuditLogsView = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className={`relative max-w-2xl w-full rounded-xl border p-6 z-10 shadow-2xl ${
-                theme === "dark" ? "bg-[#111113] border-gray-800 text-white" : "bg-white border-gray-200 text-gray-900"
-              }`}
+              className="relative max-w-2xl w-full rounded-[var(--radius-xl)] border border-[var(--border-default)] p-6 z-10 shadow-lg bg-[var(--surface-raised)] text-[var(--fg-primary)]"
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border)] mb-4">
+              <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-default)] mb-4">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="text-accent " size={18} />
+                  <ShieldAlert className="text-[var(--accent)]" size={18} />
                   <span className="text-xs uppercase font-black tracking-wider w-auto h-auto leading-none mt-0">
                     {isRtl ? "التدقيق والتفاصيل القياسية" : "Compliance Payload Audit Inspection"}
                   </span>
                 </div>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-rose-500/10 hover:border-rose-500/30 text-gray-400 hover:text-rose-500 cursor-pointer transition-theme`}
+                  className="w-8 h-8 rounded-[var(--radius-full)] border border-[var(--border-default)] flex items-center justify-center hover:bg-[var(--status-danger-subtle)] text-[var(--fg-secondary)] hover:text-[var(--status-danger)] cursor-pointer transition-colors duration-base"
                 >
                   <X size={15} />
                 </button>
@@ -502,37 +468,37 @@ export const ComplianceAuditLogsView = ({
 
               {/* Summary metadata grid */}
               <div className="grid grid-cols-2 gap-4 text-[10px] mb-4">
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "المسؤول الفاعل" : "Action Operator"}</span>
-                  <span className="font-bold mt-0.5 text-[var(--text-primary)] truncate">{selectedLog.admin_email || "System/Cron Engine"}</span>
+                <div className="flex flex-col p-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] border border-[var(--border-default)]">
+                  <span className="text-[var(--fg-muted)] font-bold uppercase">{isRtl ? "المسؤول الفاعل" : "Action Operator"}</span>
+                  <span className="font-bold mt-0.5 text-[var(--fg-primary)] truncate">{selectedLog.admin_email || "System/Cron Engine"}</span>
                 </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "العملية الإجرائية" : "Action Identifier"}</span>
-                  <span className="font-bold mt-0.5 text-accent font-mono">{selectedLog.action}</span>
+                <div className="flex flex-col p-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] border border-[var(--border-default)]">
+                  <span className="text-[var(--fg-muted)] font-bold uppercase">{isRtl ? "العملية الإجرائية" : "Action Identifier"}</span>
+                  <span className="font-bold mt-0.5 text-[var(--accent)] font-mono">{selectedLog.action}</span>
                 </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "الوقت (توقيت عالمي)" : "Logged Timestamp (UTC)"}</span>
-                  <span className="font-semibold mt-0.5 font-mono">{formatDate(selectedLog.created_at)}</span>
+                <div className="flex flex-col p-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] border border-[var(--border-default)]">
+                  <span className="text-[var(--fg-muted)] font-bold uppercase">{isRtl ? "الوقت (توقيت عالمي)" : "Logged Timestamp (UTC)"}</span>
+                  <span className="font-semibold mt-0.5 font-mono text-[var(--fg-primary)]">{formatDate(selectedLog.created_at)}</span>
                 </div>
-                <div className="flex flex-col p-2.5 rounded bg-black/5 dark:bg-black/25 border border-[var(--border)]">
-                  <span className="text-gray-400 font-bold uppercase">{isRtl ? "بيانات الموقع والشبكة" : "Network Ingress Platform"}</span>
-                  <span className="font-mono mt-0.5 leading-none text-zinc-400">{selectedLog.ip_address || "Internal Sandbox Host"}</span>
+                <div className="flex flex-col p-2.5 rounded-[var(--radius-md)] bg-[var(--surface-input)] border border-[var(--border-default)]">
+                  <span className="text-[var(--fg-muted)] font-bold uppercase">{isRtl ? "بيانات الموقع والشبكة" : "Network Ingress Platform"}</span>
+                  <span className="font-mono mt-0.5 leading-none text-[var(--fg-secondary)]">{selectedLog.ip_address || "Internal Sandbox Host"}</span>
                 </div>
               </div>
 
               {/* User Agent Block */}
               {selectedLog.user_agent && (
-                <div className="mb-4 text-[9px] p-2 rounded bg-black/5 dark:bg-black/25 text-gray-400 font-mono border border-[var(--border)] leading-relaxed">
+                <div className="mb-4 text-[9px] p-2 rounded-[var(--radius-md)] bg-[var(--surface-input)] text-[var(--fg-secondary)] font-mono border border-[var(--border-default)] leading-relaxed">
                   <strong>User Agent:</strong> {selectedLog.user_agent}
                 </div>
               )}
 
               {/* JSON Payload Display */}
               <div className="flex flex-col font-sans">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 pl-0.5">
+                <span className="text-[10px] font-bold text-[var(--fg-muted)] uppercase tracking-wider mb-1.5 pl-0.5">
                   {isRtl ? "البيانات المشفرة والمحفوظة (JSON Payloads)" : "Compliant Transaction Log (JSON)"}
                 </span>
-                <div className="h-48 overflow-y-auto rounded-lg bg-black text-[11px] text-accent font-mono p-4 border border-zinc-900 leading-loose scroll-smooth scrollbar-thin">
+                <div className="h-48 overflow-y-auto rounded-[var(--radius-md)] bg-[var(--surface-input)] text-[11px] text-[var(--accent)] font-mono p-4 border border-[var(--border-default)] leading-loose scroll-smooth scrollbar-thin">
                   <pre className="whitespace-pre-wrap select-text">
                     {JSON.stringify(typeof selectedLog.details === "string" ? JSON.parse(selectedLog.details) : selectedLog.details, null, 2)}
                   </pre>
@@ -540,7 +506,7 @@ export const ComplianceAuditLogsView = ({
               </div>
 
               {/* Footer disclaimer */}
-              <p className="text-[9px] text-gray-400 mt-4 leading-relaxed font-sans italic opacity-60">
+              <p className="text-[9px] text-[var(--fg-muted)] mt-4 leading-relaxed font-sans italic opacity-60">
                 {isRtl 
                   ? "ملاحظة التوافق: تم إلحاق وحفظ السجل أعلاه في بيئة معزولة أمنياً وغير قابلة للتعديل أو الحذف لضمان نزاهة عمليات المنصة والامتثال الدولي."
                   : "Compliance Notice: This secure append-only audit log is recorded into a strictly cryptographic sandboxed database table and cannot be overridden, fulfilling absolute platform accountability. "

@@ -13,6 +13,7 @@ import {
 import { useAppContext } from '../context/AppContext';
 import { toast } from '../context/NotificationContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { MobileWalletView } from './mobile/MobileWalletView';
 
 interface Transaction {
   id: number;
@@ -37,7 +38,7 @@ interface WalletData {
 
 export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ theme, dir }) => {
   const navigate = useNavigate();
-  const { t, token, refreshUser, siteSettings } = useAppContext() as any;
+  const { t, token, refreshUser, siteSettings, socket } = useAppContext() as any;
   const isStripeActive = !!(siteSettings?.stripe_active || siteSettings?.stripe_status === 'verified');
   const isPaypalActive = !!(siteSettings?.paypal_active || siteSettings?.paypal_status === 'verified');
   const [activeTab, setActiveTab ] = useState('transactions');
@@ -251,6 +252,48 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }
   }, [activeTab]);
 
+  // Real-time synchronization via Socket.io
+  useEffect(() => {
+    if (!socket) return;
+    const handleRealtimeUpdate = () => {
+      fetchWallet();
+      if (activeTab !== 'deposit' && activeTab !== 'withdraw') {
+        fetchTransactions(activeTab);
+      }
+      if (typeof refreshUser === 'function') {
+        refreshUser();
+      }
+    };
+
+    socket.on('wallet_updated', handleRealtimeUpdate);
+    socket.on('user_updated', handleRealtimeUpdate);
+    socket.on('ledger_updated', handleRealtimeUpdate);
+
+    return () => {
+      socket.off('wallet_updated', handleRealtimeUpdate);
+      socket.off('user_updated', handleRealtimeUpdate);
+      socket.off('ledger_updated', handleRealtimeUpdate);
+    };
+  }, [socket, activeTab, token]);
+
+  // Window Focus Auto-Sync for financial accuracy
+  useEffect(() => {
+    const handleFocusSync = () => {
+      if (document.visibilityState === 'visible') {
+        fetchWallet();
+        if (activeTab !== 'deposit' && activeTab !== 'withdraw') {
+          fetchTransactions(activeTab);
+        }
+      }
+    };
+    window.addEventListener('visibilitychange', handleFocusSync);
+    window.addEventListener('focus', handleFocusSync);
+    return () => {
+      window.removeEventListener('visibilitychange', handleFocusSync);
+      window.removeEventListener('focus', handleFocusSync);
+    };
+  }, [activeTab, token]);
+
   const fetchWallet = async () => {
     try {
       const res = await fetch('/api/wallet', {
@@ -262,6 +305,38 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
       }
     } catch (err) {
       console.error('Wallet fetch error', err);
+    }
+  };
+
+  const handleConvertPoints = async (pointsToConvert: number): Promise<boolean> => {
+    if (!token) return false;
+    try {
+      const res = await fetch('/api/wallet/convert-points', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ amountPoints: pointsToConvert })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(
+          dir === 'rtl'
+            ? `تم تحويل ${pointsToConvert.toLocaleString()} نقطة بنجاح إلى $${Number(data.convertedUSD || data.amountUSD || 0).toFixed(2)} USD في رصيدك!`
+            : `Successfully converted ${pointsToConvert.toLocaleString()} points to $${Number(data.convertedUSD || data.amountUSD || 0).toFixed(2)} USD!`
+        );
+        await fetchWallet();
+        if (typeof refreshUser === 'function') refreshUser();
+        fetchTransactions(activeTab);
+        return true;
+      } else {
+        toast.error(data.error || (dir === 'rtl' ? 'فشل تحويل النقاط' : 'Failed to convert points.'));
+        return false;
+      }
+    } catch (err) {
+      toast.error(dir === 'rtl' ? 'خطأ في الاتصال بالخادم أثناء تحويل النقاط' : 'Network error during points conversion.');
+      return false;
     }
   };
 
@@ -640,6 +715,39 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
     }
   };
 
+  const handleWithdrawAmountChange = (val: string) => {
+    if (val === '') {
+      setWithdrawAmount('');
+      return;
+    }
+    const sanitizedVal = val.replace(/[^0-9.]/g, '');
+    const parts = sanitizedVal.split('.');
+    if (parts.length > 2) return;
+    setWithdrawAmount(sanitizedVal);
+  };
+
+  const handleWithdrawAmountBlur = (balance: number) => {
+    if (withdrawAmount === '') {
+      setWithdrawAmount('10');
+      return;
+    }
+    const num = parseFloat(withdrawAmount);
+    if (isNaN(num) || num < 10) {
+      setWithdrawAmount('10');
+    } else if (num > balance) {
+      setWithdrawAmount(balance.toString());
+    }
+  };
+
+  const selectWithdrawPredefinedAmount = (val: string, balance: number) => {
+    const num = parseFloat(val);
+    if (num > balance) {
+      setWithdrawAmount(balance > 0 ? balance.toString() : '0');
+    } else {
+      setWithdrawAmount(val);
+    }
+  };
+
   if (loading && !wallet) {
     return (
       <div className="space-y-10 animate-pulse w-full max-w-5xl mx-auto px-6 md:px-12 pt-6">
@@ -652,10 +760,67 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
   const currentBalance = wallet ? wallet.balance : 0;
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme pt-2 sm:pt-6 pb-20">
+    <div className="w-full h-full flex flex-col overflow-y-auto no-scrollbar relative transition-theme pt-1 sm:pt-6 pb-20">
       
-      {/* Centered Banking Hero Card - High Density Elite */}
-      <div className="px-2 sm:px-6 md:px-12 flex justify-center flex-none mt-2 sm:mt-4">
+      {/* 1. Mobile-Exclusive Dedicated View (Revolut/Apple Wallet Standard) */}
+      <div className="block md:hidden px-3 pt-1">
+        <MobileWalletView
+          wallet={wallet}
+          currentBalance={currentBalance}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          transactions={transactions}
+          manualDeposits={manualDeposits}
+          loading={loading}
+          dir={dir}
+          theme={theme}
+          handleClearAllHistory={handleClearAllHistory}
+          handleHideTransaction={handleHideTransaction}
+          depositAmount={depositAmount}
+          setDepositAmount={setDepositAmount}
+          handleDepositAmountChange={handleDepositAmountChange}
+          handleDepositAmountBlur={handleDepositAmountBlur}
+          selectPredefinedAmount={selectPredefinedAmount}
+          depositMethod={depositMethod}
+          setDepositMethod={setDepositMethod}
+          isSubmittingDeposit={isSubmittingDeposit}
+          handleDepositSubmit={handleDepositSubmit}
+          isStripeActive={isStripeActive}
+          isPaypalActive={isPaypalActive}
+          withdrawAmount={withdrawAmount}
+          setWithdrawAmount={setWithdrawAmount}
+          handleWithdrawAmountChange={handleWithdrawAmountChange}
+          handleWithdrawAmountBlur={handleWithdrawAmountBlur}
+          selectWithdrawPredefinedAmount={selectWithdrawPredefinedAmount}
+          withdrawMethod={withdrawMethod}
+          setWithdrawMethod={setWithdrawMethod}
+          withdrawDetails={withdrawDetails}
+          setWithdrawDetails={setWithdrawDetails}
+          withdrawHolderName={withdrawHolderName}
+          setWithdrawHolderName={setWithdrawHolderName}
+          withdrawBankName={withdrawBankName}
+          setWithdrawBankName={setWithdrawBankName}
+          withdrawBankIBAN={withdrawBankIBAN}
+          setWithdrawBankIBAN={setWithdrawBankIBAN}
+          withdrawSwift={withdrawSwift}
+          setWithdrawSwift={setWithdrawSwift}
+          isSubmittingWithdraw={isSubmittingWithdraw}
+          handleWithdrawSubmit={handleWithdrawSubmit}
+          copyToClipboard={copyToClipboard}
+          isCopied={isCopied}
+          manualRefId={manualRefId}
+          setManualRefId={setManualRefId}
+          manualProofFile={manualProofFile}
+          setManualProofFile={setManualProofFile}
+          onRefresh={fetchWallet}
+          handleConvertPoints={handleConvertPoints}
+        />
+      </div>
+
+      {/* 2. Desktop-Exclusive Original Architecture (100% Preserved) */}
+      <div className="hidden md:flex md:flex-col w-full">
+        {/* Centered Banking Hero Card - High Density Elite */}
+        <div className="px-2 sm:px-6 md:px-12 flex justify-center flex-none mt-2 sm:mt-4">
         <div className="relative w-full max-w-5xl p-4 sm:p-8 md:p-10 rounded-[var(--radius)] border shadow-2xl transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]">
           
           {/* Neon Top Accent Line for the Wallet Hero */}
@@ -1798,6 +1963,7 @@ export const WalletSystem: React.FC<{ theme: string; dir: 'ltr' | 'rtl' }> = ({ 
           )}
 
         </AnimatePresence>
+      </div>
 
         {/* Verification Loader Overlay */}
         <AnimatePresence>

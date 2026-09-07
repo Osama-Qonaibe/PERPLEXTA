@@ -111,8 +111,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         } ${
           isOpen
-            ? 'border-accent ring-1 ring-accent/40 bg-[var(--bg-primary)] shadow-sm'
-            : 'bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-accent/40'
+            ? 'border-[var(--border-main)] bg-[var(--bg-primary)] shadow-sm'
+            : 'bg-[var(--bg-primary)] border-[var(--border-main)] hover:border-[var(--border-main)]'
         } text-[var(--text-primary)]`}
         onClick={() => {
           if (!disabled) {

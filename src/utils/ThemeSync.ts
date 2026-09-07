@@ -9,6 +9,25 @@ export const getResolvedTheme = (theme: ThemeMode): 'dark' | 'light' => {
   return 'light';
 };
 
+export const loadAndApplyCustomTheme = async (resolved: 'dark' | 'light') => {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/theme-customizations');
+    if (res.ok) {
+      const data = await res.json();
+      const modeTokens = data.customizations?.[resolved] || {};
+      const root = document.documentElement;
+      for (const [key, val] of Object.entries(modeTokens)) {
+        if (typeof val === 'string' && val) {
+          root.style.setProperty(key, val);
+        }
+      }
+    }
+  } catch (err) {
+    // Fallback silently
+  }
+};
+
 export const applyThemeWithRAF = (theme: ThemeMode) => {
   if (typeof window === 'undefined') return;
 
@@ -22,18 +41,34 @@ export const applyThemeWithRAF = (theme: ThemeMode) => {
     root.classList.add('dark');
     root.classList.remove('light');
     root.setAttribute('data-theme', 'dark');
-    if (meta) meta.setAttribute('content', '#0b0c0e');
+    if (meta) meta.setAttribute('content', '#181715');
   } else {
     root.classList.remove('dark');
     root.classList.add('light');
     root.setAttribute('data-theme', 'light');
-    if (meta) meta.setAttribute('content', '#f8fafc');
+    if (meta) meta.setAttribute('content', '#faf9f5');
   }
 
-  // Remove any legacy inline style overrides on root so index.css rules control tokens cleanly
-  root.style.backgroundColor = '';
-  root.style.color = '';
+  // Load and apply custom theme tokens from DB
+  loadAndApplyCustomTheme(resolved);
+
+  // Synchronize Sovereign Template
+  try {
+    const savedTemplate = localStorage.getItem('perplexta_template');
+    if (savedTemplate && !root.hasAttribute('data-template')) {
+      root.setAttribute('data-template', savedTemplate);
+    }
+  } catch {
+    // Ignore sandbox storage error
+  }
 };
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('perplexta_theme_updated', () => {
+    const theme = (localStorage.getItem('perplexta_theme') || 'dark') as ThemeMode;
+    applyThemeWithRAF(theme);
+  });
+}
 
 export const ThemeSync = {
   apply: applyThemeWithRAF,
