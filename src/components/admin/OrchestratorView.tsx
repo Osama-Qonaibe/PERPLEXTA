@@ -607,8 +607,8 @@ export const OrchestratorView = ({
                 <div className="p-2.5 rounded-[var(--radius-sm)] bg-[var(--surface-subtle)] text-[var(--fg-accent)] shrink-0 border border-[var(--border-main)] relative">
                   <Database size={20} />
                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--fg-success)] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--fg-success)]"></span>
                   </span>
                 </div>
 
@@ -617,8 +617,8 @@ export const OrchestratorView = ({
                     <span className="text-sm font-bold text-[var(--text-primary)]">
                       {language === "ar" ? "حالة مزامنة الأوركسترا" : "Orchestrator Sync Status"}
                     </span>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-xs)] text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[var(--radius-xs)] text-[11px] font-bold bg-[var(--status-success-subtle)] text-[var(--fg-success)] border border-[var(--fg-success)]/25">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--fg-success)] animate-pulse"></span>
                       <span>{language === "ar" ? "قاعدة البيانات متزامنة" : "Database Synced"}</span>
                     </div>
 
@@ -839,9 +839,9 @@ export const OrchestratorView = ({
                   const healthStatus = linkedGpu?.health_status;
 
                   return (
-                    <div className="mb-5 px-3 py-2 rounded-[var(--radius-sm)] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between gap-2 relative z-10">
+                    <div className="mb-5 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/20 text-[var(--fg-success)] text-xs flex items-center justify-between gap-2 relative z-10">
                       <div className="flex items-center gap-2 min-w-0">
-                        <Zap size={13} className="shrink-0 text-emerald-500" />
+                        <Zap size={13} className="shrink-0 text-[var(--fg-success)]" />
                         <span className="font-semibold text-[11px] truncate">
                           {language === "ar"
                             ? `مرتبط بالخادم: ${serverName}`
@@ -849,7 +849,7 @@ export const OrchestratorView = ({
                         </span>
                       </div>
                       {healthStatus && (
-                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-[var(--radius-xs)] bg-emerald-500/15 font-mono shrink-0">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-[var(--radius-xs)] bg-[var(--fg-success)]/15 font-mono shrink-0">
                           {healthStatus}
                         </span>
                       )}

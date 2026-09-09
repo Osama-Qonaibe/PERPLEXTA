@@ -622,15 +622,27 @@ router.post('/ads', authenticateToken, async (req: any, res) => {
     let autoCategory = 'عام / General';
 
     if (page_id) {
-      const pageRes = await pool.query('SELECT id, name, avatar_url, city, category, user_id FROM bulletin_pages WHERE id = $1', [page_id]);
+      const pageRes = await pool.query('SELECT id, name, avatar_url, city, category, user_id, managers FROM bulletin_pages WHERE id = $1', [page_id]);
       if (pageRes.rows.length > 0) {
-        if (pageRes.rows[0].user_id !== userId && req.user.role !== 'admin') {
+        const pageObj = pageRes.rows[0];
+        let isAuthorized = pageObj.user_id === userId || req.user.role === 'admin';
+        if (!isAuthorized && pageObj.managers) {
+          try {
+            const managersList = typeof pageObj.managers === 'string' ? JSON.parse(pageObj.managers) : pageObj.managers;
+            if (Array.isArray(managersList)) {
+              isAuthorized = managersList.some((m: any) => m.userId === userId || m.email === req.user.email);
+            }
+          } catch (e) {
+            console.error('Failed to parse page managers JSON', e);
+          }
+        }
+        if (!isAuthorized) {
           return res.status(403).json({ error: 'غير مصرح لك بالنشر في هذه الصفحة' });
         }
-        validPageId = pageRes.rows[0].id;
-        authorName = pageRes.rows[0].name;
-        authorAvatar = pageRes.rows[0].avatar_url;
-        autoCategory = pageRes.rows[0].category || 'عام / General';
+        validPageId = pageObj.id;
+        authorName = pageObj.name;
+        authorAvatar = pageObj.avatar_url;
+        autoCategory = pageObj.category || 'عام / General';
         await pool.query('UPDATE bulletin_pages SET ads_count = ads_count + 1 WHERE id = $1', [validPageId]);
       }
     }
@@ -1905,9 +1917,13 @@ router.get('/pages', async (req, res) => {
 router.get('/pages/my', authenticateToken, async (req: any, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user.email ? req.user.email.trim().toLowerCase() : '';
     const result = await pool.query(
-      'SELECT * FROM bulletin_pages WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
+      `SELECT * FROM bulletin_pages 
+       WHERE user_id = $1 OR owner_id = $1 
+          OR (managers IS NOT NULL AND (managers::text LIKE '%"email":"' || $2 || '"%' OR managers::text LIKE '%"userId":' || $1 || '%'))
+       ORDER BY created_at DESC`,
+      [userId, userEmail]
     );
 
     res.json({ success: true, pages: result.rows });
@@ -2049,6 +2065,160 @@ router.post('/pages', authenticateToken, async (req: any, res) => {
   } catch (error: any) {
     console.error('[Bulletin Pages API] Create page error:', error.message);
     res.status(500).json({ error: 'فشل إنشاء الصفحة التجارية' });
+  }
+});
+
+/**
+ * PUT /api/bulletin/pages/:id
+ * Edit page & manage managers/admins
+ */
+router.put('/pages/:id', authenticateToken, async (req: any, res) => {
+  try {
+    const pageId = parseInt(req.params.id);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const pageRes = await pool.query('SELECT * FROM bulletin_pages WHERE id = $1', [pageId]);
+    if (pageRes.rows.length === 0) {
+      return res.status(404).json({ error: 'الصفحة التجارية غير موجودة' });
+    }
+    const page = pageRes.rows[0];
+
+    const isOwner = page.user_id === userId || page.owner_id === userId || userRole === 'admin';
+    let isFullManager = false;
+    let managersList: any[] = [];
+    if (page.managers) {
+      try {
+        managersList = typeof page.managers === 'string' ? JSON.parse(page.managers) : page.managers;
+      } catch (e) {
+        managersList = [];
+      }
+      if (Array.isArray(managersList)) {
+        const matchingManager = managersList.find((m: any) => m.userId === userId || m.email === req.user.email);
+        if (matchingManager && matchingManager.role === 'full') {
+          isFullManager = true;
+        }
+      }
+    }
+
+    if (!isOwner && !isFullManager) {
+      return res.status(403).json({ error: 'ليس لديك صلاحية لتعديل هذه الصفحة التجارية' });
+    }
+
+    const {
+      name,
+      category,
+      city,
+      address,
+      description,
+      avatar_url,
+      cover_url,
+      whatsapp_number,
+      phone_number,
+      website_url,
+      managers
+    } = req.body;
+
+    const updates: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${idx++}`);
+      values.push(name.trim());
+    }
+    if (category !== undefined) {
+      updates.push(`category = $${idx++}`);
+      values.push(category);
+    }
+    if (city !== undefined) {
+      updates.push(`city = $${idx++}`);
+      values.push(city);
+    }
+    if (address !== undefined) {
+      updates.push(`address = $${idx++}`);
+      values.push(address ? address.trim() : null);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${idx++}`);
+      values.push(description.trim());
+    }
+    if (avatar_url !== undefined) {
+      updates.push(`avatar_url = $${idx++}`);
+      values.push(avatar_url.trim());
+    }
+    if (cover_url !== undefined) {
+      updates.push(`cover_url = $${idx++}`);
+      values.push(cover_url.trim());
+    }
+    if (whatsapp_number !== undefined) {
+      updates.push(`whatsapp_number = $${idx++}`);
+      values.push(whatsapp_number ? whatsapp_number.trim() : null);
+    }
+    if (phone_number !== undefined) {
+      updates.push(`phone_number = $${idx++}`);
+      values.push(phone_number ? phone_number.trim() : null);
+    }
+    if (website_url !== undefined) {
+      updates.push(`website_url = $${idx++}`);
+      values.push(website_url ? website_url.trim() : null);
+    }
+
+    if (managers !== undefined) {
+      if (!isOwner) {
+        return res.status(403).json({ error: 'فقط مالك الصفحة لديه الصلاحية لتعديل قائمة المسؤولين' });
+      }
+      if (!Array.isArray(managers)) {
+        return res.status(400).json({ error: 'تنسيق المسؤولين غير صحيح' });
+      }
+
+      const resolvedManagers: any[] = [];
+      for (const mgr of managers) {
+        if (!mgr.email) continue;
+        const cleanEmail = mgr.email.trim().toLowerCase();
+        
+        const userCheck = await pool.query('SELECT id, name, email FROM users WHERE LOWER(email) = $1', [cleanEmail]);
+        if (userCheck.rows.length > 0) {
+          const u = userCheck.rows[0];
+          resolvedManagers.push({
+            userId: u.id,
+            email: u.email,
+            name: u.name || mgr.name || u.email.split('@')[0],
+            role: mgr.role === 'full' ? 'full' : 'limited'
+          });
+        } else {
+          resolvedManagers.push({
+            userId: null,
+            email: cleanEmail,
+            name: mgr.name || cleanEmail.split('@')[0],
+            role: mgr.role === 'full' ? 'full' : 'limited',
+            status: 'pending_signup'
+          });
+        }
+      }
+
+      updates.push(`managers = $${idx++}`);
+      values.push(JSON.stringify(resolvedManagers));
+    }
+
+    if (updates.length === 0) {
+      return res.json({ success: true, page });
+    }
+
+    values.push(pageId);
+    const updateQuery = `
+      UPDATE bulletin_pages 
+      SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $${idx} 
+      RETURNING *
+    `;
+
+    const updatedRes = await pool.query(updateQuery, values);
+    res.json({ success: true, page: updatedRes.rows[0] });
+
+  } catch (error: any) {
+    console.error('[Bulletin Pages API] Edit page error:', error.message);
+    res.status(500).json({ error: 'فشل تعديل الصفحة التجارية' });
   }
 });
 

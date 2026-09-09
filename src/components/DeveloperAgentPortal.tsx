@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { toast } from '../context/NotificationContext';
 import { 
   Terminal, ShieldCheck, Copy, Plus, Trash2, Globe, 
   RefreshCw, Code, Check, Key, ShieldAlert, BookOpen, Cpu,
@@ -42,10 +43,8 @@ export const DeveloperAgentPortal: React.FC = () => {
   const [codeLanguage, setCodeLanguage] = useState<'python' | 'node' | 'curl'>('python');
 
   const showToast = (msg: string) => {
-    setLocalToast(msg);
-    setTimeout(() => setLocalToast(null), 3000);
+    toast.success(msg);
   };
-  const [localToast, setLocalToast] = useState<string | null>(null);
 
   const [mcpMode, setMcpMode] = useState<'server' | 'federation'>('server');
   const [mcpDiscovery, setMcpDiscovery] = useState<any>(null);
@@ -366,21 +365,6 @@ authenticateAgent();`;
 
   return (
     <div className="space-y-8 font-tajawal">
-      {/* Toast Alert */}
-      <AnimatePresence>
-        {localToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-50 bg-accent/10 border border-accent/20 text-accent px-6 py-3 rounded-[4px] backdrop-blur-md shadow-[0_0_20px_rgba(156,163,175,0.15)] flex items-center gap-2"
-          >
-            <ShieldCheck size={16} />
-            <span className="text-sm font-bold">{localToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Hero Header */}
       <div className="p-8 rounded-[4px] border border-gray-200 dark:border-gray-800/60 bg-[#1a1a1c]/10 dark:bg-[#1a1a1c]/40 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-5 text-accent">

@@ -164,7 +164,7 @@ router.post("/upload", authenticateToken, checkDiskSpace, upload.single('file'),
            const sha256Hash = crypto.createHash('sha256').update(fileBuf).digest('hex');
            const storedPath = `uploads/${finalFilename}`;
            let mContext = 'general';
-           if (mimetype.startsWith('video/') || isVideoExtension) mContext = 'video';
+           if (mimetype.startsWith('video/') || isVideoExtension) mContext = 'general';
            
            await pool.query(`
               INSERT INTO media_assets (

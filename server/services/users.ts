@@ -31,32 +31,32 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_ar: 'ذكاء مخصص للتفكير متعدد الخطوات وتصميم الحلول المعقدة.'
   },
   'perplexta_analysis': { 
-    name_en: 'Perplexta Analysis', 
-    name_ar: 'تحليل بيربليكستا',
+    name_en: 'Analysis', 
+    name_ar: 'تحليل',
     desc_en: 'Deep AI-powered research and analysis.',
     desc_ar: 'بحث وتحليل عميق مدعوم بالذكاء الاصطناعي.'
   },
   'legal_analysis': { 
-    name_en: 'Legal Analysis', 
-    name_ar: 'التحليل القانوني',
+    name_en: 'Legal', 
+    name_ar: 'قانون',
     desc_en: 'Specialized legal document review and intelligence.',
     desc_ar: 'مراجعة الوثائق القانونية المتخصصة والاستخبارات.'
   },
   'notebook': { 
-    name_en: 'Perplexta Notebook', 
-    name_ar: 'مفكرة بيربليكستا',
+    name_en: 'Research', 
+    name_ar: 'بحث',
     desc_en: 'Organize and connect your thoughts with AI.',
     desc_ar: 'نظم واربط أفكارك بمساعدة الذكاء الاصطناعي.'
   },
   'image': { 
-    name_en: 'Image Generation', 
-    name_ar: 'توليد الصور',
+    name_en: 'Image', 
+    name_ar: 'صورة',
     desc_en: 'Create professional visual assets from text.',
     desc_ar: 'أنشئ أصولاً بصرية احترافية من النصوص.'
   },
   'video': { 
-    name_en: 'Video Generation', 
-    name_ar: 'توليد الفيديو',
+    name_en: 'Video', 
+    name_ar: 'فيديو',
     desc_en: 'Cinematic AI video production from prompts.',
     desc_ar: 'إنتاج فيديوهات سينمائية من الأوامر النصية.'
   },
@@ -73,14 +73,14 @@ const TOOL_INFO: Record<string, { name_en: string, name_ar: string, desc_en: str
     desc_ar: 'سرد صوتي طبيعي مدعوم بالذكاء الاصطناعي.'
   },
   'learning': { 
-    name_en: 'Education Assistant', 
-    name_ar: 'مساعد التعليم',
+    name_en: 'Education', 
+    name_ar: 'تعليم',
     desc_en: 'Advanced tool for strategic education and intelligence tutoring.',
     desc_ar: 'مساعد ذكي متقدم للتعليم والتدريب الاستراتيجي.'
   },
   'code': { 
-    name_en: 'Code Engineering', 
-    name_ar: 'هندسة البرمجيات',
+    name_en: 'Code', 
+    name_ar: 'كود',
     desc_en: 'Developer-grade coding and debugging.',
     desc_ar: 'برمجة وتصحيح أخطاء بمستوى المطورين.'
   },

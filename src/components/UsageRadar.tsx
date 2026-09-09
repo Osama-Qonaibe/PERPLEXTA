@@ -117,19 +117,19 @@ export const UsageRadar: React.FC = () => {
   const startDate = data.plan.subscription_start ? new Date(data.plan.subscription_start).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="space-y-10 transition-theme">
+    <div className="space-y-4 sm:space-y-10 transition-theme">
       {/* Usage Radar Header - Elite Design (Perplexta Static) */}
-      <div className={`p-8 min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
+      <div className={`p-4 sm:p-8 min-h-0 sm:min-h-[412px] flex flex-col justify-center rounded-[var(--radius)] border relative overflow-hidden transition-theme bg-[var(--bg-base)] border-[var(--border)] shadow-[var(--color-shadow)]`} style={{ borderColor: `${planColor}30` }}>
         
         {/* Fixed Header Row */}
-        <div className="flex justify-between items-start mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-[var(--radius)] flex items-center justify-center bg-accent/10 text-accent ">
-               <Activity size={24} className="animate-pulse" />
+        <div className="flex justify-between items-start mb-4 sm:mb-12">
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-[var(--radius)] flex items-center justify-center bg-accent/10 text-accent shrink-0">
+               <Activity size={18} className="animate-pulse sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-black tracking-tight">{t('usageRadar') || (dir === 'rtl' ? 'رادار الاستهلاك' : 'Usage Radar')}</h2>
-              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-60">
+              <h2 className="text-base sm:text-xl font-black tracking-tight">{t('usageRadar') || (dir === 'rtl' ? 'رادار الاستهلاك' : 'Usage Radar')}</h2>
+              <p className="text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider opacity-60">
                 {t('realTimeUsageSync') || (dir === 'rtl' ? 'مزامنة لحظية للموارد' : 'Real-time resource synchronization')}
               </p>
             </div>
@@ -137,40 +137,40 @@ export const UsageRadar: React.FC = () => {
         </div>
 
         {/* Plan Info Card - Centered as per image */}
-        <div className={`p-4 sm:p-6 md:p-10 rounded-[var(--radius)] border border-accent/10 bg-accent/[0.02] flex flex-col items-center relative group`}>
+        <div className={`p-3 sm:p-6 md:p-10 rounded-[var(--radius)] border border-accent/10 bg-accent/[0.02] flex flex-col items-center relative group`}>
            {/* Chart Box - Hidden on very small mobile or positioned safely */}
            <div className="hidden sm:flex absolute left-4 md:left-10 top-1/2 -translate-y-1/2 w-20 h-20 md:w-32 md:h-32 rounded-[var(--radius)] border border-accent/20 items-center justify-center bg-black/20 text-accent group-hover:scale-105 transition-transform duration-300">
               <BarChart3 size={36} className="md:w-12 md:h-12" />
            </div>
 
-           <div className="flex flex-col items-center text-center space-y-4 sm:space-y-6 w-full">
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[var(--text-muted)] opacity-60">
+           <div className="flex flex-col items-center text-center space-y-2 sm:space-y-6 w-full">
+              <div className="space-y-0.5 sm:space-y-1">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)] opacity-60">
                   {t('activeSubscription') || 'Active Subscription'}
                 </span>
-                <h3 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black transition-theme leading-none select-none break-words" style={{ color: planColor, filter: `drop-shadow(0 0 35px ${planColor}50)` }}>
+                <h3 className="text-2xl sm:text-5xl md:text-7xl lg:text-8xl font-black transition-theme leading-none select-none break-words" style={{ color: planColor, filter: `drop-shadow(0 0 20px ${planColor}40)` }}>
                   {dir === 'rtl' ? data.plan.name_ar : data.plan.name_en}
                 </h3>
               </div>
 
                {/* Status Badges Row */}
-               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
-                     <Zap size={14} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"} />
-                     <span className={`text-[9px] font-black uppercase tracking-widest ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"}`}>
+               <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 pt-1">
+                  <div className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)]">
+                     <Zap size={12} className={data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"} />
+                     <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider ${data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? "text-[var(--fg-danger)]" : "text-[var(--text-primary)]"}`}>
                        {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'غير نشط' : 'Inactive') : (t('active') || 'Active')}
                      </span>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-muted)]">
-                     <Clock size={14} />
-                     <span className="text-[9px] font-black uppercase tracking-widest">
+                  <div className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-2 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--text-muted)]">
+                     <Clock size={12} />
+                     <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">
                        {data.plan.id === null || data.plan.status?.toLowerCase() !== 'active' ? (language === 'ar' ? 'بدون فترة' : 'None') : (t(data.plan.billing_period.toLowerCase()) || data.plan.billing_period)}
                      </span>
                   </div>
                   {data.plan.id !== null && data.plan.status?.toLowerCase() === 'active' && (
-                    <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-[var(--radius)] bg-[var(--bg-accent-muted)] border border-[var(--border-accent)] text-[var(--text-primary)]">
-                       <Calendar size={12} />
-                       <span className="text-[9px] font-black tracking-widest">{startDate} - {renewalDate}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-2 rounded-[var(--radius)] bg-[var(--bg-accent-muted)] border border-[var(--border-accent)] text-[var(--text-primary)]">
+                       <Calendar size={11} />
+                       <span className="text-[8px] sm:text-[9px] font-black tracking-wider">{startDate} - {renewalDate}</span>
                     </div>
                   )}
                </div>
@@ -179,7 +179,7 @@ export const UsageRadar: React.FC = () => {
       </div>
 
       {/* Usage Grids */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 pb-20">
         {data.usage.map((item) => {
           const isDailyUnlimited = item.limits.daily === null;
           const isMonthlyUnlimited = item.limits.monthly === null;
@@ -191,30 +191,30 @@ export const UsageRadar: React.FC = () => {
           const isExpanded = expanded === item.id;
 
           return (
-            <div className={`rounded-[var(--radius)] min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-theme overflow-hidden shadow-sm`}
+            <div className={`rounded-[var(--radius)] min-h-0 sm:min-h-[156px] border border-[var(--border)] bg-[var(--bg-base)] transition-theme overflow-hidden shadow-xs`}
               key={item.id}
               style={{ borderColor: isExpanded ? `${planColor}40` : undefined, boxShadow: isExpanded ? `0 0 20px ${planColor}05` : 'none' }}
             >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="space-y-1">
-                    <h3 className="text-[0.65rem] font-black uppercase tracking-widest" style={{ color: planColor }}>
+              <div className="p-3.5 sm:p-6">
+                <div className="flex justify-between items-start mb-3 sm:mb-6">
+                  <div className="space-y-0.5 sm:space-y-1 min-w-0 pr-2">
+                    <h3 className="text-xs sm:text-[0.65rem] font-black uppercase tracking-wider leading-tight" style={{ color: planColor }}>
                       {t(item.id) || (dir === 'rtl' ? (item.name_ar || item.id) : (item.name_en || item.id))}
                     </h3>
-                    <p className="text-[10px] text-[var(--text-muted)] font-medium max-w-[200px] line-clamp-1">
+                    <p className="text-[10px] text-[var(--text-muted)] font-medium max-w-[280px] line-clamp-1 leading-snug">
                       {dir === 'rtl' ? item.desc_ar : item.desc_en}
                     </p>
                   </div>
                   <button 
                     onClick={() => setExpanded(isExpanded ? null : item.id)}
-                    className="p-2 rounded-[var(--radius)] transition-theme hover:bg-white/5"
+                    className="p-1.5 sm:p-2 rounded-[var(--radius)] transition-theme hover:bg-white/5 shrink-0 cursor-pointer"
                   >
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 </div>
 
                 {/* Progress bars */}
-                <div className="space-y-6">
+                <div className="space-y-3 sm:space-y-6">
                   {/* Primary Progress */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">

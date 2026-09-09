@@ -174,17 +174,17 @@ const translations = {
     chat_reasoning: 'نمط التفكير العميق',
     sovereign_search: 'البحث السيادي',
     sovereign_search_desc: 'البحث الاستخباراتي الذكي والتنقيب عن المعرفة العالمية في الوقت الفعلي بأعلى مستويات النزاهة.',
-    perplexta_analysis: 'تحليل بيربليكستا',
+    perplexta_analysis: 'تحليل',
     perplexta_analysis_desc: 'البحث التقني والتحليل الرقمي العميق',
-    legal_analysis: 'مساعد القانون',
+    legal_analysis: 'قانون',
     legal_analysis_desc: 'تحليل احترافي للوثائق القانونية، الأنظمة، والاستفسارات التشريعية بدقة عالية.',
-    notebook: 'المفكرة البحثية',
-    image: 'توليد صورة',
-    video: 'توليد فيديو',
+    notebook: 'بحث',
+    image: 'صورة',
+    video: 'فيديو',
     stt: 'تحويل الصوت الى نص',
     tts: 'تحويل النص الى صوت',
-    learning: 'مساعد التعليم',
-    code: 'توليد كود',
+    learning: 'تعليم',
+    code: 'كود',
     canvas: 'استوديو الصوت',
     perplexta_music: 'الموسيقى والأغاني',
     perplexta_music_desc: 'التأليف الصوتي المتقدم والتركيب الموسيقي الهيكلي.',
@@ -704,7 +704,7 @@ const translations = {
     fallback3: 'احتياطي 3',
     orchestratorSave: 'حفظ',
     costPerUsage: 'التكلفة لكل طلب',
-    toolCode: 'توليد وتحليل الأكواد',
+    toolCode: 'كود',
     toolCodeDesc: 'أداة كتابة ومراجعة الأكواد البرمجية',
     withdrawableBalance: 'الرصيد القابل للسحب',
     requestWithdrawal: 'طلب سحب الرصيد',
@@ -890,17 +890,17 @@ const translations = {
     chat_reasoning: 'Reasoning Mode',
     sovereign_search: 'Sovereign Search',
     sovereign_search_desc: 'Real-time sovereign web intelligence and strategic knowledge extraction with zero-tracking integrity.',
-    perplexta_analysis: 'Perplexta Analysis',
+    perplexta_analysis: 'Analysis',
     perplexta_analysis_desc: 'Technical Search & Deep Digital Analysis',
-    legal_analysis: 'Legal Assistant',
+    legal_analysis: 'Legal',
     legal_analysis_desc: 'Professional analysis of legal documents, regulations, and legislative inquiries with high precision.',
-    notebook: 'Research Notebook',
-    image: 'Image Generation',
-    video: 'Video Generation',
+    notebook: 'Research',
+    image: 'Image',
+    video: 'Video',
     stt: 'Speech to Text',
     tts: 'Text to Speech',
-    learning: 'Education Assistant',
-    code: 'Code Generation',
+    learning: 'Education',
+    code: 'Code',
     canvas: 'Audio Studio',
     perplexta_music: 'Music & Songs',
     perplexta_music_desc: 'Advanced acoustic composition and structural music synthesis.',
@@ -1391,7 +1391,7 @@ const translations = {
     orchestratorSave: 'Save',
     tools: 'Tools',
     costPerUsage: 'Cost Per Usage',
-    toolCode: 'Code Generation & Analysis',
+    toolCode: 'Code',
     toolCodeDesc: 'Tool for writing and reviewing code',
     withdrawableBalance: 'Withdrawable Balance',
     requestWithdrawal: 'Request Withdrawal',
@@ -1645,13 +1645,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logUserActivity = useCallback(async (eventType: string, eventDetails?: any) => {
     try {
+      const rawId = userRef.current?.id;
+      const numericUserId = typeof rawId === 'number' && rawId > 0
+        ? rawId
+        : (typeof rawId === 'string' && /^\d+$/.test(rawId) && parseInt(rawId, 10) > 0 ? parseInt(rawId, 10) : null);
+
       await fetch('/api/activity/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           eventType,
           eventDetails,
-          userId: userRef.current?.id || null
+          userId: numericUserId
         })
       });
     } catch (err) {

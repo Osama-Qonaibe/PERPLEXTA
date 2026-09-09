@@ -186,8 +186,8 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
       
       {/* 1. Top Real-time Status Bar */}
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/20 text-[var(--fg-success)]">
+          <span className="w-2 h-2 rounded-full bg-[var(--fg-success)] animate-pulse" />
           <span className="text-[10px] font-bold tracking-tight">
             {isRtl ? 'مزامنة مباشرة بالوقت الفعلي' : 'Real-time Live Sync'}
           </span>
@@ -229,7 +229,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
             activeTab === 'deposit'
               ? 'bg-white/20 text-white'
-              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]'
           }`}>
             <Plus size={20} strokeWidth={2.5} />
           </div>
@@ -369,7 +369,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
             <div className="font-mono tracking-widest text-[var(--text-primary)] font-bold">
               •••• •••• •••• 8842
             </div>
-            <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+            <div className="flex items-center gap-1 text-[var(--fg-success)] font-bold">
               <CheckCircle2 size={12} />
               <span>{isRtl ? 'مدقق ومشفر 100%' : '100% Audited'}</span>
             </div>
@@ -391,7 +391,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
           >
             <div className="flex items-center justify-between pb-2 border-b border-[var(--border-main)]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[var(--status-success-subtle)] text-[var(--fg-success)] flex items-center justify-center">
                   <Plus size={18} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -861,7 +861,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
                   <span className="text-[11px] font-bold text-[var(--text-muted)]">
                     {isRtl ? 'القيمة المالية الناتجة:' : 'Estimated USD Value:'}
                   </span>
-                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">
+                  <span className="font-mono font-black text-[var(--fg-success)]">
                     +${(Math.max(0, parseInt(convertAmount, 10) || 0) / 1000).toFixed(2)} USD
                   </span>
                 </div>
@@ -1019,7 +1019,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                           isDeposit
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            ? 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]'
                             : isWithdrawal
                             ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                             : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
@@ -1047,7 +1047,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
 
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <span className={`text-xs font-black font-mono ${
-                          isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-primary)]'
+                          isDeposit ? 'text-[var(--fg-success)]' : 'text-[var(--text-primary)]'
                         }`}>
                           {isDeposit ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
                         </span>
@@ -1055,7 +1055,7 @@ export const MobileWalletView: React.FC<MobileWalletViewProps> = ({
                         <div className="flex items-center gap-1.5">
                           <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
                             tx.status === 'success'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              ? 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]'
                               : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                           }`}>
                             {tx.status}

@@ -620,7 +620,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
             <h3 className="text-sm font-black text-text-primary uppercase tracking-wide">
               {isRtl ? "خزانة مزودي معالجة الوسائط وخوادم الـ GPU (المعمارية المعزولة)" : "GPU Media Compute & Infrastructure Vault (Isolated Subsystem)"}
             </h3>
-            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-[var(--status-success-subtle)] text-[var(--fg-success)] border border-[var(--fg-success)]/20">
               Sovereign Isolated
             </span>
           </div>
@@ -787,7 +787,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
                             <span
                               className={`w-2 h-2 rounded-full ${
                                 isOnline
-                                  ? 'bg-emerald-500 animate-pulse'
+                                  ? 'bg-[var(--fg-success)] animate-pulse'
                                   : isCold
                                   ? 'bg-amber-500 animate-pulse'
                                   : 'bg-rose-500'
@@ -796,7 +796,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
                             <span
                               className={`text-[10px] font-black uppercase tracking-wider ${
                                 isOnline
-                                  ? 'text-emerald-500'
+                                  ? 'text-[var(--fg-success)]'
                                   : isCold
                                   ? 'text-amber-500'
                                   : 'text-rose-500'
@@ -837,7 +837,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
                           <span className="text-text-muted">{isRtl ? "حمل خادم الحوسبة:" : "Active Node Load:"}</span>
                           <span className={`font-black text-[10px] uppercase px-1.5 py-0.5 rounded ${
                             isOnline 
-                              ? 'bg-emerald-500/10 text-emerald-500' 
+                              ? 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]' 
                               : isCold 
                               ? 'bg-amber-500/10 text-amber-500' 
                               : 'bg-rose-500/10 text-rose-500'
@@ -1084,14 +1084,14 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
                   {jobs.map((j) => {
                     const taskColors: Record<string, string> = {
                       vision_analysis: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-                      image_gen: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+                      image_gen: 'bg-[var(--status-success-subtle)] text-[var(--fg-success)] border-[var(--fg-success)]/20',
                       video_gen: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
                       audio_gen: 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                     };
                     const statusColors = {
                       pending: 'bg-slate-500/10 text-slate-500',
                       processing: 'bg-amber-500/10 text-amber-500 animate-pulse',
-                      completed: 'bg-emerald-500/10 text-emerald-500',
+                      completed: 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]',
                       failed: 'bg-rose-500/10 text-rose-500',
                       cancelled: 'bg-gray-500/10 text-gray-500'
                     };
@@ -1851,7 +1851,7 @@ export const GpuInfrastructureView: React.FC<GpuInfrastructureViewProps> = ({
                   <span className="text-[10px] font-bold text-text-muted uppercase block mb-0.5">
                     {isRtl ? "الميزانية المخصومة" : "Estimated Cost / Quota Used"}
                   </span>
-                  <span className="font-bold text-emerald-500 font-mono">
+                  <span className="font-bold text-[var(--fg-success)] font-mono">
                     ${Number(inspectingJob.cost_charged || 0).toFixed(4)}
                   </span>
                 </div>

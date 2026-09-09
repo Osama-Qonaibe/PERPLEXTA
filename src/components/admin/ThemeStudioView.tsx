@@ -1,6 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { Palette, Save, RotateCcw, Check, Sparkles, Sliders, Moon, Sun, Layers, MessageSquare, Box, Edit3 } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Palette,
+  Save,
+  RotateCcw,
+  Moon,
+  Sun,
+  Settings,
+  Download,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from 'lucide-react';
+import {
+  useThemeStudio,
+  LiveThemePreview,
+  TokenColorPicker,
+  TokenSliderInput,
+  ThemePresetsSelector,
+  ThemeExportImportModal,
+  TokenSearchBar,
+  ThemeAuditModal,
+  TOKEN_CATEGORIES_METADATA,
+} from './theme';
 
 interface ThemeStudioViewProps {
   t: (key: string, replacements?: any) => string;
@@ -9,316 +32,273 @@ interface ThemeStudioViewProps {
   language: string;
 }
 
-const DEFAULT_LIGHT_TOKENS: Record<string, string> = {
-  "--surface-page": "#faf9f5",
-  "--surface-canvas": "#faf9f5",
-  "--surface-card": "#efe9de",
-  "--surface-raised": "#efe9de",
-  "--surface-subtle": "#f5f0e8",
-  "--surface-inset": "#ebe6df",
-  "--bg-input": "#f5f0e8",
-  "--fg-primary": "#141413",
-  "--fg-secondary": "#3d3d3a",
-  "--fg-muted": "#6c6a64",
-  "--fg-accent": "#cc785c",
-  "--bg-accent-emphasis": "#cc785c",
-  "--fg-on-emphasis": "#ffffff",
-  "--border-default": "#e6dfd8",
-  "--border-outer-input": "#d1c7bd",
-  "--border-inner-input": "#e0d6cc",
-  "--border-accent": "#cc785c",
-  "--border-focus": "#d1c7bd",
-  "--accent": "#cc785c",
-  "--accent-hover": "#a9583e",
-  "--chat-bubble-user": "#cc785c",
-  "--chat-bubble-assistant": "#efe9de",
-  "--fg-success": "#5db872",
-  "--fg-warning": "#e8a55a",
-  "--fg-danger": "#c64545",
-  "--fg-info": "#5db8a6"
-};
-
-const DEFAULT_DARK_TOKENS: Record<string, string> = {
-  "--surface-page": "#181715",
-  "--surface-canvas": "#181715",
-  "--surface-card": "#1f1e1b",
-  "--surface-raised": "#1f1e1b",
-  "--surface-subtle": "#252320",
-  "--surface-inset": "#2a2825",
-  "--bg-input": "#252320",
-  "--fg-primary": "#faf9f5",
-  "--fg-secondary": "#a09d96",
-  "--fg-muted": "#6c6a64",
-  "--fg-accent": "#d4957f",
-  "--bg-accent-emphasis": "#cc785c",
-  "--fg-on-emphasis": "#ffffff",
-  "--border-default": "rgba(250, 249, 245, 0.10)",
-  "--border-outer-input": "rgba(250, 249, 245, 0.15)",
-  "--border-inner-input": "rgba(250, 249, 245, 0.08)",
-  "--border-accent": "#d4957f",
-  "--border-focus": "rgba(250, 249, 245, 0.15)",
-  "--accent": "#cc785c",
-  "--accent-hover": "#a9583e",
-  "--chat-bubble-user": "#cc785c",
-  "--chat-bubble-assistant": "#1f1e1b",
-  "--fg-success": "#5db872",
-  "--fg-warning": "#e8a55a",
-  "--fg-danger": "#e5735f",
-  "--fg-info": "#5db8a6"
-};
-
-const TOKEN_LABELS: Record<string, { en: string; ar: string; category: string }> = {
-  "--surface-page": { en: "Page Background", ar: "خلفية الصفحة الرئيسية العامة", category: "surfaces" },
-  "--surface-card": { en: "Card & Modal Background", ar: "خلفية البطاقات والنوافذ واللوحات", category: "surfaces" },
-  "--surface-subtle": { en: "Subtle Sections Background", ar: "خلفية الأقسام الفرعية والثانوية", category: "surfaces" },
-  "--surface-inset": { en: "Inset Overlays", ar: "الطبقات الداخلية المتداخلة", category: "surfaces" },
-  "--bg-input": { en: "Input & Textarea Background", ar: "خلفية حقول الإدخال والبحث", category: "inputs" },
-  "--border-default": { en: "Default Borders & Dividers", ar: "الحدود والفواصل العادية", category: "borders" },
-  "--border-outer-input": { en: "Outer Input & Container Border", ar: "الحدود الخارجية للحقول والعناصر", category: "borders" },
-  "--border-inner-input": { en: "Inner Input & Container Border", ar: "الحدود الداخلية للحقول والعناصر", category: "borders" },
-  "--border-accent": { en: "Focus & Active Accent Border", ar: "حدود التمييز عند التركيز", category: "borders" },
-  "--border-focus": { en: "Input Focus & Active Border", ar: "حدود التركيز النشط لحقول الإدخال", category: "borders" },
-  "--bg-accent-emphasis": { en: "Button Background (Primary)", ar: "خلفية الأزرار الرئيسية والإجراءات", category: "buttons" },
-  "--fg-on-emphasis": { en: "Button Text Color", ar: "لون نص الأزرار الرئيسية", category: "buttons" },
-  "--accent": { en: "Brand Accent & Active Color", ar: "لون التمييز والهوية البصرية", category: "buttons" },
-  "--accent-hover": { en: "Button Hover State (عند التمرير)", ar: "لون الأزرار وعناصر التفاعل عند التمرير (Hover)", category: "buttons" },
-  "--chat-bubble-user": { en: "Chat Bubble (User)", ar: "فقاعة رسائل المستخدم في الدردشة", category: "chat" },
-  "--chat-bubble-assistant": { en: "Chat Bubble (Assistant)", ar: "فقاعة رسائل المساعد الذكي", category: "chat" },
-  "--fg-primary": { en: "Primary Text Color", ar: "لون النصوص الأساسية", category: "typography" },
-  "--fg-secondary": { en: "Secondary Text Color", ar: "لون النصوص الثانوية", category: "typography" },
-  "--fg-muted": { en: "Muted & Helper Text", ar: "لون النصوص الهامشية والباهتة", category: "typography" },
-  "--fg-success": { en: "Success State Color", ar: "لون العمليات الناجحة", category: "status" },
-  "--fg-warning": { en: "Warning State Color", ar: "لون التحذيرات", category: "status" },
-  "--fg-danger": { en: "Error & Danger Color", ar: "لون الأخطاء والعمليات الخطرة", category: "status" },
-  "--fg-info": { en: "Info State Color", ar: "لون المعلومات والإشعارات", category: "status" }
-};
-
-export const ThemeStudioView: React.FC<ThemeStudioViewProps> = ({ t, showToast, token, language }) => {
+export const ThemeStudioView: React.FC<ThemeStudioViewProps> = ({
+  t,
+  showToast,
+  token,
+  language,
+}) => {
+  const navigate = useNavigate();
   const isAr = language === 'ar';
-  const [activeMode, setActiveMode] = useState<'light' | 'dark'>('dark');
-  const [lightTokens, setLightTokens] = useState<Record<string, string>>(DEFAULT_LIGHT_TOKENS);
-  const [darkTokens, setDarkTokens] = useState<Record<string, string>>(DEFAULT_DARK_TOKENS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchCustomizations();
-  }, [token]);
+  const {
+    activeMode,
+    setActiveMode,
+    lightTokens,
+    darkTokens,
+    currentTokens,
+    currentDefaultTokens,
+    loading,
+    saving,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    activePresetId,
+    filteredDefinitions,
+    handleTokenChange,
+    handleSelectPreset,
+    handleImportTokens,
+    handleSave,
+    handleReset,
+  } = useThemeStudio(token, showToast, language);
 
-  const fetchCustomizations = async () => {
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await fetch('/api/admin/theme-customizations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.customizations) {
-          if (data.customizations.light && Object.keys(data.customizations.light).length > 0) {
-            setLightTokens(prev => ({ ...prev, ...data.customizations.light }));
-          }
-          if (data.customizations.dark && Object.keys(data.customizations.dark).length > 0) {
-            setDarkTokens(prev => ({ ...prev, ...data.customizations.dark }));
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch theme customizations:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTokenChange = (mode: 'light' | 'dark', key: string, value: string) => {
-    if (mode === 'light') {
-      setLightTokens(prev => ({ ...prev, [key]: value }));
-    } else {
-      setDarkTokens(prev => ({ ...prev, [key]: value }));
-    }
-  };
-
-  const handleSave = async (modeToSave?: 'light' | 'dark') => {
-    if (!token) return;
-    try {
-      setSaving(true);
-      const modes = modeToSave ? [modeToSave] : ['light', 'dark'] as const;
-      
-      for (const mode of modes) {
-        const tokens = mode === 'light' ? lightTokens : darkTokens;
-        const res = await fetch('/api/admin/theme-customizations', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ theme_mode: mode, tokens })
-        });
-        if (!res.ok) throw new Error(`Failed to save ${mode} theme`);
-      }
-
-      showToast(isAr ? 'تم حفظ وتطبيق الحدود الخارجية والداخلية وألوان التمرير (Hover) بنجاح في قاعدة البيانات!' : 'Outer/inner borders and hover states saved and applied strictly!', 'success');
-      
-      // Trigger theme re-application immediately
-      window.dispatchEvent(new Event('perplexta_theme_updated'));
-    } catch (err: any) {
-      showToast(err.message || (isAr ? 'فشل حفظ تخصيصات المظهر' : 'Failed to save theme'), 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleReset = async (mode: 'light' | 'dark') => {
-    if (mode === 'light') {
-      setLightTokens(DEFAULT_LIGHT_TOKENS);
-    } else {
-      setDarkTokens(DEFAULT_DARK_TOKENS);
-    }
-    showToast(isAr ? `تمت استعادة وحفظ القيم الافتراضية للوضع ${mode === 'light' ? 'الفاتح' : 'الداكن'}` : `Reset and saved ${mode} theme to defaults`, 'success');
-    await handleSave(mode);
-  };
-
-  const currentTokens = activeMode === 'light' ? lightTokens : darkTokens;
-
-  const categories = [
-    { id: 'surfaces', nameAr: 'خلفيات البطاقات والصفحات (Surfaces & Cards)', nameEn: 'Surfaces & Cards' },
-    { id: 'inputs', nameAr: 'حقول الإدخال والبحث (Inputs & Textareas)', nameEn: 'Inputs & Forms' },
-    { id: 'borders', nameAr: 'الحدود الخارجية والداخلية والفواصل (Outer & Inner Borders)', nameEn: 'Outer & Inner Borders' },
-    { id: 'buttons', nameAr: 'الأزرار وألوان التمرير عند التحويم (Buttons & Hover States)', nameEn: 'Buttons & Hover States' },
-    { id: 'chat', nameAr: 'صفحة الدردشة والرسائل (Chat & Bubbles)', nameEn: 'Chat & Bubbles' },
-    { id: 'typography', nameAr: 'الخطوط والنصوص (Typography)', nameEn: 'Typography' },
-    { id: 'status', nameAr: 'حالات النظام والنجاح (Status & Alerts)', nameEn: 'Status & Alerts' },
-  ];
+  const [showExportImportModal, setShowExportImportModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(true);
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--surface-card)] border border-[var(--border-main)] p-6 rounded-[var(--radius-lg)] shadow-sm">
+    <div className="space-y-6 pb-16" dir={isAr ? 'rtl' : 'ltr'}>
+      {/* Top Sovereign Command Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[var(--surface-card)] border border-[var(--border-main)] p-6 rounded-[var(--radius-lg)] shadow-sm">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <Palette className="text-accent" size={24} />
-            <h2 className="text-xl font-bold text-[var(--text-primary)]">
-              {isAr ? 'استوديو التحكم المتقدم بالحدود والأزرار والتمرير (Advanced Theme Studio)' : 'Advanced Borders, Buttons & Hover Studio'}
-            </h2>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <div className="w-9 h-9 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] flex items-center justify-center shadow-sm">
+              <Palette size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                {isAr
+                  ? 'استوديو حوكمة نظام التصميم والمظهر (Perplexta Design System & Theme Governance)'
+                  : 'Perplexta Sovereign Design System & Theme Studio'}
+              </h2>
+              <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                ENGINE V2.0 • GRANULAR TOKENS • WCAG COMPLIANT
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-[var(--text-secondary)]">
+          <p className="text-xs text-[var(--text-secondary)] max-w-3xl leading-relaxed">
             {isAr
-              ? 'تحكم منفصل للحدود الخارجية والداخلية للحقول والبطاقات، وتخصيص ألوان الأزرار عند التمرير (Hover)، مع حفظ صارم في قاعدة البيانات.'
-              : 'Separate control for outer and inner borders, button hover states, and sovereign database persistence.'}
+              ? 'التحكم المركزي التام في كافة رموز التصميم (Tokens)، الألوان، الخطوط، حدود العناصر، والانحناءات مع معاينة حية فورية ومزامنة سيادية مع قاعدة البيانات.'
+              : 'Absolute sovereign governance over all color tokens, typography scales, interactive states, and elevation geometry with zero-latency live sandbox preview.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Global Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => handleReset(activeMode)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-all font-bold text-sm"
+            type="button"
+            onClick={() => navigate('/admin/settings')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-all font-bold text-xs cursor-pointer"
+            title={isAr ? 'العودة لإعدادات النظام' : 'Return to Settings'}
           >
-            <RotateCcw size={16} />
-            {isAr ? 'استعادة الافتراضي' : 'Reset Defaults'}
+            <Settings size={14} />
+            <span>{isAr ? 'الإعدادات' : 'Settings'}</span>
           </button>
-          
+
           <button
+            type="button"
+            onClick={() => setShowLivePreview(!showLivePreview)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-md)] border text-xs font-bold transition-all cursor-pointer ${
+              showLivePreview
+                ? 'border-accent text-accent bg-accent/10'
+                : 'border-[var(--border-main)] bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {showLivePreview ? <Eye size={14} /> : <EyeOff size={14} />}
+            <span>{isAr ? 'المعاينة الحية' : 'Live Preview'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowAuditModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-md)] border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
+          >
+            <ShieldCheck size={14} />
+            <span>{isAr ? 'فحص الامتثال (Audit)' : 'Governance Audit'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowExportImportModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-inset)] text-xs font-bold transition-all cursor-pointer"
+          >
+            <Download size={14} />
+            <span>{isAr ? 'تصدير / استيراد' : 'Import / Export'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleReset(activeMode)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-[var(--radius-md)] border border-[var(--border-main)] bg-[var(--surface-subtle)] text-[var(--text-primary)] hover:bg-[var(--surface-inset)] text-xs font-bold transition-all cursor-pointer"
+          >
+            <RotateCcw size={14} />
+            <span>{isAr ? 'استعادة الافتراضي' : 'Reset'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleSave()}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all font-bold text-sm shadow-md disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-all font-bold text-xs shadow-md disabled:opacity-50 cursor-pointer"
           >
-            {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
-            {isAr ? 'حفظ وتطبيق فوري على الموقع' : 'Save & Apply Globally'}
+            {saving ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Save size={14} />
+            )}
+            <span>{isAr ? 'تعميم وحفظ دائم' : 'Commit & Deploy'}</span>
           </button>
         </div>
       </div>
 
+      {/* Curated Theme Presets Selector */}
+      <ThemePresetsSelector
+        onSelectPreset={handleSelectPreset}
+        activePresetId={activePresetId}
+        language={language}
+      />
+
       {/* Mode Switcher Tabs */}
-      <div className="flex items-center gap-2 bg-[var(--surface-subtle)] p-1.5 rounded-[var(--radius-md)] w-fit border border-[var(--border-main)]">
-        <button
-          onClick={() => setActiveMode('dark')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] font-bold text-sm transition-all ${
-            activeMode === 'dark'
-              ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-accent)]'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Moon size={16} className="text-accent" />
-          {isAr ? 'وضع الثيم الداكن (Dark Theme)' : 'Dark Theme Tokens'}
-        </button>
-        <button
-          onClick={() => setActiveMode('light')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] font-bold text-sm transition-all ${
-            activeMode === 'light'
-              ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-accent)]'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          <Sun size={16} className="text-amber-500" />
-          {isAr ? 'وضع الثيم الفاتح (Light Theme)' : 'Light Theme Tokens'}
-        </button>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2 bg-[var(--surface-subtle)] p-1.5 rounded-[var(--radius-md)] border border-[var(--border-main)]">
+          <button
+            type="button"
+            onClick={() => setActiveMode('dark')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] font-bold text-xs transition-all cursor-pointer ${
+              activeMode === 'dark'
+                ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-accent)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Moon size={15} className="text-accent" />
+            <span>{isAr ? 'الوضع الداكن (Dark Palette)' : 'Dark Palette'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode('light')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] font-bold text-xs transition-all cursor-pointer ${
+              activeMode === 'light'
+                ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-accent)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Sun size={15} className="text-amber-500" />
+            <span>{isAr ? 'الوضع الفاتح (Light Palette)' : 'Light Palette'}</span>
+          </button>
+        </div>
+
+        <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+          <Sparkles size={14} className="text-accent" />
+          <span>
+            {isAr
+              ? 'التعديلات تُطبق لحظياً على واجهة الموقع للمعاينة الحية'
+              : 'Live real-time token injection active in viewport'}
+          </span>
+        </div>
       </div>
 
-      {/* Categories & Token Grid */}
+      {/* Interactive Sandbox Preview (Collapsible) */}
+      {showLivePreview && (
+        <LiveThemePreview
+          tokens={currentTokens}
+          mode={activeMode}
+          language={language}
+        />
+      )}
+
+      {/* Token Search & Category Filter */}
+      <TokenSearchBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        totalTokensCount={currentTokens ? Object.keys(currentTokens).length : 0}
+        filteredCount={filteredDefinitions.length}
+        language={language}
+      />
+
+      {/* Token Cards Grid */}
       {loading ? (
-        <div className="p-12 text-center text-[var(--text-muted)]">
-          {isAr ? 'جاري تحميل تخصيصات المظهر من قاعدة البيانات...' : 'Loading theme customizations...'}
+        <div className="p-16 text-center text-[var(--text-muted)] bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[var(--radius-lg)]">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-semibold">
+            {isAr ? 'جاري تحميل رموز ومصفوفة التصميم...' : 'Resolving design tokens from core registry...'}
+          </p>
+        </div>
+      ) : filteredDefinitions.length === 0 ? (
+        <div className="p-12 text-center text-[var(--text-muted)] bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[var(--radius-lg)]">
+          <p className="text-xs">
+            {isAr
+              ? 'لم يتم العثور على أي رمز يطابق كلمة البحث.'
+              : 'No tokens matched your search query or category filter.'}
+          </p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {categories.map(cat => {
-            const catTokens = Object.keys(TOKEN_LABELS).filter(k => TOKEN_LABELS[k].category === cat.id);
-            if (catTokens.length === 0) return null;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredDefinitions.map((def) => {
+            const val = currentTokens[def.key] ?? '';
+            const defVal = currentDefaultTokens[def.key] ?? '';
+
+            if (def.type === 'size' || (def.options && def.options.length > 0)) {
+              return (
+                <TokenSliderInput
+                  key={def.key}
+                  definition={def}
+                  value={val}
+                  defaultValue={defVal}
+                  onChange={(newVal) => handleTokenChange(activeMode, def.key, newVal)}
+                  language={language}
+                  showToast={showToast}
+                />
+              );
+            }
 
             return (
-              <div key={cat.id} className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[var(--radius-lg)] p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--border-main)]">
-                  <Sliders size={18} className="text-accent" />
-                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                    {isAr ? cat.nameAr : cat.nameEn}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {catTokens.map(tokenKey => {
-                    const labelInfo = TOKEN_LABELS[tokenKey] || { en: tokenKey, ar: tokenKey };
-                    const val = currentTokens[tokenKey] || '';
-
-                    return (
-                      <div key={tokenKey} className="bg-[var(--surface-subtle)] border border-[var(--border-main)] rounded-[var(--radius-md)] p-4 flex flex-col justify-between gap-3">
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="font-bold text-sm text-[var(--text-primary)]">
-                              {isAr ? labelInfo.ar : labelInfo.en}
-                            </span>
-                            <span className="text-[11px] font-mono bg-[var(--surface-inset)] text-[var(--text-muted)] px-1.5 py-0.5 rounded">
-                              {tokenKey}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-[var(--radius-sm)] overflow-hidden border border-[var(--border-main)] shadow-sm shrink-0">
-                            <input
-                              type="color"
-                              value={val.startsWith('#') ? val : '#181715'}
-                              onChange={(e) => handleTokenChange(activeMode, tokenKey, e.target.value)}
-                              className="absolute -inset-2 w-16 h-16 cursor-pointer border-0 p-0"
-                            />
-                          </div>
-
-                          <input
-                            type="text"
-                            value={val}
-                            onChange={(e) => handleTokenChange(activeMode, tokenKey, e.target.value)}
-                            placeholder="#000000 or rgba(...)"
-                            className="w-full bg-[var(--surface-page)] border border-[var(--border-main)] text-[var(--text-primary)] px-3 py-2 rounded-[var(--radius-sm)] text-xs font-mono focus:outline-none focus:border-accent"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <TokenColorPicker
+                key={def.key}
+                definition={def}
+                value={val}
+                defaultValue={defVal}
+                onChange={(newVal) => handleTokenChange(activeMode, def.key, newVal)}
+                language={language}
+                showToast={showToast}
+              />
             );
           })}
         </div>
       )}
+
+      {/* Export / Import Modal */}
+      <ThemeExportImportModal
+        isOpen={showExportImportModal}
+        onClose={() => setShowExportImportModal(false)}
+        lightTokens={lightTokens}
+        darkTokens={darkTokens}
+        activeMode={activeMode}
+        onImportTokens={handleImportTokens}
+        language={language}
+        showToast={showToast}
+      />
+
+      {/* Design System Governance Audit Modal */}
+      <ThemeAuditModal
+        isOpen={showAuditModal}
+        onClose={() => setShowAuditModal(false)}
+        lightTokens={lightTokens}
+        darkTokens={darkTokens}
+        language={language}
+      />
     </div>
   );
 };

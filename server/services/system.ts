@@ -5,6 +5,7 @@ import { decrypt } from '../utils/crypto.js';
 import { getEconomySettings, updateEconomySettings } from './wallet.js';
 import { getCachedSystemSettings, invalidateSystemSettingsCache } from '../db/queries.js';
 import { normalizeMediaUrl } from './mediaOptimizationService.js';
+import { generateAppIconsFromSource } from './systemAssetManager.js';
 
 export { getEconomySettings, updateEconomySettings };
 
@@ -225,6 +226,9 @@ export async function updateSystemSettings(settings: any) {
   await clearSettingsCache();
   await refreshCachedAppName();
   await ensurePersistentSystemAssets({ logo_url, logo_light_url, favicon_url, seo_image_url });
+  generateAppIconsFromSource(logo_url || favicon_url, { force: true }).catch((err) => {
+    console.warn('[System] Auto-generation of PWA icons non-blocking warning:', err.message);
+  });
   return { success: true };
 }
 
@@ -389,6 +393,9 @@ export async function repairSystemAssetsDiagnostic() {
 
   await clearSettingsCache();
   await refreshCachedAppName();
+  await generateAppIconsFromSource(null, { force: true }).catch((err) => {
+    console.warn('[AssetRepair] Regenerating icon suite warning:', err.message);
+  });
   const diagnosticAfter = await checkSystemAssetsDiagnostic();
 
   return {

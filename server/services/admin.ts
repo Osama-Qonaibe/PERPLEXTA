@@ -2,6 +2,7 @@ import { pool, ledgerPool, externalPool, securityPool, createInternalPool, synch
 import { decrypt, encrypt } from '../utils/crypto.js';
 import { runDatabaseMigrations } from '../db/migrations.js';
 import { tools } from '../config/constants.js';
+import { memoryCache } from '../utils/cache.js';
 import os from 'os';
 
 export const CORE_TABLES = [
@@ -426,95 +427,81 @@ export async function initAllTools() {
 }
 
 export async function getAdminStats() {
-  const safeQuery = async (pool: any, sql: string, fallback: any = 0) => {
-    try {
-      const r = await pool.query(sql);
-      return r.rows[0];
-    } catch {
-      return { count: fallback, total: fallback };
-    }
-  };
+  return memoryCache.getOrSet('admin:stats', async () => {
+    const safeQuery = async (p: any, sql: string, fallback: any = 0) => {
+      try {
+        const r = await p.query(sql);
+        return r.rows[0];
+      } catch {
+        return { count: fallback, total: fallback };
+      }
+    };
 
-  const [userCount, chatCount, msgCount, activeSubCount, totalRev, dailyVolume, activeToday] = await Promise.all([
-    safeQuery(pool, 'SELECT count(*) FROM users'),
-    safeQuery(pool, 'SELECT count(*) FROM chats'),
-    safeQuery(pool, 'SELECT count(*) FROM messages'),
-    safeQuery(pool, "SELECT count(*) FROM subscriptions WHERE status = 'active'"),
-    safeQuery(ledgerPool, "SELECT sum(amount) as total FROM ledger_transactions WHERE transaction_type IN ('deposit', 'subscription_payment') AND status = 'success'"),
-    safeQuery(ledgerPool, "SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '24 hours'"),
-    safeQuery(pool, "SELECT count(*) FROM users WHERE last_active_at > now() - interval '24 hours'")
-  ]);
+    const [userCount, chatCount, msgCount, activeSubCount, totalRev, dailyVolume, activeToday] = await Promise.all([
+      safeQuery(pool, 'SELECT count(*) FROM users'),
+      safeQuery(pool, 'SELECT count(*) FROM chats'),
+      safeQuery(pool, 'SELECT count(*) FROM messages'),
+      safeQuery(pool, "SELECT count(*) FROM subscriptions WHERE status = 'active'"),
+      safeQuery(ledgerPool || pool, "SELECT sum(amount) as total FROM ledger_transactions WHERE transaction_type IN ('deposit', 'subscription_payment') AND status = 'success'"),
+      safeQuery(ledgerPool || pool, "SELECT sum(amount) as total FROM ledger_transactions WHERE created_at > now() - interval '24 hours'"),
+      safeQuery(pool, "SELECT count(*) FROM users WHERE last_active_at > now() - interval '24 hours'")
+    ]);
 
-  return {
-    users: parseInt(userCount.count || 0),
-    activeUsersToday: parseInt(activeToday.count || 0),
-    chats: parseInt(chatCount.count || 0),
-    aiGenerations: parseInt(msgCount.count || 0),
-    activeSubscriptions: parseInt(activeSubCount.count || 0),
-    monthlyRevenue: parseFloat(totalRev.total || 0),
-    dailyVolume: parseFloat(dailyVolume.total || 0),
-    systemHealth: 'optimal',
-    uptime: process.uptime()
-  };
+    return {
+      users: parseInt(userCount.count || 0),
+      activeUsersToday: parseInt(activeToday.count || 0),
+      chats: parseInt(chatCount.count || 0),
+      aiGenerations: parseInt(msgCount.count || 0),
+      activeSubscriptions: parseInt(activeSubCount.count || 0),
+      monthlyRevenue: parseFloat(totalRev.total || 0),
+      dailyVolume: parseFloat(dailyVolume.total || 0),
+      systemHealth: 'optimal',
+      uptime: process.uptime()
+    };
+  }, 10000); // 10 seconds cache
 }
 
 export async function getServerHealth() {
-  const cpus = os.cpus();
-  const memory = process.memoryUsage();
-  const load = os.loadavg();
-  const cpuCount = cpus.length;
-  const cpuLoad = Math.min(100, Math.round((load[0] / cpuCount) * 100));
+  return memoryCache.getOrSet('admin:server_health', async () => {
+    const cpus = os.cpus();
+    const memory = process.memoryUsage();
+    const load = os.loadavg();
+    const cpuCount = cpus.length;
+    const cpuLoad = Math.min(100, Math.round((load[0] / cpuCount) * 100));
 
-  const dbStatus: any = {};
+    const checkPool = async (targetPool: any, name: string) => {
+      const start = Date.now();
+      try {
+        await (targetPool || pool).query('SELECT 1');
+        const metrics = getPoolMetrics(targetPool || pool, name);
+        return [name, { status: 'connected', latencyMs: Date.now() - start, ...metrics }];
+      } catch (err: any) {
+        return [name, { status: 'disconnected', error: err.message, ...getPoolMetrics(targetPool || pool, name) }];
+      }
+    };
 
-  try {
-    const start = Date.now();
-    await pool.query('SELECT 1');
-    const metrics = getPoolMetrics(pool, 'core');
-    dbStatus.core = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
-  } catch (err: any) {
-    dbStatus.core = { status: 'disconnected', error: err.message, ...getPoolMetrics(pool, 'core') };
-  }
+    const poolResults = await Promise.all([
+      checkPool(pool, 'core'),
+      checkPool(ledgerPool, 'ledger'),
+      checkPool(externalPool, 'external'),
+      checkPool(securityPool, 'security')
+    ]);
 
-  try {
-    const start = Date.now();
-    await (ledgerPool || pool).query('SELECT 1');
-    const metrics = getPoolMetrics(ledgerPool || pool, 'ledger');
-    dbStatus.ledger = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
-  } catch (err: any) {
-    dbStatus.ledger = { status: 'disconnected', error: err.message, ...getPoolMetrics(ledgerPool || pool, 'ledger') };
-  }
+    const dbStatus = Object.fromEntries(poolResults);
 
-  try {
-    const start = Date.now();
-    await (externalPool || pool).query('SELECT 1');
-    const metrics = getPoolMetrics(externalPool || pool, 'external');
-    dbStatus.external = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
-  } catch (err: any) {
-    dbStatus.external = { status: 'disconnected', error: err.message, ...getPoolMetrics(externalPool || pool, 'external') };
-  }
-
-  try {
-    const start = Date.now();
-    await (securityPool || pool).query('SELECT 1');
-    const metrics = getPoolMetrics(securityPool || pool, 'security');
-    dbStatus.security = { status: 'connected', latencyMs: Date.now() - start, ...metrics };
-  } catch (err: any) {
-    dbStatus.security = { status: 'disconnected', error: err.message, ...getPoolMetrics(securityPool || pool, 'security') };
-  }
-
-  return {
-    cpu: cpuLoad,
-    memory: {
-      used: Math.round(memory.heapUsed / 1024 / 1024),
-      total: Math.round(memory.heapTotal / 1024 / 1024),
-      percent: Math.round((memory.heapUsed / memory.heapTotal) * 100)
-    },
-    uptime: process.uptime(),
-    platform: os.platform(),
-    load,
-    databases: dbStatus
-  };
+    return {
+      cpu: cpuLoad,
+      memory: {
+        used: Math.round(memory.heapUsed / 1024 / 1024),
+        total: Math.round(memory.heapTotal / 1024 / 1024),
+        percent: Math.round((memory.heapUsed / memory.heapTotal) * 100)
+      },
+      uptime: process.uptime(),
+      platform: os.platform(),
+      load,
+      databases: dbStatus
+    };
+  }, 4000); // 4 seconds cache
 }
 
 export async function broadcastAdminStats() {

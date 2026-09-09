@@ -361,7 +361,8 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
   }
 
   const healthScore = summary?.overall_seo_health_score ?? 100;
-  const healthColor = healthScore >= 85 ? "emerald" : healthScore >= 60 ? "amber" : "rose";
+  const healthBadgeClass = healthScore >= 85 ? "bg-[var(--status-success-subtle)] text-[var(--fg-success)]" : healthScore >= 60 ? "bg-amber-500/20 text-amber-500" : "bg-rose-500/20 text-rose-500";
+  const healthTextClass = healthScore >= 85 ? "text-[var(--fg-success)]" : healthScore >= 60 ? "text-amber-500" : "text-rose-500";
 
   return (
     <div className="space-y-6">
@@ -383,7 +384,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             </h2>
             <p className="text-sm text-[var(--text-muted)] mt-1 max-w-2xl leading-relaxed">
               {isAr
-                ? "أداة متخصصة لفحص منشورات وإعلانات فايرال بوك، واكتشاف الحقول الناقصة، وتوليد ميتاداتا ذكية عالية التأثير متوافقة مع محركات البحث جوجل ووسائط التواصل."
+                ? "أداة متخصصة لفحص منشورات وإعلانات فيرال بوك، واكتشاف الحقول الناقصة، وتوليد ميتاداتا ذكية عالية التأثير متوافقة مع محركات البحث جوجل ووسائط التواصل."
                 : "Rigorously audit Viralbook posts and bulletin listings, detect incomplete meta fields, and populate search-engine optimized metadata automatically using Gemini AI."}
             </p>
           </div>
@@ -430,7 +431,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
               {isAr ? "عناصر تتطلب استكمال الميتاداتا" : "Requires Metadata Population"}
             </span>
             <div className={`p-2 rounded-md ${
-              (summary?.items_missing_metadata || 0) > 0 ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'
+              (summary?.items_missing_metadata || 0) > 0 ? 'bg-amber-500/20 text-amber-500' : 'bg-[var(--status-success-subtle)] text-[var(--fg-success)]'
             }`}>
               <AlertTriangle size={18} />
             </div>
@@ -456,12 +457,12 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             <span className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
               {isAr ? "معدل صحة جودة السيو" : "SEO Health Score"}
             </span>
-            <div className={`p-2 rounded-md bg-${healthColor}-500/20 text-${healthColor}-500`}>
+            <div className={`p-2 rounded-md ${healthBadgeClass}`}>
               <TrendingUp size={18} />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-black font-mono text-${healthColor}-500`}>
+            <span className={`text-3xl font-black font-mono ${healthTextClass}`}>
               {healthScore}%
             </span>
           </div>
@@ -590,8 +591,8 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             onClick={() => setFilterCategory('optimized')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-theme flex items-center gap-1.5 ${
               filterCategory === 'optimized'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'bg-[var(--bg-base)] text-emerald-500 hover:bg-emerald-500/10 border border-emerald-500/30'
+                ? 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] shadow-md'
+                : 'bg-[var(--bg-base)] text-[var(--fg-success)] hover:bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/30'
             }`}
           >
             <ShieldCheck size={14} />
@@ -606,7 +607,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             }`}
           >
             <Tag size={14} />
-            <span>{isAr ? "منشورات وإعلانات فايرال بوك" : "Viralbook Posts & Ads"}</span>
+            <span>{isAr ? "منشورات وإعلانات فيرال بوك" : "Viralbook Posts & Ads"}</span>
           </button>
         </div>
 
@@ -702,7 +703,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                               {item.seo_score} / 100
                             </span>
                             <span className={`text-[10px] font-bold ${
-                              item.seo_score >= 85 ? 'text-emerald-500' : item.seo_score >= 60 ? 'text-amber-500' : 'text-rose-500'
+                              item.seo_score >= 85 ? 'text-[var(--fg-success)]' : item.seo_score >= 60 ? 'text-amber-500' : 'text-rose-500'
                             }`}>
                               {item.seo_score}%
                             </span>
@@ -710,7 +711,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                           <div className="w-full bg-[var(--bg-base)] h-1.5 rounded-[4px] overflow-hidden border border-[var(--border)]">
                             <div
                               className={`h-full ${
-                                item.seo_score >= 85 ? 'bg-emerald-500' : item.seo_score >= 60 ? 'bg-amber-500' : 'bg-rose-500'
+                                item.seo_score >= 85 ? 'bg-[var(--fg-success)]' : item.seo_score >= 60 ? 'bg-amber-500' : 'bg-rose-500'
                               }`}
                               style={{ width: `${item.seo_score}%` }}
                             />
@@ -722,7 +723,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {item.missing_fields.length === 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--status-success-subtle)] text-[var(--fg-success)]">
                               <CheckCircle2 size={12} />
                               {isAr ? "مكتمل بالكامل" : "Fully Optimized"}
                             </span>
@@ -799,7 +800,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
             <div className="flex items-start justify-between pb-4 border-b border-[var(--border)]">
               <div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent border border-accent/20">
-                  {isAr ? "منشور / إعلان فايرال بوك" : "Viralbook Post / Ad"}
+                  {isAr ? "منشور / إعلان فيرال بوك" : "Viralbook Post / Ad"}
                 </span>
                 <h3 className="text-xl font-black text-[var(--text-primary)] mt-1">
                   {isAr ? (selectedItem.title_ar || selectedItem.title_en) : (selectedItem.title_en || selectedItem.title_ar)}
@@ -833,7 +834,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                       ⚠️ {isAr ? "يتطلب استكمال البيانات" : "Requires Metadata"}
                     </span>
                   ) : (
-                    <span className="px-3 py-1 rounded-[4px] text-xs font-bold bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
+                    <span className="px-3 py-1 rounded-[4px] text-xs font-bold bg-[var(--status-success-subtle)] text-[var(--fg-success)] border border-[var(--fg-success)]/30">
                       ✅ {isAr ? "مكتمل ومؤرشف بنجاح" : "Fully Optimized"}
                     </span>
                   )}
@@ -923,7 +924,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                       {isAr ? "اقتراح ذكي بالذكاء الاصطناعي" : "AI Smart Suggest"}
                     </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border)]">
-                      {isAr ? "منشور / إعلان فايرال بوك" : "Viralbook Post / Ad"}
+                      {isAr ? "منشور / إعلان فيرال بوك" : "Viralbook Post / Ad"}
                     </span>
                   </div>
                   <h3 className="text-lg font-black text-[var(--text-primary)] mt-1">
@@ -1015,7 +1016,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                         {isAr ? "وصف SEO المقترح (إنكليزي)" : "Meta Description Suggested (EN)"}
                       </label>
                       <span className={`text-[10px] font-mono font-bold ${
-                        suggestMetaDescEn.length >= 120 && suggestMetaDescEn.length <= 160 ? 'text-emerald-500' : 'text-amber-500'
+                        suggestMetaDescEn.length >= 120 && suggestMetaDescEn.length <= 160 ? 'text-[var(--fg-success)]' : 'text-amber-500'
                       }`}>
                         {suggestMetaDescEn.length} / 155 {isAr ? "حرف (مستحسن 130-155)" : "chars (recommended 130-155)"}
                       </span>
@@ -1041,7 +1042,7 @@ export const SeoCenterView: React.FC<SeoCenterViewProps> = ({
                         {isAr ? "وصف SEO المقترح (عربي)" : "Meta Description Suggested (AR)"}
                       </label>
                       <span className={`text-[10px] font-mono font-bold ${
-                        suggestMetaDescAr.length >= 120 && suggestMetaDescAr.length <= 160 ? 'text-emerald-500' : 'text-amber-500'
+                        suggestMetaDescAr.length >= 120 && suggestMetaDescAr.length <= 160 ? 'text-[var(--fg-success)]' : 'text-amber-500'
                       }`}>
                         {suggestMetaDescAr.length} / 155 {isAr ? "حرف (مستحسن 130-155)" : "chars (recommended 130-155)"}
                       </span>

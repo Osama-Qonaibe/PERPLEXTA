@@ -275,7 +275,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
 
   if (user) {
     rawNavItems.push({
-      icon: <Sparkles size={18} className="text-accent" />,
+      icon: <Sparkles size={18} />,
       label: language === 'ar' ? 'اكتشف' : 'Discover',
       path: '/discover'
     });
@@ -329,7 +329,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           width: isSidebarOpen ? 180 : 50
         }}
         transition={sidebarSpring}
-        className={`fixed z-[150] select-none bg-[var(--bg-base)] transition-theme flex flex-col top-[calc(56px+env(safe-area-inset-top,0px)+6px)] bottom-0 pb-safe start-0 max-h-[calc(100dvh-(56px+env(safe-area-inset-top,0px)+6px))] border-[var(--border-main)] ${
+        className={`fixed z-[150] select-none bg-[var(--bg-base)] transition-theme flex flex-col top-[calc(50px+env(safe-area-inset-top,0px))] lg:top-[calc(56px+env(safe-area-inset-top,0px))] bottom-0 pb-safe start-0 max-h-[calc(100dvh-(50px+env(safe-area-inset-top,0px)))] lg:max-h-[calc(100dvh-(56px+env(safe-area-inset-top,0px)))] border-[var(--border-main)] ${
           dir === 'rtl' ? 'border-l' : 'border-r'
         } pointer-events-auto visible`}
         style={{ 
@@ -340,7 +340,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
           backfaceVisibility: 'visible',
           [dir === 'rtl' ? 'right' : 'left']: 0,
           [dir === 'rtl' ? 'left' : 'right']: 'auto',
-          maxHeight: 'calc(100dvh - (56px + env(safe-area-inset-top, 0px) + 6px))' 
+          maxHeight: 'calc(100dvh - (56px + env(safe-area-inset-top, 0px)))' 
         }}
       >
         <div className="w-full h-full overflow-hidden relative flex flex-col items-stretch px-0">
@@ -372,11 +372,11 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                           className={`${(item as any).className || 'flex'} items-center transition-theme w-full h-[34px] overflow-hidden flex-shrink-0 group`}
                           style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                         >
-                          <div className="w-7 h-full flex-shrink-0 flex items-center justify-center relative">
-                            <div className={`absolute inset-0 mx-auto w-7 h-7 rounded-[var(--radius-xs)] border border-transparent transition-theme ${
+                          <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center relative">
+                            <div className={`absolute inset-0 m-auto w-7 h-7 rounded-[var(--radius-xs)] border border-transparent transition-theme ${
                               active ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/30' : 'group-hover:bg-[var(--surface-subtle)]'
                             }`} />
-                            <div className={`relative z-10 transition-theme ${
+                            <div className={`relative z-10 flex items-center justify-center transition-theme ${
                               active 
                                 ? 'text-[var(--fg-accent)]' 
                                 : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
@@ -414,12 +414,12 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                   <div className="mt-2 py-1 border-t border-[var(--border-main)] transition-theme">
                     <button 
                       onClick={handleNewChat}
-                      className="flex items-center transition-theme w-full h-[34px] overflow-hidden flex-shrink-0 group"
+                      className="flex items-center transition-theme w-full h-[34px] overflow-hidden flex-shrink-0 group cursor-pointer"
                       style={{ paddingInlineStart: '11px', paddingInlineEnd: '8px' }}
                     >
                       <div className="w-7 h-full flex-shrink-0 flex items-center justify-center relative translate-y-0">
-                        <div className="absolute inset-0 m-auto w-7 h-7 rounded-[var(--radius-xs)] border border-transparent transition-theme bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/20 group-hover:bg-[var(--bg-accent-emphasis)]/20" />
-                        <Plus size={16} className="relative z-10 transition-theme text-[var(--fg-accent)]" />
+                        <div className="absolute inset-0 m-auto w-7 h-7 rounded-[var(--radius-xs)] border border-transparent transition-theme group-hover:bg-[var(--surface-subtle)]" />
+                        <Plus size={15} className="relative z-10 transition-theme text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]" />
                       </div>
                       <AnimatePresence initial={false}>
                         {isSidebarOpen && (
@@ -431,7 +431,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                               duration: isSidebarOpen ? 0.35 : 0.08,
                               ease: [0.2, 0, 0, 1]
                             }}
-                            className={`font-black text-[12px] text-accent whitespace-nowrap overflow-hidden ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
+                            className={`font-bold text-[12px] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] whitespace-nowrap overflow-hidden transition-theme ${dir === 'rtl' ? 'mr-1.5' : 'ml-1.5'}`}
                             style={{ display: 'inline-block' }}
                           >
                             {t('newChat')}
@@ -848,7 +848,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     >
                       <div className="flex items-center h-full overflow-hidden w-full relative text-[var(--text-primary)]">
                         <div className="w-7 h-[36px] flex-shrink-0 flex items-center justify-center relative">
-                          <div className="absolute inset-0 mx-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]" />
+                          <div className="absolute inset-0 m-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--bg-hover)] group-hover:border-[var(--border-main)]" />
                           <div 
                             className="w-7 h-7 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 overflow-hidden border-2 transition-theme relative z-10 group-hover:border-[var(--border-accent)] shadow-sm group-hover:scale-105"
                             style={{ 
@@ -911,7 +911,7 @@ export const Sidebar: React.FC<{ activeLanguage?: string }> = ({ activeLanguage 
                     }}
                   >
                     <div className="w-7 h-[36px] flex-shrink-0 flex items-center justify-center relative">
-                      <div className="absolute inset-0 mx-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]" />
+                      <div className="absolute inset-0 m-auto w-7 h-7 rounded-[4px] transition-theme group-hover:bg-[var(--surface-inset)]" />
                       <div className="w-7 h-7 rounded-[4px] bg-[var(--bg-surface)] flex items-center justify-center flex-shrink-0 relative z-10 transition-theme border border-transparent group-hover:border-[var(--border-accent)]">
                         <User size={15} className="text-gray-400 group-hover:text-[var(--text-primary)] transition-theme" />
                       </div>

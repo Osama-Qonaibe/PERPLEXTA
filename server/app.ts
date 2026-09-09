@@ -19,6 +19,7 @@ import { pool, ledgerPool, externalPool, securityPool, getDatabasePool, getExter
 import QueryStream from 'pg-query-stream';
 import { UserFile, DepositRequest, ToolOrchestrator } from './db/types.js';
 import { getCachedRouteSeo, getCachedAllActiveRouteSeo, getCachedRouteSeoMetadata, getCachedSeoMetadata, upsertSeoMetadata, getAllSeoMetadata, getCachedOgPreview } from './db/queries.js';
+import { getSystemAssetBuffer } from './services/systemAssetManager.js';
 
 const app = express();
 
@@ -570,24 +571,8 @@ app.get(['/manifest.json', '/manifest.webmanifest'], async (req, res) => {
         const activeNameAr = settings.site_name_ar || 'بيربليكستا';
         manifestObj.name = `${activeNameAr} - ${activeNameEn}`;
         manifestObj.short_name = activeNameEn;
-
-        const activeIcon = settings.favicon_url || settings.logo_url || '/uploads/system_logo.webp';
-        if (activeIcon) {
-          const iconType = activeIcon.endsWith('.webp') ? 'image/webp' : (activeIcon.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
-          manifestObj.icons = [
-            {
-              src: activeIcon,
-              sizes: '192x192 512x512',
-              type: iconType,
-              purpose: 'any'
-            },
-            {
-              src: activeIcon,
-              sizes: '192x192 512x512',
-              type: iconType,
-              purpose: 'maskable'
-            }
-          ];
+        if (settings.site_description_en) {
+          manifestObj.description = settings.site_description_en;
         }
       }
       return res.json(manifestObj);
@@ -598,7 +583,39 @@ app.get(['/manifest.json', '/manifest.webmanifest'], async (req, res) => {
   return serveStaticResource('manifest.json', 'manifest.webmanifest')(req, res);
 });
 
-app.get(['/favicon.ico', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png', '/favicon.png'], async (req, res) => {
+app.get([
+  '/favicon.ico',
+  '/favicon-16x16.png',
+  '/favicon-32x32.png',
+  '/favicon-48x48.png',
+  '/favicon.png',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
+  '/apple-touch-icon-167x167.png',
+  '/apple-touch-icon-152x152.png',
+  '/apple-touch-icon-precomposed.png',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-192x192.png',
+  '/pwa-maskable-512x512.png',
+  '/android-chrome-192x192.png',
+  '/android-chrome-512x512.png',
+  '/mstile-150x150.png'
+], async (req, res) => {
+  const filename = path.basename(req.path);
+  const asset = getSystemAssetBuffer(filename);
+
+  if (asset) {
+    if (req.headers['if-none-match'] === asset.etag) {
+      return res.status(304).end();
+    }
+    res.type(asset.mime);
+    res.setHeader('ETag', asset.etag);
+    res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+    return res.send(asset.buffer);
+  }
+
+  // Graceful fallback to system settings if not yet generated in manager
   try {
     const settings = await getSystemSettings();
     const candidate = settings?.favicon_url || settings?.logo_url || '/uploads/system_logo.webp';
@@ -626,7 +643,7 @@ app.get(['/favicon.ico', '/apple-touch-icon.png', '/apple-touch-icon-precomposed
       }
     }
   } catch (err) {
-    console.warn('[MobileIcon] Error resolving dynamic mobile icon:', err);
+    console.warn('[SystemAssetRoute] Error resolving fallback dynamic icon:', err);
   }
 
   const svgFallback = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="22" fill="#000000"/><path d="M50 20 L80 40 L80 70 L50 90 L20 70 L20 40 Z" fill="none" stroke="#10b981" stroke-width="6"/><circle cx="50" cy="55" r="12" fill="#10b981"/></svg>`;
@@ -1372,15 +1389,43 @@ app.post('/api/activity/log', async (req, res) => {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || null;
     const userAgent = req.headers['user-agent'] || null;
 
-    await pool.query(
-      `INSERT INTO user_activity_logs (user_id, event_type, event_details, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId || null, eventType, JSON.stringify(eventDetails || {}), ipAddress, userAgent]
-    );
+    let validUserId: number | null = null;
+    if (userId) {
+      const parsedId = typeof userId === 'number' ? userId : parseInt(String(userId), 10);
+      if (!isNaN(parsedId) && parsedId > 0) {
+        try {
+          const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [parsedId]);
+          if (userCheck.rows && userCheck.rows.length > 0) {
+            validUserId = parsedId;
+          }
+        } catch {
+          validUserId = null;
+        }
+      }
+    }
+
+    try {
+      await pool.query(
+        `INSERT INTO user_activity_logs (user_id, event_type, event_details, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [validUserId, eventType, JSON.stringify(eventDetails || {}), ipAddress, userAgent]
+      );
+    } catch (insertErr: any) {
+      // If foreign key violation or other constraint occurs, fallback safely with NULL user_id
+      if (insertErr?.code === '23503' || String(insertErr?.message).includes('foreign key constraint')) {
+        await pool.query(
+          `INSERT INTO user_activity_logs (user_id, event_type, event_details, ip_address, user_agent)
+           VALUES (NULL, $1, $2, $3, $4)`,
+          [eventType, JSON.stringify({ ...(eventDetails || {}), unverified_user_id: userId }), ipAddress, userAgent]
+        );
+      } else {
+        throw insertErr;
+      }
+    }
 
     res.json({ success: true });
   } catch (err: any) {
-    console.error('[ActivityLog] Error saving activity log:', err);
+    console.error('[ActivityLog] Error saving activity log:', err?.message || err);
     res.status(500).json({ error: 'Failed to log activity' });
   }
 });

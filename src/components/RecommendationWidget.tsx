@@ -12,7 +12,8 @@ import {
   X, 
   Tag, 
   ChevronRight,
-  MapPin
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -77,11 +78,20 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
         : `/api/recommendations?limit=${limit * 2}`;
 
       const res = await fetch(endpoint, { headers });
+      if (!res.ok) {
+        setItems([]);
+        return;
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        setItems([]);
+        return;
+      }
       const data = await res.json();
 
-      if (data.success && Array.isArray(data.items)) {
+      if (data && data.success && Array.isArray(data.items)) {
         setItems(data.items);
-      } else if (data.success && Array.isArray(data.recommendations)) {
+      } else if (data && data.success && Array.isArray(data.recommendations)) {
         setItems(data.recommendations);
       } else {
         setItems([]);
@@ -194,7 +204,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'bulletin': return <Megaphone size={14} className="text-amber-500" />;
-      case 'page': return <BookOpen size={14} className="text-emerald-500" />;
+      case 'page': return <BookOpen size={14} className="text-[var(--fg-success)]" />;
       case 'tool': return <Zap size={14} className="text-blue-500" />;
       default: return <Sparkles size={14} className="text-accent" />;
     }
@@ -218,14 +228,33 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
     }
   };
 
+  const formatPublishedTime = (createdAt?: string) => {
+    if (!createdAt) return language === 'ar' ? 'تم النشر الآن' : 'Published just now';
+    try {
+      const diff = Date.now() - new Date(createdAt).getTime();
+      if (isNaN(diff) || diff < 60000) return language === 'ar' ? 'تم النشر الآن' : 'Published just now';
+      if (diff < 3600000) {
+        const mins = Math.floor(diff / 60000);
+        return language === 'ar' ? `منذ ${mins} دقيقة` : `${mins}m ago`;
+      }
+      if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return language === 'ar' ? `منذ ${hours} ساعة` : `${hours}h ago`;
+      }
+      return language === 'ar' ? 'تم النشر الآن' : 'Published just now';
+    } catch (e) {
+      return language === 'ar' ? 'تم النشر الآن' : 'Published just now';
+    }
+  };
+
   if (!token || !user) return null;
 
   return (
     <div className={`w-full ${className}`}>
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-2.5 border-b border-gray-100 dark:border-gray-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-2.5 border-b border-[var(--border-main)]">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
+          <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
             {isBulletinOnly ? (
               <Megaphone size={16} className="text-accent " />
             ) : (
@@ -236,10 +265,10 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
             <h3 className="text-xs sm:text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-1.5 truncate">
               <span>
                 {title || (isBulletinOnly
-                  ? (language === 'ar' ? 'تفضيلات الإعلانات المخصصة' : 'Recommended Ads')
+                  ? (language === 'ar' ? 'إعلانات موصى بها' : 'Recommended Ads')
                   : (language === 'ar' ? 'توصيات مخصصة لك' : 'Recommended For You'))}
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] bg-accent/10 text-accent border border-accent/20 shrink-0">
+              <span className="ui-badge-pill shrink-0">
                 {language === 'ar' ? 'محرك ذكي' : 'Smart AI'}
               </span>
             </h3>
@@ -258,7 +287,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
               if (onOpenPreferences) onOpenPreferences();
               else setIsPrefModalOpen(true);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-theme shadow-2xs cursor-pointer"
+            className="ui-btn-pill text-[11px] py-1 px-2.5"
             title={language === 'ar' ? 'تعديل تفضيلات التوصيات' : 'Customize preferences'}
           >
             <Sliders size={12} className="text-accent shrink-0" />
@@ -268,7 +297,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
           <button
             onClick={fetchRecommendations}
             disabled={isLoading}
-            className="p-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-400 hover:text-accent hover:border-accent/40 transition-theme cursor-pointer"
+            className="ui-btn-icon-circle w-7 h-7"
             title={language === 'ar' ? 'تحديث التوصيات' : 'Refresh'}
           >
             <RefreshCw size={12} className={isLoading ? 'animate-spin text-accent' : ''} />
@@ -278,19 +307,20 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
 
       {/* Category Tabs (only if full variant and not bulletin-only) */}
       {variant === 'full' && !isBulletinOnly && (
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-3.5 text-xs font-semibold">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 mb-3 text-xs font-semibold snap-x touch-pan-x px-0.5">
           {[
-            { id: 'all', label_ar: 'الكل', label_en: 'All Picks', icon: <Compass size={13} /> },
-            { id: 'bulletin', label_ar: 'فايرال بوك (Viralbook)', label_en: 'Viralbook Feeds & Ads', icon: <Megaphone size={13} /> },
-            { id: 'tool', label_ar: 'أدوات الذكاء الاصطناعي', label_en: 'AI Tools', icon: <Zap size={13} /> },
+            { id: 'all', label_ar: 'الكل', label_en: 'All Picks', icon: <Compass size={14} /> },
+            { id: 'bulletin', label_ar: 'فيرال بوك (Viralbook)', label_en: 'Viralbook Feeds & Ads', icon: <Megaphone size={14} /> },
+            { id: 'tool', label_ar: 'أدوات الذكاء الاصطناعي', label_en: 'AI Tools', icon: <Zap size={14} /> },
           ].map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveCategory(tab.id as any)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl whitespace-nowrap transition-theme border text-xs ${
+              className={`snap-start flex items-center gap-1.5 px-3.5 py-2 rounded-xl whitespace-nowrap transition-theme border text-xs cursor-pointer ${
                 activeCategory === tab.id
-                  ? 'bg-accent/10 text-accent border-accent/30 font-bold shadow-2xs'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)]'
+                  ? 'bg-[var(--surface-subtle)] text-accent border-accent/40 font-extrabold shadow-2xs ring-1 ring-accent/30'
+                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-gray-300'
               }`}
             >
               {tab.icon}
@@ -356,7 +386,10 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
             const cityText = item.data?.location_city || item.data?.city || '';
 
             if (isBulletinOnly || variant === 'compact') {
-              /* SLEEK SIDEBAR COMPACT CARD FOR BULLETIN ADS */
+              const isToolItem = item.item_type === 'tool';
+              const timeAgoText = formatPublishedTime(item.data?.created_at);
+
+              /* SLEEK DISTRACTION-FREE COMPACT CARD FOR BULLETIN ADS & TOOLS */
               return (
                 <motion.div
                   key={`rec-item-compact-${item.recommendation_id || item.item_id || recIdx}-${recIdx}`}
@@ -364,15 +397,22 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   onClick={() => handleItemClick(item)}
-                  className="group relative p-2.5 rounded-xl bg-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.03] border border-transparent hover:border-gray-200/50 dark:hover:border-white/[0.06] transition-theme flex items-center justify-between gap-2.5 cursor-pointer overflow-hidden"
+                  className="group relative p-2.5 rounded-xl bg-[var(--surface-subtle)] hover:bg-accent/10 border border-[var(--border-main)] hover:border-accent/40 transition-all flex items-center justify-between gap-3 cursor-pointer overflow-hidden shadow-2xs group-hover:shadow-xs"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <BulletinAvatar
-                      src={mediaUrl}
-                      alt={titleText}
-                      size="md"
-                      onClick={() => handleItemClick(item)}
-                    />
+                    {isToolItem ? (
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0 shadow-2xs">
+                        <Zap size={18} />
+                      </div>
+                    ) : (
+                      <div className="relative shrink-0">
+                        <BulletinAvatar
+                          src={mediaUrl}
+                          alt={titleText}
+                          size="md"
+                        />
+                      </div>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <h4 
@@ -385,18 +425,18 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                         {titleText}
                       </h4>
 
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <div className="flex items-center gap-2 mt-1 text-[10px] font-extrabold flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                          <Clock size={10} className="shrink-0" />
+                          <span>{timeAgoText}</span>
+                        </span>
+
                         {cityText && (
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
+                          <span className="flex items-center gap-0.5 text-[var(--text-muted)] font-bold">
                             <MapPin size={10} className="text-accent shrink-0" />
                             <span className="truncate max-w-[80px]">{cityText}</span>
                           </span>
                         )}
-
-                        <span className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
-                          <Sparkles size={9} />
-                          {item.match_percentage}% {language === 'ar' ? 'توافق' : 'Match'}
-                        </span>
 
                         {price > 0 && (
                           <span className="text-[10px] font-black text-accent ms-auto">
@@ -404,10 +444,6 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                           </span>
                         )}
                       </div>
-
-                      <p className="text-[10px] text-[var(--text-muted)] truncate mt-0.5 font-medium">
-                        {reasonText}
-                      </p>
                     </div>
                   </div>
 
@@ -420,22 +456,16 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                       <X size={12} />
                     </button>
 
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleItemClick(item);
-                      }}
-                      title={language === 'ar' ? 'التفاصيل' : 'Details'}
-                      className="p-1.5 rounded-lg text-gray-400 group-hover:text-accent transition-theme cursor-pointer"
-                    >
-                      <ChevronRight size={14} className={dir === 'rtl' ? 'rotate-180' : ''} />
-                    </button>
+                    <div className="w-6 h-6 rounded-lg bg-[var(--surface-card)] border border-[var(--border-main)] group-hover:border-accent group-hover:text-accent text-[var(--text-muted)] flex items-center justify-center transition-all shrink-0">
+                      <ChevronRight size={13} className={dir === 'rtl' ? 'rotate-180' : ''} />
+                    </div>
                   </div>
                 </motion.div>
               );
             }
 
             /* STANDARD FULL GRID CARD FOR OTHER VARIANTS */
+            const isTool = item.item_type === 'tool';
             return (
               <motion.div
                 key={`rec-item-full-${item.recommendation_id || item.item_id || recIdx}-${recIdx}`}
@@ -443,7 +473,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 onClick={() => handleItemClick(item)}
-                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/40 transition-theme hover:shadow-lg hover:shadow-none p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
+                className="group relative rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] hover:border-accent/40 transition-theme hover:shadow-md p-3 flex flex-col justify-between cursor-pointer overflow-hidden"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -468,18 +498,24 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-accent dark:text-accent bg-accent/[0.06] border border-accent/10 px-2 py-1 rounded-md mb-2.5 truncate">
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-accent bg-accent/[0.06] border border-accent/10 px-2 py-1 rounded-md mb-2.5 truncate">
                     <Tag size={10} className="shrink-0 text-accent" />
                     <span className="truncate">{reasonText}</span>
                   </div>
 
                   <div className="flex items-start gap-2.5">
-                    <BulletinAvatar
-                      src={mediaUrl}
-                      alt={titleText}
-                      size="md"
-                      onClick={() => handleItemClick(item)}
-                    />
+                    {isTool ? (
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center shrink-0 shadow-2xs">
+                        <Zap size={20} />
+                      </div>
+                    ) : (
+                      <BulletinAvatar
+                        src={mediaUrl}
+                        alt={titleText}
+                        size="md"
+                        onClick={() => handleItemClick(item)}
+                      />
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <h4 
@@ -509,7 +545,7 @@ export const RecommendationWidget: React.FC<RecommendationWidgetProps> = ({
                     e.stopPropagation();
                     handleItemClick(item);
                   }}
-                  className="w-full mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-accent font-bold hover:text-accent group-hover:translate-x-0.5 transition-theme text-start cursor-pointer"
+                  className="w-full mt-3 pt-2 sm:pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-accent font-bold hover:text-accent group-hover:translate-x-0.5 transition-theme text-start cursor-pointer"
                 >
                   <span className="text-[11px]">
                     {language === 'ar' ? 'التفاصيل واستكشاف المحتوى' : 'View Details & Explore'}

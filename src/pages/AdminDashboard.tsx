@@ -1,38 +1,17 @@
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useConfirm } from "../context/ConfirmContext";
 import { useToast } from "../hooks/useToast";
 import { motion, AnimatePresence } from "motion/react";
 import { perplextaPageTransition } from "../constants/motions";
-import { ALL_TOOLS } from "../constants";
-import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../utils/adminUtils";
-import { AdminService } from "../services/adminService";
-import { useAdminAuth } from "../hooks/useAdminAuth";
-import { HighlightText } from "../components/HighlightText";
-import { resolveImageUrl } from "../utils/imageResolver";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
-import {
-  Music,
   Activity,
   Key,
   Database,
   Cpu,
   Landmark,
-  Cloud,
   CreditCard,
-  ShoppingBag,
   Users,
   Settings,
   Mail,
@@ -40,82 +19,22 @@ import {
   Settings2,
   ArrowLeft,
   ArrowRight,
-  TrendingUp,
-  Zap,
-  Server,
-  CheckCircle2,
-  AlertCircle,
-  Bell,
-  Clock,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  RefreshCw,
-  XCircle,
-  ExternalLink,
-  Copy,
-  Save,
-  Download,
-  Upload,
-  Calendar,
-  Code2,
-  Network,
-  Star,
-  MessageSquare,
-  Sparkles,
   Palette,
   Brain,
   Globe,
-  Smartphone,
-  Building,
-  FileText,
-  Mic,
-  Volume2,
-  Image as ImageIcon,
-  Video,
-  GraduationCap,
-  Monitor,
-  LayoutGrid,
-  LifeBuoy,
-  Info,
-  Coins,
-  Wallet,
-  History,
   ShieldAlert,
-  ArrowRightLeft,
-  Award,
-  Search,
-  Camera,
-  Trash2,
-  X,
-  CheckCircle,
-  BellRing,
-  AlertTriangle,
   Send,
-  Circle,
-  DollarSign,
-  Terminal,
   Shield,
-  ChevronDown,
-  Scale,
-  Megaphone,
-  FastForward,
   UserPlus,
-  Sliders,
-  Wrench,
+  Server,
   MonitorSmartphone,
 } from "lucide-react";
-import { ActionConfirmationModal } from "../components/ActionConfirmationModal";
-import { NotificationThresholdsModal } from "../components/NotificationThresholdsModal";
-import { validateToolRoutePricing } from "../utils/orchestratorValidator";
-import { SearchableSelect } from "../components/SearchableSelect";
 import { ReferralDashboardView } from "./ReferralDashboardView";
 import { AdsManagementView } from "./AdsManagementView";
 import { UserManagementView } from "./UserManagementView";
 import { AdminRateLimitMetricsView } from "./AdminRateLimitMetricsView";
 import { AdminRenderMetricsView } from "../components/AdminRenderMetricsView";
 import { SeoCenterView } from "../components/SeoCenterView";
-import { AdminDiagnosticTool } from "../components/AdminDiagnosticTool";
 import { PagePreviewModal } from "../components/PagePreviewModal";
 
 import { CommandCenterView } from "../components/admin/CommandCenterView";
@@ -127,18 +46,6 @@ import { FinanceVaultView } from "../components/admin/FinanceVaultView";
 import { PlansSubscriptionsView } from "../components/admin/PlansSubscriptionsView";
 import { SmartEmailHubView } from "../components/admin/SmartEmailHubView";
 import { MassBroadcastView } from "../components/admin/MassBroadcastView";
-interface MemoryConsolidationReportItem {
-  userId: number;
-  userName: string;
-  userEmail: string;
-  oldCount: number;
-  newCount: number;
-  archivedFacts: string[];
-  distilledFact: string;
-  success: boolean;
-  error?: string;
-}
-
 import { MemoryCenterView } from "../components/admin/MemoryCenterView";
 import { SystemSettingsView } from "../components/admin/SystemSettingsView";
 import { ThemeStudioView } from "../components/admin/ThemeStudioView";
@@ -177,6 +84,7 @@ export const AdminDashboard: React.FC = () => {
       "databases",
       "finance",
       "settings",
+      "theme",
       "orchestrator",
       "audit",
     ];
@@ -254,27 +162,6 @@ export const AdminDashboard: React.FC = () => {
       };
     }
   }, [token]);
-
-  if (isMobile) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center select-none" dir={isRtl ? 'rtl' : 'ltr'}>
-        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
-          <Monitor size={36} className="text-amber-500 animate-pulse" />
-        </div>
-        <h2 className="text-lg font-black text-[var(--text-primary)] mb-1">
-          {isRtl ? 'لوحة التحكم متاحة فقط عبر سطح المكتب' : 'Command Center is Desktop-Only'}
-        </h2>
-        <p className="text-xs text-gray-400 max-w-sm">
-          {isRtl 
-            ? 'تم تعطيل لوحة قيادة الإدارة لبيربليكستا على أجهزة الهاتف لتهيئة النظام بشكل أسرع وأكثر مرونة. يرجى استخدام حاسوب لإجراء المهام الإدارية.' 
-            : 'For pristine local performance and absolute operational security, the Command Center interface is exclusively restricted to desktop displays. Please use a PC.'}
-        </p>
-        <a href="/" className="mt-6 px-4 py-2 border border-accent/30 rounded-sm hover:border-accent text-accent text-xs font-bold transition-theme">
-          {isRtl ? 'العودة للرئيسية' : 'Back to Home'}
-        </a>
-      </div>
-    );
-  }
 
   const formatPulseUptime = (seconds: number) => {
     if (!seconds) return "0s";
@@ -520,6 +407,12 @@ export const AdminDashboard: React.FC = () => {
             ? 'لوحة الإدارة مصممة للشاشات الكبيرة لضمان تجربة تحكم احترافية. يرجى فتح هذه الصفحة من جهاز كمبيوتر مكتبي.'
             : 'The Admin Dashboard is optimized for larger screens to ensure a professional control experience. Please access this page from a desktop computer.'}
         </p>
+        <button
+          onClick={() => navigate("/chat")}
+          className="mt-6 px-5 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-[var(--radius-md)] text-sm font-semibold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+        >
+          {language === 'ar' ? 'العودة للمحادثة' : 'Back to Chat'}
+        </button>
       </div>
     );
   }
@@ -755,9 +648,9 @@ export const AdminDashboard: React.FC = () => {
           {path === "dashboard" ? (
             <CommandCenterView theme={theme} t={t} showToast={showToast} />
           ) : path === "radar" ? (
-            <AdminRateLimitMetricsView theme={theme} t={t} />
+            <ComplianceAuditLogsView theme={theme} t={t} dir={dir} initialTab="radar" />
           ) : path === "metrics" ? (
-            <AdminRenderMetricsView />
+            <ComplianceAuditLogsView theme={theme} t={t} dir={dir} initialTab="metrics" />
           ) : path === "keys" ? (
             <ApiKeysVaultView
               theme={theme}
@@ -835,33 +728,6 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <AnimatePresence>
-        {(toast as any) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className={`fixed bottom-6 ${dir === "rtl" ? "left-6" : "right-6"} z-[999] px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              (toast as any).type === "success"
-                ? "bg-accent/10 border-accent/20 text-accent"
-                : (toast as any).type === "error"
-                  ? "bg-red-500/10 border-red-500/20 text-red-500"
-                  : "bg-blue-500/10 border-blue-500/20 text-blue-500"
-            }`}
-            style={{
-              boxShadow:
-                (toast as any).type === "success"
-                  ? "0 10px 30px rgba(156,163,175,0.15)"
-                  : "0 10px 30px rgba(239,68,68,0.15)",
-            }}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${(toast as any).type === "success" ? "bg-accent animate-pulse" : "bg-red-500"}`}
-            />
-            <span className="font-bold text-sm tracking-tight">
-              {(toast as any).message}
-            </span>
-          </motion.div>
-        )}
         {previewUrl && (
           <PagePreviewModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
         )}

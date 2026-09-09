@@ -159,10 +159,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     globalShowNotification = showNotification;
     globalDismissNotification = dismissNotification;
     globalClearAllNotifications = clearAllNotifications;
+
+    // Listen for native Capacitor push notifications and route through standardized toasts
+    const handleNativePush = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent && customEvent.detail) {
+        const notif = customEvent.detail;
+        const title = notif.title || '';
+        const body = notif.body || notif.message || '';
+        if (title || body) {
+          showNotification({
+            title,
+            message: body,
+            type: 'info',
+            duration: 5000,
+          });
+        }
+      }
+    };
+
+    window.addEventListener('native-push-received', handleNativePush);
+
     return () => {
       globalShowNotification = null;
       globalDismissNotification = null;
       globalClearAllNotifications = null;
+      window.removeEventListener('native-push-received', handleNativePush);
     };
   }, [showNotification, dismissNotification, clearAllNotifications]);
 
@@ -259,122 +281,110 @@ const ToastCard: React.FC<{ item: NotificationItem; onDismiss: (id: string) => v
     return () => clearInterval(timer);
   }, [item.duration, item.id, onDismiss, paused]);
 
-  const getTheme = () => {
+  const getVariantStyles = () => {
     switch (item.type) {
       case 'success':
         return {
-          icon: <CheckCircle2 size={15} className="text-emerald-500 flex-shrink-0" />,
-          barBg: 'bg-emerald-500',
-          badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+          dotBg: 'bg-emerald-500',
+          dotPing: 'bg-emerald-400',
+          actionBtnBg: 'bg-emerald-600 hover:bg-emerald-500 text-white',
+          fallbackIcon: <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />,
           defaultTitle: isRtl ? 'تم بنجاح' : 'Success',
         };
       case 'error':
         return {
-          icon: <AlertOctagon size={15} className="text-red-500 flex-shrink-0" />,
-          barBg: 'bg-red-500',
-          badgeBg: 'bg-red-500/10 text-red-500 border-red-500/20',
+          dotBg: 'bg-rose-500',
+          dotPing: 'bg-rose-400',
+          actionBtnBg: 'bg-rose-600 hover:bg-rose-500 text-white',
+          fallbackIcon: <AlertOctagon size={13} className="text-rose-500 shrink-0" />,
           defaultTitle: isRtl ? 'حدث خطأ' : 'Error',
         };
       case 'warning':
         return {
-          icon: <AlertTriangle size={15} className="text-amber-500 flex-shrink-0" />,
-          barBg: 'bg-amber-500',
-          badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+          dotBg: 'bg-amber-500',
+          dotPing: 'bg-amber-400',
+          actionBtnBg: 'bg-amber-600 hover:bg-amber-500 text-white',
+          fallbackIcon: <AlertTriangle size={13} className="text-amber-500 shrink-0" />,
           defaultTitle: isRtl ? 'تنبيه' : 'Warning',
         };
       case 'loading':
         return {
-          icon: <Loader2 size={15} className="text-amber-400 animate-spin flex-shrink-0" />,
-          barBg: 'bg-amber-400',
-          badgeBg: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
-          defaultTitle: isRtl ? 'جاري التحديث...' : 'Updating...',
+          dotBg: 'bg-amber-400',
+          dotPing: 'bg-amber-300',
+          actionBtnBg: 'bg-amber-600 hover:bg-amber-500 text-white',
+          fallbackIcon: <Loader2 size={13} className="text-amber-400 animate-spin shrink-0" />,
+          defaultTitle: isRtl ? 'جاري المعالجة...' : 'Processing...',
         };
       case 'info':
       default:
         return {
-          icon: <Sparkles size={15} className="text-sky-500 flex-shrink-0" />,
-          barBg: 'bg-sky-500',
-          badgeBg: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
-          defaultTitle: isRtl ? 'ملاحظة' : 'Notice',
+          dotBg: 'bg-[var(--fg-accent)]',
+          dotPing: 'bg-[var(--fg-accent)]',
+          actionBtnBg: 'bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)]',
+          fallbackIcon: <Sparkles size={13} className="text-accent shrink-0" />,
+          defaultTitle: isRtl ? 'إشعار النظام' : 'System Notice',
         };
     }
   };
 
-  const themeConfig = getTheme();
+  const variant = getVariantStyles();
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -20, scale: 0.94 }}
+      initial={{ opacity: 0, y: 15, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, y: -15 }}
+      exit={{ opacity: 0, y: 10, scale: 0.98 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="group toast-floating toast-card-variant"
+      className="toast-floating shadow-md"
     >
-      {/* Accent side bar indicator */}
-      <div className={`toast-side-bar ${themeConfig.barBg}`} />
+      {/* Status Dot / Live Indicator */}
+      <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 shrink min-w-0 max-w-[calc(100vw-110px)] sm:max-w-xs">
+        <span className="toast-live-dot">
+          <span className={`toast-live-dot-ping ${variant.dotPing}`} />
+          <span className={`toast-live-dot-core ${variant.dotBg}`} />
+        </span>
+        <span className="text-[10.5px] sm:text-xs font-bold text-[var(--fg-primary)] whitespace-nowrap truncate font-sans">
+          {item.message || item.title || variant.defaultTitle}
+        </span>
+      </div>
 
-      <div className="flex items-start gap-2.5 pl-0.5 pr-0.5 w-full">
-        <div className="mt-0.5 flex-shrink-0">
-          {item.image ? (
-            <NotificationIconRenderer 
-              src={item.image} 
-              size={20} 
-              className="rounded-lg border border-[var(--border-main)]"
-              fallbackIcon={item.icon || themeConfig.icon} 
-            />
-          ) : (
-            item.icon || themeConfig.icon
-          )}
-        </div>
+      <div className="toast-divider" />
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-            <h4 className="text-[11px] font-extrabold font-sans text-[var(--text-primary)] truncate">
-              {item.title || themeConfig.defaultTitle}
-            </h4>
+      {/* Action Buttons Group */}
+      <div className="flex items-center h-full shrink-0">
+        {item.action ? (
+          <>
             <button
               type="button"
               onClick={() => onDismiss(item.id)}
-              className="toast-dismiss-btn p-0.5 opacity-70 hover:opacity-100 transition-opacity"
-              title={isRtl ? 'إغلاق' : 'Close'}
+              className="toast-dismiss-btn font-sans"
             >
-              <X size={11} />
+              {isRtl ? 'لاحقاً' : 'Later'}
             </button>
-          </div>
-
-          <p className="text-[10px] md:text-[10.5px] text-[var(--text-secondary)] font-sans leading-normal break-words">
-            {item.message}
-          </p>
-
-          {item.action && (
-            <div className="mt-1.5 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  item.action?.onClick();
-                  onDismiss(item.id);
-                }}
-                className="px-2 py-0.5 text-[9.5px] font-bold rounded bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-[var(--text-primary)] border border-[var(--border-main)] transition-theme cursor-pointer"
-              >
-                {item.action.label}
-              </button>
-            </div>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                item.action?.onClick();
+                onDismiss(item.id);
+              }}
+              className={`toast-action-btn font-sans ${variant.actionBtnBg}`}
+            >
+              <span>{item.action.label}</span>
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onDismiss(item.id)}
+            className="toast-dismiss-btn font-sans hover:text-[var(--fg-primary)]"
+          >
+            {isRtl ? 'إغلاق' : 'Dismiss'}
+          </button>
+        )}
       </div>
-
-      {/* Auto-dismiss progress bar */}
-      {item.duration > 0 && (
-        <div className="toast-progress-track">
-          <div
-            className={`toast-progress-fill ${themeConfig.barBg}`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      )}
     </motion.div>
   );
 };
@@ -389,7 +399,7 @@ const NotificationContainer: React.FC<{
 
   return createPortal(
     <div
-      className="toast-container-floating top-start max-w-full sm:max-w-md w-full items-start"
+      className={`toast-container-floating ${isRtl ? 'pos-bottom-start' : 'pos-bottom-end'}`}
       style={{
         direction: isRtl ? 'rtl' : 'ltr',
       }}

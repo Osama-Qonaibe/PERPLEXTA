@@ -86,24 +86,24 @@ export const ServiceUpdateToast: React.FC = () => {
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           className="toast-floating toast-pill-variant toast-update"
         >
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 shrink min-w-0">
             <span className="toast-live-dot">
               <span className="toast-live-dot-ping" />
               <span className="toast-live-dot-core" />
             </span>
-            <span className="text-[10px] sm:text-[11px] font-extrabold text-[var(--text-primary)] whitespace-nowrap">
+            <span className="text-[10.5px] sm:text-xs font-bold text-[var(--fg-primary)] whitespace-nowrap font-sans truncate">
               {isAr ? 'يتوفر تحديث جديد للنظام' : 'Update available'}
             </span>
           </div>
 
           <div className="toast-divider" />
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center h-full shrink-0">
             <button
               id="service-update-dismiss-btn"
               type="button"
               onClick={close}
-              className="toast-dismiss-btn text-[9.5px] sm:text-[10.5px]"
+              className="toast-dismiss-btn font-sans"
             >
               {isAr ? 'لاحقاً' : 'Later'}
             </button>
@@ -112,9 +112,9 @@ export const ServiceUpdateToast: React.FC = () => {
               type="button"
               onClick={handleUpdate}
               disabled={isUpdating}
-              className="toast-action-btn text-[9.5px] sm:text-[10.5px]"
+              className="toast-action-btn font-sans"
             >
-              <RefreshCw className={`w-2.5 h-2.5 shrink-0 ${isUpdating ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isUpdating ? 'animate-spin' : ''}`} />
               <span>{isAr ? 'تحديث الآن' : 'Update'}</span>
             </button>
           </div>

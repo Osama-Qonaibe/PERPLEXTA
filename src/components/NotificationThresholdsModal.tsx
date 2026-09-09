@@ -239,7 +239,7 @@ export const NotificationThresholdsModal: React.FC<NotificationThresholdsModalPr
               {/* Normal Zone */}
               <div
                 style={{ width: `${lowThreshold}%` }}
-                className="bg-emerald-600/80 flex items-center justify-center transition-all truncate px-1"
+                className="bg-[var(--fg-success)]/80 flex items-center justify-center transition-all truncate px-1"
                 title="Normal Range"
               >
                 0 - {lowThreshold}% ({isRtl ? "طبيعي" : "Normal"})

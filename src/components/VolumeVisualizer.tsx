@@ -253,14 +253,14 @@ export const VolumeVisualizer: React.FC<VolumeVisualizerProps> = ({
     <div id="volume-visualizer-container" className="flex flex-col gap-1.5 border border-zinc-800 bg-zinc-900/60 rounded-lg p-2 font-mono">
       <div className="flex items-center justify-between text-[9px] text-zinc-400">
         <span className="flex items-center gap-1">
-          <Activity size={10} className="text-emerald-400 animate-pulse" />
+          <Activity size={10} className="text-[var(--fg-success)] animate-pulse" />
           <span>REAL-TIME DECI-LEVEL GRAPH</span>
         </span>
         <span className="flex items-center gap-1">
           {isMuted ? (
             <span className="text-red-400 flex items-center gap-0.5"><VolumeX size={8} /> MUTED</span>
           ) : (
-            <span className="text-emerald-400 flex items-center gap-0.5">
+            <span className="text-[var(--fg-success)] flex items-center gap-0.5">
               <Volume2 size={8} /> ACTIVE {Math.round(volume * 100)}%
             </span>
           )}

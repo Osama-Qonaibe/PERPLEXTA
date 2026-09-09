@@ -30,6 +30,7 @@ import { motion, AnimatePresence, PanInfo } from 'motion/react';
 import { useAppContext } from '../../context/AppContext';
 import { triggerHaptic } from '../../utils/haptics';
 import { resolveImageUrl } from '../../utils/imageResolver';
+import { NotificationIconRenderer } from '../../utils/imageProcessor';
 import { useDeviceCapabilities } from '../../utils/deviceCapabilities';
 import { useViewTransitionNavigate } from '../../utils/viewTransition';
 
@@ -97,54 +98,71 @@ export const MobileNavigation: React.FC = () => {
   const navItems = [
     {
       id: 'chat',
-      labelAr: 'الدردشة',
+      labelAr: 'المحادثة',
       labelEn: 'Chat',
-      path: '/chat',
+      path: '/bulletin?tab=inquiries',
       icon: MessageSquare,
     },
     {
+      id: 'discover',
+      labelAr: 'استكشاف',
+      labelEn: 'Explore',
+      path: '/discover',
+      icon: Compass,
+    },
+    {
+      id: 'studio',
+      labelAr: 'إنشاء',
+      labelEn: 'Create',
+      path: '/chat',
+      icon: Sparkles,
+    },
+    {
       id: 'viralbook',
-      labelAr: 'فايرال بوك',
+      labelAr: 'فيرال بوك',
       labelEn: 'Viralbook',
       path: '/bulletin',
       icon: Flame,
     },
     {
-      id: 'inquiries',
-      labelAr: 'المحادثات',
-      labelEn: 'Inquiries',
-      path: '/bulletin?tab=inquiries',
-      icon: MessagesSquare,
-    },
-    {
-      id: 'wallet',
-      labelAr: 'المحفظة',
-      labelEn: 'Wallet',
-      path: user ? '/settings/wallet' : '/subscription',
-      icon: Wallet,
-    },
-    {
-      id: 'menu',
-      labelAr: 'القائمة',
-      labelEn: 'Menu',
+      id: 'account',
+      labelAr: 'الحساب',
+      labelEn: 'Account',
+      path: '/settings',
       isMenuTrigger: true,
-      icon: Menu,
+      icon: User,
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
   ];
 
   const isTabActive = (id: string, path?: string) => {
-    if (id === 'chat') return currentPath === '/' || currentPath.startsWith('/chat');
-    if (id === 'inquiries') return currentPath.startsWith('/bulletin') && location.search.includes('tab=inquiries');
-    if (id === 'viralbook') return (currentPath.startsWith('/bulletin') || currentPath.startsWith('/viralbook')) && !location.search.includes('tab=inquiries');
-    if (id === 'wallet') return currentPath.startsWith('/settings/wallet') || currentPath.startsWith('/subscription') || currentPath.startsWith('/rewards');
+    if (id === 'chat') return currentPath.startsWith('/bulletin') && (location.search.includes('tab=inquiries') || currentPath.includes('/inquiries'));
+    if (id === 'discover') return currentPath.startsWith('/discover');
+    if (id === 'studio') return currentPath === '/' || currentPath.startsWith('/chat');
+    if (id === 'viralbook') return currentPath.startsWith('/bulletin') && !location.search.includes('tab=inquiries') && !currentPath.includes('/inquiries');
+    if (id === 'account') return currentPath.startsWith('/settings');
     return path ? currentPath === path : false;
   };
 
   const handleTabPress = (item: typeof navItems[0]) => {
     triggerHaptic('selection');
-    if (item.isMenuTrigger) {
-      setIsDrawerOpen((prev) => !prev);
+    if (item.id === 'studio') {
+      navigate('/chat');
+      window.dispatchEvent(new Event('clear-chat'));
+      setIsDrawerOpen(false);
+    } else if (item.id === 'chat') {
+      navigate('/bulletin?tab=inquiries');
+      setIsDrawerOpen(false);
+    } else if (item.id === 'account') {
+      if (!user) {
+        setIsAuthModalOpen(true);
+        return;
+      }
+      if (currentPath.startsWith('/settings')) {
+        setIsDrawerOpen((prev) => !prev);
+      } else {
+        navigate('/settings');
+      }
     } else if (item.path) {
       navigate(item.path);
     }
@@ -210,10 +228,16 @@ export const MobileNavigation: React.FC = () => {
             <div className="flex items-center justify-between px-4 h-16 border-b border-[var(--border-main)] pt-[env(safe-area-inset-top,0px)] shrink-0 bg-[var(--surface-card)] relative">
               <div className="flex items-center gap-2.5">
                 {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
-                  <img 
-                    src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
-                    alt="Logo" 
-                    className="h-8 w-8 rounded-[var(--radius-sm)] object-contain border border-[var(--border-main)] bg-[var(--surface-subtle)]"
+                  <NotificationIconRenderer
+                    src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')}
+                    alt={isRtl ? (siteSettings?.siteNameAr || 'Logo') : (siteSettings?.siteName || 'Logo')}
+                    size={32}
+                    className="rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)]"
+                    fallbackIcon={
+                      <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--bg-accent-muted)] border border-[var(--border-main)] flex items-center justify-center text-accent shadow-2xs">
+                        <Sparkles size={16} />
+                      </div>
+                    }
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--bg-accent-muted)] border border-[var(--border-main)] flex items-center justify-center text-accent shadow-2xs">

@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { 
   ShieldCheck, Cpu, CreditCard, Sparkles, 
   ChevronRight, ChevronLeft, ArrowUpRight,
-  MessageSquare, Terminal
+  MessageSquare, Terminal, Music
 } from 'lucide-react';
 import { resolveImageUrl } from '../utils/imageResolver';
 
@@ -46,6 +46,14 @@ export const StudioPage: React.FC = () => {
       desc: language === 'ar' ? 'نظام مالي مدقق بسجل غير قابل للتعديل لشحن النقاط والترقية.' : 'Audited ledger financial system for credits and tier upgrades.',
       action: () => navigate('/settings/wallet'),
       badge: language === 'ar' ? 'آمن' : 'Secure'
+    },
+    {
+      id: 'audio_studio',
+      icon: <Music className="w-5 h-5 text-accent" />,
+      title: language === 'ar' ? 'استوديو الصوت والإنتاج' : 'Audio Studio & Production',
+      desc: language === 'ar' ? 'محركات تأليف النطق، تحويل الصوت، والموسيقى الأوركسترالية المتطورة.' : 'State-of-the-art TTS vocal synthesis, speech transcribing, and orchestral music composition.',
+      action: () => navigate('/audio-studio'),
+      badge: language === 'ar' ? 'جديد' : 'New'
     }
   ];
 
@@ -129,8 +137,8 @@ export const StudioPage: React.FC = () => {
         </section>
 
         {/* Sovereign IP & Security Anchor */}
-        <footer className="pt-4 border-t border-[var(--border-main)] space-y-4 text-center">
-          <div className="p-4 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] max-w-2xl mx-auto space-y-2">
+        <section className="pt-4 space-y-4 text-center">
+          <div className="p-4 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] max-w-2xl mx-auto space-y-2 shadow-xs">
             <div className="flex items-center justify-center gap-2 text-[var(--text-primary)]">
               <ShieldCheck className="w-4 h-4 text-accent" />
               <h4 className="text-xs font-bold uppercase tracking-wider">
@@ -143,8 +151,53 @@ export const StudioPage: React.FC = () => {
                 : 'All engines, orchestration layers, and encryption routines are isolated to guarantee absolute data privacy and security.'}
             </p>
           </div>
-        </footer>
+        </section>
       </main>
+
+      {/* Fixed Bottom Footer Bar */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface-page)] border-t border-[var(--border-main)] select-none py-3.5 px-4 md:px-6 shadow-md">
+        <div className="max-w-5xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-[11px] text-[var(--text-secondary)]">
+          <nav className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 font-bold text-accent">
+            <button 
+              type="button"
+              onClick={() => navigate('/about')} 
+              className="cursor-pointer hover:underline bg-transparent border-0 p-0 text-inherit font-inherit transition-colors duration-150"
+            >
+              {language === 'ar' ? 'من نحن' : 'About Us'}
+            </button>
+            <span className="text-[var(--text-muted)] select-none">•</span>
+            <button 
+              type="button"
+              onClick={() => navigate('/terms')} 
+              className="cursor-pointer hover:underline bg-transparent border-0 p-0 text-inherit font-inherit transition-colors duration-150"
+            >
+              {language === 'ar' ? 'شروط الخدمة' : 'Terms of Service'}
+            </button>
+            <span className="text-[var(--text-muted)] select-none">•</span>
+            <button 
+              type="button"
+              onClick={() => navigate('/privacy')} 
+              className="cursor-pointer hover:underline bg-transparent border-0 p-0 text-inherit font-inherit transition-colors duration-150"
+            >
+              {language === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+            </button>
+            <span className="text-[var(--text-muted)] select-none">•</span>
+            <button 
+              type="button"
+              onClick={() => navigate('/copyright')} 
+              className="cursor-pointer hover:underline bg-transparent border-0 p-0 text-inherit font-inherit transition-colors duration-150"
+            >
+              {language === 'ar' ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}
+            </button>
+          </nav>
+          <p className="font-sans tracking-wide leading-relaxed text-[var(--text-muted)] whitespace-nowrap text-[9px] sm:text-[11px]">
+            {language === 'ar' 
+              ? 'جميع الحقوق محفوظة © 2026 ViralLinkUp'
+              : '© 2026 ViralLinkUp. All rights reserved.'
+            }
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

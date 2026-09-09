@@ -128,7 +128,7 @@ export const PwaDiagnosticTool: React.FC = () => {
         <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
             <span>{isAr ? 'وضع العرض (Display Mode)' : 'Display Mode'}</span>
-            {pwa.isStandalone ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+            {pwa.isStandalone ? <CheckCircle2 className="w-4 h-4 text-[var(--fg-success)]" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
           </div>
           <p className="text-sm font-bold text-[var(--text-primary)]">
             {pwa.isStandalone ? 'standalone (App Mode)' : 'browser (Tab Mode)'}
@@ -143,7 +143,7 @@ export const PwaDiagnosticTool: React.FC = () => {
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
             <span>{isAr ? 'ملف الـ Manifest' : 'Manifest Parse Status'}</span>
             {manifestStatus === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--fg-success)]" />
             ) : manifestStatus === 'error' ? (
               <XCircle className="w-4 h-4 text-rose-500" />
             ) : (
@@ -162,7 +162,7 @@ export const PwaDiagnosticTool: React.FC = () => {
         <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
             <span>{isAr ? 'آلية التثبيت (Prompt)' : 'Install Notification Type'}</span>
-            {pwa.canInstall ? <ShieldCheck className="w-4 h-4 text-emerald-500" /> : <Smartphone className="w-4 h-4 text-blue-500" />}
+            {pwa.canInstall ? <ShieldCheck className="w-4 h-4 text-[var(--fg-success)]" /> : <Smartphone className="w-4 h-4 text-blue-500" />}
           </div>
           <p className="text-sm font-bold text-[var(--text-primary)]">
             {pwa.canInstall ? (pwa.hasPrompt ? 'Direct Native Prompt' : 'Instruction Fallback') : 'Already Installed'}
@@ -176,7 +176,7 @@ export const PwaDiagnosticTool: React.FC = () => {
         <div className="p-4 rounded-[var(--radius)] bg-[var(--surface-subtle)] border border-[var(--border-main)] space-y-1">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)]">
             <span>{isAr ? 'عامل الخدمة (Service Worker)' : 'Service Worker'}</span>
-            {swStatus === 'active' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+            {swStatus === 'active' ? <CheckCircle2 className="w-4 h-4 text-[var(--fg-success)]" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
           </div>
           <p className="text-sm font-bold text-[var(--text-primary)]">
             {swStatus === 'active' ? 'Active & Registered' : swStatus}
@@ -200,7 +200,7 @@ export const PwaDiagnosticTool: React.FC = () => {
               : 'Notifications are dynamically routed based on browser capability: devices supporting automated native installation show direct Install prompts, while restricted environments (like iOS Safari) present step-by-step instruction guides. Fully synchronized with actual installation state.'}
           </p>
           <div className="pt-2 flex items-center gap-3">
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--fg-success)]">
               <CheckCircle2 className="w-3.5 h-3.5" /> {isAr ? 'دعم التثبيت التلقائي المباشر' : 'Direct Native Install Supported'} ({pwa.hasPrompt ? 'Yes (Prompt Ready)' : 'No (Instruction Guide Active)'})
             </span>
           </div>
@@ -218,7 +218,7 @@ export const PwaDiagnosticTool: React.FC = () => {
             {logs.length} events logged
           </span>
         </div>
-        <div className="p-3 bg-black/90 text-emerald-400 font-mono text-[11px] rounded-[var(--radius)] h-44 overflow-y-auto space-y-1 border border-gray-800 shadow-inner">
+        <div className="p-3 bg-black/90 text-[var(--fg-success)] font-mono text-[11px] rounded-[var(--radius)] h-44 overflow-y-auto space-y-1 border border-gray-800 shadow-inner">
           {logs.map((log, idx) => (
             <div key={idx} className="leading-relaxed whitespace-pre-wrap">
               {log}

@@ -4,6 +4,7 @@ import {
   Sparkles, 
   Compass, 
   Sliders, 
+  Settings,
   Megaphone, 
   Zap, 
   BookOpen, 
@@ -41,6 +42,9 @@ export const RecommendationsPage: React.FC = () => {
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await fetch('/api/recommendations?limit=4', { headers });
+      if (!res.ok) return;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return;
       const data = await res.json();
       if (data.success && data.user_summary) {
         setUserSummary(data.user_summary);
@@ -84,20 +88,22 @@ export const RecommendationsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] pb-16">
       {/* Page Sticky Header */}
-      <div className="sticky top-0 z-30 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 py-3.5 transition-theme">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-sm">
-              <Compass size={22} className="animate-spin-slow" />
+      <div className="sticky top-0 z-30 bg-[var(--bg-main)]/85 backdrop-blur-md border-b border-[var(--border)] px-3 sm:px-4 py-2 sm:py-3.5 transition-theme">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shadow-xs shrink-0">
+              <Compass size={18} className="sm:hidden animate-spin-slow" />
+              <Compass size={22} className="hidden sm:block animate-spin-slow" />
             </div>
-            <div>
-              <h1 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
-                {language === 'ar' ? 'محرك الاكتشاف الذكي' : 'AI Discovery Hub'}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-lg font-black text-[var(--text-primary)] flex items-center gap-1.5 sm:gap-2 truncate">
+                <span className="sm:hidden truncate">{language === 'ar' ? 'محرك الاستكشاف' : 'Discovery Engine'}</span>
+                <span className="hidden sm:inline truncate">{language === 'ar' ? 'محرك الاكتشاف الذكي' : 'AI Discovery Hub'}</span>
+                <span className="hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 shrink-0">
                   v2.0 Elite Engine
                 </span>
               </h1>
-              <p className="text-xs text-[var(--text-muted)]">
+              <p className="hidden sm:block text-xs text-[var(--text-muted)] truncate">
                 {language === 'ar' 
                   ? 'ترشيح موجه بالذكاء الاصطناعي يتوافق مع أهدافك' 
                   : 'AI curation matching digital services and tools to your goals'}
@@ -105,45 +111,48 @@ export const RecommendationsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={() => setIsPrefModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-accent text-white font-extrabold text-xs shadow-md hover:opacity-90 transition-theme cursor-pointer"
+              title={language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}
+              className="flex items-center justify-center gap-2 p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-extrabold text-xs shadow-xs hover:opacity-90 active:scale-95 transition-theme cursor-pointer"
             >
-              <Sliders size={14} />
-              <span>{language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}</span>
+              <Settings size={18} className="shrink-0" />
+              <span className="hidden sm:inline">{language === 'ar' ? 'ضبط التفضيلات' : 'Customize Preferences'}</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3.5 sm:pt-6 space-y-4 sm:space-y-8">
         {/* User Interaction & Vector Intelligence Banner */}
-        <div className="p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-gray-500/10[0.04] via-[var(--bg-surface)] to-[var(--fg-accent)]/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-sm">
-          <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 mt-0.5">
-              <Activity size={22} />
+        <div className="p-3.5 sm:p-5 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-gray-500/10[0.04] via-[var(--bg-surface)] to-[var(--fg-accent)]/[0.04] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-xs sm:shadow-sm">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 mt-0.5">
+              <Activity size={18} className="sm:hidden" />
+              <Activity size={22} className="hidden sm:block" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-1.5 flex-wrap">
                 {language === 'ar' ? 'ملف التوصيات المخصصة لـ ' : 'Recommendation Vector for '}
                 <span className="text-accent">{user?.name || (language === 'ar' ? 'المستخدم' : 'Guest')}</span>
               </h3>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+              <p className="text-[11px] sm:text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
                 {language === 'ar'
-                  ? 'يقوم المحرك بدمج تفاعلاتك السابقة، مشترياتك، والخدمات المحفوظة لحساب درجات التوافق بقدقة عالية.'
+                  ? 'يقوم المحرك بدمج تفاعلاتك السابقة، مشترياتك، والخدمات المحفوظة لحساب درجات التوافق بدقة عالية.'
                   : 'Your vector synthesizes interactions, purchases, and saved services to calculate high-precision match scores.'}
               </p>
 
               {userSummary?.top_inferred_categories?.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                <div className="flex flex-wrap items-center gap-1 mt-2">
                   <span className="text-[10px] font-bold text-[var(--text-muted)]">
                     {language === 'ar' ? 'المجالات المستنتجة:' : 'Inferred Interests:'}
                   </span>
                   {userSummary.top_inferred_categories.map((cat: string, idx: number) => (
                     <span
                       key={`rec-cat-${cat}-${idx}`}
-                      className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md capitalize"
+                      className="text-[10px] font-extrabold text-accent bg-accent/10 border border-accent/20 px-1.5 sm:px-2 py-0.5 rounded-md capitalize"
                     >
                       {cat}
                     </span>
@@ -153,17 +162,17 @@ export const RecommendationsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-accent">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto justify-between sm:justify-start pt-2 sm:pt-0 border-t border-[var(--border)] sm:border-0">
+            <div className="flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
+              <p className="text-base sm:text-lg font-black text-accent">
                 {userSummary?.avg_match_percentage ? `${userSummary.avg_match_percentage}%` : '88%'}
               </p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
                 {language === 'ar' ? 'دقة الترشيح' : 'Match Precision'}
               </p>
             </div>
-            <div className="text-center px-4 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
-              <p className="text-lg font-black text-accent">
+            <div className="flex-1 sm:flex-initial text-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border)]">
+              <p className="text-base sm:text-lg font-black text-accent">
                 {userSummary?.total_recommendations ? `${userSummary.total_recommendations}+` : '15+'}
               </p>
               <p className="text-[10px] font-bold text-[var(--text-muted)]">
@@ -174,12 +183,12 @@ export const RecommendationsPage: React.FC = () => {
         </div>
 
         {/* Section 0: D3 Analytics & Engagement Trends */}
-        <section className="p-5 sm:p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
+        <section className="p-3.5 sm:p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xs sm:shadow-sm">
           <EngagementTrendsChart initialTimeframe="30d" />
         </section>
 
         {/* Section 1: Top Picks Unified Widget */}
-        <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
+        <section className="p-3.5 sm:p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xs sm:shadow-sm">
           <RecommendationWidget
             variant="full"
             limit={8}
@@ -188,17 +197,18 @@ export const RecommendationsPage: React.FC = () => {
         </section>
 
         {/* Section 2: Viralbook Posts & Ads */}
-        <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[var(--bg-attention-muted)] border border-[var(--border-default)] flex items-center justify-center text-[var(--fg-attention)]">
-                <Megaphone size={18} />
+        <section className="p-3.5 sm:p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xs sm:shadow-sm">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-[var(--border)]">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[var(--bg-attention-muted)] border border-[var(--border-default)] flex items-center justify-center text-[var(--fg-attention)] shrink-0">
+                <Megaphone size={16} className="sm:hidden" />
+                <Megaphone size={18} className="hidden sm:block" />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                  {language === 'ar' ? 'منشورات وخدمات فايرال بوك (Viralbook)' : 'Viralbook Feeds & Recommended Listings'}
+                <h3 className="text-xs sm:text-base font-extrabold text-[var(--text-primary)]">
+                  {language === 'ar' ? 'منشورات وخدمات فيرال بوك (Viralbook)' : 'Viralbook Feeds & Recommended Listings'}
                 </h3>
-                <p className="text-xs text-[var(--text-muted)]">
+                <p className="text-[10px] sm:text-xs text-[var(--text-muted)] hidden sm:block">
                   {language === 'ar' ? 'منشورات رائجة وعروض نشطة تحظى بتفاعل عالي على شبكة Viralbook' : 'Trending posts and active service offers on Viralbook with high engagement'}
                 </p>
               </div>
@@ -213,17 +223,18 @@ export const RecommendationsPage: React.FC = () => {
         </section>
 
         {/* Section 4: AI Tools & Assistants */}
-        <section className="p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-sm">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border)]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
-                <Zap size={18} />
+        <section className="p-3.5 sm:p-6 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-xs sm:shadow-sm">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 pb-2.5 sm:pb-3 border-b border-[var(--border)]">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                <Zap size={16} className="sm:hidden" />
+                <Zap size={18} className="hidden sm:block" />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+                <h3 className="text-xs sm:text-base font-extrabold text-[var(--text-primary)]">
                   {language === 'ar' ? 'أدوات الذكاء الاصطناعي المقترحة لزيادة الإنتاجية' : 'Recommended AI Productivity Tools'}
                 </h3>
-                <p className="text-xs text-[var(--text-muted)]">
+                <p className="text-[10px] sm:text-xs text-[var(--text-muted)] hidden sm:block">
                   {language === 'ar' ? 'مساعدات ذكاء اصطناعي لتسريع البرمجة، التحليل، والتسويق' : 'AI assistants customized for code auditing, strategy analysis, and design'}
                 </p>
               </div>

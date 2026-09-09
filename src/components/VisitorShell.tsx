@@ -55,6 +55,14 @@ export const VisitorShell: React.FC<VisitorShellProps> = ({ children }) => {
           >
             {isRtl ? 'سياسة الخصوصية' : 'Privacy Policy'}
           </button>
+          <span className="text-[var(--text-muted)] select-none">•</span>
+          <button 
+            type="button"
+            onClick={() => navigate('/copyright')} 
+            className="cursor-pointer hover:underline bg-transparent border-0 p-0 text-inherit font-inherit transition-colors duration-150"
+          >
+            {isRtl ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}
+          </button>
         </nav>
         <p className="font-sans tracking-wide leading-relaxed text-[var(--text-muted)] whitespace-nowrap text-[9px] sm:text-[11px]">
           {isRtl 

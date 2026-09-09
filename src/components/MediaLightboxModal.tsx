@@ -185,6 +185,21 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
     } catch (err) {}
   };
 
+  // Workspace Dominance Protocol: Isolate canvas & hide extraneous background sidebars
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('workspace-focus-mode', 'media-viewer-active');
+      document.documentElement.classList.add('workspace-focus-mode');
+    } else {
+      document.body.classList.remove('workspace-focus-mode', 'media-viewer-active');
+      document.documentElement.classList.remove('workspace-focus-mode');
+    }
+    return () => {
+      document.body.classList.remove('workspace-focus-mode', 'media-viewer-active');
+      document.documentElement.classList.remove('workspace-focus-mode');
+    };
+  }, [isOpen]);
+
   // Sync index and ad data when modal opens
   useEffect(() => {
     if (isOpen) {

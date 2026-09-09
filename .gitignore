@@ -1,41 +1,41 @@
 # =============================================================================
-# DEPENDENCIES
+# DEPENDENCIES AND RUNTIME PACKAGES
 # =============================================================================
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-pnpm-debug.log
-lerna-debug.log
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # =============================================================================
-# BUILD OUTPUTS
+# BUILD OUTPUTS AND CACHES
 # =============================================================================
-build/
 dist/
+build/
 .next/
 out/
 .nuxt/
 .output/
 coverage/
 .nyc_output/
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+*.tgz
 
 # =============================================================================
-# ENVIRONMENT VARIABLES (CRITICAL SECURITY)
+# ENVIRONMENT VARIABLES & SECRETS (STRICT SECURITY)
 # =============================================================================
-# Ignore all .env files
 .env
 .env.*
-
-# EXCEPT these templates/examples (safe to commit)
 !.env.example
 !.env.template
 !.env.local.example
-!.env.sample
 
-# =============================================================================
-# SECRETS AND CRYPTOGRAPHIC KEYS
-# =============================================================================
 *.pem
 *.key
 *.crt
@@ -45,29 +45,34 @@ coverage/
 *.csr
 *.jks
 *.keystore
-*.p7b
-*.p7c
-*.p7s
-*.spc
 
 # =============================================================================
-# LOGS AND AUDIT
+# DOCUMENTATION, GUIDES & NON-RUNTIME BLOAT
+# =============================================================================
+README.md
+CONTRIBUTING.md
+CLEANUP_MANIFEST.md
+docs/
+mockups/
+design/
+*.md
+!AGENTS.md
+!GEMINI.md
+
+# =============================================================================
+# LOGS, TEMPORARY & SYSTEM FILES
 # =============================================================================
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-audit.txt
 logs/
 *.pid
 *.seed
 *.pid.lock
+tmp/
+temp/
+.tmp/
+.temp/
 
-# =============================================================================
-# OPERATING SYSTEM FILES
-# =============================================================================
+# OS Specific
 .DS_Store
 .DS_Store?
 ._*
@@ -78,148 +83,49 @@ Thumbs.db
 Desktop.ini
 
 # =============================================================================
-# IDE AND EDITORS
+# IDE AND EDITORS (COMPLETE EXCLUSION)
 # =============================================================================
-# VS Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-!.vscode/.gitignore
-
-# IntelliJ IDEA
+.vscode/
 .idea/
 *.iml
 *.ipr
 *.iws
-
-# WebStorm
-.idea/
 *.swp
 *.swo
 *~
-
-# Sublime Text
 *.sublime-project
 *.sublime-workspace
 *.sublime-session
-
-# Vim
-*.swp
-*.swo
-*~
-*.un~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
+.emacs.desktop*
 
 # =============================================================================
-# TESTING
+# TESTING & BENCHMARKS
 # =============================================================================
-.nyc_output/
-coverage/
 jest-results.json
 test-results/
 playwright-report/
 test-report/
+*.test.*
+*.spec.*
 
 # =============================================================================
-# TYPESCRIPT
+# UPLOADS & LOCAL MEDIA
 # =============================================================================
-*.tsbuildinfo
-next-env.d.ts
-
-# =============================================================================
-# OPTIONAL: PACKAGE MANAGER LOCKS
-# Uncomment if you want to exclude lock files
-# =============================================================================
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
-# Bun.lockb
-
-# =============================================================================
-# MISCELLANEOUS
-# =============================================================================
-# Cache directories
-.cache/
-.parcel-cache/
-.eslintcache
-.stylelintcache
-
-# Temporary files
-tmp/
-temp/
-.tmp/
-.temp/
-
-# Uploads (if applicable)
-uploads/
+uploads/*
+!uploads/.gitkeep
 uploads-dev/
 uploads-test/
 
-# Database files (SQLite, etc.)
-*.sqlite
-*.sqlite3
-*.db
-*.db-shm
-*.db-wal
-
 # =============================================================================
-# SECURITY SCANNING
+# DEPLOYMENT & DEVOPS TEMPLATES
 # =============================================================================
-# Snyk
 .snyk
-
-# ESLint
-.eslintcache
-
-# Stylelint
-.stylelintcache
-
-# =============================================================================
-# DEPLOYMENT
-# =============================================================================
-# PM2
 .pm2/
-
-# Docker
-.docker/
-docker-compose*.yml
-!docker-compose.yml.example
-Dockerfile
-!Dockerfile.example
-
-# Kubernetes
-*.yaml
-!*.yaml.example
-*.yml
-!*.yml.example
-
-# Terraform
+.terraform/
 *.tfstate
 *.tfstate.backup
-.terraform/
-*.tfplan
-*.tfplan.json
-
-# =============================================================================
-# BACKUP FILES
-# =============================================================================
 *.bak
 *.backup
 *.old
 *.orig
 
-# =============================================================================
-# MISCELLANEOUS PROJECT-SPECIFIC
-# =============================================================================
-# Add your project-specific ignores here
-# Uploads directory
-/uploads/*
-!/uploads/.gitkeep

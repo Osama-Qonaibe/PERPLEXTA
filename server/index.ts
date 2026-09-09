@@ -25,6 +25,7 @@ import { createServer as createViteServer } from 'vite';
 import { runDatabaseMigrations, setIo, verifySchemaIntegrity } from './db/migrations.js';
 import { syncSystemTemplates } from './services/email.js';
 import { refreshCachedAppName } from './services/system.js';
+import { initializeSystemAssetSuite } from './services/systemAssetManager.js';
 import { ensureAdsSeedData } from './routes/ads.js';
 import { ensureBulletinSeedData } from './routes/bulletin.js';
 import { initCronJobs } from './jobs/cron.js';
@@ -54,6 +55,7 @@ async function initDatabase(): Promise<boolean> {
       await Promise.allSettled([
         syncSystemTemplates(),
         refreshCachedAppName(),
+        initializeSystemAssetSuite(),
         ensureAdsSeedData(),
         ensureBulletinSeedData(),
         ensureApiPerfLogsTable()

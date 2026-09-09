@@ -384,7 +384,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
     const shareUrl = `${window.location.origin}/viralbook/${ad.id}`;
     const text = encodeURIComponent(
       isRtl
-        ? `شاهِد هذا المنشور على فايرال بوك (Viralbook): "${ad.title}"\n${shareUrl}`
+        ? `شاهِد هذا المنشور على فيرال بوك (Viralbook): "${ad.title}"\n${shareUrl}`
         : `Check out this Viralbook post: "${ad.title}"\n${shareUrl}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
@@ -466,7 +466,7 @@ export const PostFeed: React.FC<PostFeedProps> = ({
           </h3>
           <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
             {isRtl
-              ? 'شارِك أفكارك أو منتجاتك الآن مع مجتمع فايرال بوك!'
+              ? 'شارِك أفكارك أو منتجاتك الآن مع مجتمع فيرال بوك!'
               : 'Share your posts or products with the Viralbook community!'}
           </p>
         </div>
@@ -528,8 +528,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                     </h4>
                     <CheckCircle2 size={13} className="text-blue-500 shrink-0" />
                     {(ad.owner_id || ad.user_id) && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[8px] text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0" title={isRtl ? 'حساب مالك موثق مسجل' : 'Verified Owner Account'}>
-                        <CheckCircle2 size={10} className="text-emerald-500" />
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[8px] text-[9px] font-bold bg-[var(--status-success-subtle)] text-[var(--fg-success)] border border-[var(--fg-success)]/30 shrink-0" title={isRtl ? 'حساب مالك موثق مسجل' : 'Verified Owner Account'}>
+                        <CheckCircle2 size={10} className="text-[var(--fg-success)]" />
                         {isRtl ? 'مالك موثق' : 'Verified Owner'}
                       </span>
                     )}
@@ -961,8 +961,8 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                       {ad.category}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wide whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-[var(--status-success-subtle)] text-[var(--fg-success)] border border-[var(--fg-success)]/20 tracking-wide whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--fg-success)] shrink-0" />
                       {isRtl ? 'صفحة تجارية موثقة' : 'Verified Business'}
                     </span>
                   )}
@@ -974,49 +974,51 @@ export const PostFeed: React.FC<PostFeedProps> = ({
                 <div className="min-w-0" /> // Keep it completely clean for personal posts without confusing details
               )}
 
-              {/* Dynamic Contact Action Button (Based on Post Settings) */}
-              <div className="shrink-0">
-                {(ad.whatsapp_number || ad.has_whatsapp_button) ? (
+              {/* Dynamic Contact & Messaging Action Buttons (Icon-Only Design System) */}
+              <div className="shrink-0 flex items-center gap-1.5">
+                {(ad.whatsapp_number || ad.has_whatsapp_button) && (
                   <button
                     onClick={(e) => onWhatsApp(ad, e)}
-                    className="px-2.5 py-1 sm:px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-[#25D366] dark:text-[#25D366] border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
-                    title={isRtl ? 'واتساب' : 'WhatsApp'}
+                    className="w-8 h-8 rounded-[var(--radius-xs)] bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
+                    title={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
+                    aria-label={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
                   >
-                    <Phone size={13} className="text-[#25D366] shrink-0" />
-                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'واتساب' : 'WhatsApp'}</span>
+                    <Phone size={14} className="text-[#25D366] shrink-0" />
                   </button>
-                ) : ad.phone_number ? (
+                )}
+
+                {ad.phone_number && !(ad.whatsapp_number || ad.has_whatsapp_button) && (
                   <a
                     href={`tel:${ad.phone_number}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="px-2.5 py-1 sm:px-3 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-600/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
+                    className="w-8 h-8 rounded-[var(--radius-xs)] bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 border border-blue-600/30 flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer"
                     title={isRtl ? `اتصال: ${ad.phone_number}` : `Call: ${ad.phone_number}`}
+                    aria-label={isRtl ? `اتصال: ${ad.phone_number}` : `Call: ${ad.phone_number}`}
                   >
-                    <PhoneCall size={13} className="shrink-0" />
-                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'اتصال' : 'Call'}</span>
+                    <PhoneCall size={14} className="shrink-0" />
                   </a>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setActiveChatAdId(activeChatAdId === ad.id ? null : ad.id);
-                      if (onMessageAdvertiser) onMessageAdvertiser(ad);
-                    }}
-                    disabled={messagingAdId === ad.id}
-                    className={`px-2.5 py-1 sm:px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95 ${
-                      activeChatAdId === ad.id
-                        ? 'bg-accent text-white ring-2 ring-accent-400/50'
-                        : 'bg-accent text-white hover:bg-accent/90'
-                    }`}
-                    title={isRtl ? 'مراسلة' : 'Message'}
-                  >
-                    {messagingAdId === ad.id ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <MessageCircle size={13} className="shrink-0" />
-                    )}
-                    <span className="text-[11px] sm:text-xs font-bold">{isRtl ? 'مراسلة' : 'Message'}</span>
-                  </button>
                 )}
+
+                <button
+                  onClick={() => {
+                    setActiveChatAdId(activeChatAdId === ad.id ? null : ad.id);
+                    if (onMessageAdvertiser) onMessageAdvertiser(ad);
+                  }}
+                  disabled={messagingAdId === ad.id}
+                  className={`w-8 h-8 rounded-[var(--radius-xs)] border flex items-center justify-center transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                    activeChatAdId === ad.id
+                      ? 'bg-accent text-white border-accent ring-2 ring-accent/30'
+                      : 'bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] text-[var(--text-primary)] border-[var(--border-main)] hover:border-accent/40'
+                  }`}
+                  title={isRtl ? 'مراسلة المعلن' : 'Message'}
+                  aria-label={isRtl ? 'مراسلة المعلن' : 'Message'}
+                >
+                  {messagingAdId === ad.id ? (
+                    <Loader2 size={14} className="animate-spin text-accent" />
+                  ) : (
+                    <MessageCircle size={14} className={`shrink-0 ${activeChatAdId === ad.id ? 'text-white' : 'text-accent'}`} />
+                  )}
+                </button>
               </div>
             </div>
 

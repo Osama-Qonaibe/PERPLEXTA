@@ -18,6 +18,7 @@ import { upload, handleMulterError } from '../middleware/upload.js';
 import { checkDiskSpace } from '../middleware/checkDiskSpace.js';
 import { uploadValidator } from '../middleware/uploadValidator.js';
 import { optimizeUploadedImage, findOrphanedMediaAssets } from '../services/mediaOptimizationService.js';
+import { generateAppIconsFromSource, getSystemAssetsStatus, SYSTEM_ASSET_SPECS } from '../services/systemAssetManager.js';
 import { adminLimiter, broadcastLimiter } from '../middleware/rateLimit.js';
 import { validateServerToolRoute } from '../utils/orchestratorValidator.js';
 import { 
@@ -2593,6 +2594,9 @@ router.post("/cache/clear", authenticateAdmin, async (req, res) => {
     const { target } = req.body || req.query;
     const cleared: string[] = [];
 
+    memoryCache.clear();
+    cleared.push('memory_cache');
+
     if (!target || target === 'file_permission' || target === 'global') {
       invalidateFilePermissionCache();
       cleared.push('file_permission');
@@ -3699,10 +3703,37 @@ router.post("/settings/upload-asset", authenticateAdmin, checkDiskSpace, upload.
       await fs.unlink(req.file.path).catch(() => {});
     }
 
+    // Auto-generate all favicon, Apple Touch, and PWA manifest icon variants from this newly uploaded logo
+    generateAppIconsFromSource(optimizedPath, { force: true }).catch((genErr: any) => {
+      console.warn('[AssetUpload] Background icon suite generation warning:', genErr.message);
+    });
+
     res.json({ success: true, imageUrl: base64Str, fileUrl: optResult.fileUrl });
   } catch (error: any) {
     console.error('[AssetUpload] Upload failed:', error);
     res.status(500).json({ error: error.message || 'Image upload failed' });
+  }
+});
+
+router.get("/settings/brand-assets-status", authenticateAdmin, async (req, res) => {
+  try {
+    const status = await getSystemAssetsStatus();
+    res.json(status);
+  } catch (error: any) {
+    console.error('[Admin] Brand assets status check failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to check brand assets status' });
+  }
+});
+
+router.post("/settings/generate-brand-assets", authenticateAdmin, async (req, res) => {
+  try {
+    const source = req.body?.source || null;
+    const force = Boolean(req.body?.force ?? true);
+    const result = await generateAppIconsFromSource(source, { force });
+    res.json(result);
+  } catch (error: any) {
+    console.error('[Admin] Brand assets generation failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate brand assets' });
   }
 });
 

@@ -42,12 +42,12 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* Semantic Tokens - Light Mode (Claude Cream & Coral) */
-  --surface-page: #faf9f5;
-  --surface-canvas: #faf9f5;
-  --surface-card: #efe9de;
-  --surface-raised: #efe9de;
-  --surface-subtle: #f5f0e8;
-  --surface-inset: #ebe6df;
+  --surface-page: #f8f7f4;
+  --surface-canvas: #f8f7f4;
+  --surface-card: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f5f2eb;
+  --surface-inset: #eae5dc;
   --surface-overlay: rgba(20, 20, 19, 0.4);
 
   --fg-primary: #141413;
@@ -62,11 +62,11 @@
   --border-accent-emphasis: #cc785c;
   --focus-outline: #cc785c;
 
-  --border-subtle: #ebe6df;
-  --border-default: #e6dfd8;
-  --border-outer-input: #d1c7bd;
-  --border-inner-input: #e0d6cc;
-  --border-strong: #c2bcb5;
+  --border-subtle: #f0ebe2;
+  --border-default: #e6e0d6;
+  --border-outer-input: #d8d2c8;
+  --border-inner-input: #e4dec8;
+  --border-strong: #c8c0b4;
   --border-focus: #cc785c;
 
   --accent: #cc785c;
@@ -415,6 +415,20 @@ span:hover,
   outline-offset: 2px;
 }
 
+/* Remove inner focus outlines from inputs & textareas so they don't produce floating orange rings inside containers */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible,
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
 @keyframes gentleFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -596,30 +610,144 @@ html {
 
 .toast-container-floating {
   position: fixed;
-  top: 0.875rem;
+  bottom: 1.5rem;
   z-index: 100000;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
-  padding: 0.375rem;
-  max-width: 100%;
+  gap: 0.5rem;
   pointer-events: none;
   contain: layout style;
+  max-width: calc(100vw - 2rem);
+}
+
+.toast-container-floating.pos-bottom-start {
+  left: 1.5rem;
+  right: auto;
+}
+
+.toast-container-floating.pos-bottom-end {
+  right: 1.5rem;
+  left: auto;
+}
+
+@media (max-width: 640px) {
+  .toast-container-floating.pos-bottom-start,
+  .toast-container-floating.pos-bottom-end {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: calc(11.5rem + env(safe-area-inset-bottom, 0px));
+    align-items: center;
+    width: max-content;
+    max-width: calc(100vw - 1rem);
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
 }
 
 .toast-floating {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
+  justify-content: space-between;
+  gap: 0;
+  min-height: 1.875rem;
+  padding: 0;
   background-color: var(--surface-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-main);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(20, 20, 19, 0.08);
+  border-radius: 0px;
+  color: var(--fg-primary);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   pointer-events: auto;
   user-select: none;
+  max-width: calc(100vw - 1rem);
+  width: auto;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .toast-floating {
+    min-height: 2.125rem;
+  }
+}
+
+[dir="rtl"] .toast-floating {
+  padding: 0;
+}
+
+.toast-pill-variant {
+  border-radius: 0px;
+}
+
+.toast-divider {
+  width: 1px;
+  height: 1rem;
+  background-color: var(--border-main);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.toast-live-dot {
+  position: relative;
+  display: flex;
+  height: 0.4375rem;
+  width: 0.4375rem;
+  flex-shrink: 0;
+}
+
+.toast-live-dot-ping {
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  position: absolute;
+  display: inline-flex;
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+  background-color: var(--fg-accent);
+  opacity: 0.75;
+}
+
+.toast-live-dot-core {
+  position: relative;
+  display: inline-flex;
+  border-radius: 9999px;
+  height: 0.4375rem;
+  width: 0.4375rem;
+  background-color: var(--fg-accent);
+}
+
+.toast-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: 0px;
+  color: var(--fg-secondary);
+  background: transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  height: 100%;
+  align-self: stretch;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .toast-dismiss-btn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.725rem;
+  }
+}
+
+.toast-dismiss-btn:hover {
+  color: var(--fg-primary);
+  background-color: var(--surface-subtle);
 }
 
 .toast-action-btn {
@@ -627,19 +755,35 @@ html {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.625rem;
+  padding: 0.2rem 0.65rem;
   font-size: 0.6875rem;
   font-weight: 800;
-  border-radius: var(--radius-full);
+  border-radius: 0px;
   background-color: var(--bg-accent-emphasis);
   color: var(--fg-on-emphasis);
   transition: all 0.15s ease;
   cursor: pointer;
   border: none;
+  height: 100%;
+  align-self: stretch;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .toast-action-btn {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.725rem;
+    gap: 0.35rem;
+  }
+}
+
+.toast-action-btn:hover {
+  opacity: 0.92;
 }
 
 .toast-action-btn:active {
-  background: var(--scale-coral-active);
+  transform: scale(0.96);
 }
 
 .mobile-top-header,
@@ -869,6 +1013,156 @@ html {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* ==========================================================================
+   FULL WORKSPACE ISOLATION & DOMINANCE PROTOCOL
+   ========================================================================== */
+.workspace-focus-mode .sponsored-sidebar,
+.workspace-focus-mode aside:not(.media-modal-aside),
+.workspace-focus-mode header,
+.workspace-focus-mode .pwa-banner-floating {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.workspace-focus-mode,
+.workspace-focus-mode body {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* ==========================================================================
+   UNIFIED PLATFORM DESIGN SYSTEM TOKENS & COMPONENT CLASSES
+   ========================================================================== */
+.ui-card-container {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  transition: all var(--motion-base) var(--motion-ease);
+}
+
+.ui-subcard {
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+}
+
+.ui-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-accent-emphasis);
+  color: var(--fg-on-emphasis);
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all var(--motion-fast) var(--motion-ease);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.ui-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.ui-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-main);
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all var(--motion-fast) var(--motion-ease);
+  cursor: pointer;
+}
+.ui-btn-secondary:hover {
+  background-color: var(--surface-subtle);
+  border-color: var(--border-accent);
+}
+
+.ui-btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  background-color: var(--surface-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-main);
+  font-weight: 700;
+  font-size: 0.75rem;
+  transition: all var(--motion-fast) var(--motion-ease);
+  cursor: pointer;
+}
+.ui-btn-pill:hover {
+  background-color: var(--surface-inset);
+  color: var(--fg-accent);
+  border-color: rgba(204, 120, 92, 0.4);
+}
+
+.ui-btn-icon-circle {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-main);
+  transition: all var(--motion-fast) var(--motion-ease);
+  cursor: pointer;
+}
+.ui-btn-icon-circle:hover {
+  background-color: var(--surface-inset);
+  color: var(--text-primary);
+  border-color: var(--border-accent);
+}
+
+.ui-btn-icon-square {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-main);
+  transition: all var(--motion-fast) var(--motion-ease);
+  cursor: pointer;
+}
+.ui-btn-icon-square:hover {
+  background-color: var(--surface-subtle);
+  color: var(--text-primary);
+  border-color: var(--border-accent);
+}
+
+.ui-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  border: 1px solid var(--border-accent-emphasis);
+  background-color: var(--bg-accent-muted);
+  color: var(--fg-accent);
+}
+
 
 
 

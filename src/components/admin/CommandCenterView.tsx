@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
-import { useConfirm } from "../../context/ConfirmContext";
 import { motion, AnimatePresence } from "motion/react";
-import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../../utils/adminUtils";
-import { resolveImageUrl } from "../../utils/imageResolver";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { getTimeAgo } from "../../utils/adminUtils";
 import {
   Activity,
   Key,
@@ -23,85 +12,31 @@ import {
   CreditCard,
   Users,
   Settings,
-  Plus,
-  ArrowLeft,
-  ArrowRight,
   TrendingUp,
   Zap,
-  Server,
-  CheckCircle2,
   AlertCircle,
-  Bell,
   Clock,
   RefreshCw,
-  XCircle,
-  ExternalLink,
-  Download,
-  Calendar,
-  Code2,
-  Star,
-  MessageSquare,
   Sparkles,
-  Brain,
   Globe,
-  FileText,
-  Image as ImageIcon,
-  Video,
-  GraduationCap,
-  Info,
-  Coins,
-  Wallet,
   ShieldAlert,
   Search,
   Trash2,
   X,
-  CheckCircle,
-  AlertTriangle,
-  Send,
-  Palette,
-  Terminal,
   Shield,
   ShieldCheck,
   Settings2,
-  Scale,
-  Megaphone,
-  UserPlus,
-  Sliders,
-  Wrench,
   ChevronDown,
-  Copy,
-  Eye,
-  EyeOff,
-  Save,
-  Upload,
-  Building,
-  Mic,
-  Volume2,
-  Monitor,
-  LayoutGrid,
-  LifeBuoy,
-  History,
-  ArrowRightLeft,
-  Award,
-  Camera,
   BellRing,
-  Circle,
-  DollarSign,
-  FastForward,
-  MonitorSmartphone,
 } from "lucide-react";
 import { ActionConfirmationModal } from "../ActionConfirmationModal";
 import { HighlightText } from "../HighlightText";
 import { CommandCenterViewProps } from "./adminTypes";
 
-export const CommandCenterView = ({
+export const CommandCenterView: React.FC<CommandCenterViewProps> = ({
   theme,
   t,
   showToast,
-}: {
-  theme: string;
-  t: (key: string, replacements?: any) => string;
-  showToast: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }) => {
   const { token, language, socket, dir } = useAppContext();
   const navigate = useNavigate();
@@ -495,37 +430,6 @@ export const CommandCenterView = ({
 
   return (
     <div className="space-y-6">
-      {/* Theme Studio Banner Card */}
-      <div 
-        onClick={() => navigate('/admin/theme')}
-        className="p-6 rounded-[var(--radius-lg)] border border-[var(--border-accent)] bg-gradient-to-r from-[var(--surface-card)] to-[var(--surface-subtle)] hover:opacity-95 transition-all cursor-pointer shadow-md flex items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="p-3.5 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] shadow-sm">
-            <Palette size={28} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-lg font-black text-[var(--text-primary)]">
-                {language === 'ar' ? 'استوديو المظهر والثيمات (Theme Studio)' : 'Theme Studio & Appearance Control'}
-              </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)]">
-                {language === 'ar' ? 'جديد' : 'NEW'}
-              </span>
-            </div>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {language === 'ar' 
-                ? 'تحكم دقيق وشامل في كل لون وكل سطر للوضع الداكن والفاتح، مع تطبيق فوري وقاعدة بيانات صارمة.' 
-                : 'Sovereign color token control for dark and light themes with instant database application.'}
-            </p>
-          </div>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-[var(--radius-md)] bg-[var(--surface-page)] text-[var(--text-primary)] font-bold text-sm border border-[var(--border-main)] shadow-xs">
-          <span>{language === 'ar' ? 'فتح الاستوديو' : 'Open Studio'}</span>
-          <ArrowRight size={16} className={language === 'ar' ? 'rotate-180' : ''} />
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, idx) => (
           <div
@@ -566,19 +470,7 @@ export const CommandCenterView = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-3">
-          <button
-            onClick={() => navigate('/admin/theme')}
-            className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-accent)] bg-[var(--surface-subtle)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer shadow-xs"
-          >
-            <div className="p-2 rounded-[var(--radius-xs)] bg-[var(--surface-card)] text-[var(--fg-accent)] group-hover:scale-105 transition-transform border border-[var(--border-main)]">
-              <Palette size={18} />
-            </div>
-            <span className="text-xs font-bold text-[var(--fg-accent)] leading-tight">
-              {language === 'ar' ? 'استوديو المظهر' : 'Theme Studio'}
-            </span>
-          </button>
-
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <button
             onClick={() => navigate('/admin/seo')}
             className="p-3 rounded-[var(--radius-sm)] border border-[var(--border-main)] bg-[var(--surface-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--surface-card)] transition-all flex flex-col items-center text-center gap-2 group cursor-pointer"
@@ -935,11 +827,11 @@ export const CommandCenterView = ({
               { id: 'chat_fast', labelEn: 'Fast Chat', labelAr: 'المحادثة السريعة' },
               { id: 'chat_pro', labelEn: 'Pro Chat', labelAr: 'المحادثة المتقدمة' },
               { id: 'chat_reasoning', labelEn: 'Reasoning Mode', labelAr: 'نمط التفكير العميق' },
-              { id: 'perplexta_analysis', labelEn: 'Perplexta Analysis', labelAr: 'تحليل بيربليكستا' },
+              { id: 'perplexta_analysis', labelEn: 'Analysis', labelAr: 'تحليل' },
               { id: 'x402_api', labelEn: 'x402 Agent API', labelAr: 'بوابة عملاء x402' },
-              { id: 'image', labelEn: 'Image Generation', labelAr: 'توليد الصور' },
-              { id: 'code', labelEn: 'Code Analysis', labelAr: 'تحليل الكود' },
-              { id: 'legal_analysis', labelEn: 'Legal Analysis', labelAr: 'التحليل القانوني' }
+              { id: 'image', labelEn: 'Image', labelAr: 'صورة' },
+              { id: 'code', labelEn: 'Code', labelAr: 'كود' },
+              { id: 'legal_analysis', labelEn: 'Legal', labelAr: 'قانون' }
             ];
 
             const uniqueToolsInLogs = Array.from(new Set(

@@ -23,7 +23,7 @@ export const AdComposer: React.FC<AdComposerProps> = ({
   openReelUploadModal,
 }) => {
   return (
-    <div className="p-3.5 rounded-[var(--radius-lg)] bg-[var(--surface-card)] border border-[var(--border-main)] space-y-2.5 transition-theme">
+    <div className="p-3 rounded-[0px] bg-[var(--surface-card)] border border-[var(--border-main)] space-y-2.5 transition-theme">
       <div className="flex items-center gap-2.5">
         <BulletinAvatar
           src={user?.avatar}
@@ -38,13 +38,13 @@ export const AdComposer: React.FC<AdComposerProps> = ({
             }
             setIsAdModalOpen(true);
           }}
-          className="flex-1 text-start px-4 py-2 sm:py-2.5 rounded-full bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-xs text-[var(--text-muted)] font-medium transition-theme border border-transparent hover:border-[var(--border-main)] cursor-pointer"
+          className="flex-1 text-start px-3.5 py-2 rounded-[0px] bg-[var(--surface-subtle)] hover:bg-[var(--surface-inset)] text-xs text-[var(--text-muted)] font-medium transition-theme border border-[var(--border-main)] cursor-pointer"
         >
           {isRtl ? 'بم تفكر اليوم؟' : "What's on your mind?"}
         </button>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[var(--border-subtle)] pt-2 text-[11px] sm:text-xs text-[var(--text-muted)] transition-theme">
+      <div className="flex items-center justify-between border-t border-[var(--border-main)] pt-2 text-[11px] sm:text-xs text-[var(--text-muted)] transition-theme">
         <button
           type="button"
           onClick={() => {
@@ -54,7 +54,7 @@ export const AdComposer: React.FC<AdComposerProps> = ({
             }
             setIsStreamSetupOpen(true);
           }}
-          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-red-500/10 font-bold transition-theme text-red-500 whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-[0px] hover:bg-red-500/10 font-bold transition-theme text-red-500 whitespace-nowrap cursor-pointer"
         >
           <Radio size={14} className="text-red-500 shrink-0" />
           <span>{isRtl ? 'بث مباشر' : 'Live Stream'}</span>
@@ -69,7 +69,7 @@ export const AdComposer: React.FC<AdComposerProps> = ({
             }
             openPostUploadModal();
           }}
-          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-blue-500/10 font-bold transition-theme text-blue-500 whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-[0px] hover:bg-blue-500/10 font-bold transition-theme text-blue-500 whitespace-nowrap cursor-pointer"
         >
           <Video size={14} className="text-blue-500 shrink-0" />
           <span>{isRtl ? 'فيديو أو صورة' : 'Photo/Video'}</span>
@@ -84,7 +84,7 @@ export const AdComposer: React.FC<AdComposerProps> = ({
             }
             openReelUploadModal();
           }}
-          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full hover:bg-purple-500/10 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-[0px] hover:bg-purple-500/10 font-bold transition-theme text-purple-500 whitespace-nowrap cursor-pointer"
         >
           <Clapperboard size={14} className="text-purple-500 shrink-0" />
           <span>{isRtl ? 'ريلز' : 'Reels'}</span>

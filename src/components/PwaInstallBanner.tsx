@@ -94,33 +94,33 @@ export const PwaInstallBanner: React.FC = () => {
         {isVisible && !showGuideModal && (
           <motion.div
             id="pwa-install-banner"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
-            className={`fixed top-3 ${dir === 'rtl' ? 'left-3 md:left-4' : 'right-3 md:right-4'} z-[10090] flex items-center gap-2.5 p-1 sm:p-1.5 pl-3 pr-1 sm:pl-3.5 sm:pr-1.5 rounded-full bg-[var(--surface-card)]/95 backdrop-blur-md border border-[var(--border-main)] shadow-md select-none pointer-events-auto transition-theme max-w-[95%] sm:max-w-md w-auto`}
+            className={`fixed top-3 ${dir === 'rtl' ? 'left-3 md:left-4' : 'right-3 md:right-4'} z-[10090] toast-floating shadow-md select-none pointer-events-auto transition-theme`}
           >
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 shrink min-w-0">
+              <span className="toast-live-dot">
+                <span className="toast-live-dot-ping" />
+                <span className="toast-live-dot-core" />
               </span>
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-[var(--text-primary)] whitespace-nowrap">
+              <span className="text-[10.5px] sm:text-xs font-bold text-[var(--fg-primary)] whitespace-nowrap font-sans truncate">
                 {siteName}
               </span>
-              <span className="text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent whitespace-nowrap">
+              <span className="text-[8.5px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-none bg-accent/15 text-accent whitespace-nowrap font-sans shrink-0">
                 {isAr ? 'التطبيق الأصلي' : 'Native App'}
               </span>
             </div>
 
-            <div className="w-px h-3 bg-[var(--border-main)] shrink-0" />
+            <div className="toast-divider" />
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center h-full shrink-0">
               <button
                 id="pwa-banner-dismiss-btn"
                 type="button"
                 onClick={handleClose}
-                className="px-2 py-0.5 text-[9.5px] sm:text-[10.5px] font-bold rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-all cursor-pointer"
+                className="toast-dismiss-btn font-sans"
               >
                 {isAr ? 'لاحقاً' : 'Later'}
               </button>
@@ -130,7 +130,7 @@ export const PwaInstallBanner: React.FC = () => {
                   id="pwa-banner-open-btn"
                   type="button"
                   onClick={handleAction}
-                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-extrabold rounded-full bg-accent text-white hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  className="toast-action-btn font-sans"
                 >
                   <span>{isAr ? 'فتح' : 'Open'}</span>
                 </button>
@@ -139,9 +139,9 @@ export const PwaInstallBanner: React.FC = () => {
                   id="pwa-banner-installing-btn"
                   type="button"
                   disabled
-                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-bold rounded-full bg-accent/40 text-black cursor-wait flex items-center gap-1 shadow-xs"
+                  className="toast-action-btn font-sans opacity-75 cursor-wait"
                 >
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>...</span>
                 </button>
               ) : (
@@ -149,9 +149,9 @@ export const PwaInstallBanner: React.FC = () => {
                   id="pwa-banner-install-btn"
                   type="button"
                   onClick={handleAction}
-                  className="px-2.5 py-1 text-[9.5px] sm:text-[10.5px] font-extrabold rounded-full bg-accent text-white hover:opacity-90 active:scale-95 transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  className="toast-action-btn font-sans"
                 >
-                  <Download className="w-2.5 h-2.5 shrink-0" />
+                  <Download className="w-3.5 h-3.5 shrink-0" />
                   <span>{isAr ? 'تثبيت الآن' : 'Install'}</span>
                 </button>
               )}
@@ -184,9 +184,23 @@ export const PwaInstallBanner: React.FC = () => {
               </button>
 
               <div className="flex flex-col items-center text-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-2">
-                  <Smartphone size={20} />
-                </div>
+                {(siteSettings?.logoBase64 || siteSettings?.logoLightBase64) ? (
+                  <NotificationIconRenderer
+                    src={resolveImageUrl((theme === 'light' && siteSettings?.logoLightBase64) ? siteSettings?.logoLightBase64 : siteSettings?.logoBase64, 'general')}
+                    alt={siteName}
+                    size={40}
+                    className="rounded-xl border border-accent/30 bg-[var(--surface-subtle)] p-1"
+                    fallbackIcon={
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-2">
+                        <Smartphone size={20} />
+                      </div>
+                    }
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center text-accent p-2">
+                    <Smartphone size={20} />
+                  </div>
+                )}
 
                 <h3 className="text-sm font-extrabold">
                   {isAr ? `تثبيت ${siteName} على جهازك` : `Install ${siteName} on Your Device`}

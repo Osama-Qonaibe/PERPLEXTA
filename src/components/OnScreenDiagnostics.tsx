@@ -183,12 +183,12 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
     return (
       <div 
         id="mini-diagnostics-bar"
-        className="absolute top-3 left-3 z-50 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-zinc-950/90 backdrop-blur-md border border-emerald-500/30 text-[10px] font-mono text-emerald-400 shadow-lg cursor-pointer hover:border-emerald-500/60 transition-all select-none"
+        className="absolute top-3 left-3 z-50 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-zinc-950/90 backdrop-blur-md border border-[var(--fg-success)]/30 text-[10px] font-mono text-[var(--fg-success)] shadow-lg cursor-pointer hover:border-[var(--fg-success)]/60 transition-all select-none"
         onClick={() => setIsExpanded(true)}
       >
         <span className="relative flex h-1.5 w-1.5">
-          <span className={`animate-ping absolute inline-flex h-full w-full rounded-[4px] opacity-75 ${isPlaying ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-          <span className={`relative inline-flex rounded-[4px] h-1.5 w-1.5 ${isPlaying ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+          <span className={`animate-ping absolute inline-flex h-full w-full rounded-[4px] opacity-75 ${isPlaying ? 'bg-[var(--fg-success)]' : 'bg-amber-400'}`}></span>
+          <span className={`relative inline-flex rounded-[4px] h-1.5 w-1.5 ${isPlaying ? 'bg-[var(--fg-success)]' : 'bg-amber-500'}`}></span>
         </span>
         <span className="font-bold">MEDIA-HUD</span>
         <span className="text-zinc-500">|</span>
@@ -203,15 +203,15 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
   return (
     <div 
       id="expanded-diagnostics-panel"
-      className="absolute top-3 left-3 z-50 w-[290px] max-w-[calc(100%-24px)] max-h-[90%] overflow-y-auto rounded-xl bg-zinc-950/95 backdrop-blur-md border border-emerald-500/40 p-3 text-[11px] font-mono text-zinc-300 shadow-2xl flex flex-col gap-2.5 text-left"
+      className="absolute top-3 left-3 z-50 w-[290px] max-w-[calc(100%-24px)] max-h-[90%] overflow-y-auto rounded-xl bg-zinc-950/95 backdrop-blur-md border border-[var(--fg-success)]/40 p-3 text-[11px] font-mono text-zinc-300 shadow-2xl flex flex-col gap-2.5 text-left"
       style={{ direction: 'ltr' }} // Force LTR for clean terminal coding output
     >
       {/* Header */}
       <div className="flex items-center justify-between pb-1.5 border-b border-zinc-800">
-        <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+        <div className="flex items-center gap-1.5 text-[var(--fg-success)] font-bold">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-[var(--fg-success)] opacity-75"></span>
+            <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-[var(--fg-success)]"></span>
           </span>
           <span>PERPLEXTA MEDIA HUD v1.2</span>
         </div>
@@ -240,7 +240,7 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
         {/* Playback Status */}
         <div className="p-1.5 rounded bg-zinc-900/50 border border-zinc-800">
           <span className="text-zinc-500 block">PLAYBACK STATE</span>
-          <span className={`font-bold ${isPlaying ? 'text-emerald-400' : 'text-amber-400'}`}>
+          <span className={`font-bold ${isPlaying ? 'text-[var(--fg-success)]' : 'text-amber-400'}`}>
             {isPlaying ? '▶ PLAYING' : '⏸ PAUSED'}
           </span>
         </div>
@@ -248,7 +248,7 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
         {/* DOM Status */}
         <div className="p-1.5 rounded bg-zinc-900/50 border border-zinc-800">
           <span className="text-zinc-500 block">DOM VIDEO STATE</span>
-          <span className={`font-bold ${domMetrics.paused ? 'text-amber-400' : 'text-emerald-400'}`}>
+          <span className={`font-bold ${domMetrics.paused ? 'text-amber-400' : 'text-[var(--fg-success)]'}`}>
             {domMetrics.paused ? '⏸ PAUSED' : '▶ RUNNING'}
           </span>
         </div>
@@ -260,7 +260,7 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
             {isMuted ? (
               <span className="text-red-400 flex items-center gap-0.5"><VolumeX size={10} /> MUTED</span>
             ) : (
-              <span className="text-emerald-400 flex items-center gap-0.5"><Volume2 size={10} /> VOL {Math.round(volume * 100)}%</span>
+              <span className="text-[var(--fg-success)] flex items-center gap-0.5"><Volume2 size={10} /> VOL {Math.round(volume * 100)}%</span>
             )}
           </span>
         </div>
@@ -300,13 +300,13 @@ export const OnScreenDiagnostics: React.FC<OnScreenDiagnosticsProps> = ({
           <span className="text-zinc-500">HTML5 networkState:</span>
           <span className="text-zinc-300 text-[9px]">{getNetworkStateLabel(domMetrics.networkState)}</span>
         </div>
-        <div className="flex justify-between mt-1"><span className="text-zinc-500">PlaysInline:</span> <span className={domMetrics.playsInline ? 'text-emerald-400' : 'text-red-400'}>{domMetrics.playsInline ? 'YES' : 'NO'}</span></div>
-        <div className="flex justify-between"><span className="text-zinc-500">Autoplay Attr:</span> <span className={domMetrics.autoplay ? 'text-emerald-400' : 'text-zinc-400'}>{domMetrics.autoplay ? 'YES' : 'NO'}</span></div>
+        <div className="flex justify-between mt-1"><span className="text-zinc-500">PlaysInline:</span> <span className={domMetrics.playsInline ? 'text-[var(--fg-success)]' : 'text-red-400'}>{domMetrics.playsInline ? 'YES' : 'NO'}</span></div>
+        <div className="flex justify-between"><span className="text-zinc-500">Autoplay Attr:</span> <span className={domMetrics.autoplay ? 'text-[var(--fg-success)]' : 'text-zinc-400'}>{domMetrics.autoplay ? 'YES' : 'NO'}</span></div>
       </div>
 
       {/* Environment */}
       <div className="text-[10px] flex flex-col gap-1 p-1.5 rounded bg-zinc-900/40 border border-zinc-800">
-        <div className="flex justify-between"><span className="text-zinc-500">Sandbox (Iframe):</span> <span className={isIframe ? 'text-amber-400' : 'text-emerald-400 font-bold'}>{isIframe ? 'YES (Strict)' : 'NO (Direct)'}</span></div>
+        <div className="flex justify-between"><span className="text-zinc-500">Sandbox (Iframe):</span> <span className={isIframe ? 'text-amber-400' : 'text-[var(--fg-success)] font-bold'}>{isIframe ? 'YES (Strict)' : 'NO (Direct)'}</span></div>
         <div className="flex justify-between"><span className="text-zinc-500">Device Platform:</span> <span className="text-zinc-300">{isMobile ? 'Mobile' : 'Desktop'}</span></div>
         <div className="flex justify-between"><span className="text-zinc-500">In-App Webview:</span> <span className={isSocialMediaBrowser ? 'text-amber-400 font-bold' : 'text-zinc-400'}>{isSocialMediaBrowser ? 'YES (Strict WebView)' : 'NO'}</span></div>
       </div>

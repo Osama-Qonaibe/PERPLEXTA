@@ -97,4 +97,5 @@ export interface ComplianceAuditLogsViewProps {
   theme: string;
   t: (key: string, replacements?: any) => string;
   dir: string;
+  initialTab?: 'logs' | 'radar' | 'metrics';
 }

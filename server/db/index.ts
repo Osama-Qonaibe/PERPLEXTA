@@ -148,7 +148,7 @@ export function normalizeDatabaseUrl(url: string): string {
   }
 }
 
-export function getBasePoolConfig(max: number, connectionTimeoutMillis = 10000, urlStr?: string) {
+export function getBasePoolConfig(max: number, connectionTimeoutMillis = 15000, urlStr?: string) {
   return {
     ssl: getSslConfig(urlStr),
     idleTimeoutMillis: 60000,
@@ -163,8 +163,8 @@ function patchPoolQuery(p: any) {
   if (!p || p._queryPatched) return p;
   const originalQuery = p.query.bind(p);
   p.query = async function(text: any, params: any) {
-    const maxRetries = 2;
-    let delay = 500;
+    const maxRetries = 3;
+    let delay = 1000;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await originalQuery(text, params);
@@ -172,7 +172,7 @@ function patchPoolQuery(p: any) {
         const msg = err?.message || String(err);
         const isTransient = /Connection terminated unexpectedly|ECONNRESET|ETIMEDOUT|terminating connection|closed|SSL|too many connections|connection slots reserved|remaining connection slots reserved|timeout/i.test(msg);
         if (isTransient && attempt < maxRetries) {
-          const jitter = Math.floor(Math.random() * 200);
+          const jitter = Math.floor(Math.random() * 300);
           console.warn(`[DB] Transient connection error ("${msg}"). Retrying query (attempt ${attempt}/${maxRetries}) in ${delay + jitter}ms...`);
           await new Promise(r => setTimeout(r, delay + jitter));
           delay *= 2;
@@ -186,7 +186,7 @@ function patchPoolQuery(p: any) {
   return p;
 }
 
-export function createInternalPool(connectionString: string, max = 1, connectionTimeoutMillis = 5000) {
+export function createInternalPool(connectionString: string, max = 1, connectionTimeoutMillis = 15000) {
   const safeConnStr = typeof connectionString === 'string' ? connectionString : String(connectionString || '');
   const p = new Pool({
     connectionString: safeConnStr,
@@ -294,19 +294,19 @@ export async function initializePerplextaPools(
 
       const newPool = patchPoolQuery(new Pool({
         connectionString: normCoreUrl,
-        ...getBasePoolConfig(finalCoreMax, 10000, normCoreUrl),
+        ...getBasePoolConfig(finalCoreMax, 15000, normCoreUrl),
       }));
       const newLedgerPool = normLedgerUrl === normCoreUrl ? newPool : patchPoolQuery(new Pool({
         connectionString: normLedgerUrl,
-        ...getBasePoolConfig(finalLedgerMax, 5000, normLedgerUrl),
+        ...getBasePoolConfig(finalLedgerMax, 15000, normLedgerUrl),
       }));
       const newExternalPool = normExternalUrl === normCoreUrl ? newPool : patchPoolQuery(new Pool({
         connectionString: normExternalUrl,
-        ...getBasePoolConfig(finalExternalMax, 5000, normExternalUrl),
+        ...getBasePoolConfig(finalExternalMax, 15000, normExternalUrl),
       }));
       const newSecurityPool = normSecurityUrl === normCoreUrl ? newPool : patchPoolQuery(new Pool({
         connectionString: normSecurityUrl,
-        ...getBasePoolConfig(finalSecurityMax, 5000, normSecurityUrl),
+        ...getBasePoolConfig(finalSecurityMax, 15000, normSecurityUrl),
       }));
 
       newPool.on('error', (e: any) => console.error('[DB] Idle core client error:', e?.message || e));
@@ -334,7 +334,7 @@ export async function initializePerplextaPools(
       console.log('[DB] Pools created. Verifying connectivity...');
 
       const verify = async (p: any, name: string, retries: number = 3): Promise<boolean> => {
-        let delay = 500;
+        let delay = 1000;
         for (let attempt = 1; attempt <= retries; attempt++) {
           let fatalErr: string | null = null;
           const success = await new Promise<boolean>((resolve) => {
@@ -344,7 +344,7 @@ export async function initializePerplextaPools(
                 settled = true;
                 resolve(false);
               }
-            }, 3000);
+            }, 15000);
             p.query('SELECT 1')
               .then(() => {
                 if (!settled) {
@@ -389,7 +389,7 @@ export async function initializePerplextaPools(
         : console.error('[DB] ❌ Core DB unreachable.');
 
       if (ledgerPool !== pool) {
-        if (!await verify(ledgerPool, 'Ledger DB', 1)) {
+        if (!await verify(ledgerPool, 'Ledger DB', 2)) {
           console.warn('[DB] Ledger DB unreachable — falling back to Core pool.');
           const oldLedger = ledgerPool;
           ledgerPool = pool;
@@ -399,14 +399,21 @@ export async function initializePerplextaPools(
           }
           if (pool) {
             try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'ledger'");
+              await pool.query("UPDATE db_connections_registry SET status = 'down' WHERE id = 'ledger'");
             } catch {}
           }
-        } else { console.log('[DB] Ledger DB connection verified.'); }
+        } else {
+          console.log('[DB] Ledger DB connection verified.');
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET status = 'healthy' WHERE id = 'ledger'");
+            } catch {}
+          }
+        }
       } else { console.log('[DB] Ledger DB sharing Core pool.'); }
 
       if (externalPool !== pool) {
-        if (!await verify(externalPool, 'External DB', 1)) {
+        if (!await verify(externalPool, 'External DB', 2)) {
           console.warn('[DB] External DB unreachable — falling back to Core pool.');
           const oldExternal = externalPool;
           externalPool = pool;
@@ -416,14 +423,21 @@ export async function initializePerplextaPools(
           }
           if (pool) {
             try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'external'");
+              await pool.query("UPDATE db_connections_registry SET status = 'down' WHERE id = 'external'");
             } catch {}
           }
-        } else { console.log('[DB] External DB connection verified.'); }
+        } else {
+          console.log('[DB] External DB connection verified.');
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET status = 'healthy' WHERE id = 'external'");
+            } catch {}
+          }
+        }
       } else { console.log('[DB] External DB sharing Core pool.'); }
 
       if (securityPool !== pool) {
-        if (!await verify(securityPool, 'Security DB', 1)) {
+        if (!await verify(securityPool, 'Security DB', 2)) {
           console.warn('[DB] Security DB unreachable — falling back to Core pool.');
           const oldSecurity = securityPool;
           securityPool = pool;
@@ -433,10 +447,17 @@ export async function initializePerplextaPools(
           }
           if (pool) {
             try {
-              await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down' WHERE id = 'security'");
+              await pool.query("UPDATE db_connections_registry SET status = 'down' WHERE id = 'security'");
             } catch {}
           }
-        } else { console.log('[DB] Security DB connection verified.'); }
+        } else {
+          console.log('[DB] Security DB connection verified.');
+          if (pool) {
+            try {
+              await pool.query("UPDATE db_connections_registry SET status = 'healthy' WHERE id = 'security'");
+            } catch {}
+          }
+        }
       } else { console.log('[DB] Security DB sharing Core pool.'); }
 
       console.log('[DB] Pool initialization complete.');
@@ -564,21 +585,32 @@ export async function synchronizePerplextaPoolsFromRegistry() {
     }
 
     const testAndResolveUrl = async (id: string, url: string, defaultUrl: string): Promise<string> => {
-      if (!url || url === coreUrl) return coreUrl;
+      if (!url) return coreUrl;
+      const normUrl = normalizeDatabaseUrl(url);
+      const normCore = normalizeDatabaseUrl(coreUrl);
+      if (normUrl === normCore) return coreUrl;
+
       let p: any = null;
       try {
-        p = createInternalPool(url, 1, 3000);
+        p = createInternalPool(url, 1, 15000);
         await p.query('SELECT 1');
         await p.end().catch(() => {});
+        if (pool) {
+          try {
+            await pool.query("UPDATE db_connections_registry SET status = 'healthy' WHERE id = $1", [id]);
+          } catch {}
+        }
         return url;
       } catch (e: any) {
         if (p) {
           await p.end().catch(() => {});
         }
         console.warn(`[DB] Registry ${id} DB check failed: ${e.message}. Falling back to Core.`);
-        try {
-          await pool.query("UPDATE db_connections_registry SET is_active = false, status = 'down', connection_string = NULL, host = NULL WHERE id = $1", [id]);
-        } catch {}
+        if (pool) {
+          try {
+            await pool.query("UPDATE db_connections_registry SET status = 'down' WHERE id = $1", [id]);
+          } catch {}
+        }
         return coreUrl;
       }
     };

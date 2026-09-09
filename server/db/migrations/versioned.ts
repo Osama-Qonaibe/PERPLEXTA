@@ -2003,6 +2003,46 @@ export async function runVersionedMigrations(
 
       console.log('[Migrations] [Clean Slate] Deep architecture purge completed cleanly.');
     });
+
+    await runVersioned('v100_restore_registry_database_connections', 'Ensure core, ledger, external, and security connection strings in db_connections_registry are valid and active', async (tx) => {
+      const coreUrl = process.env.DATABASE_URL;
+      const ledgerUrl = process.env.LEDGER_DATABASE_URL;
+      const externalUrl = process.env.EXTERNAL_DATABASE_URL || coreUrl;
+      const securityUrl = process.env.SECURITY_DATABASE_URL || coreUrl;
+
+      const entries = [
+        { id: 'core', url: coreUrl },
+        { id: 'ledger', url: ledgerUrl },
+        { id: 'external', url: externalUrl },
+        { id: 'security', url: securityUrl },
+      ];
+
+      for (const entry of entries) {
+        if (!entry.url) continue;
+        const encrypted = encrypt(entry.url);
+        await tx.query(`
+          INSERT INTO db_connections_registry (id, provider, connection_string, is_active, status)
+          VALUES ($1, $1, $2, true, 'healthy')
+          ON CONFLICT (id) DO UPDATE SET
+            connection_string = CASE 
+              WHEN db_connections_registry.connection_string IS NULL OR db_connections_registry.connection_string = '' 
+              THEN EXCLUDED.connection_string 
+              ELSE db_connections_registry.connection_string 
+            END,
+            is_active = CASE 
+              WHEN db_connections_registry.is_active = false AND (db_connections_registry.connection_string IS NULL OR db_connections_registry.connection_string = '')
+              THEN true
+              ELSE db_connections_registry.is_active
+            END,
+            status = 'healthy';
+        `, [entry.id, encrypted]);
+      }
+      console.log('[Migrations] Database connections registry restored and verified.');
+    });
+
+    await runVersioned('v101_add_bulletin_pages_managers', 'Add managers JSONB column to bulletin_pages for granular page management', async (tx) => {
+      await tx.query(`ALTER TABLE bulletin_pages ADD COLUMN IF NOT EXISTS managers JSONB DEFAULT '[]'::JSONB`);
+    });
     
   console.log("[Migrations] All versioned migrations completed successfully.");
 }

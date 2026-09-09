@@ -75,13 +75,13 @@ export const SavedPostsTab: React.FC<SavedPostsTabProps> = ({
   return (
     <div className="space-y-4">
       {/* Header card with Sovereign design tokens */}
-      <div className="bg-[var(--surface-card)] p-4 rounded-2xl border border-[var(--border-main)] flex items-center justify-between transition-theme shadow-xs">
+      <div className="bg-[var(--surface-card)] p-3 rounded-[0px] border border-[var(--border-main)] flex items-center justify-between transition-theme">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--surface-subtle)] text-accent flex items-center justify-center border border-[var(--border-main)] shadow-xs">
-            <Bookmark size={20} />
+          <div className="w-9 h-9 rounded-[0px] bg-[var(--surface-subtle)] text-accent flex items-center justify-center border border-[var(--border-main)]">
+            <Bookmark size={18} />
           </div>
           <div>
-            <h2 className="text-sm font-extrabold text-[var(--text-primary)]">
+            <h2 className="text-sm font-bold text-[var(--text-primary)]">
               {isRtl ? 'المنشورات المحفوظة' : 'Saved Posts'}
             </h2>
             <p className="text-[10px] text-[var(--text-muted)] font-bold">
@@ -100,12 +100,12 @@ export const SavedPostsTab: React.FC<SavedPostsTabProps> = ({
 
       {/* Empty State */}
       {!loadingSaved && savedAds.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-4 bg-[var(--surface-card)] rounded-2xl border border-[var(--border-main)] space-y-4 text-center transition-theme">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)] shadow-xs">
-            <Bookmark size={28} />
+        <div className="flex flex-col items-center justify-center py-16 px-4 bg-[var(--surface-card)] rounded-[0px] border border-[var(--border-main)] space-y-4 text-center transition-theme">
+          <div className="w-14 h-14 rounded-[0px] bg-[var(--surface-subtle)] border border-[var(--border-main)] flex items-center justify-center text-[var(--text-muted)]">
+            <Bookmark size={24} />
           </div>
           <div className="space-y-1 max-w-sm">
-            <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+            <h3 className="text-sm font-bold text-[var(--text-primary)]">
               {isRtl ? 'لا توجد منشورات محفوظة' : 'No Saved Posts Yet'}
             </h3>
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
@@ -116,7 +116,7 @@ export const SavedPostsTab: React.FC<SavedPostsTabProps> = ({
           </div>
           <button
             onClick={() => setActiveTab('board')}
-            className="mt-2 px-5 py-2.5 rounded-xl bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold text-xs hover:opacity-90 transition-theme flex items-center gap-2 cursor-pointer shadow-xs"
+            className="mt-2 px-4 py-2 rounded-[0px] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] font-bold text-xs hover:opacity-90 transition-theme flex items-center gap-2 cursor-pointer"
           >
             <Compass size={14} />
             <span>{isRtl ? 'استعراض الإعلانات' : 'Explore Ads'}</span>

@@ -10,7 +10,7 @@ import {
   Image as ImageIcon, Filter, ChevronLeft, ChevronRight, Layers, Loader2, BarChart2, ArrowUp, ArrowDown, RefreshCw, Rocket,
   Radio, Clapperboard, Bell, Menu, SlidersHorizontal, Trash2, Ban, Volume2, VolumeX,
   Smile, Users, Compass, ChevronDown, Check, Navigation, Lock, Scissors, Edit2, Upload,
-  AtSign, Hash
+  AtSign, Hash, Settings
 } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -37,6 +37,7 @@ import { ComposerMediaPreview } from '../components/ComposerMediaPreview';
 import { MediaLightboxModal, LightboxMediaItem } from '../components/MediaLightboxModal';
 import { triggerHaptic } from '../utils/haptics';
 import { BulletinAvatar } from '../components/BulletinAvatar';
+import { ImageUploadDropzone } from '../components/ImageUploadDropzone';
 import { extractVideoThumbnail, getRecommendedDimensions, getMediaUrl, compressAndResizeImage } from '../utils/mediaUtils';
 import { stopAllMedia, getGlobalMuteState, setGlobalMuteState } from '../utils/mediaCoordinator';
 import { SOCIAL_COLORS } from '../constants/socialColors';
@@ -142,23 +143,33 @@ export const BulletinBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: routeIdParam, subPath, subId } = useParams<{ id?: string; subPath?: string; subId?: string }>();
-  const { language, user, token, setIsAuthModalOpen, theme, siteSettings, isMobile } = useAppContext();
+  const { language, user, token, setIsAuthModalOpen, theme, siteSettings, isMobile, refreshUser } = useAppContext();
   const isRtl = language === 'ar';
 
   const resolveActiveTabFromLocation = (): 'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved' => {
     try {
       if (typeof window !== 'undefined') {
         const path = window.location.pathname.toLowerCase();
+        const searchParams = new URLSearchParams(window.location.search);
+        const urlTab = searchParams.get('tab');
+
+        if (urlTab === 'inquiries' || path.includes('/inquiries')) return 'inquiries';
         if (path.startsWith('/reels') || path.includes('/reels')) return 'reels';
         if (path.includes('/pages')) return 'pages';
-        if (path.includes('/inquiries')) return 'inquiries';
         if (path.includes('/my-ads') || path.includes('/my_ads')) return 'my_ads';
         if (path.includes('/analytics')) return 'analytics';
         if (path.includes('/saved')) return 'saved';
         
+        // If explicitly visiting main bulletin/viralbook path without subpath or query param, force board
+        if (path === '/viralbook' || path === '/bulletin' || path === '/viralbook/' || path === '/bulletin/') {
+          if (urlTab && urlTab !== 'board') {
+            const validTabs = ['board', 'reels', 'pages', 'inquiries', 'my_ads', 'analytics', 'saved'];
+            if (validTabs.includes(urlTab)) return urlTab as any;
+          }
+          return 'board';
+        }
+
         // Check legacy query param
-        const searchParams = new URLSearchParams(window.location.search);
-        const urlTab = searchParams.get('tab');
         const validTabs = ['board', 'reels', 'pages', 'inquiries', 'my_ads', 'analytics', 'saved'];
         if (urlTab && validTabs.includes(urlTab)) {
           return urlTab as any;
@@ -176,6 +187,24 @@ export const BulletinBoardPage: React.FC = () => {
   };
 
   const [activeTab, setActiveTab] = useState<'board' | 'reels' | 'pages' | 'inquiries' | 'my_ads' | 'analytics' | 'saved'>(resolveActiveTabFromLocation);
+
+  // Synchronize Active Tab with URL location changes (e.g. Header button vs Footer Chat button)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const urlTab = searchParams.get('tab');
+    const path = location.pathname.toLowerCase();
+
+    if (urlTab === 'inquiries' || path.includes('/inquiries')) {
+      if (activeTab !== 'inquiries') {
+        setActiveTab('inquiries');
+        fetchInquiries();
+      }
+    } else if (path === '/viralbook' || path === '/bulletin' || path === '/viralbook/' || path === '/bulletin/') {
+      if (activeTab !== 'board' && !urlTab) {
+        setActiveTab('board');
+      }
+    }
+  }, [location.pathname, location.search]);
 
   // Synchronize Active Tab to SessionStorage & clean URL paths
   useEffect(() => {
@@ -430,6 +459,89 @@ export const BulletinBoardPage: React.FC = () => {
   
   const [selectedPageDetail, setSelectedPageDetail] = useState<{ page: BulletinPage; ads: BulletinAd[] } | null>(null);
   const [pageDetailTab, setPageDetailTab] = useState<'ads' | 'about' | 'media'>('ads');
+
+  // Profile Settings & Page Edit states
+  const [isProfileEditModalOpen, setIsProfileEditModalOpen] = useState<boolean>(false);
+  const [isEditPageModalOpen, setIsEditPageModalOpen] = useState<boolean>(false);
+  const [editingPageData, setEditingPageData] = useState<BulletinPage | null>(null);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState<boolean>(false);
+  const [isSubmittingPageEdit, setIsSubmittingPageEdit] = useState<boolean>(false);
+
+  const [profileFormData, setProfileFormData] = useState({
+    name: '',
+    avatar: '',
+    email: '',
+    custom_instructions: '',
+    language: 'ar',
+    theme: 'light'
+  });
+  
+  // KYC form fields
+  const [kycFullName, setKycFullName] = useState<string>('');
+  const [kycIDNumber, setKycIDNumber] = useState<string>('');
+  const [kycSelfieUrl, setKycSelfieUrl] = useState<string>('');
+  const [kycTab, setKycTab] = useState<'info' | 'kyc'>('info');
+
+  const [editPageFormData, setEditPageFormData] = useState({
+    name: '',
+    category: '',
+    city: '',
+    address: '',
+    description: '',
+    avatar_url: '',
+    cover_url: '',
+    whatsapp_number: '',
+    phone_number: '',
+    website_url: ''
+  });
+  const [editPageManagers, setEditPageManagers] = useState<any[]>([]);
+  const [newManagerEmail, setNewManagerEmail] = useState<string>('');
+  const [newManagerRole, setNewManagerRole] = useState<'full' | 'limited'>('limited');
+
+  useEffect(() => {
+    if (editingPageData) {
+      setEditPageFormData({
+        name: editingPageData.name || '',
+        category: editingPageData.category || 'تجارة إلكترونية / E-Commerce',
+        city: editingPageData.city || 'غزة',
+        address: editingPageData.address || '',
+        description: editingPageData.description || '',
+        avatar_url: editingPageData.avatar_url || '',
+        cover_url: editingPageData.cover_url || '',
+        whatsapp_number: editingPageData.whatsapp_number || '',
+        phone_number: editingPageData.phone_number || '',
+        website_url: editingPageData.website_url || ''
+      });
+      let managersList: any[] = [];
+      if (editingPageData.managers) {
+        try {
+          managersList = typeof editingPageData.managers === 'string'
+            ? JSON.parse(editingPageData.managers)
+            : editingPageData.managers;
+        } catch (e) {
+          managersList = [];
+        }
+      }
+      setEditPageManagers(Array.isArray(managersList) ? managersList : []);
+    }
+  }, [editingPageData]);
+
+  useEffect(() => {
+    if (user) {
+      setProfileFormData({
+        name: user.name || '',
+        avatar: user.avatar || '',
+        email: user.email || '',
+        custom_instructions: user.custom_instructions || '',
+        language: (user as any).language || language || 'ar',
+        theme: (user as any).theme || theme || 'light'
+      });
+      setKycFullName('');
+      setKycIDNumber('');
+      setKycSelfieUrl('');
+      setKycTab('info');
+    }
+  }, [user, isProfileEditModalOpen]);
 
   const [inquiriesList, setInquiriesList] = useState<any[]>([]);
   const [inquiriesSearchTerm, setInquiriesSearchTerm] = useState<string>('');
@@ -1049,16 +1161,31 @@ export const BulletinBoardPage: React.FC = () => {
   const [boostingAd, setBoostingAd] = useState<BulletinAd | null>(null);
   const [isBoostModalOpen, setIsBoostModalOpen] = useState<boolean>(false);
 
-  const isAnyModalOpen = isAdModalOpen || isAdModalOpen || isStoryViewerOpen || isLiveStreamOpen || isStoryModalOpen || isAudienceModalOpen || isPageModalOpen || isAddToPostModalOpen || isBoostModalOpen || isGiftModalOpen;
+  const isAnyModalOpen = isAdModalOpen || 
+    isStoryViewerOpen || 
+    isLiveStreamOpen || 
+    isStoryModalOpen || 
+    isAudienceModalOpen || 
+    isPageModalOpen || 
+    isAddToPostModalOpen || 
+    isBoostModalOpen || 
+    isGiftModalOpen ||
+    inquireAd !== null ||
+    isMediaManagerOpen ||
+    isTrimmerModalOpen ||
+    editingAdId !== null;
 
   useEffect(() => {
     if (isAnyModalOpen) {
-      document.body.classList.add('layout-locked');
+      document.body.classList.add('layout-locked', 'workspace-focus-mode');
+      document.documentElement.classList.add('workspace-focus-mode');
     } else {
-      document.body.classList.remove('layout-locked');
+      document.body.classList.remove('layout-locked', 'workspace-focus-mode');
+      document.documentElement.classList.remove('workspace-focus-mode');
     }
     return () => {
-      document.body.classList.remove('layout-locked');
+      document.body.classList.remove('layout-locked', 'workspace-focus-mode');
+      document.documentElement.classList.remove('workspace-focus-mode');
     };
   }, [isAnyModalOpen]);
 
@@ -2531,6 +2658,112 @@ export const BulletinBoardPage: React.FC = () => {
     }
   };
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsSubmittingProfile(true);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: profileFormData.name,
+          avatar: profileFormData.avatar,
+          custom_instructions: profileFormData.custom_instructions
+        })
+      });
+      if (res.ok) {
+        toast.success(isRtl ? 'تم تحديث ملفك الشخصي بنجاح! ✨' : 'Profile updated successfully!');
+        await refreshUser();
+        setIsProfileEditModalOpen(false);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || (isRtl ? 'فشل تعديل الملف الشخصي' : 'Failed to update profile'));
+      }
+    } catch (e) {
+      toast.error(isRtl ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
+    } finally {
+      setIsSubmittingProfile(false);
+    }
+  };
+
+  const handleKycSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (!kycFullName.trim() || !kycSelfieUrl.trim()) {
+      toast.error(isRtl ? 'يرجى ملء جميع الحقول المطلوبة لتوثيق الهوية' : 'Please fill in all required fields');
+      return;
+    }
+    setIsSubmittingProfile(true);
+    try {
+      const res = await fetch('/api/kyc/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fullName: kycFullName.trim(),
+          selfie: kycSelfieUrl.trim()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(isRtl ? 'تم إرسال طلب التوثيق بنجاح! قيد المراجعة 🛡️' : 'Verification request submitted successfully!');
+        await refreshUser();
+        setIsProfileEditModalOpen(false);
+      } else {
+        toast.error(data.error || (isRtl ? 'فشل إرسال طلب التوثيق' : 'Failed to submit verification'));
+      }
+    } catch (e) {
+      toast.error(isRtl ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
+    } finally {
+      setIsSubmittingProfile(false);
+    }
+  };
+
+  const handleSavePageEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !editingPageData) return;
+    setIsSubmittingPageEdit(true);
+    try {
+      const payload: any = {
+        ...editPageFormData,
+        managers: editPageManagers
+      };
+
+      const res = await fetch(`/api/bulletin/pages/${editingPageData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(isRtl ? 'تم حفظ تعديلات الصفحة التجارية بنجاح! 🏪' : 'Page edited successfully!');
+        setIsEditPageModalOpen(false);
+        setEditingPageData(null);
+        await fetchPages();
+        await fetchMyPages();
+        
+        if (selectedPageDetail && selectedPageDetail.page.id === data.page.id) {
+          setSelectedPageDetail(prev => prev ? { ...prev, page: data.page } : null);
+        }
+      } else {
+        toast.error(data.error || (isRtl ? 'فشل تعديل الصفحة التجارية' : 'Failed to edit page'));
+      }
+    } catch (e) {
+      toast.error(isRtl ? 'حدث خطأ أثناء تعديل الصفحة' : 'Error updating page');
+    } finally {
+      setIsSubmittingPageEdit(false);
+    }
+  };
+
   const handleShareAd = async (ad: BulletinAd) => {
     const shareUrl = `${window.location.origin}/viralbook/${ad.id}`;
 
@@ -2661,15 +2894,15 @@ export const BulletinBoardPage: React.FC = () => {
             <div className="space-y-2 text-center md:text-start max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-[4px] bg-accent/10 border border-accent/20 text-accent text-xs font-bold">
                 <Sparkles size={14} className="animate-spin-slow" />
-                <span>{isRtl ? 'فايرال بوك - شبكة المحتوى والترويج التفاعلي' : 'Viralbook - Interactive Content & Promotion Network'}</span>
+                <span>{isRtl ? 'فيرال بوك - شبكة المحتوى والترويج التفاعلي' : 'Viralbook - Interactive Content & Promotion Network'}</span>
               </div>
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
-                {isRtl ? 'فايرال بوك | Viralbook' : 'Viralbook Platform'}
+                {isRtl ? 'فيرال بوك | Viralbook' : 'Viralbook Platform'}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                 {isRtl
-                  ? 'الشبكة التفاعلية المتكاملة للنشرات الفيروسية، مقاطع الفيديو والريلز، الإعلانات المروجة، وإدارة الصفحات التجارية باحترافية عالية.'
-                  : 'The ultimate interactive network for viral publications, video reels, merchant pages, and high-conversion commercial campaigns.'}
+                  ? 'المنظومة الرقمية المتكاملة لإدارة الحملات الإعلانية التجارية، تسويق المنتجات، وتنمية العلامات التجارية'
+                  : 'The ultimate digital ecosystem for commercial ad campaign management, product marketing, and brand development.'}
               </p>
             </div>
           </div>
@@ -2677,14 +2910,14 @@ export const BulletinBoardPage: React.FC = () => {
       )}
 
       {/* Main Container - Facebook 3-Column Layout */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] lg:pt-6 pb-28 lg:pb-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-1 sm:pt-4 lg:pt-6 pb-28 lg:pb-8">
         
         {/* Header Search & Sort Toolbar - Hidden on Mobile (moved to sidebar) */}
         {!selectedPageDetail && (
           <div className="hidden lg:flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-200/80 dark:border-gray-800/80">
             <div className="flex items-center gap-2">
               <h2 className="text-xs sm:text-sm font-extrabold text-gray-800 dark:text-gray-200">
-                {activeTab === 'board' && (isRtl ? 'خلاصة الإعلانات والمنشورات العامة' : 'Global Feed & Advertisements')}
+                {activeTab === 'board' && (isRtl ? 'الإعلانات والمنشورات' : 'Ads & Posts')}
                 {activeTab === 'pages' && (isRtl ? 'دليل الصفحات التجارية' : 'Merchant Pages Directory')}
                 {activeTab === 'inquiries' && (isRtl ? 'الرسائل والاستفسارات' : 'Inquiries & Messages')}
                 {activeTab === 'my_ads' && (isRtl ? 'حملاتي وإعلاناتي النشطة' : 'My Active Campaigns')}
@@ -2717,16 +2950,16 @@ export const BulletinBoardPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={isRtl ? 'بحث...' : 'Search...'}
-                  className="w-full ps-8 pe-3 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none transition-theme"
+                  className="w-full ps-8 pe-3 h-8 text-[12px] rounded-[var(--radius-sm)] bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-main)] focus:outline-none focus:border-accent transition-theme"
                 />
-                <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={13} className="absolute start-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
               </form>
 
               {activeTab === 'board' && (
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'latest' | 'popular')}
-                  className="px-2.5 h-8 text-[12px] rounded-[8px] bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 focus:outline-none transition-theme shrink-0"
+                  className="px-2.5 h-8 text-[12px] rounded-[var(--radius-sm)] bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-main)] focus:outline-none focus:border-accent transition-theme shrink-0"
                 >
                   <option value="latest">{isRtl ? 'الأحدث' : 'Latest'}</option>
                   <option value="popular">{isRtl ? 'الأكثر تفاعلاً' : 'Popular'}</option>
@@ -2759,7 +2992,7 @@ export const BulletinBoardPage: React.FC = () => {
                     <div className="w-8 h-8 rounded-[8px] bg-accent/10 flex items-center justify-center text-accent font-bold">
                       <SlidersHorizontal size={14} />
                     </div>
-                    <h3 className="text-xs font-extrabold">{isRtl ? 'قائمة فايرال بوك والتحكم' : 'Viralbook Menu & Controls'}</h3>
+                    <h3 className="text-xs font-extrabold">{isRtl ? 'قائمة فيرال بوك والتحكم' : 'Viralbook Menu & Controls'}</h3>
                   </div>
                   <button
                     onClick={() => setIsMobileSidebarOpen(false)}
@@ -2782,7 +3015,7 @@ export const BulletinBoardPage: React.FC = () => {
                       }`}
                     >
                       <Megaphone size={16} className={`transition-theme ${activeTab === 'board' && !selectedPageDetail ? 'text-accent ' : 'text-gray-400 group-hover:text-accent'}`} />
-                      <span>{isRtl ? 'الرئيسية والإعلانات العامة' : 'Global Feed'}</span>
+                      <span>{isRtl ? 'الإعلانات والمنشورات' : 'Ads & Posts'}</span>
                     </button>
 
                     <button
@@ -2969,22 +3202,22 @@ export const BulletinBoardPage: React.FC = () => {
           /* VIEW 2: DEDICATED ALL PAGES DIRECTORY VERTICAL FEED STREAM */
           <div className="space-y-6 max-w-4xl mx-auto px-2 sm:px-0">
             {/* Header Bar with Back Button */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06]">
+            <div className="ui-card-container flex flex-col sm:flex-row items-center justify-between gap-3 text-start">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => setActiveTab('board')}
-                  className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition-theme active:scale-95 shrink-0"
+                  className="ui-btn-secondary text-xs shrink-0 cursor-pointer"
                 >
-                  {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+                  {isRtl ? <ArrowRight size={15} /> : <ArrowLeft size={15} />}
                   <span>{isRtl ? 'رجوع إلى خلاصة الإعلانات' : 'Back to Feed'}</span>
                 </button>
-                <div>
-                  <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2 mt-2 sm:mt-0">
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
                     <Building2 size={18} className="text-accent shrink-0" />
-                    <span>{isRtl ? 'دليل كافة الصفحات التجارية الموثوقة' : 'All Verified Merchant Pages'}</span>
+                    <span>{isRtl ? 'دليل الصفحات والأنشطة التجارية' : 'Commercial Pages & Business Directory'}</span>
                   </h2>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    {isRtl ? 'موجز متصل لكافة الصفحات التجارية في فلسطين مع إمكانية التمرير والاستكشاف' : 'Continuous vertical feed of all verified merchant pages'}
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    {isRtl ? 'تصفح واستكشف كافة الكيانات والأنشطة التجارية الموثوقة' : 'Explore all verified business profiles and commercial entities'}
                   </p>
                 </div>
               </div>
@@ -2997,7 +3230,7 @@ export const BulletinBoardPage: React.FC = () => {
                   }
                   setIsPageModalOpen(true);
                 }}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-black text-xs shadow flex items-center justify-center gap-1.5 shrink-0"
+                className="ui-btn-primary text-xs w-full sm:w-auto shrink-0 cursor-pointer"
               >
                 <Plus size={15} />
                 <span>{isRtl ? 'أنشئ صفحتك التجارية' : 'Create Merchant Page'}</span>
@@ -3091,11 +3324,11 @@ export const BulletinBoardPage: React.FC = () => {
                               href={`https://wa.me/${page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-2 rounded-xl bg-white dark:bg-[#1a1a1c] hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 font-bold text-xs flex items-center gap-1 transition-theme shadow-sm shrink-0" style={{ color: SOCIAL_COLORS.whatsapp.base }}
-                              title={isRtl ? 'تواصل واتساب' : 'WhatsApp'}
+                              className="w-9 h-9 rounded-[var(--radius-xs)] bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center transition-theme shadow-2xs shrink-0 cursor-pointer" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                              title={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
+                              aria-label={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
                             >
-                              <Phone size={14} />
-                              <span className="hidden sm:inline">واتساب</span>
+                              <Phone size={15} />
                             </a>
                           )}
                         </div>
@@ -3133,9 +3366,9 @@ export const BulletinBoardPage: React.FC = () => {
           <div className="hidden lg:block lg:col-span-4 space-y-5 order-2 lg:order-1">
             
             {/* User Profile & Social Shortcuts Box */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] space-y-3">
+            <div className="ui-card-container space-y-3">
               {user ? (
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/[0.06] gap-2">
+                <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)] gap-2">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <BulletinAvatar
                       src={user.avatar}
@@ -3152,18 +3385,28 @@ export const BulletinBoardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); }}
-                    className="relative p-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent transition-theme shrink-0 group shadow-2xs cursor-pointer"
-                    title={isRtl ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
-                  >
-                    <MessageSquare size={18} className="transition-theme" />
-                    {inquiriesList.length > 0 && (
-                      <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-black">
-                        {inquiriesList.length}
-                      </span>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setIsProfileEditModalOpen(true)}
+                      className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] text-gray-500 dark:text-gray-400 transition-theme shrink-0 cursor-pointer"
+                      title={isRtl ? 'إعدادات الحساب وتوثيق الهوية' : 'Account Settings & Verification'}
+                    >
+                      <Settings size={18} className="transition-theme hover:rotate-45" />
+                    </button>
+
+                    <button
+                      onClick={() => { setSelectedPageDetail(null); setActiveTab('inquiries'); }}
+                      className="relative p-2.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent transition-theme shrink-0 group shadow-2xs cursor-pointer"
+                      title={isRtl ? 'صندوق محادثات المسنجر' : 'Messenger Chats'}
+                    >
+                      <MessageSquare size={18} className="transition-theme" />
+                      {inquiriesList.length > 0 && (
+                        <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-extrabold flex items-center justify-center ring-2 ring-white dark:ring-black">
+                          {inquiriesList.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="p-3 rounded-xl bg-accent/10 border border-accent/20 text-center space-y-2">
@@ -3191,7 +3434,7 @@ export const BulletinBoardPage: React.FC = () => {
                 >
                   <span className="flex items-center gap-2">
                     <Megaphone size={16} className="text-accent" />
-                    <span>{isRtl ? 'خلاصة الإعلانات والمنشورات' : 'Global Feed'}</span>
+                    <span>{isRtl ? 'الإعلانات والمنشورات' : 'Ads & Posts'}</span>
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent">
                     {ads.length}
@@ -3299,22 +3542,22 @@ export const BulletinBoardPage: React.FC = () => {
               variant="bulletin"
               filterType="bulletin" 
               limit={3} 
-              title={isRtl ? 'إعلانات وتفضيلات مخصصة' : 'Recommended Ads'}
+              title={isRtl ? 'إعلانات موصى بها' : 'Recommended Ads'}
               subtitle={isRtl ? 'مقترحات مخصصة بناءً على سلوكك واهتماماتك' : 'Tailored ad suggestions'}
-              className="p-4 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06]"
+              className="ui-card-container"
             />
 
             {/* Commercial Profile Settings Box */}
             {user && (
-              <div className="p-4 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/[0.06]">
-                  <h3 className="text-xs font-extrabold flex items-center gap-1.5">
+              <div className="ui-card-container space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[var(--border-main)]">
+                  <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-[var(--text-primary)]">
                     <Building2 size={16} className="text-accent" />
-                    <span>{isRtl ? 'الملف التجاري (إعدادات التاجر)' : 'Commercial Profile (Seller Settings)'}</span>
+                    <span>{isRtl ? 'إعدادات التاجر' : 'Merchant Settings'}</span>
                   </h3>
                   <button
                     onClick={() => setIsPageModalOpen(true)}
-                    className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-theme text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    className="ui-btn-pill py-1 px-2.5 text-[11px]"
                     title={isRtl ? 'إضافة ملف تجاري جديد' : 'Add New Commercial Profile'}
                   >
                     <Plus size={13} />
@@ -3323,11 +3566,11 @@ export const BulletinBoardPage: React.FC = () => {
                 </div>
 
                 {myPagesList.length === 0 ? (
-                  <div className="text-center py-3 text-xs text-gray-400 space-y-2">
+                  <div className="text-center py-3 text-xs text-[var(--text-muted)] space-y-2">
                     <p>{isRtl ? 'لم تقم بإعداد ملفك التجاري بعد. افصل هويتك الشخصية عن الإعلانات.' : 'No commercial profile setup yet. Separate your personal identity from your ads.'}</p>
                     <button
                       onClick={() => setIsPageModalOpen(true)}
-                      className="px-3.5 py-1.5 rounded-full bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 font-bold text-[11px] transition-theme cursor-pointer"
+                      className="ui-btn-pill px-3.5 py-1.5 text-[11px]"
                     >
                       {isRtl ? 'إعداد الملف التجاري الآن' : 'Setup Commercial Profile'}
                     </button>
@@ -3338,10 +3581,10 @@ export const BulletinBoardPage: React.FC = () => {
                       <div
                         key={`my-page-${page.id}-${idx}`}
                         onClick={() => handleOpenPageDetail(page.id)}
-                        className={`p-2.5 rounded-xl border transition-theme cursor-pointer flex items-center justify-between gap-2.5 hover:border-accent/40 ${
+                        className={`p-2.5 rounded-[var(--radius-md)] border transition-theme cursor-pointer flex items-center justify-between gap-2.5 hover:border-accent/40 ${
                           selectedPageDetail?.page.id === page.id
                             ? 'bg-accent/10 border-accent'
-                            : 'bg-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.02] border-gray-100 dark:border-white/[0.04]'
+                            : 'bg-transparent hover:bg-[var(--surface-subtle)] border-[var(--border-main)]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -3368,11 +3611,11 @@ export const BulletinBoardPage: React.FC = () => {
             )}
 
             {/* Featured Recommended Pages Sidebar */}
-            <div className="p-4 rounded-2xl bg-white dark:bg-transparent border border-gray-200/80 dark:border-white/[0.06] space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/[0.06]">
-                <h3 className="text-xs font-extrabold flex items-center gap-1.5">
+            <div className="ui-card-container space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--border-main)]">
+                <h3 className="text-xs font-extrabold flex items-center gap-1.5 text-[var(--text-primary)]">
                   <UserPlus size={16} className="text-accent" />
-                  <span>{isRtl ? 'أبرز الصفحات الموصى بها' : 'Featured Pages'}</span>
+                  <span>{isRtl ? 'صفحات موصى بها' : 'Recommended Pages'}</span>
                 </h3>
                 <button
                   onClick={() => setActiveTab('pages')}
@@ -3595,7 +3838,7 @@ export const BulletinBoardPage: React.FC = () => {
                     className="px-3 py-1.5 rounded-xl bg-accent text-white font-bold text-xs flex items-center gap-2 hover:bg-accent transition-theme shadow"
                   >
                     {isRtl ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
-                    <span>{isRtl ? 'العودة إلى خلاصة فايرال بوك' : 'Back to Viralbook Feed'}</span>
+                    <span>{isRtl ? 'العودة إلى خلاصة فيرال بوك' : 'Back to Viralbook Feed'}</span>
                   </button>
 
                   <span className="text-xs font-bold text-gray-400">
@@ -3639,15 +3882,49 @@ export const BulletinBoardPage: React.FC = () => {
                         <span>{selectedPageDetail.page.user_is_following ? (isRtl ? 'تتابعها' : 'Following') : (isRtl ? '+ متابعة الصفحة' : '+ Follow Page')}</span>
                       </button>
 
+                      {(() => {
+                        const isPageOwnerOrManager = user && (
+                          selectedPageDetail.page.user_id === user.id ||
+                          selectedPageDetail.page.owner_id === user.id ||
+                          user.role === 'admin' ||
+                          (selectedPageDetail.page.managers && (
+                            (() => {
+                              try {
+                                const list = typeof selectedPageDetail.page.managers === 'string'
+                                  ? JSON.parse(selectedPageDetail.page.managers)
+                                  : selectedPageDetail.page.managers;
+                                return Array.isArray(list) && list.some((m: any) => m.userId === user.id || m.email === user.email);
+                              } catch (e) {
+                                return false;
+                              }
+                            })()
+                          ))
+                        );
+                        if (!isPageOwnerOrManager) return null;
+                        return (
+                          <button
+                            onClick={() => {
+                              setEditingPageData(selectedPageDetail.page);
+                              setIsEditPageModalOpen(true);
+                            }}
+                            className="px-4 py-2 rounded-xl text-xs font-bold transition-theme flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] text-gray-700 dark:text-gray-300 shadow cursor-pointer"
+                          >
+                            <Settings size={16} />
+                            <span>{isRtl ? 'إدارة وتعديل الصفحة' : 'Manage & Edit Page'}</span>
+                          </button>
+                        );
+                      })()}
+
                       {selectedPageDetail.page.whatsapp_number && (
                         <a
                           href={`https://wa.me/${selectedPageDetail.page.whatsapp_number.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-4 py-2 rounded-xl bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.06] font-bold text-xs flex items-center gap-1.5 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                          className="w-9 h-9 rounded-[var(--radius-xs)] bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center transition-theme shadow-2xs cursor-pointer" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                          title={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
+                          aria-label={isRtl ? 'تواصل عبر واتساب' : 'WhatsApp'}
                         >
-                          <Phone size={15} />
-                          <span>واتساب</span>
+                          <Phone size={16} />
                         </a>
                       )}
                     </div>
@@ -3754,28 +4031,29 @@ export const BulletinBoardPage: React.FC = () => {
                               <h4 className="text-xs font-extrabold line-clamp-1">{ad.title}</h4>
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">{ad.description}</p>
                               
-                              <div className="flex items-center justify-between pt-1 gap-1.5">
+                              <div className="flex items-center justify-end pt-1 gap-1.5 ms-auto">
                                 <button
                                   onClick={() => handleMessageAdvertiser(ad)}
                                   disabled={messagingAdId === ad.id}
-                                  className="flex-1 px-3 py-1.5 rounded-xl bg-accent hover:bg-accent text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm disabled:opacity-50"
+                                  className="w-8 h-8 rounded-[var(--radius-xs)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] text-[var(--text-primary)] border border-[var(--border-main)] hover:border-accent/40 flex items-center justify-center transition-theme shadow-2xs disabled:opacity-50 cursor-pointer"
                                   title={isRtl ? 'مراسلة المعلن في محادثة خاصة' : 'Message Advertiser'}
+                                  aria-label={isRtl ? 'مراسلة المعلن في محادثة خاصة' : 'Message Advertiser'}
                                 >
                                   {messagingAdId === ad.id ? (
-                                    <Loader2 size={13} className="animate-spin" />
+                                    <Loader2 size={14} className="animate-spin text-accent" />
                                   ) : (
-                                    <MessageCircle size={13} />
+                                    <MessageCircle size={14} className="text-accent shrink-0" />
                                   )}
-                                  <span>{isRtl ? 'مراسلة المعلن' : 'Message Advertiser'}</span>
                                 </button>
 
                                 {ad.whatsapp_number && (
                                   <button
                                     onClick={(e) => handleWhatsAppClick(ad, e)}
-                                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-gray-200/80 dark:border-white/[0.06] font-bold text-[10px] flex items-center justify-center gap-1 transition-theme shadow-sm" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                                    className="w-8 h-8 rounded-[var(--radius-xs)] bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center transition-theme shadow-2xs cursor-pointer" style={{ color: SOCIAL_COLORS.whatsapp.base }}
+                                    title={isRtl ? 'مراسلة عبر واتساب' : 'WhatsApp'}
+                                    aria-label={isRtl ? 'مراسلة عبر واتساب' : 'WhatsApp'}
                                   >
-                                    <Phone size={13} />
-                                    <span>واتساب</span>
+                                    <Phone size={14} className="shrink-0" />
                                   </button>
                                 )}
                               </div>
@@ -4051,13 +4329,13 @@ export const BulletinBoardPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] my-1 sm:my-8"
+              className="relative w-full max-w-xl rounded-[var(--radius-lg)] bg-[var(--surface-card)] border border-[var(--border-main)] shadow-2xl overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] my-1 sm:my-8 text-[var(--text-primary)]"
             >
               {/* Header (Facebook Standard Centered Title & Status) */}
               <div className="relative flex items-center justify-center p-2.5 sm:p-4 border-b border-gray-100 dark:border-zinc-800">
                 {/* Ready/Upload Status Pill (Facebook style 100% ⬆) */}
                 {(adFormData.image_url || adFormData.video_url || videoMetadataInfo.localVideoUrl) && (
-                  <div className="absolute start-2.5 sm:start-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-emerald-500 text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
+                  <div className="absolute start-2.5 sm:start-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 rounded-[4px] bg-[var(--fg-success)] text-white text-[10px] sm:text-[11px] font-bold shadow-xs">
                     <span>100%</span>
                     <ArrowUp size={11} className="stroke-[3]" />
                   </div>
@@ -4388,7 +4666,7 @@ export const BulletinBoardPage: React.FC = () => {
                         {adFormData.has_whatsapp_button && (
                           <div className="mt-2 p-2 sm:p-3 bg-gray-50 dark:bg-zinc-800/90 rounded-xl border border-gray-200/80 dark:border-zinc-700/80 flex items-center justify-between gap-2 sm:gap-3">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-[4px] bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+                              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-[4px] bg-[#25D366]/10 flex items-center justify-center text-[#25D366] shrink-0">
                                 <MessageCircle size={16} className="text-[#25D366] sm:size-5" />
                               </div>
                               <div className="min-w-0">
@@ -4439,7 +4717,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                     {/* WhatsApp Number Configuration (Inline when button active) */}
                     {adFormData.has_whatsapp_button && (
-                      <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between gap-2">
+                      <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/30 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1">
                           <Phone size={13} className="text-[#25D366] shrink-0" />
                           <input
@@ -4459,8 +4737,8 @@ export const BulletinBoardPage: React.FC = () => {
                         {isRtl ? 'إضافة إلى منشورك' : 'Add to your post'}
                       </span>
                       <div className="flex items-center gap-0.5 sm:gap-1">
-                        {/* 1. Photo / Video (Emerald) */}
-                        <label className="p-1.5 sm:p-2 rounded-[4px] hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-500 cursor-pointer transition-colors" title={isRtl ? 'صور / فيديو' : 'Photos / Video'}>
+                        {/* 1. Photo / Video */}
+                        <label className="p-1.5 sm:p-2 rounded-[4px] hover:bg-[var(--status-success-subtle)] text-[var(--fg-success)] cursor-pointer transition-colors" title={isRtl ? 'صور / فيديو' : 'Photos / Video'}>
                           <ImageIcon size={17} className="sm:size-[22px]" />
                           <input 
                             type="file" 
@@ -4494,7 +4772,7 @@ export const BulletinBoardPage: React.FC = () => {
                               toast.success(isRtl ? 'تم إرفاق زر المراسلة عبر واتساب' : 'WhatsApp CTA button attached');
                             }
                           }} 
-                          className={`p-1.5 sm:p-2 rounded-[4px] transition-colors ${adFormData.has_whatsapp_button ? 'bg-emerald-500/15 text-[#25D366]' : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-[#25D366]'}`}
+                          className={`p-1.5 sm:p-2 rounded-[4px] transition-colors ${adFormData.has_whatsapp_button ? 'bg-[#25D366]/15 text-[#25D366]' : 'hover:bg-[#25D366]/10 text-[#25D366]'}`}
                           title={isRtl ? 'زر مراسلة واتساب' : 'WhatsApp Button'}
                         >
                           <MessageCircle size={17} className="sm:size-[22px]" />
@@ -4534,7 +4812,7 @@ export const BulletinBoardPage: React.FC = () => {
 
                     {/* Copyright & Verification Status (Facebook standard) */}
                     <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 px-1">
-                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0 sm:size-[13px]" />
+                      <CheckCircle2 size={12} className="text-[var(--fg-success)] shrink-0 sm:size-[13px]" />
                       <span>{isRtl ? '© جارٍ التحقق من وجود محتوى محمي بحقوق النشر' : '© Checking for copyrighted content'}</span>
                     </div>
 
@@ -4929,7 +5207,7 @@ export const BulletinBoardPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-md bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden"
+              className="w-full max-w-md bg-[var(--surface-card)] border border-[var(--border-main)] text-[var(--text-primary)] rounded-[var(--radius-lg)] shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -5343,27 +5621,27 @@ export const BulletinBoardPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">{isRtl ? 'صورة الشعار (Avatar):' : 'Avatar URL:'}</label>
-                    <input
-                      type="text"
-                      value={pageFormData.avatar_url}
-                      onChange={(e) => setPageFormData({ ...pageFormData, avatar_url: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
-                      placeholder="https://... or /uploads/..."
-                    />
-                  </div>
+                  <ImageUploadDropzone
+                    label={isRtl ? 'صورة الشعار (Avatar):' : 'Avatar (Profile Logo):'}
+                    value={pageFormData.avatar_url}
+                    onChange={(url) => setPageFormData({ ...pageFormData, avatar_url: url })}
+                    aspectRatio={1}
+                    targetWidth={400}
+                    targetHeight={400}
+                    placeholderText={isRtl ? 'رفع صورة الشعار من الجهاز (1:1)' : 'Upload Avatar Image (1:1)'}
+                    isRtl={isRtl}
+                  />
 
-                  <div>
-                    <label className="block text-xs font-bold mb-1">{isRtl ? 'صورة الغلاف (Cover Banner):' : 'Cover Banner URL:'}</label>
-                    <input
-                      type="text"
-                      value={pageFormData.cover_url}
-                      onChange={(e) => setPageFormData({ ...pageFormData, cover_url: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
-                      placeholder="https://... or /uploads/..."
-                    />
-                  </div>
+                  <ImageUploadDropzone
+                    label={isRtl ? 'صورة الغلاف (Cover Banner):' : 'Cover Banner:'}
+                    value={pageFormData.cover_url}
+                    onChange={(url) => setPageFormData({ ...pageFormData, cover_url: url })}
+                    aspectRatio={3}
+                    targetWidth={1200}
+                    targetHeight={400}
+                    placeholderText={isRtl ? 'رفع صورة الغلاف من الجهاز (3:1)' : 'Upload Cover Banner (3:1)'}
+                    isRtl={isRtl}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -6225,6 +6503,601 @@ export const BulletinBoardPage: React.FC = () => {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================== */}
+      {/* MODAL 5: EDIT PROFILE & VERIFICATION                       */}
+      {/* ========================================================== */}
+      <AnimatePresence>
+        {isProfileEditModalOpen && user && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 p-6 shadow-2xl space-y-4 my-8 text-[var(--text-primary)]"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Settings size={20} className="text-accent" />
+                  <h3 className="text-sm font-extrabold">{isRtl ? 'إعدادات الحساب وتوثيق الهوية' : 'Account Settings & KYC'}</h3>
+                </div>
+                <button onClick={() => setIsProfileEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Sub tabs */}
+              <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setKycTab('info')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-theme ${
+                    kycTab === 'info'
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'
+                  }`}
+                >
+                  {isRtl ? 'المعلومات الشخصية' : 'Personal Profile'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKycTab('kyc')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-theme flex items-center gap-1 ${
+                    kycTab === 'kyc'
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'
+                  }`}
+                >
+                  <ShieldCheck size={14} />
+                  <span>{isRtl ? 'طلب شارة التوثيق (KYC)' : 'Get Verified (KYC)'}</span>
+                </button>
+              </div>
+
+              {kycTab === 'info' ? (
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800/50 gap-2">
+                      <BulletinAvatar
+                        src={profileFormData.avatar}
+                        alt={profileFormData.name}
+                        size="lg"
+                      />
+                      <div className="flex flex-wrap items-center justify-center gap-1.5">
+                        <label className="ui-btn-pill py-1 px-2.5 text-[10px] cursor-pointer flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
+                          <Upload size={12} />
+                          <span>{isRtl ? 'تحميل صورة' : 'Upload Avatar'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  toast.info(isRtl ? 'جاري رفع الصورة...' : 'Uploading...');
+                                  const url = await handleUploadFile(file);
+                                  setProfileFormData({ ...profileFormData, avatar: url });
+                                  toast.success(isRtl ? 'تم رفع صورتك الشخصية بنجاح!' : 'Avatar uploaded!');
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Upload failed');
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'الاسم الكامل بالمنصة:' : 'Display Name:'}</label>
+                      <input
+                        type="text"
+                        required
+                        value={profileFormData.name}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder="Your Name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'البريد الإلكتروني (غير قابل للتعديل):' : 'Email (Read Only):'}</label>
+                      <input
+                        type="email"
+                        disabled
+                        value={profileFormData.email}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-100 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'توجيهات مخصصة للذكاء الاصطناعي (أدخل اهتماماتك أو تفضيلاتك):' : 'Custom AI Instructions:'}</label>
+                      <textarea
+                        rows={3}
+                        value={profileFormData.custom_instructions}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, custom_instructions: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder={isRtl ? 'مثال: تفضيل النشرات الإعلانية بمجال العقارات والسيارات بغزة...' : 'E.g., Prefer real estate ads...'}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsProfileEditModalOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold"
+                    >
+                      {isRtl ? 'إلغاء' : 'Cancel'}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingProfile}
+                      className="px-4 py-2 rounded-xl bg-accent text-white text-xs font-bold flex items-center gap-1"
+                    >
+                      {isSubmittingProfile ? (isRtl ? 'جاري الحفظ...' : 'Saving...') : (isRtl ? 'حفظ التغييرات' : 'Save Changes')}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {/* Verification Status */}
+                  {user.kyc_status === 'verified' && (
+                    <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center space-y-2">
+                      <div className="flex justify-center">
+                        <ShieldCheck size={40} className="text-blue-500" />
+                      </div>
+                      <h4 className="text-sm font-extrabold text-blue-500">{isRtl ? 'حسابك موثق بالشارة الزرقاء' : 'Account Verified'}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {isRtl ? 'لقد قمنا بالتحقق من هويتك بنجاح. تتمتع الآن بثقة كاملة في جميع صفقاتك ونشراتك.' : 'Your identity is fully verified.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {user.kyc_status === 'pending' && (
+                    <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-center space-y-2">
+                      <div className="flex justify-center">
+                        <div className="w-10 h-10 rounded-full border-4 border-yellow-500 border-t-transparent animate-spin" />
+                      </div>
+                      <h4 className="text-sm font-extrabold text-yellow-500">{isRtl ? 'طلب التوثيق قيد المراجعة' : 'Verification Pending'}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {isRtl ? 'طلبك الآن قيد التدقيق لدى الإدارة. سيتم إخطارك وتفعيل الشارة الزرقاء فوراً بعد التحقق.' : 'Your request is under review.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {(user.kyc_status === 'none' || user.kyc_status === 'rejected' || !user.kyc_status) && (
+                    <form onSubmit={handleKycSubmit} className="space-y-4">
+                      {user.kyc_status === 'rejected' && (
+                        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-500">
+                          {isRtl ? 'تم رفض طلب التوثيق السابق. يرجى تقديم الاسم الحقيقي ومستند واضح للتحقق.' : 'Previous verification request was rejected. Please submit valid documents.'}
+                        </div>
+                      )}
+
+                      <div className="p-3.5 rounded-xl bg-accent/5 border border-accent/10 space-y-1">
+                        <h4 className="text-xs font-extrabold text-accent">{isRtl ? 'احصل على الشارة الزرقاء في فيرال بوك 🛡️' : 'Get the Blue Verification Badge'}</h4>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                          {isRtl ? 'توثيق الهوية يضمن للعملاء سلامة الصفقات ويمنح منشوراتك الأولوية التامة في محركات البحث والتوصيات بالمنصة.' : 'Verifying your identity builds trust and boosts search priority.'}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold mb-1">{isRtl ? 'الاسم الكامل القانوني (مطابق للهوية):' : 'Legal Full Name:'}</label>
+                          <input
+                            type="text"
+                            required
+                            value={kycFullName}
+                            onChange={(e) => setKycFullName(e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                            placeholder={isRtl ? 'مثال: محمد أحمد علي' : 'Legal Name'}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1">{isRtl ? 'رقم الهوية الوطنية / جواز السفر:' : 'ID / Passport Number:'}</label>
+                          <input
+                            type="text"
+                            required
+                            value={kycIDNumber}
+                            onChange={(e) => setKycIDNumber(e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                            placeholder="E.g., 401234567"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1">{isRtl ? 'صورة الهوية أو مستند رسمي للتوثيق:' : 'Official Identity Document or Selfie with ID:'}</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              required
+                              value={kycSelfieUrl}
+                              onChange={(e) => setKycSelfieUrl(e.target.value)}
+                              className="flex-1 px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                              placeholder="https://..."
+                            />
+                            <label className="px-3 py-2 rounded-xl bg-accent text-white text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">
+                              <Upload size={14} />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    try {
+                                      toast.info(isRtl ? 'جاري رفع المستند...' : 'Uploading...');
+                                      const url = await handleUploadFile(file);
+                                      setKycSelfieUrl(url);
+                                      toast.success(isRtl ? 'تم رفع صورة المستند بنجاح!' : 'Document uploaded!');
+                                    } catch (err: any) {
+                                      toast.error(err.message || 'Upload failed');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {kycSelfieUrl && (
+                            <div className="mt-2 h-20 w-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100">
+                              <img src={kycSelfieUrl} className="w-full h-full object-cover" alt="Selfie" referrerPolicy="no-referrer" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsProfileEditModalOpen(false)}
+                          className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold"
+                        >
+                          {isRtl ? 'إلغاء' : 'Cancel'}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmittingProfile}
+                          className="px-4 py-2 rounded-xl bg-accent text-white text-xs font-bold"
+                        >
+                          {isSubmittingProfile ? (isRtl ? 'جاري الإرسال...' : 'Submitting...') : (isRtl ? 'تقديم طلب التوثيق' : 'Submit Verification Request')}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================== */}
+      {/* MODAL 6: EDIT BUSINESS PAGE & MANAGERS                     */}
+      {/* ========================================================== */}
+      <AnimatePresence>
+        {isEditPageModalOpen && editingPageData && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 p-6 shadow-2xl space-y-4 my-8 text-[var(--text-primary)]"
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 size={20} className="text-accent" />
+                  <h3 className="text-sm font-extrabold">{isRtl ? 'إدارة وتعديل الصفحة التجارية والمسؤولين' : 'Manage Merchant Page & Admins'}</h3>
+                </div>
+                <button onClick={() => { setIsEditPageModalOpen(false); setEditingPageData(null); }} className="text-gray-400 hover:text-gray-600">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSavePageEdit} className="space-y-4">
+                <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1">
+                  
+                  {/* Basic settings */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'اسم الشركة / المتجر:' : 'Page Name:'}</label>
+                      <input
+                        type="text"
+                        required
+                        value={editPageFormData.name}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, name: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'المدينة:' : 'City:'}</label>
+                      <select
+                        value={editPageFormData.city}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, city: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      >
+                        {PALESTINE_CITIES.map((c, idx) => (
+                          <option key={`edit-pal-city-${c}-${idx}`} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'الصنف / الفئة:' : 'Category:'}</label>
+                      <input
+                        type="text"
+                        required
+                        value={editPageFormData.category}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, category: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder="E.g., E-Commerce"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'العنوان الفعلي:' : 'Address:'}</label>
+                      <input
+                        type="text"
+                        value={editPageFormData.address}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, address: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder="E.g., Remal Street"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1">{isRtl ? 'نبذة ووصف الشركة:' : 'Description:'}</label>
+                    <textarea
+                      rows={2}
+                      required
+                      value={editPageFormData.description}
+                      onChange={(e) => setEditPageFormData({ ...editPageFormData, description: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                    />
+                  </div>
+
+                  {/* Social media and contacts */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'رقم الواتساب:' : 'WhatsApp:'}</label>
+                      <input
+                        type="text"
+                        value={editPageFormData.whatsapp_number}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, whatsapp_number: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder="970599..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'الهاتف للتواصل:' : 'Phone:'}</label>
+                      <input
+                        type="text"
+                        value={editPageFormData.phone_number}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, phone_number: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'الموقع الإلكتروني:' : 'Website URL:'}</label>
+                      <input
+                        type="text"
+                        value={editPageFormData.website_url}
+                        onChange={(e) => setEditPageFormData({ ...editPageFormData, website_url: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Visual assets */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'رابط شعار الصفحة (Avatar):' : 'Avatar URL:'}</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={editPageFormData.avatar_url}
+                          onChange={(e) => setEditPageFormData({ ...editPageFormData, avatar_url: e.target.value })}
+                          className="flex-1 px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        />
+                        <label className="px-3 py-2 rounded-xl bg-accent text-white text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">
+                          <Upload size={14} />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  toast.info(isRtl ? 'جاري الرفع...' : 'Uploading...');
+                                  const url = await handleUploadFile(file);
+                                  setEditPageFormData({ ...editPageFormData, avatar_url: url });
+                                  toast.success(isRtl ? 'تم رفع الشعار!' : 'Avatar uploaded!');
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Upload failed');
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">{isRtl ? 'رابط غلاف الصفحة (Cover):' : 'Cover URL:'}</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={editPageFormData.cover_url}
+                          onChange={(e) => setEditPageFormData({ ...editPageFormData, cover_url: e.target.value })}
+                          className="flex-1 px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                        />
+                        <label className="px-3 py-2 rounded-xl bg-accent text-white text-xs font-bold cursor-pointer flex items-center justify-center shrink-0">
+                          <Upload size={14} />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  toast.info(isRtl ? 'جاري الرفع...' : 'Uploading...');
+                                  const url = await handleUploadFile(file);
+                                  setEditPageFormData({ ...editPageFormData, cover_url: url });
+                                  toast.success(isRtl ? 'تم رفع الغلاف!' : 'Cover uploaded!');
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Upload failed');
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page Managers management */}
+                  <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                    <h4 className="text-xs font-extrabold flex items-center gap-1.5 text-accent">
+                      <Users size={16} />
+                      <span>{isRtl ? 'إدارة المسؤولين والأدوار' : 'Manage Page Admins/Managers'}</span>
+                    </h4>
+
+                    {/* If current user is owner, they can add/delete managers */}
+                    {editingPageData.user_id === user.id || editingPageData.owner_id === user.id || user.role === 'admin' ? (
+                      <div className="space-y-3">
+                        <div className="flex gap-2 items-end">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold mb-0.5 text-gray-400">{isRtl ? 'البريد الإلكتروني للمسؤول الجديد:' : 'New Manager Email:'}</label>
+                            <input
+                              type="email"
+                              value={newManagerEmail}
+                              onChange={(e) => setNewManagerEmail(e.target.value)}
+                              className="w-full px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                              placeholder="manager@example.com"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold mb-0.5 text-gray-400">{isRtl ? 'الصلاحية:' : 'Permission Role:'}</label>
+                            <select
+                              value={newManagerRole}
+                              onChange={(e) => setNewManagerRole(e.target.value as 'full' | 'limited')}
+                              className="px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                            >
+                              <option value="limited">{isRtl ? 'مدير محدود المهام' : 'Limited Admin'}</option>
+                              <option value="full">{isRtl ? 'مدير كامل الصلاحيات' : 'Full Admin'}</option>
+                            </select>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!newManagerEmail.trim()) {
+                                toast.error(isRtl ? 'يرجى إدخال البريد الإلكتروني للمسؤول' : 'Email is required');
+                                return;
+                              }
+                              const emailClean = newManagerEmail.trim().toLowerCase();
+                              if (editPageManagers.some(m => m.email === emailClean)) {
+                                toast.error(isRtl ? 'هذا البريد الإلكتروني مضاف بالفعل كمسؤول' : 'Manager already exists');
+                                return;
+                              }
+                              const newMgr = {
+                                email: emailClean,
+                                name: emailClean.split('@')[0],
+                                role: newManagerRole
+                              };
+                              setEditPageManagers([...editPageManagers, newMgr]);
+                              setNewManagerEmail('');
+                              toast.success(isRtl ? 'تمت إضافة المسؤول للقايمة مؤقتاً! يرجى حفظ الصفحة لتأكيد الحفظ بالخادم.' : 'Manager added to list! Save page to persist.');
+                            }}
+                            className="px-3 py-2 bg-accent text-white text-xs font-bold rounded-xl h-9 flex items-center justify-center shrink-0 cursor-pointer"
+                          >
+                            <span>{isRtl ? 'إضافة' : 'Add'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-950 text-center text-xs text-gray-400">
+                        {isRtl ? 'صلاحية إضافة وإزالة المسؤولين مقتصرة على مالك الصفحة الأساسي.' : 'Only page owner can manage managers.'}
+                      </div>
+                    )}
+
+                    {/* Managers list */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold text-gray-400">{isRtl ? 'قائمة المسؤولين الحاليين:' : 'Current Managers List:'}</p>
+                      {editPageManagers.length === 0 ? (
+                        <p className="text-[10px] text-gray-500 italic">{isRtl ? 'لا يوجد مسؤولين إضافيين لهذه الصفحة حالياً.' : 'No additional managers.'}</p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-1.5">
+                          {editPageManagers.map((mgr, mIdx) => (
+                            <div key={`edit-mgr-${mIdx}`} className="p-2.5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="text-xs font-extrabold truncate block">{mgr.name || mgr.email}</span>
+                                <span className="text-[10px] text-gray-400 truncate block">{mgr.email}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                  mgr.role === 'full' 
+                                    ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' 
+                                    : 'bg-orange-500/10 text-orange-500 border border-orange-500/20'
+                                }`}>
+                                  {mgr.role === 'full' 
+                                    ? (isRtl ? 'مدير كامل' : 'Full Admin') 
+                                    : (isRtl ? 'مدير محدود' : 'Limited Admin')}
+                                </span>
+                                {(editingPageData.user_id === user.id || editingPageData.owner_id === user.id || user.role === 'admin') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditPageManagers(editPageManagers.filter((_, idx) => idx !== mIdx));
+                                      toast.info(isRtl ? 'تم حذف المسؤول من القائمة! يرجى حفظ الصفحة لتأكيد التغيير.' : 'Manager removed! Save page to persist.');
+                                    }}
+                                    className="p-1 rounded-md text-red-500 hover:bg-red-500/10 transition-theme"
+                                    title={isRtl ? 'إزالة المسؤول' : 'Remove Manager'}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditPageModalOpen(false); setEditingPageData(null); }}
+                    className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold"
+                  >
+                    {isRtl ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPageEdit}
+                    className="px-4 py-2 rounded-xl bg-accent text-white text-xs font-bold"
+                  >
+                    {isSubmittingPageEdit ? (isRtl ? 'جاري الحفظ...' : 'Saving...') : (isRtl ? 'حفظ التعديلات' : 'Save Changes')}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

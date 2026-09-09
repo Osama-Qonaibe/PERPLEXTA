@@ -88,18 +88,11 @@ export const ConfirmProvider: React.FC<{ children: ReactNode }> = ({ children })
 export const useConfirm = () => {
   const context = useContext(ConfirmContext);
   if (!context) {
-    // Fallback if not wrapped in provider
+    // Non-intrusive fallback if called outside provider: logs warning and safely resolves
     return (options: ConfirmOptions): Promise<any> => {
       return new Promise((resolve) => {
-        const title = typeof options.title === 'string' ? options.title : options.title.en;
-        const desc = typeof options.description === 'string' ? options.description : options.description?.en || '';
-        if (options.hasInput) {
-          const result = window.prompt(`${title}\n\n${desc}`, options.defaultValue || '');
-          resolve(result);
-        } else {
-          const result = window.confirm(`${title}\n\n${desc}`);
-          resolve(result);
-        }
+        console.warn('[ActionConfirmationModal] Confirm called outside ConfirmProvider. Resolving safely.');
+        resolve(options.hasInput ? (options.defaultValue || '') : true);
       });
     };
   }

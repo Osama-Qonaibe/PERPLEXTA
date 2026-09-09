@@ -8,6 +8,7 @@ import { MemoryCenter } from '../components/MemoryCenter';
 import { UsageRadar } from '../components/UsageRadar';
 import { WalletSystem } from '../components/WalletSystem';
 import { DeveloperAgentPortal } from '../components/DeveloperAgentPortal';
+import { DesktopOnlyNotice } from '../components/mobile/DesktopOnlyNotice';
 import { motion, AnimatePresence } from 'motion/react';
 import { perplextaPageTransition } from '../constants/motions';
 import { triggerHaptic } from '../utils/haptics';
@@ -39,7 +40,7 @@ interface ApiError extends Error {
 const VALID_SETTINGS_TABS = ['account', 'usage', 'wallet', 'memory', 'developer'];
 
 export const SettingsPage: React.FC = () => {
-  const { t, dir, theme, setTheme, user, setUser, logout, token, language, setLanguage } = useAppContext();
+  const { t, dir, theme, setTheme, user, setUser, logout, token, language, setLanguage, isMobile } = useAppContext();
   const { toast, showToast } = useToast(4000);
   const { tab: routeTab } = useParams<{ tab?: string }>();
   const [searchParams] = useSearchParams();
@@ -87,9 +88,22 @@ export const SettingsPage: React.FC = () => {
     }
   }, [routeTab, searchParams, activeTab, navigate]);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeTab]);
+
   const handleTabChange = useCallback((tabId: string) => {
     triggerHaptic(15);
     setActiveTab(tabId);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     navigate(`/settings/${tabId}`, { replace: true });
   }, [navigate]);
 
@@ -268,6 +282,8 @@ export const SettingsPage: React.FC = () => {
     { id: 'developer', icon: <Terminal size={18} />, label: language === 'ar' ? 'المطورين' : 'Devs' },
   ];
 
+  const activeTabsList = isMobile ? tabs.filter((t) => t.id !== 'developer') : tabs;
+
   if (!user) return null;
 
   return (
@@ -283,9 +299,8 @@ export const SettingsPage: React.FC = () => {
             {dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             <span className="text-xs font-bold">{dir === 'rtl' ? 'رجوع' : 'Back'}</span>
           </button>
-          <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight uppercase leading-none">{t('settings')}</h1>
-            <span className="text-[10px] font-bold text-accent tracking-wider">{tabs.find(t => t.id === activeTab)?.label}</span>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-sm font-black tracking-tight uppercase">{t('settings')}</h1>
           </div>
         </div>
 
@@ -382,15 +397,15 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-3 sm:p-6 md:p-12 pb-24 md:pb-12`}>
+        <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto no-scrollbar scroll-smooth p-3 sm:p-6 md:p-12 pb-24 md:pb-12`}>
           <div className="max-w-5xl mx-auto w-full">
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={perplextaPageTransition}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: [0.25, 1, 0.2, 1] }}
                 className="space-y-6 md:space-y-12 pb-8 w-full"
               >
               {/* Account Tab */}
@@ -428,14 +443,14 @@ export const SettingsPage: React.FC = () => {
                    onRefresh={fetchMemories}
                    dir={dir}
                    theme={theme}
-                   stickyOffset={80}
+                   stickyOffset={isMobile ? 0 : 80}
                  />
               )}
 
               {/* Developer & Bot Portal Tab */}
               {activeTab === 'developer' && (
                 <div className="w-full">
-                  <DeveloperAgentPortal />
+                  {isMobile ? <DesktopOnlyNotice /> : <DeveloperAgentPortal />}
                 </div>
               )}
             </motion.div>
@@ -450,7 +465,7 @@ export const SettingsPage: React.FC = () => {
         className="md:hidden fixed bottom-0 left-0 right-0 z-[120] select-none bg-[var(--surface-page)]/95 backdrop-blur-md border-t border-[var(--border-main)] transition-colors duration-200 pb-[env(safe-area-inset-bottom,0px)]"
       >
         <div className="h-[52px] px-2 flex items-center justify-around max-w-lg mx-auto">
-          {tabs.map((tab) => {
+          {activeTabsList.map((tab) => {
             const active = activeTab === tab.id;
             const Icon = tab.icon.type;
             return (
@@ -485,28 +500,6 @@ export const SettingsPage: React.FC = () => {
           })}
         </div>
       </nav>
-
-      {/* Toast Notification Container */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className={`fixed bottom-20 md:bottom-6 ${dir === 'rtl' ? 'left-6' : 'right-6'} z-50 px-5 py-3.5 rounded-[var(--radius)] shadow-2xl flex items-center gap-3 backdrop-blur-md border ${
-              (toast as any).type === 'success' 
-                ? 'bg-accent/10 border-accent/20 text-accent' 
-                : 'bg-red-500/10 border-red-500/20 text-red-500'
-            }`}
-            style={{ boxShadow: (toast as any).type === 'success' ? '0 10px 30px rgba(156,163,175,0.15)' : '0 10px 30px rgba(239,68,68,0.15)' }}
-          >
-            <span className={`w-2 h-2 rounded-[4px] ${(toast as any).type === 'success' ? 'bg-accent animate-pulse' : 'bg-red-500'}`} />
-            <span className="font-bold text-sm tracking-tight">
-              {typeof (toast as any).message === 'string' ? (toast as any).message.replace(/[<>]/g, '') : (toast as any).message}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

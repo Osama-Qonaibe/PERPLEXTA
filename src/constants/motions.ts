@@ -1,5 +1,8 @@
 import { Variants, Transition } from 'motion/react';
 
+// Re-export all motion constants from motion.ts for unified single source of truth
+export * from './motion';
+
 // ============================================================
 // 1. الثوابت الأساسية (Core Constants)
 // ============================================================

@@ -15,7 +15,7 @@ import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-tsx';
 import 'prismjs/components/prism-markup';
-import { ArrowDown, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight, Lock, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, MessageSquare, Music, Play, Pause, Plus, Mic, MicOff, Send, LayoutGrid, Zap, Code, FileText, Image as ImageIcon, Sparkles, Brain, Video, Volume2, VolumeX, Search, BookOpen, Square, AlertTriangle, AlertCircle, Paperclip, Copy, Download, Scale, Megaphone, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Share2, RefreshCw, MoreHorizontal, Bookmark, Flag, Trash2, Check, Pencil, X, Pin, PinOff, FileDown, FileCode, FolderPlus, Loader2, ExternalLink, Settings, Database, GitFork, Sliders, ZoomIn, ZoomOut, Twitter, Linkedin, CornerDownLeft, CornerDownRight, Lock, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from '../context/NotificationContext';
 import { useAppContext } from '../context/AppContext';
 import { useVideoResource } from '../context/VideoResourceContext';
@@ -378,7 +378,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:text-accent hover:border-accent/40 dark:hover:text-accent transition-theme text-[11px] font-black tracking-wide uppercase cursor-pointer active:scale-95 shadow-sm"
             title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
           >
-            {isCopiedPrompt ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+            {isCopiedPrompt ? <Check size={13} className="text-[var(--fg-success)]" /> : <Copy size={13} />}
             <span>{dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}</span>
           </button>
         )}
@@ -420,7 +420,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
                     <span>PERPLEXTA ART</span>
                   </div>
                   <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 text-[10px] font-mono">
-                    <span className="w-1.5 h-1.5 rounded-[4px] bg-emerald-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-[4px] bg-[var(--fg-success)] animate-pulse" />
                     <span>{formattedRatio}</span>
                   </div>
                 </div>
@@ -469,7 +469,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
                       className="px-2.5 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800 text-zinc-300 hover:text-accent hover:border-accent/40 transition-theme flex items-center gap-1.5 text-[11px] font-medium cursor-pointer shadow-md active:scale-95"
                       title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
                     >
-                      {isCopiedPrompt ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      {isCopiedPrompt ? <Check size={13} className="text-[var(--fg-success)]" /> : <Copy size={13} />}
                       <span className="hidden lg:inline">{dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}</span>
                     </button>
                   )}
@@ -588,7 +588,7 @@ const ShareableImageOutput = ({ src, dir: propDir, alt }: { src?: string; dir?: 
                       className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700/80 transition-theme text-[11px] font-semibold cursor-pointer active:scale-95"
                       title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
                     >
-                      {isCopiedPrompt ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      {isCopiedPrompt ? <Check size={13} className="text-[var(--fg-success)]" /> : <Copy size={13} />}
                       <span className="hidden sm:inline">{dir === 'rtl' ? 'نسخ' : 'Copy'}</span>
                     </button>
                   </div>
@@ -1860,7 +1860,7 @@ const getToolDetails = (toolId: string | undefined, dir: 'ltr' | 'rtl', t: any) 
       };
     case 'learning':
       return {
-        label: t('learning') || (dir === 'rtl' ? 'مساعد التعليم' : 'Education Assistant'),
+        label: t('learning') || (dir === 'rtl' ? 'تعليم' : 'Education'),
         icon: BookOpen,
         colorClass: 'text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]',
         bgClass: 'bg-purple-500/10 border-purple-500/20'
@@ -4564,7 +4564,7 @@ export const ChatPage: React.FC = () => {
   const [videoSettings, setVideoSettings] = useState(() => {
     const saved = typeof window !== 'undefined' ? secureStorage.getSync('perplexta_video_aspect_ratio') : null;
     return {
-      aspectRatio: saved || '9:16'
+      aspectRatio: saved || '1:1'
     };
   });
   const [imageSettings, setImageSettings] = useState(() => {
@@ -4668,7 +4668,6 @@ export const ChatPage: React.FC = () => {
     window.addEventListener('insert_to_prompt', handleInsertToPrompt);
     return () => window.removeEventListener('insert_to_prompt', handleInsertToPrompt);
   }, [dir]);
-  const [showChatLimitWarning, setShowChatLimitWarning] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
@@ -5568,9 +5567,13 @@ export const ChatPage: React.FC = () => {
         'chat_fast': { en: 'Fast Technical AI', ar: 'الذكاء التقني السريع' },
         'chat_pro': { en: 'Reasoning Pro Engine', ar: 'محرك الاستنتاج المتقدم' },
         'chat_reasoning': { en: 'Advanced Reasoning Protocol', ar: 'بروتوكول التفكير المعقد' },
-        'perplexta_analysis': { en: 'Perplexta Analysis & Audit', ar: 'تحليل وبحث بيربليكستا' },
-        'image': { en: 'Visual Synthesis Engine', ar: 'محرك التوليد البصري' },
-        'video': { en: 'Cinematic Video Generator', ar: 'مولد الفيديو السينمائي' },
+        'perplexta_analysis': { en: 'Analysis', ar: 'تحليل' },
+        'image': { en: 'Image', ar: 'صورة' },
+        'video': { en: 'Video', ar: 'فيديو' },
+        'code': { en: 'Code', ar: 'كود' },
+        'learning': { en: 'Education', ar: 'تعليم' },
+        'legal_analysis': { en: 'Legal', ar: 'قانون' },
+        'notebook': { en: 'Research', ar: 'بحث' },
         'tts': { en: 'Voice Synthesis Engine', ar: 'محرك التوليد الصوتي' },
         'stt': { en: 'Speech Transcription', ar: 'التحويل الصوتي للنص' },
       };
@@ -5934,7 +5937,7 @@ export const ChatPage: React.FC = () => {
       // Strict protocol: User's explicitly selected aspect ratio is authoritative
       let dynamicVideoSettings = { 
         ...videoSettings, 
-        aspectRatio: videoSettings.aspectRatio || '9:16' 
+        aspectRatio: videoSettings.aspectRatio || '1:1' 
       };
       let dynamicImageSettings = { 
         ...imageSettings, 
@@ -5984,7 +5987,7 @@ export const ChatPage: React.FC = () => {
 
       if (updatedMessages.length > MAX_CHAT_MESSAGES) {
         updatedMessages = updatedMessages.slice(updatedMessages.length - MAX_CHAT_MESSAGES);
-        setShowChatLimitWarning(true);
+        toast.warning(dir === 'rtl' ? 'تم بلوغ حد 50 رسالة وحذف الرسائل القديمة تلقائياً' : 'Reached 50 messages limit; older messages were pruned');
       }
 
       generationStartTimeRef.current = Date.now();
@@ -6267,17 +6270,14 @@ export const ChatPage: React.FC = () => {
   ];
 
   const advancedTools = [
-    { id: 'code', label: t('code') || (dir === 'rtl' ? 'توليد كود' : 'Code Generation'), icon: <Code size={16} />, isNew: true },
-    { id: 'image', label: t('image') || (dir === 'rtl' ? 'توليد صورة' : 'Image Generation'), icon: <ImageIcon size={16} />, isNew: false },
-    { id: 'video', label: t('video') || (dir === 'rtl' ? 'توليد فيديو' : 'Video Generation'), icon: <Video size={16} />, isNew: true },
-    { id: 'learning', label: t('learning') || (dir === 'rtl' ? 'مساعد التعليم' : 'Learning Assistant'), icon: <BookOpen size={16} />, isNew: true },
-    { id: 'legal_analysis', label: t('legal_analysis') || (dir === 'rtl' ? 'مساعد القانون' : 'Legal Assistant'), icon: <Scale size={16} />, isNew: true },
-    { id: 'perplexta_analysis', label: t('perplexta_analysis') || (dir === 'rtl' ? 'تحليل بيربليكستا' : 'Perplexta Analysis'), icon: <Search size={16} />, isNew: true },
-    { id: 'canvas', label: t('canvas') || (dir === 'rtl' ? 'استوديو الصوت' : 'Audio Studio'), icon: <Music size={16} />, isNew: true },
-    { id: 'notebook', label: t('notebook') || (dir === 'rtl' ? 'المفكرة البحثية' : 'Research Notebook'), icon: <BookOpen size={16} />, isNew: true },
-    { id: 'tts', label: t('tts') || (dir === 'rtl' ? 'تحويل النص إلى صوت' : 'Text to Speech'), icon: <Volume2 size={16} />, isNew: true },
-    { id: 'stt', label: t('stt') || (dir === 'rtl' ? 'تحويل الصوت إلى نص' : 'Speech to Text'), icon: <Mic size={16} />, isNew: true },
-    { id: 'perplexta_music', label: t('perplexta_music') || (dir === 'rtl' ? 'الموسيقى والأغاني' : 'Music & Songs'), icon: <Music size={16} />, isNew: true },
+    { id: 'perplexta_analysis', label: t('perplexta_analysis') || (dir === 'rtl' ? 'تحليل' : 'Analysis'), icon: <Search size={16} />, isNew: true },
+    { id: 'notebook', label: t('notebook') || (dir === 'rtl' ? 'بحث' : 'Research'), icon: <BookOpen size={16} />, isNew: true },
+    { id: 'image', label: t('image') || (dir === 'rtl' ? 'صورة' : 'Image'), icon: <ImageIcon size={16} />, isNew: false },
+    { id: 'video', label: t('video') || (dir === 'rtl' ? 'فيديو' : 'Video'), icon: <Video size={16} />, isNew: true },
+    { id: 'code', label: t('code') || (dir === 'rtl' ? 'كود' : 'Code'), icon: <Code size={16} />, isNew: true },
+    { id: 'learning', label: t('learning') || (dir === 'rtl' ? 'تعليم' : 'Education'), icon: <BookOpen size={16} />, isNew: true },
+    { id: 'legal_analysis', label: t('legal_analysis') || (dir === 'rtl' ? 'قانون' : 'Legal'), icon: <Scale size={16} />, isNew: true },
+    { id: 'canvas', label: t('canvas') || (dir === 'rtl' ? 'استوديو الصوت' : 'Audio Studio'), icon: <Music size={16} />, isNew: true, isRouter: true },
   ];
 
   const defaultChatTool = { id: 'chat', label: t('chat') || (dir === 'rtl' ? 'محادثة' : 'Chat'), icon: <MessageSquare size={16} /> };
@@ -6379,12 +6379,12 @@ export const ChatPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 4, scale: 0.98 }}
                   transition={{ duration: 0.15 }}
-                  className="flex items-center gap-1 sm:gap-1.5 max-w-full overflow-hidden"
+                  className="flex items-center gap-1.5 max-w-full overflow-hidden"
                 >
-                  <div className="inline-flex items-stretch rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] divide-x divide-[var(--border-main)] rtl:divide-x-reverse overflow-x-auto scrollbar-none shadow-xs">
+                  <div className="inline-flex items-stretch h-8 rounded-[8px] border border-[var(--border-main)] bg-transparent divide-x divide-[var(--border-main)] rtl:divide-x-reverse overflow-x-auto scrollbar-none">
                     {['16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '1:1'].map((ratio) => {
                       const currentRatio = selectedTool === 'video'
-                        ? (videoSettings.aspectRatio || '16:9')
+                        ? (videoSettings.aspectRatio || '1:1')
                         : (imageSettings.aspectRatio || '1:1');
                       const isActive = currentRatio === ratio;
 
@@ -6404,10 +6404,10 @@ export const ChatPage: React.FC = () => {
                           type="button"
                           onClick={() => handleSelectAspectRatio(ratio)}
                           title={dir === 'rtl' ? RATIO_TOOLTIPS[ratio]?.ar : RATIO_TOOLTIPS[ratio]?.en}
-                          className={`px-1.5 sm:px-3 py-0.5 sm:py-1.5 text-[9.5px] sm:text-xs font-mono font-medium sm:font-semibold transition-colors duration-150 whitespace-nowrap ${
+                          className={`px-2.5 sm:px-3 h-full flex items-center justify-center text-[11px] font-mono font-bold transition-theme whitespace-nowrap active:scale-95 ${
                             isActive
-                              ? 'bg-[var(--surface-subtle)] text-[var(--text-primary)] font-bold shadow-inner'
-                              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]/50'
+                              ? 'text-[var(--fg-accent)] font-extrabold bg-transparent hover:bg-[var(--surface-subtle)]'
+                              : 'text-[var(--text-muted)] hover:text-[var(--fg-accent)] bg-transparent hover:bg-[var(--surface-subtle)]'
                           }`}
                         >
                           {ratio}
@@ -6423,9 +6423,9 @@ export const ChatPage: React.FC = () => {
                       secureStorage.set('perplexta_aspect_bar_collapsed', 'true');
                     }}
                     title={dir === 'rtl' ? 'طي شريط الأبعاد' : 'Collapse ratio bar'}
-                    className="p-1 sm:p-1.5 rounded-[var(--radius)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border border-transparent hover:border-[var(--border-main)] transition-colors shrink-0"
+                    className="w-8 h-8 flex items-center justify-center rounded-[8px] border border-[var(--border-main)] bg-transparent hover:bg-[var(--surface-subtle)] text-[var(--text-muted)] hover:text-[var(--fg-accent)] transition-theme active:scale-95 shrink-0"
                   >
-                    <ChevronUp size={13} className="sm:w-3.5 sm:h-3.5" />
+                    <ChevronUp size={14} />
                   </button>
                 </motion.div>
               ) : (
@@ -6441,14 +6441,14 @@ export const ChatPage: React.FC = () => {
                     secureStorage.set('perplexta_aspect_bar_collapsed', 'false');
                   }}
                   title={dir === 'rtl' ? 'توسيع شريط الأبعاد' : 'Expand ratio bar'}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[10px] sm:text-xs font-mono font-semibold text-[var(--text-secondary)] hover:text-accent hover:border-accent/30 hover:bg-[var(--surface-subtle)] transition-all shadow-xs"
+                  className="h-8 px-2.5 flex items-center justify-center gap-1.5 rounded-[8px] border border-[var(--border-main)] bg-transparent hover:bg-[var(--surface-subtle)] transition-theme active:scale-95 group shrink-0 text-[11px] font-mono font-bold"
                 >
-                  <span>
+                  <span className="text-[var(--fg-accent)] font-extrabold">
                     {selectedTool === 'video'
-                      ? (videoSettings.aspectRatio || '16:9')
+                      ? (videoSettings.aspectRatio || '1:1')
                       : (imageSettings.aspectRatio || '1:1')}
                   </span>
-                  <ChevronDown size={11} className="sm:w-3.5 sm:h-3.5 text-[var(--text-muted)]" />
+                  <ChevronDown size={14} className="text-[var(--text-muted)] group-hover:text-[var(--fg-accent)] transition-theme" />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -6610,11 +6610,11 @@ export const ChatPage: React.FC = () => {
           <div className="flex-shrink-0 flex items-center">
             <motion.button 
               onClick={() => handleSendOrStop()}
-              className={`w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] transition-all group shadow-none
-                ${!isGenerating && !query.trim() 
-                  ? 'cursor-not-allowed opacity-40 grayscale' 
-                  : 'hover:bg-[var(--bg-accent-muted)] hover:border-[var(--border-accent)] active:scale-95'
-                } border border-[var(--border-main)] bg-[var(--surface-subtle)]`}
+              className={`w-8 h-8 flex items-center justify-center rounded-[8px] transition-theme group shadow-none border shrink-0 ${
+                !isGenerating && !query.trim() 
+                  ? 'cursor-not-allowed opacity-40 grayscale border-[var(--border-main)] bg-transparent' 
+                  : 'border-[var(--border-main)] bg-transparent hover:bg-[var(--surface-subtle)] active:scale-95'
+              }`}
               disabled={!isGenerating && !query.trim()}
               animate={isGenerating ? {
                 borderColor: [
@@ -6637,8 +6637,8 @@ export const ChatPage: React.FC = () => {
               ) : (
                 <div className={`${dir === 'rtl' ? 'transform -scale-x-100' : ''} flex items-center justify-center`}>
                   <Send 
-                    size={15} 
-                    className={`transition-colors ${
+                    size={14} 
+                    className={`transition-theme ${
                       query.trim() 
                         ? 'text-[var(--fg-accent)] scale-100' 
                         : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
@@ -6706,16 +6706,15 @@ export const ChatPage: React.FC = () => {
                 }
               }}
               disabled={isInputDisabled}
-              className={`w-8 h-8 flex items-center justify-center rounded-[8px] transition-theme border border-transparent shadow-none ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-accent/5 group hover:border-accent/20 hover:shadow-[0_0_15px_rgba(156,163,175,0.1)]'}`}
+              className={`w-8 h-8 flex items-center justify-center rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] active:scale-95 transition-theme group shrink-0 ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
             >
-              <Plus size={16} className="text-[var(--text-secondary)] group-hover:hidden transition-theme" />
-              <Paperclip size={16} className="text-accent hidden group-hover:block transition-theme " />
+              <Plus size={14} className="text-[var(--text-muted)] group-hover:text-[var(--fg-accent)] transition-theme" />
             </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t-0 transition-all ease-in-out">
-          <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap min-w-0">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-1.5 border-t-0 transition-theme">
+          <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
             <div ref={toolsMenuRef} className="relative shrink-0">
               {(() => {
                 const isToolActive = selectedTool !== 'chat';
@@ -6731,25 +6730,21 @@ export const ChatPage: React.FC = () => {
                         }
                       }}
                       disabled={isInputDisabled}
-                      className={`flex items-center gap-1 md:gap-1.5 px-2 h-7 sm:h-8 rounded-[var(--radius-sm)] flex-nowrap transition-all border ${
-                        isToolActive
-                          ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--surface-subtle)] text-[var(--text-primary)]'
-                      } ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+                      title={currentTool.label}
+                      className={`w-8 h-8 flex items-center justify-center rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] active:scale-95 transition-theme group shrink-0 ${
+                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
+                      <span className={`flex items-center justify-center transition-theme ${
                         isToolActive 
-                          ? 'text-[var(--fg-accent)] scale-105' 
-                          : 'text-[var(--text-muted)]'
+                          ? 'text-[var(--fg-accent)]' 
+                          : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
                       }`}>
                         {React.cloneElement(currentTool.icon as React.ReactElement<{ size?: number; className?: string }>, { 
-                          size: 13, 
+                          size: 14, 
                           className: `w-3.5 h-3.5 ${isToolActive ? 'text-[var(--fg-accent)]' : ''}` 
                         })}
                       </span>
-                      <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
-                        isToolActive ? 'text-[var(--fg-accent)] font-extrabold' : 'text-[var(--text-primary)]'
-                      }`}>{currentTool.label}</span>
                     </button>
 
                     {isAdvancedToolsOpen && (
@@ -6770,23 +6765,31 @@ export const ChatPage: React.FC = () => {
                                   if (isLocked) {
                                     return;
                                   }
+                                  if (tool.id === 'canvas' || (tool as any).isRouter) {
+                                    navigate('/audio-studio');
+                                    setIsAdvancedToolsOpen(false);
+                                    return;
+                                  }
                                   setSelectedTool(tool.id);
                                   setActiveDropdown('tool');
                                   setIsAdvancedToolsOpen(false);
                                 }}
-                                className={`${tool.id === 'code' ? 'hidden md:flex' : 'flex'} items-center gap-1 flex-nowrap px-1.5 py-1 rounded-lg transition-theme text-[10.5px] font-bold bg-transparent hover:bg-[var(--surface-subtle)] ${
+                                className={`${tool.id === 'code' ? 'hidden md:flex' : 'flex'} items-center gap-1.5 flex-nowrap px-2 py-1.5 rounded-[var(--radius-xs)] transition-theme text-[10.5px] font-bold bg-transparent hover:bg-[var(--surface-subtle)] ${
                                   isLocked 
                                     ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                 }`}
                               >
-                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-[var(--text-muted)] opacity-70' : isSelected ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.9)] scale-110 transition-transform' : 'text-[var(--text-muted)]'}`}>
+                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-[var(--text-muted)] opacity-70' : isSelected ? 'text-[var(--fg-accent)] drop-shadow-[0_0_8px_rgba(20,184,166,0.9)] scale-110 transition-transform' : 'text-[var(--text-muted)]'}`}>
                                   {React.cloneElement(tool.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 13, className: 'w-3.5 h-3.5' })}
                                 </span>
                                 <div className="flex items-center justify-between flex-1 min-w-0 flex-nowrap gap-1">
-                                  <span className={`truncate whitespace-nowrap ${isSelected ? 'text-emerald-500 dark:text-emerald-400 font-bold' : ''}`}>{tool.label}</span>
+                                  <span className={`truncate whitespace-nowrap ${isSelected ? 'text-[var(--fg-accent)] font-bold' : ''}`}>{tool.label}</span>
                                   <div className="flex items-center gap-0.5 shrink-0">
-                                    {tool.isNew && !isLocked && !isSelected && (
+                                    {(tool as any).isRouter && !isLocked && (
+                                      <ArrowUpRight size={12} className="text-accent shrink-0 animate-pulse" />
+                                    )}
+                                    {tool.isNew && !isLocked && !isSelected && !(tool as any).isRouter && (
                                       <span className="px-1 py-[1px] rounded-[3px] bg-gray-500/20 text-gray-400 text-[7px] font-black uppercase tracking-wider">
                                         NEW
                                       </span>
@@ -6807,7 +6810,7 @@ export const ChatPage: React.FC = () => {
               })()}
             </div>
 
-            <div className="w-px h-3.5 bg-[var(--border-main)] mx-0.5 hidden sm:block shrink-0" />
+            <div className="w-px h-4 bg-[var(--border-main)] mx-0.5 shrink-0" />
 
             <div ref={modelsMenuRef} className="relative shrink-0">
               {(() => {
@@ -6825,25 +6828,21 @@ export const ChatPage: React.FC = () => {
                         }
                       }}
                       disabled={isInputDisabled}
-                      className={`flex items-center gap-1 md:gap-1.5 px-2 h-7 sm:h-8 rounded-[var(--radius-sm)] flex-nowrap transition-all border ${
-                        isModelActive 
-                          ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]' 
-                          : 'border-transparent bg-transparent hover:bg-[var(--surface-subtle)] text-[var(--text-primary)]'
-                      } ${isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+                      title={currentModel.label}
+                      className={`w-8 h-8 flex items-center justify-center rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] active:scale-95 transition-theme group shrink-0 ${
+                        isInputDisabled ? 'opacity-30 cursor-not-allowed' : ''
+                      }`}
                     >
-                      <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 transition-all ${
+                      <span className={`flex items-center justify-center transition-theme ${
                         isModelActive 
-                          ? 'text-[var(--fg-accent)] scale-105' 
-                          : 'text-[var(--text-muted)]'
+                          ? 'text-[var(--fg-accent)]' 
+                          : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
                       }`}>
                         {React.cloneElement(currentModel.icon as React.ReactElement<{ size?: number; className?: string }>, { 
-                          size: 13, 
+                          size: 14, 
                           className: `w-3.5 h-3.5 ${isModelActive ? 'text-[var(--fg-accent)]' : ''}` 
                         })}
                       </span>
-                      <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight whitespace-nowrap hidden xs:inline ${
-                        isModelActive ? 'text-[var(--fg-accent)] font-extrabold' : 'text-[var(--text-primary)]'
-                      }`}>{currentModel.label}</span>
                     </button>
 
                     {isModelMenuOpen && (
@@ -6868,17 +6867,17 @@ export const ChatPage: React.FC = () => {
                                 setActiveDropdown('model');
                                 setIsModelMenuOpen(false);
                               }}
-                              className={`flex items-center justify-between px-1.5 py-1 rounded-lg flex-nowrap transition-theme text-[10.5px] font-bold uppercase tracking-tight bg-transparent hover:bg-[var(--surface-subtle)] ${
+                              className={`flex items-center justify-between px-2 py-1.5 rounded-[var(--radius-xs)] flex-nowrap transition-theme text-[10.5px] font-bold uppercase tracking-tight bg-transparent hover:bg-[var(--surface-subtle)] ${
                                 isLocked
                                   ? 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
                                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] group'
                               }`}
                             >
                               <div className="flex items-center gap-1 flex-nowrap">
-                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-gray-400 opacity-60' : isSelected ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.85)] scale-110' : model.color} transition-transform`}>
+                                <span className={`shrink-0 flex items-center justify-center w-3.5 h-3.5 ${isLocked ? 'text-gray-400 opacity-60' : isSelected ? 'text-[var(--fg-accent)] drop-shadow-[0_0_8px_rgba(20,184,166,0.85)] scale-110' : model.color} transition-transform`}>
                                   {React.cloneElement(model.icon as React.ReactElement<{ size?: number; className?: string }>, { size: 13, className: 'w-3.5 h-3.5' })}
                                 </span>
-                                <span className={`whitespace-nowrap ${isSelected ? 'text-emerald-500 dark:text-emerald-400 font-extrabold' : ''}`}>{model.label}</span>
+                                <span className={`whitespace-nowrap ${isSelected ? 'text-[var(--fg-accent)] font-extrabold' : ''}`}>{model.label}</span>
                               </div>
                               <div className="flex items-center gap-0.5 shrink-0">
                                 {isLocked && (
@@ -6901,17 +6900,17 @@ export const ChatPage: React.FC = () => {
               onClick={toggleRecording}
               disabled={isInputDisabled}
               title={dir === 'rtl' ? (isRecording ? 'إيقاف التسجيل الصوتي' : 'بدء الكتابة بالصوت') : (isRecording ? 'Stop voice recording' : 'Start voice-to-text')}
-              className={`w-8 h-8 flex items-center justify-center bg-transparent border transition-theme relative group active:scale-95 rounded-[8px] ${
+              className={`w-8 h-8 flex items-center justify-center bg-transparent border transition-theme relative group active:scale-95 rounded-[8px] shrink-0 ${
                 isInputDisabled 
                   ? 'opacity-30 cursor-not-allowed border-transparent' 
                   : isRecording
                     ? 'bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                    : 'border-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-accent hover:border-accent/20'
+                    : 'border-[var(--border-main)] text-[var(--text-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--fg-accent)]'
               }`}
             >
               {isRecording ? (
                 <div className="relative flex items-center justify-center">
-                  <MicOff size={16} className="text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                  <MicOff size={14} className="text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-red-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-red-500"></span>
@@ -6919,8 +6918,8 @@ export const ChatPage: React.FC = () => {
                 </div>
               ) : (
                 <Mic 
-                  size={16} 
-                  className="text-gray-400 group-hover:text-accent transition-theme" 
+                  size={14} 
+                  className="text-[var(--text-muted)] group-hover:text-[var(--fg-accent)] transition-theme" 
                 />
               )}
             </button>
@@ -6956,31 +6955,7 @@ export const ChatPage: React.FC = () => {
         variants={perplextaPageTransition}
         className="h-full flex flex-col w-full overflow-hidden"
       >
-      {showChatLimitWarning && (
-        <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 rounded-[var(--radius)] shadow-2xl flex items-center gap-4 animate-in fade-in duration-300 border bg-[var(--bg-secondary)] border-pink-500/30 shadow-pink-500/10`}>
-          <div className="w-12 h-12 rounded-[var(--radius)] bg-pink-500/10 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="text-pink-500" size={24} />
-          </div>
-          <div className={`flex flex-col ${dir === 'rtl' ? 'items-end' : 'items-start'}`}>
-            <span className="text-pink-500 font-bold text-sm">
-              {dir === 'rtl' ? 'تنبيه: حد الرسائل' : 'Warning: Chat Limit'}
-            </span>
-            <span className="text-[var(--text-secondary)] text-xs font-medium max-w-[250px] leading-relaxed">
-              {dir === 'rtl' 
-                ? 'لقد وصلت إلى حد 50 رسالة. تم حذف الرسائل القديمة لإدارة المساحة.' 
-                : 'You have reached the 50-message limit. Older messages have been pruned to manage space.'}
-            </span>
-            <button 
-              onClick={() => setShowChatLimitWarning(false)}
-              className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-pink-500 transition-theme"
-            >
-              {dir === 'rtl' ? 'إغلاق' : 'Dismiss'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 flex flex-col w-full overflow-hidden relative">
+        <div className="flex-1 flex flex-col w-full overflow-hidden relative">
           <AnimatePresence>
             {isRenaming && (
               <motion.div 
@@ -7408,7 +7383,7 @@ export const ChatPage: React.FC = () => {
                                       title={dir === 'rtl' ? 'نسخ البرومبت' : 'Copy Prompt'}
                                     >
                                       {copiedPromptIndex === idx ? (
-                                        <Check size={13} className="text-emerald-500" />
+                                        <Check size={13} className="text-[var(--fg-success)]" />
                                       ) : (
                                         <Copy size={13} />
                                       )}
@@ -8168,17 +8143,13 @@ export const ChatPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
-                theme === 'dark' 
-                  ? 'bg-[#161618] border-zinc-800 text-gray-100' 
-                  : 'bg-white border-gray-150 text-gray-900'
-              }`}
+              className="relative max-w-sm w-full p-6 rounded-[var(--radius-lg)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[var(--text-primary)] shadow-2xl transition-theme z-10"
             >
-              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400">
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-[var(--fg-danger)]">
                 {dir === 'rtl' ? 'حذف المحادثة؟' : 'Delete conversation?'}
               </h3>
 
-              <p className={`text-xs mt-2 font-sans text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className="text-xs mt-2 font-sans text-start text-[var(--text-secondary)]">
                 {dir === 'rtl' 
                   ? 'سيؤدي هذا إلى حذف المحادثة الحالية وجميع الرسائل المرتبطة بها نهائيًا ولا يمكن التراجع عن هذا العمل.' 
                   : 'This will permanently delete the current conversation and all associated messages. This action cannot be undone.'}
@@ -8188,11 +8159,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
-                    theme === 'dark' 
-                      ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  className="px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] font-sans transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]"
                 >
                   {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                 </button>
@@ -8200,7 +8167,7 @@ export const ChatPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleThreadDeleteConfirm}
-                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[var(--status-danger)] hover:opacity-90 text-white rounded-[var(--radius-sm)] font-sans transition-theme shadow-sm"
                 >
                   {dir === 'rtl' ? 'تأكيد الحذف' : 'Confirm Delete'}
                 </button>

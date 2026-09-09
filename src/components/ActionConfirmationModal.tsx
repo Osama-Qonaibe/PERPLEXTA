@@ -87,8 +87,8 @@ export const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = (
       btnClass: 'bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold border border-red-500/20 shadow-lg shadow-red-900/20',
     },
     success: {
-      accent: 'text-emerald-400',
-      icon: <CheckCircle size={22} className="text-emerald-400 shrink-0" />,
+      accent: 'text-[var(--fg-success)]',
+      icon: <CheckCircle size={22} className="text-[var(--fg-success)] shrink-0" />,
       btnClass: 'bg-white hover:bg-gray-100 active:scale-95 text-gray-900 font-bold shadow-md',
     },
     warning: {

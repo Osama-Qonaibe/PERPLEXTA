@@ -102,8 +102,22 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
   const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const customCoverInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleCustomCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      setRecommendedCovers(prev => [dataUrl, ...prev]);
+      setSelectedCoverIndex(0);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Auto handle preselected files
   useEffect(() => {
@@ -543,7 +557,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            className="relative w-full max-w-xl md:max-w-[620px] bg-white dark:bg-[#121214] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] font-sans"
+            className="relative w-full max-w-sm md:max-w-[440px] bg-white dark:bg-[#121214] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] font-sans"
           >
           {/* Main Title Header */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-850 bg-gray-50/70 dark:bg-[#18181b]/50">
@@ -553,13 +567,8 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
               </div>
               <div>
                 <h2 className="text-xs md:text-sm font-extrabold text-gray-900 dark:text-white">
-                  {isRtl ? 'إنشاء وتصميم قصة ذكية' : 'Create & Design Dynamic Story'}
+                  {isRtl ? 'انشاء قصة' : 'Create Story'}
                 </h2>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                  {isRtl 
-                    ? 'رفع متعدد تلقائي للصور بمؤثرات وصوتيات أو قص ذكي لمقاطع الريلز' 
-                    : 'Auto-split photos, apply sound tracks, and smart trim long clips'}
-                </p>
               </div>
             </div>
 
@@ -634,11 +643,11 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
               </div>
             ) : (
               /* Design Studio Playground */
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+              <div className="flex flex-col gap-4 items-stretch">
                 
                 {/* 1. Left Side: Immersive 9:16 Vertical Story Live Preview */}
-                <div className="md:col-span-4 flex flex-col gap-2.5">
-                  <div className="relative w-full aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-zinc-800/80 flex items-center justify-center group">
+                <div className="flex flex-col gap-2.5">
+                  <div className="relative w-36 sm:w-40 mx-auto aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-zinc-800/80 flex items-center justify-center group">
                     
                     {/* Video Player Render */}
                     {isVideo ? (
@@ -772,7 +781,7 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
                 </div>
 
                 {/* 2. Right Side: Controls Board (Effects, Music, Trimming, Multi-image layout) */}
-                <div className="md:col-span-8 space-y-4">
+                <div className="space-y-4">
                   
                   {/* Grid layout for Multiple Photos Selection if active */}
                   {imageStories.length > 0 && (
@@ -870,9 +879,26 @@ export const StoryUploadModal: React.FC<StoryUploadModalProps> = ({
 
                       {/* Cover selection panel */}
                       <div className="bg-gray-55 dark:bg-zinc-900/30 p-3 rounded-xl border border-gray-150 dark:border-zinc-800/60 space-y-2">
-                        <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 block">
-                          {isRtl ? 'اختر شاشة توقف (غلاف المقطع) موصى بها:' : 'Choose recommended cover (Thumbnail):'}
-                        </span>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-extrabold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            {isRtl ? 'توصيات المقطع' : 'Clip Recommendations'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => customCoverInputRef.current?.click()}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md bg-accent/10 hover:bg-accent/15 text-accent text-[9px] font-bold border border-accent/25 transition-all cursor-pointer"
+                          >
+                            <Upload size={9} />
+                            <span>{isRtl ? 'رفع صورة غلاف' : 'Upload cover'}</span>
+                          </button>
+                          <input
+                            ref={customCoverInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCustomCoverUpload}
+                            className="hidden"
+                          />
+                        </div>
                         
                         {isGeneratingCovers ? (
                           <div className="flex items-center gap-1.5 justify-center py-3 text-[10px] text-gray-500">

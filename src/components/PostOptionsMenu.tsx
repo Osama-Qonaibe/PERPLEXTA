@@ -924,7 +924,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                         onClick={copyPartnershipCode}
                         className="px-3.5 py-2.5 rounded-xl bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
                       >
-                        {copiedCode ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                        {copiedCode ? <Check size={14} className="text-[var(--fg-success)]" /> : <Copy size={14} />}
                         <span>{copiedCode ? (isRtl ? 'تم النسخ' : 'Copied') : (isRtl ? 'نسخ' : 'Copy')}</span>
                       </button>
                     </div>

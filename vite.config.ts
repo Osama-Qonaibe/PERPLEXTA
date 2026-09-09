@@ -101,15 +101,28 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: '0.0.0.0',
-      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
+      allowedHosts: true,
       headers: {
         'Content-Security-Policy': "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'self' 'unsafe-inline'; img-src * 'self' data: blob:; connect-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:; frame-ancestors * 'self';"
       },
-      hmr: false,
+      hmr: process.env.DISABLE_HMR === 'true' ? false : {
+        overlay: false
+      },
+      watch: {
+        ignored: [
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/android/**',
+          '**/ios/**',
+          '**/uploads/**',
+          '**/.git/**',
+          '**/.github/**',
+        ],
+      },
     },
     preview: {
       host: '0.0.0.0',
-      allowedHosts: ['perplexta.com', 'www.perplexta.com'],
+      allowedHosts: true,
     },
   };
 });

@@ -77,12 +77,14 @@ const AdminDashboard = lazyRetry(() => import('./pages/AdminDashboard'), 'AdminD
 const Terms = lazyRetry(() => import('./pages/Terms'), 'Terms');
 const Privacy = lazyRetry(() => import('./pages/Privacy'), 'Privacy');
 const About = lazyRetry(() => import('./pages/About'), 'About');
+const Copyright = lazyRetry(() => import('./pages/Copyright'), 'Copyright');
 const ResetPasswordPage = lazyRetry(() => import('./pages/ResetPasswordPage'), 'ResetPasswordPage');
 import { BulletinBoardPage } from './pages/BulletinBoardPage';
 const GoogleHubPage = lazyRetry(() => import('./pages/GoogleHubPage'));
 const SharedSnapshotPage = lazyRetry(() => import('./pages/SharedSnapshotPage'), 'SharedSnapshotPage');
 const RecommendationsPage = lazyRetry(() => import('./pages/RecommendationsPage'), 'RecommendationsPage');
 const StudioPage = lazyRetry(() => import('./pages/StudioPage'), 'StudioPage');
+const AudioStudioPage = lazyRetry(() => import('./pages/AudioStudioPage'), 'AudioStudioPage');
 import { IncentiveCard } from './components/IncentiveCard';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
@@ -316,10 +318,12 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       pageTitlePart = language === 'ar' ? 'شروط الخدمة والاتفاقية الرقمية' : 'Terms of Service';
     } else if (currentPath === '/privacy') {
       pageTitlePart = language === 'ar' ? 'سياسة الخصوصية وحقوق حماية البيانات' : 'Strict Privacy & Data Security Regulations';
+    } else if (currentPath === '/copyright') {
+      pageTitlePart = language === 'ar' ? 'حقوق الملكية الفكرية وحماية الابتكار' : 'Intellectual Property & Copyright Policy';
     } else if (currentPath === '/Studio') {
       pageTitlePart = language === 'ar' ? 'استوديو بيربليكستا' : 'Perplexta Studio';
     } else if (currentPath === '/viralbook' || currentPath.startsWith('/viralbook') || currentPath === '/bulletin' || currentPath.startsWith('/bulletin')) {
-      pageTitlePart = language === 'ar' ? 'فايرال بوك - شبكة المحتوى والمنشورات التفاعلية' : 'Viralbook - Interactive Social Feed & Community Hub';
+      pageTitlePart = language === 'ar' ? 'فيرال بوك - شبكة المحتوى والمنشورات التفاعلية' : 'Viralbook - Interactive Social Feed & Community Hub';
     }
 
     const defaultTitle = pageTitlePart 
@@ -367,10 +371,10 @@ const PWAWrapper = ({ children }: { children: React.ReactNode }) => {
       <GoogleAnalytics />
       <div 
         id="platform-banners-stack"
-        className={`fixed bottom-6 left-6 right-6 md:max-w-[320px] z-[9990] flex flex-col gap-2.5 pointer-events-none transition-all duration-300 ${
+        className={`fixed z-[9990] flex flex-col gap-2 pointer-events-none transition-all duration-300 items-center md:items-start max-w-[calc(100vw-2rem)] md:max-w-[320px] left-1/2 -translate-x-1/2 bottom-[calc(185px+env(safe-area-inset-bottom,0px))] ${
           language === 'ar' 
-            ? 'md:right-auto md:left-6' 
-            : 'md:left-auto md:right-6'
+            ? 'md:left-6 md:right-auto md:translate-x-0 md:bottom-6' 
+            : 'md:right-6 md:left-auto md:translate-x-0 md:bottom-6'
         }`}
       >
         <ServiceUpdateToast />
@@ -419,9 +423,11 @@ export default function App() {
                 <Route path="google-hub" element={<SectionRouteGuard pathKey="/google-hub"><GoogleHubPage /></SectionRouteGuard>} />
                 <Route path="discover" element={<SectionRouteGuard pathKey="/explore"><RecommendationsPage /></SectionRouteGuard>} />
                 <Route path="Studio" element={<SectionRouteGuard pathKey="/studio"><StudioPage /></SectionRouteGuard>} />
+                <Route path="audio-studio" element={<SectionRouteGuard pathKey="/audio-studio"><ProtectedRoute><AudioStudioPage /></ProtectedRoute></SectionRouteGuard>} />
                 <Route path="terms" element={<Terms />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="about" element={<About />} />
+                <Route path="copyright" element={<Copyright />} />
                 <Route path="reset-password" element={<ResetPasswordPage />} />
               </Route>
 

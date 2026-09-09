@@ -19,8 +19,6 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
   const navItems = [
     { icon: <Activity size={18} />, label: t('commandCenter'), path: '/admin/dashboard' },
     ...(!isSupport ? [
-      { icon: <Shield size={18} />, label: language === 'ar' ? 'رادار الأمان' : 'Security Radar', path: '/admin/radar' },
-      { icon: <Activity size={18} />, label: language === 'ar' ? 'مقاييس الأداء ورندر' : 'Render & Latency Metrics', path: '/admin/metrics' },
       { icon: <Key size={18} />, label: t('aiInfrastructure'), path: '/admin/keys' },
       { icon: <Server size={18} />, label: language === 'ar' ? 'مزودي خوادم الـ GPU' : 'GPU Infrastructure', path: '/admin/gpu' },
       { icon: <Database size={18} />, label: t('dbOrchestration'), path: '/admin/databases' },
@@ -72,23 +70,28 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
                 if (isMobile) setIsSidebarOpen(false);
               }}
               className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] transition-colors duration-base border border-transparent ${
+              `group flex items-center gap-2.5 px-2.5 py-2 rounded-[var(--radius-sm)] transition-theme border ${
                 isActive
-                  ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent-subtle)]'
-                  : 'text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--surface-subtle)]'
+                  ? 'bg-[var(--bg-accent-muted)] text-[var(--fg-accent)] border-[var(--border-accent)]/30'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] border-transparent'
               }`
             }
             >
               {({ isActive }) => (
                 <>
-                  <div className={`transition-colors duration-base ${
-                    isActive 
-                      ? 'text-[var(--accent)]' 
-                      : 'text-[var(--fg-muted)] group-hover:text-[var(--accent)]'
-                  }`}>
-                    {item.icon}
+                  <div className="w-7 h-7 flex-shrink-0 flex items-center justify-center relative">
+                    <div className={`absolute inset-0 m-auto w-7 h-7 rounded-[var(--radius-xs)] border border-transparent transition-theme ${
+                      isActive ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/30' : 'group-hover:bg-[var(--surface-subtle)]'
+                    }`} />
+                    <div className={`relative z-10 flex items-center justify-center transition-theme ${
+                      isActive 
+                        ? 'text-[var(--fg-accent)]' 
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
+                    }`}>
+                      {React.isValidElement(item.icon) ? React.cloneElement(item.icon as React.ReactElement, { size: 16 } as any) : item.icon}
+                    </div>
                   </div>
-                  <span className={`font-medium text-sm transition-colors duration-base ${isActive ? 'text-[var(--accent)]' : ''}`}>
+                  <span className={`font-bold text-xs tracking-tight transition-theme ${isActive ? 'text-[var(--fg-accent)]' : ''}`}>
                     {item.label}
                   </span>
                 </>
@@ -98,21 +101,21 @@ export const AdminSidebar: React.FC<{ activeLanguage?: string }> = ({ activeLang
         </nav>
 
         {/* Bottom Navigation Lock */}
-        <div className="p-4 border-t border-[var(--border-default)] mt-auto transition-colors duration-base">
+        <div className="p-3 border-t border-[var(--border-default)] mt-auto transition-theme">
           <NavLink 
             to="/"
             onClick={() => {
               if (isMobile) setIsSidebarOpen(false);
             }}
-            className="group flex items-center justify-between px-4 py-3 rounded-[var(--radius-md)] transition-colors duration-base border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-page)] hover:border-[var(--accent-subtle)]"
+            className="group flex items-center justify-between px-3 py-2.5 rounded-[var(--radius-sm)] transition-theme border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] hover:border-[var(--border-accent)]/40 active:scale-95"
           >
-            <div className="flex items-center gap-3">
-              <div className="text-[var(--fg-muted)] group-hover:text-[var(--accent)] transition-colors duration-base">
-                <ArrowRight size={18} className={dir === 'rtl' ? 'rotate-180' : ''} />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 flex items-center justify-center rounded-[var(--radius-xs)] text-[var(--text-muted)] group-hover:text-[var(--fg-accent)] transition-theme">
+                <ArrowRight size={16} className={dir === 'rtl' ? 'rotate-180' : ''} />
               </div>
-              <span className="font-bold text-sm text-[var(--fg-secondary)] group-hover:text-[var(--fg-primary)] transition-colors duration-base">{t('home')}</span>
+              <span className="font-bold text-xs text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-theme">{t('home')}</span>
             </div>
-            <div className="w-1.5 h-1.5 rounded-[var(--radius-full)] bg-[var(--accent)] opacity-0 group-hover:opacity-100 transition-colors duration-base"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--fg-accent)] opacity-0 group-hover:opacity-100 transition-theme"></div>
           </NavLink>
         </div>
       </aside>

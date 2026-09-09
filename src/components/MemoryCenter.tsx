@@ -119,10 +119,10 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
   return (
     <div className="space-y-4 md:space-y-6 relative">
       <div 
-        className={`sticky z-30 -mx-4 md:-mx-8 px-4 md:px-8 pt-4 md:pt-6 pb-4 md:pb-6 transition-theme bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
+        className={`sticky z-30 -mx-3 sm:-mx-4 md:-mx-8 px-3 sm:px-4 md:px-8 pt-2 sm:pt-4 md:pt-6 pb-2.5 sm:pb-4 md:pb-6 transition-theme bg-[var(--bg-primary)]/95 backdrop-blur-md border-b border-[var(--border-main)] rounded-t-[var(--radius)]`}
         style={{ top: stickyOffset }}
       >
-        <div className="flex flex-row items-center justify-between gap-4 mb-4">
+        <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 mb-2.5 sm:mb-4">
           <div className="hidden sm:block">
             <h2 className="text-xl md:text-2xl font-bold mb-0.5 md:mb-1 text-[var(--text-primary)]">{t('memoryCenter')}</h2>
             <p className="text-[11px] md:text-sm text-[var(--text-secondary)] font-medium opacity-70">
@@ -131,37 +131,37 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
                 : 'Facts and preferences the assistant has learned about you.'}
             </p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto ml-auto">
             {onRefresh && (
               <button 
                 onClick={onRefresh}
                 disabled={isLoading}
                 title={dir === 'rtl' ? 'مزامنة وتحديث الذاكرة' : 'Sync & Refresh Memory'}
-                className="flex items-center justify-center p-2.5 md:p-2.5 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] hover:border-accent/40 text-[var(--text-primary)] transition-theme"
+                className="flex items-center justify-center p-2 sm:p-2.5 rounded-[var(--radius)] border border-[var(--border-main)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-primary)] hover:border-accent/40 text-[var(--text-primary)] transition-theme shrink-0"
               >
-                <RefreshCw size={16} className={isLoading ? 'animate-spin text-accent' : ''} />
+                <RefreshCw size={15} className={isLoading ? 'animate-spin text-accent' : ''} />
               </button>
             )}
             <button 
               onClick={() => setIsAdding(true)}
-              className="flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-2.5 bg-accent text-white hover:bg-accent rounded-[var(--radius)] transition-theme font-bold text-xs md:text-sm shadow-xl shadow-none group w-full sm:w-auto"
+              className="flex items-center justify-center gap-1.5 px-3 sm:px-6 py-2 sm:py-2.5 bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 rounded-[var(--radius)] transition-theme font-bold text-xs sm:text-sm group flex-1 sm:flex-none cursor-pointer"
             >
-              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
               {t('addFact')}
             </button>
           </div>
         </div>
 
         {/* Category Filter - Fixed Elite Horizontal Scroll */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
           {categories.map((cat, cIdx) => (
             <button
               key={`mem-cat-btn-${cat.id}-${cIdx}`}
               onClick={() => setFilterCategory(cat.id)}
-              className={`px-4 md:px-6 py-2 md:py-2.5 rounded-[var(--radius)] text-[10px] md:text-xs font-black uppercase tracking-widest transition-theme border ${
+              className={`px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-[var(--radius)] text-[9px] sm:text-xs font-black uppercase tracking-wider shrink-0 transition-theme border ${
                 filterCategory === cat.id
-                  ? 'bg-accent text-white border-accent shadow-[0_0_15px_rgba(156,163,175,0.4)]'
-                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/40 hover:text-[var(--text-primary)] hover:border-accent/30'
+                  ? 'bg-accent text-white border-accent shadow-xs'
+                  : 'bg-[var(--bg-primary)] border-[var(--border-main)] text-[var(--text-primary)]/50 hover:text-[var(--text-primary)] hover:border-accent/30'
               }`}
             >
               {cat.label}
@@ -175,27 +175,27 @@ export const MemoryCenter: React.FC<MemoryCenterProps> = ({
           animate={{ opacity: 1, y: 0 }}
           key={memoryCount}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className={`p-4 md:p-6 rounded-[var(--radius)] border transition-theme ${
+          className={`p-2.5 sm:p-4 md:p-6 rounded-[var(--radius)] border transition-theme mt-2 ${
             isLimitReached 
               ? 'bg-amber-500/5 border-amber-500/30'
-              : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-sm'
+              : 'bg-[var(--bg-secondary)] border-[var(--border-main)] shadow-xs'
           }`}
         >
-          <div className="flex items-center justify-between mb-3 md:mb-4">
-            <div className="flex items-center gap-2.5 md:gap-3">
-              <div className={`w-8 h-8 md:w-10 md:h-10 rounded-[var(--radius)] flex items-center justify-center ${
+          <div className="flex items-center justify-between mb-1.5 sm:mb-3 md:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-[var(--radius)] flex items-center justify-center shrink-0 ${
                 isLimitReached ? 'bg-amber-500/20 text-amber-500' : 'bg-accent/10 text-accent'
               }`}>
-                <BrainCircuit size={16} className="md:w-5 md:h-5" />
+                <BrainCircuit size={14} className="sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-xs md:text-sm text-[var(--text-primary)]">{t('memoryCapacity')}</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-[var(--text-primary)] leading-tight">{t('memoryCapacity')}</h3>
                 <motion.p 
                   key={memoryCount}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
-                  className="text-[9px] md:text-[10px] text-[var(--text-muted)]"
+                  className="text-[9px] sm:text-[10px] text-[var(--text-muted)] font-bold"
                 >
                   {memoryCount} / {MEMORY_LIMIT} {dir === 'rtl' ? 'حقائق' : 'facts'}
                 </motion.p>

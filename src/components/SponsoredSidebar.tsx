@@ -125,10 +125,10 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
   return (
     <div className={`hidden xl:flex flex-col h-full w-72 p-4 pt-16 space-y-4 shrink-0 overflow-y-auto scrollbar-none transition-theme ${className}`}>
       <div className="flex items-center justify-between px-1 mb-1">
-        <span className="text-[11px] font-extrabold tracking-wider text-gray-400 uppercase">
+        <span className="text-[11px] font-bold tracking-wider text-[var(--text-muted)] uppercase">
           {isRtl ? 'إعلانات ممولة مقترحة' : 'Sponsored Ads'}
         </span>
-        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-accent" />
       </div>
 
       <AnimatePresence mode="popLayout">
@@ -146,24 +146,24 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.15 }}
               onClick={(e) => handleAdClick(ad, e)}
-              className="group relative cursor-pointer rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/90 dark:bg-[#18181b]/90 backdrop-blur-sm p-3 shadow-sm hover:shadow-md hover:border-accent/40 transition-theme flex flex-col gap-2.5"
+              className="group relative cursor-pointer rounded-[12px] border border-[var(--border-main)] bg-[var(--surface-card)] p-3 hover:border-accent/50 transition-theme flex flex-col gap-2.5"
             >
               <button
                 onClick={(e) => handleDismissAd(ad.id, e)}
                 title={isRtl ? 'إخفاء الإعلان' : 'Hide Ad'}
-                className="absolute top-2 end-2 z-10 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 text-white flex items-center justify-center opacity-80 group-hover:opacity-100 transition-theme backdrop-blur-sm"
+                className="absolute top-2 end-2 z-10 w-5 h-5 rounded-[6px] bg-[var(--surface-subtle)] hover:bg-red-600 text-[var(--text-muted)] hover:text-white flex items-center justify-center opacity-80 group-hover:opacity-100 transition-theme border border-[var(--border-main)] cursor-pointer"
               >
                 <X size={12} />
               </button>
 
-              <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200/40 dark:border-gray-800/40">
+              <div className="relative w-full aspect-[16/9] rounded-[8px] overflow-hidden bg-[var(--surface-subtle)] border border-[var(--border-main)]">
                 <ProgressiveImage
                   src={getMediaUrl(ad.image_url)}
                   alt={title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {badge && (
-                  <span className="absolute bottom-1.5 start-1.5 z-10 bg-black/75 backdrop-blur-md text-accent text-[10px] font-extrabold px-2 py-0.5 rounded-[4px] border border-accent/30 tracking-tight">
+                  <span className="absolute bottom-1.5 start-1.5 z-10 bg-[var(--surface-card)] text-[var(--fg-accent)] text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] border border-[var(--border-accent)]/40 tracking-tight">
                     {badge}
                   </span>
                 )}
@@ -171,20 +171,20 @@ export const SponsoredSidebar: React.FC<{ className?: string }> = ({ className =
 
               <div className="flex flex-col gap-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug group-hover:text-accent transition-colors">
+                  <h4 className="text-xs font-bold text-[var(--text-primary)] line-clamp-2 leading-snug group-hover:text-accent transition-colors">
                     {title}
                   </h4>
-                  <ExternalLink size={12} className="text-gray-400 group-hover:text-accent shrink-0 mt-0.5" />
+                  <ExternalLink size={12} className="text-[var(--text-muted)] group-hover:text-accent shrink-0 mt-0.5" />
                 </div>
 
                 {ad.sponsor_name && (
-                  <span className="text-[11px] font-semibold text-accent dark:text-accent/90 truncate">
+                  <span className="text-[11px] font-semibold text-[var(--fg-accent)] truncate">
                     {ad.sponsor_name}
                   </span>
                 )}
 
                 {description && (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-[var(--text-muted)] line-clamp-2 leading-relaxed">
                     {description}
                   </p>
                 )}

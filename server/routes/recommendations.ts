@@ -296,10 +296,81 @@ router.get('/bulletin', authenticateToken, async (req: any, res: any) => {
     const data = await generateRecommendationsForUser(userId, { limit: 20 });
     res.json({
       success: true,
-      items: data.by_type.bulletin
+      items: data.by_type.bulletin || []
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed fetching bulletin recommendations' });
+    res.status(500).json({ success: false, error: 'Failed fetching bulletin recommendations', items: [] });
+  }
+});
+
+router.get('/bulletins', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.bulletin || []
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed fetching bulletin recommendations', items: [] });
+  }
+});
+
+/**
+ * GET /api/recommendations/tool
+ */
+router.get('/tool', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.tools || []
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed fetching tool recommendations', items: [] });
+  }
+});
+
+router.get('/tools', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.tools || []
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed fetching tool recommendations', items: [] });
+  }
+});
+
+/**
+ * GET /api/recommendations/page
+ */
+router.get('/page', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.pages || []
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed fetching page recommendations', items: [] });
+  }
+});
+
+router.get('/pages', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const data = await generateRecommendationsForUser(userId, { limit: 20 });
+    res.json({
+      success: true,
+      items: data.by_type.pages || []
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed fetching page recommendations', items: [] });
   }
 });
 

@@ -1,0 +1,37 @@
+# Source & Development Files
+src/
+server/
+scripts/
+android/
+ios/
+.vscode/
+.idea/
+.git/
+.dockerignore
+.gitignore
+
+# Documentation & Non-Runtime Bloat
+*.md
+!AGENTS.md
+!GEMINI.md
+README.md
+CONTRIBUTING.md
+CLEANUP_MANIFEST.md
+docs/
+mockups/
+
+# Environment Files & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs & Caches
+*.log
+.cache/
+coverage/
+tmp/
+temp/
+
+# Local Media
+uploads/*
+!uploads/.gitkeep

@@ -2144,7 +2144,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                             <VolumeX size={18} />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded-[8px] bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-[8px] bg-[var(--fg-success)]/20 text-[var(--fg-success)] flex items-center justify-center">
                             <Volume2 size={18} />
                           </div>
                         )}
@@ -3484,7 +3484,7 @@ export const ReelsFeed: React.FC<ReelsFeedProps> = ({
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-main)] flex flex-col items-center text-center">
-                    <MessageCircle size={18} className="text-emerald-500 mb-1" />
+                    <MessageCircle size={18} className="text-[var(--fg-success)] mb-1" />
                     <span className="text-lg font-black text-[var(--text-primary)] tabular-nums">
                       {formatCompactCount(insightsReel.comments_count || (commentsMap[insightsReel.id]?.length || 0))}
                     </span>

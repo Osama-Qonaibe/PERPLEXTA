@@ -26,7 +26,7 @@ export const GlobalLoadingOverlay: React.FC = () => {
               />
               {/* Inner spinning element */}
               <motion.div 
-                className="w-8 h-8 rounded-[4px] border-t-2 border-r-2 border-emerald-500"
+                className="w-8 h-8 rounded-[4px] border-t-2 border-r-2 border-[var(--bg-accent-emphasis)]"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               />

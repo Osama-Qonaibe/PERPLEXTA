@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../../context/AppContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import { toast as globalToast } from "../../context/NotificationContext";
 import { motion, AnimatePresence } from "motion/react";
-import { getAuthHeaders, getTimeAgo, formatExactTimestamp } from "../../utils/adminUtils";
-import { resolveImageUrl } from "../../utils/imageResolver";
 import {
-  ShieldCheck,
   Cpu,
   Settings,
   Save,
@@ -16,59 +13,28 @@ import {
   CheckCircle,
   AlertTriangle,
   Info,
-  Sliders,
-  DollarSign,
-  ChevronDown,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
-  Clock,
-  Shield,
   Key,
-  Database,
-  Users,
   Plus,
   Zap,
-  Server,
   Eye,
   EyeOff,
-  Copy,
-  ExternalLink,
-  Coins,
   Wrench,
-  LayoutGrid,
-  Scale,
   Megaphone,
-  Image as ImageIcon,
-  Video,
-  Mic,
-  Volume2,
-  GraduationCap,
-  Code2,
-  Music,
   Trash2,
   X,
-  UserPlus,
-  FastForward,
-  Bell,
-  Mail,
-  FileText,
-  ShieldAlert,
   Settings2,
   Download,
   ArrowRight,
-  ArrowLeft,
-  Activity,
-  History as HistoryIcon,
   Globe,
   Upload,
   CreditCard,
   Gift,
   Smartphone,
-  Tablet,
   Monitor,
-  Newspaper,
   Compass,
+  Palette,
+  Image as ImageIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { SystemSettingsViewProps } from "./adminTypes";
 import { 
@@ -77,17 +43,16 @@ import {
   isMobilePwaBannerHidden, 
   isFeatureBlockedOnMobile 
 } from "../../utils/sectionVisibility";
+import { resolveImageUrl } from "../../utils/imageResolver";
+import { updateDocumentHeadIcons } from "../../utils/assetManager";
 
-export const SystemSettingsView = ({
+export const SystemSettingsView: React.FC<SystemSettingsViewProps> = ({
   theme,
   t,
   dir,
-}: {
-  theme: string;
-  t: (key: string, replacements?: any) => string;
-  dir: string;
 }) => {
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const { siteSettings, setSiteSettings, token, setIsOperationPending, language } = useAppContext();
 
   const [siteName, setSiteName] = useState(siteSettings.siteName);
@@ -294,6 +259,61 @@ export const SystemSettingsView = ({
   const [missingAssetReport, setMissingAssetReport] = useState<any>(null);
   const [isScanningMissingAssets, setIsScanningMissingAssets] = useState(false);
   const [isPurgingMissingAssets, setIsPurgingMissingAssets] = useState(false);
+
+  const [brandAssetsStatus, setBrandAssetsStatus] = useState<any>(null);
+  const [isGeneratingBrandAssets, setIsGeneratingBrandAssets] = useState(false);
+  const [isLoadingBrandAssets, setIsLoadingBrandAssets] = useState(false);
+
+  const fetchBrandAssetsStatus = useCallback(async () => {
+    setIsLoadingBrandAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/brand-assets-status", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBrandAssetsStatus(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch brand assets status:", err);
+    } finally {
+      setIsLoadingBrandAssets(false);
+    }
+  }, [token]);
+
+  const handleGenerateBrandAssets = async () => {
+    setIsGeneratingBrandAssets(true);
+    try {
+      const res = await fetch("/api/admin/settings/generate-brand-assets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ force: true })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(
+          language === "ar"
+            ? `تم بنجاح توليد ومزامنة ${data.generatedCount} مقاس أيقونة وهوية لمنصات الويب، iOS، Android و PWA!`
+            : `Successfully generated & synchronized ${data.generatedCount} platform icon variants!`,
+          "success"
+        );
+        fetchBrandAssetsStatus();
+        updateDocumentHeadIcons();
+      } else {
+        throw new Error("Generation failed");
+      }
+    } catch (err: any) {
+      showToast(
+        language === "ar" ? "فشل توليد مقاسات الأيقونات" : "Failed to generate icon variants",
+        "error"
+      );
+    } finally {
+      setIsGeneratingBrandAssets(false);
+    }
+  };
 
   const fetchMissingAssetReport = async () => {
     setIsScanningMissingAssets(true);
@@ -592,8 +612,9 @@ export const SystemSettingsView = ({
       fetchSettings();
       fetchRouteSeoList();
       checkSystemAssetsDiagnostic();
+      fetchBrandAssetsStatus();
     }
-  }, [token]);
+  }, [token, fetchBrandAssetsStatus]);
 
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -665,10 +686,12 @@ export const SystemSettingsView = ({
                 faviconBase64: updatedFavicon,
                 seoImageUrl: updatedSeo,
               });
+              fetchBrandAssetsStatus();
+              updateDocumentHeadIcons(updatedFavicon || updatedLogo);
               showToast(
                 dir === "rtl" 
-                  ? "تم رفع وحفظ وتطبيق الشعار بنجاح في قاعدة البيانات!" 
-                  : "Logo uploaded, saved and applied successfully!", 
+                  ? "تم رفع وحفظ وتطبيق الشعار وتوليد الأيقونات بنجاح!" 
+                  : "Logo uploaded, saved and platform icon suite generated successfully!", 
                 "success"
               );
             } else {
@@ -1028,12 +1051,50 @@ export const SystemSettingsView = ({
   return (
     <div className="space-y-8 max-w-5xl relative">
 
+      {/* Sovereign Theme Studio & Appearance Section */}
+      <div
+        className="p-6 md:p-8 rounded-[var(--radius-lg)] border transition-theme bg-[var(--surface-card)] border-[var(--border-main)]"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="p-3.5 rounded-[var(--radius-md)] bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] shadow-sm shrink-0">
+              <Palette size={26} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                  {language === "ar" ? "استوديو المظهر وتخصيص الثيمات" : "Theme Studio & Appearance Control"}
+                </h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--surface-subtle)] text-[var(--fg-accent)] border border-[var(--border-main)]">
+                  {language === "ar" ? "قسم احترافي" : "PRO MODULE"}
+                </span>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">
+                {language === "ar"
+                  ? "تحكم دقيق وشامل في لوحة ألوان بيربليكستا، وتخصيص متغيرات الثيم للوضع الداكن والفاتح مع تطبيق فوري وتخزين صارم في قاعدة البيانات."
+                  : "Sovereign control over Perplexta design tokens, surface variables, and appearance customization for dark and light modes."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="admin-open-theme-studio-btn"
+            onClick={() => navigate("/admin/theme")}
+            className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-[var(--radius)] font-bold text-sm bg-[var(--bg-accent-emphasis)] text-[var(--fg-on-emphasis)] hover:opacity-90 transition-theme shadow-sm cursor-pointer shrink-0 active:scale-95"
+          >
+            <Palette size={18} />
+            <span>{language === "ar" ? "فتح استوديو المظهر والثيمات" : "Open Theme Studio"}</span>
+            <ArrowRight size={16} className={language === "ar" ? "rotate-180" : ""} />
+          </button>
+        </div>
+      </div>
+
       {/* General Settings */}
       <div
-        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+        className="p-6 md:p-8 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-main)]"
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-md bg-accent/10 text-accent">
+          <div className="p-3 rounded-[var(--radius-sm)] bg-accent/10 text-accent">
             <Globe size={24} />
           </div>
           <h2 className="text-xl font-bold">{t("generalSettings")}</h2>
@@ -1041,7 +1102,7 @@ export const SystemSettingsView = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               {t("siteName")} (English)
             </label>
             <input
@@ -1049,11 +1110,11 @@ export const SystemSettingsView = ({
               value={siteName || ""}
               dir="ltr"
               onChange={(e) => setSiteName(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className="w-full px-4 py-3 rounded-[var(--radius-sm)] border focus:outline-none focus:ring-2 focus:ring-accent/50 transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-[var(--text-primary)]"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               {t("siteName")} (العربية)
             </label>
             <input
@@ -1061,11 +1122,11 @@ export const SystemSettingsView = ({
               value={siteNameAr || ""}
               dir="rtl"
               onChange={(e) => setSiteNameAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className="w-full px-4 py-3 rounded-[var(--radius-sm)] border focus:outline-none focus:ring-2 focus:ring-accent/50 transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-[var(--text-primary)]"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               {t("siteDescription")} (English)
             </label>
             <input
@@ -1073,11 +1134,11 @@ export const SystemSettingsView = ({
               value={siteDescription || ""}
               dir="ltr"
               onChange={(e) => setSiteDescription(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className="w-full px-4 py-3 rounded-[var(--radius-sm)] border focus:outline-none focus:ring-2 focus:ring-accent/50 transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-[var(--text-primary)]"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
               {t("siteDescription")} (العربية)
             </label>
             <input
@@ -1085,7 +1146,7 @@ export const SystemSettingsView = ({
               value={siteDescriptionAr || ""}
               dir="rtl"
               onChange={(e) => setSiteDescriptionAr(e.target.value)}
-              className={`w-full px-4 py-3 rounded-md border focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-theme ${theme === "dark" ? "bg-[#1a1a1c] border-[var(--border-main)] text-white" : "bg-[var(--bg-secondary)] border-[var(--border-main)]"}`}
+              className="w-full px-4 py-3 rounded-[var(--radius-sm)] border focus:outline-none focus:ring-2 focus:ring-accent/50 transition-theme bg-[var(--surface-subtle)] border-[var(--border-main)] text-[var(--text-primary)]"
             />
           </div>
         </div>
@@ -1107,7 +1168,7 @@ export const SystemSettingsView = ({
 
       {/* Visual Identity */}
       <div
-        className={`p-6 md:p-8 rounded-lg border ${theme === "dark" ? "bg-[#111111] border-[var(--border-main)]" : "bg-white border-[var(--border-main)]"}`}
+        className="p-6 md:p-8 rounded-[var(--radius-lg)] border bg-[var(--surface-card)] border-[var(--border-main)]"
       >
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
@@ -1121,7 +1182,7 @@ export const SystemSettingsView = ({
               type="button"
               onClick={handleSyncSeoMetadata}
               disabled={isSyncingMetadata}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium transition-colors border border-emerald-500/20"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-[var(--status-success-subtle)] hover:opacity-90 text-[var(--fg-success)] font-medium transition-colors border border-[var(--fg-success)]/20"
               title={language === "ar" ? "مزامنة العناوين والكلمات المفتاحية والوصف المفقود لإعلانات ومنشورات المجتمع" : "Sync missing SEO titles, descriptions, and keywords for bulletin items"}
             >
               <RefreshCw size={14} className={isSyncingMetadata ? "animate-spin" : ""} />
@@ -1238,9 +1299,9 @@ export const SystemSettingsView = ({
                 </div>
                 <div className="p-3 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)]">
                   <div className="text-gray-400 text-[10px]">{language === "ar" ? "الملفات الموجودة سليمة" : "Existing on Disk"}</div>
-                  <div className="font-bold text-base text-emerald-500 mt-1">{missingAssetReport.existingCount}</div>
+                  <div className="font-bold text-base text-[var(--fg-success)] mt-1">{missingAssetReport.existingCount}</div>
                 </div>
-                <div className={`col-span-2 p-3 rounded-lg border ${missingAssetReport.missingCount > 0 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'}`}>
+                <div className={`col-span-2 p-3 rounded-lg border ${missingAssetReport.missingCount > 0 ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-[var(--status-success-subtle)] border-[var(--fg-success)]/30 text-[var(--fg-success)]'}`}>
                   <div className="text-[10px] opacity-80">{language === "ar" ? "الملفات المفقودة (متطابقة بالسجل ومغيبة عن القرص)" : "Missing Assets Detected"}</div>
                   <div className="font-bold text-base mt-1">{missingAssetReport.missingCount}</div>
                 </div>
@@ -1283,7 +1344,7 @@ export const SystemSettingsView = ({
                   </table>
                 </div>
               ) : (
-                <div className="p-6 text-center text-xs text-emerald-500 font-medium bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                <div className="p-6 text-center text-xs text-[var(--fg-success)] font-medium bg-[var(--status-success-subtle)] rounded-lg border border-[var(--fg-success)]/20">
                   {language === "ar" ? "✅ جميع الملفات المسجلة في قاعدة البيانات متوفرة وموجودة على القرص بسلام." : "✅ All database file records are fully synchronized and present on disk storage."}
                 </div>
               )}
@@ -1479,6 +1540,142 @@ export const SystemSettingsView = ({
             <p className="text-xs text-gray-500">32x32 PNG or ICO</p>
           </div>
         </div>
+
+        {/* Systematic Multi-Platform & PWA Asset Suite */}
+        <div className="mt-8 pt-8 border-t border-[var(--border-main)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <Smartphone size={22} />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <span>{language === "ar" ? "حزمة الأيقونات النظامية والـ PWA التلقائية" : "Systematic Multi-Platform & PWA Icon Suite"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold border border-emerald-500/30">
+                    {brandAssetsStatus?.assets?.length || 10} {language === "ar" ? "مقاسات نشطة" : "Variants Active"}
+                  </span>
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  {language === "ar"
+                    ? "توليد تلقائي فوري لجميع مقاسات الأيقونات (Favicons, Apple Touch Icons, Android PWA Maskable Icons) من الشعار الأصلي بدقة متناهية."
+                    : "Automatic real-time generation of all platform icon sizes (Favicons, Apple Touch Icons, PWA launcher & maskable icons) from the source logo."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleGenerateBrandAssets}
+                disabled={isGeneratingBrandAssets || isLoadingBrandAssets}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                title={language === "ar" ? "إعادة توليد وتحديث حزمة المقاسات بالكامل" : "Regenerate all platform icon variants"}
+              >
+                <RefreshCw size={14} className={isGeneratingBrandAssets ? "animate-spin" : ""} />
+                <span>{language === "ar" ? "توليد ومزامنة المقاسات" : "Regenerate All Icons"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            {(brandAssetsStatus?.assets || [
+              { id: 'favicon-16', filename: 'favicon-16x16.png', width: 16, height: 16, category: 'favicon', description: 'Browser tab (16x16)' },
+              { id: 'favicon-32', filename: 'favicon-32x32.png', width: 32, height: 32, category: 'favicon', description: 'Standard tab & bookmark (32x32)' },
+              { id: 'favicon-ico', filename: 'favicon.ico', width: 48, height: 48, category: 'favicon', description: 'Multi-res Windows ICO' },
+              { id: 'apple-touch-icon', filename: 'apple-touch-icon.png', width: 180, height: 180, category: 'apple', description: 'iOS Safari home screen (180x180)' },
+              { id: 'pwa-192', filename: 'pwa-192x192.png', width: 192, height: 192, purpose: 'any', category: 'pwa', description: 'Android PWA launcher (192x192)' },
+              { id: 'pwa-512', filename: 'pwa-512x512.png', width: 512, height: 512, purpose: 'any', category: 'pwa', description: 'PWA splash screen (512x512)' },
+              { id: 'pwa-maskable-192', filename: 'pwa-maskable-192x192.png', width: 192, height: 192, purpose: 'maskable', category: 'pwa', description: 'Android adaptive safe-zone (192x192)' },
+              { id: 'pwa-maskable-512', filename: 'pwa-maskable-512x512.png', width: 512, height: 512, purpose: 'maskable', category: 'pwa', description: 'Android adaptive safe-zone (512x512)' },
+              { id: 'apple-touch-167', filename: 'apple-touch-icon-167x167.png', width: 167, height: 167, category: 'apple', description: 'iPad Pro touch icon' },
+              { id: 'mstile-150', filename: 'mstile-150x150.png', width: 150, height: 150, category: 'tile', description: 'Windows Modern UI tile' }
+            ]).map((asset: any) => {
+              const categoryBadgeColor = 
+                asset.category === 'apple' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' :
+                asset.category === 'pwa' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                asset.category === 'tile' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                'bg-amber-500/10 text-amber-500 border-amber-500/20';
+
+              const categoryLabel = 
+                asset.category === 'apple' ? 'Apple iOS' :
+                asset.category === 'pwa' ? (asset.purpose === 'maskable' ? 'PWA Maskable' : 'PWA Any') :
+                asset.category === 'tile' ? 'Windows' : 'Favicon';
+
+              return (
+                <div
+                  key={asset.id || asset.filename}
+                  className="p-3.5 rounded-xl border border-[var(--border-main)] bg-[var(--surface-subtle)] flex flex-col justify-between hover:border-accent/40 transition-all group relative"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2.5">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${categoryBadgeColor}`}>
+                        {categoryLabel}
+                      </span>
+                      <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                        {asset.width}×{asset.height}
+                      </span>
+                    </div>
+
+                    <div className="w-full aspect-square rounded-lg bg-[var(--surface-card)] border border-[var(--border-main)] flex items-center justify-center p-2 mb-2.5 overflow-hidden relative shadow-inner">
+                      {asset.dataUri ? (
+                        <img
+                          src={asset.dataUri}
+                          alt={asset.filename}
+                          className="max-w-full max-h-full object-contain transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <img
+                          src={`/${asset.filename}?t=${brandAssetsStatus?.timestamp || Date.now()}`}
+                          alt={asset.filename}
+                          className="max-w-full max-h-full object-contain transition-transform group-hover:scale-105"
+                          onError={(e) => {
+                            // Fallback to logo or favicon if not loaded yet
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                      {asset.purpose === 'maskable' && (
+                        <div
+                          className="absolute inset-2 rounded-full border border-dashed border-emerald-500/40 pointer-events-none"
+                          title="Adaptive Icon Safe-Zone"
+                        />
+                      )}
+                    </div>
+
+                    <div className="font-mono text-[11px] font-semibold text-[var(--text-primary)] truncate mb-0.5" title={asset.filename}>
+                      /{asset.filename}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)] line-clamp-2 leading-tight">
+                      {asset.description}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-[var(--border-main)]/60 flex items-center justify-between text-[10px]">
+                    <a
+                      href={`/${asset.filename}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline flex items-center gap-1 font-medium"
+                    >
+                      <span>{language === "ar" ? "فتح" : "View"}</span>
+                      <ArrowRight size={10} className={dir === "rtl" ? "rotate-180" : ""} />
+                    </a>
+                    {asset.sizeBytes ? (
+                      <span className="font-mono text-[9px] text-[var(--text-muted)]">
+                        {(asset.sizeBytes / 1024).toFixed(1)} KB
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[var(--fg-success)] font-bold text-[9px]">
+                        <CheckCircle size={10} />
+                        <span>Ready</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex justify-end mt-6">
           <button
             onClick={handleSaveVisualSettings}
@@ -1539,7 +1736,7 @@ export const SystemSettingsView = ({
                 title: dir === "rtl" ? "صفحة الاشتراكات والأسعار" : "Subscriptions Page",
                 subtitle: dir === "rtl" ? "مسار /subscription و /pricing" : "Route /subscription & /pricing",
                 description: dir === "rtl" ? "إخفاء صفحة وخطط الاشتراكات من القوائم وحظر الوصول المباشر إليها." : "Hide subscriptions page from navigation and block direct access.",
-                icon: <CreditCard size={18} className="text-emerald-500" />
+                icon: <CreditCard size={18} className="text-[var(--fg-accent)]" />
               },
               {
                 key: "/studio",
@@ -1622,7 +1819,7 @@ export const SystemSettingsView = ({
                         className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
                           isHidden
                             ? "bg-red-500/15 text-red-500 border-red-500/30"
-                            : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                            : "bg-[var(--status-success-subtle)] text-[var(--fg-success)] border-[var(--fg-success)]/30"
                         }`}
                       >
                         {isHidden
@@ -1642,7 +1839,7 @@ export const SystemSettingsView = ({
                     onClick={() => handleToggleSection(item.key)}
                     className={`w-full py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-98 ${
                       isHidden
-                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40"
+                        ? "bg-[var(--bg-accent-emphasis)] hover:opacity-90 text-[var(--fg-on-emphasis)] border-[var(--border-accent)]"
                         : "bg-red-600 hover:bg-red-500 text-white border-red-500/40"
                     }`}
                   >
@@ -1702,7 +1899,7 @@ export const SystemSettingsView = ({
                 title: dir === "rtl" ? "صفحة الاشتراكات على الموبايل" : "Subscriptions on Mobile",
                 subtitle: dir === "rtl" ? "مسار /subscription على الموبايل" : "Route /subscription on Mobile",
                 description: dir === "rtl" ? "إخفاء وحظر صفحة الاشتراكات على الهواتف الذكية (لتجنب In-App Purchase)." : "Hide subscription page on mobile devices to satisfy App Store IAP rule.",
-                icon: <CreditCard size={18} className="text-emerald-500" />
+                icon: <CreditCard size={18} className="text-[var(--fg-accent)]" />
               },
               {
                 key: "hide_mobile_studio",
@@ -1778,7 +1975,7 @@ export const SystemSettingsView = ({
                         className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
                           isHidden
                             ? "bg-amber-500/15 text-amber-500 border-amber-500/30"
-                            : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                            : "bg-[var(--status-success-subtle)] text-[var(--fg-success)] border-[var(--fg-success)]/30"
                         }`}
                       >
                         {isHidden
@@ -1798,7 +1995,7 @@ export const SystemSettingsView = ({
                     onClick={() => handleToggleSection(item.key)}
                     className={`w-full py-2 px-3 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm active:scale-98 ${
                       isHidden
-                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/40"
+                        ? "bg-[var(--bg-accent-emphasis)] hover:opacity-90 text-[var(--fg-on-emphasis)] border-[var(--border-accent)]"
                         : "bg-amber-600 hover:bg-amber-500 text-white border-amber-500/40"
                     }`}
                   >

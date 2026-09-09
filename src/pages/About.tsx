@@ -64,7 +64,7 @@ export const About: React.FC = () => {
     },
     {
       id: "code",
-      title: isAr ? "توليد كود" : "Code Generation",
+      title: isAr ? "كود" : "Code",
       desc: isAr
         ? "محطة عمل هندسة البرمجيات. يوفر بناء الهياكل البرمجية المتقدمة وكتابة شيفرات دقيقة ونظيفة تلبي احتياجاتك."
         : "Master-level software engineering workstation providing advanced code scaffolding and generation.",
@@ -74,7 +74,7 @@ export const About: React.FC = () => {
     },
     {
       id: "perplexta_analysis",
-      title: isAr ? "تحليل بيربليكستا" : "Perplexta Analysis",
+      title: isAr ? "تحليل" : "Analysis",
       desc: isAr
         ? "البحث التقني والتحليل الرقمي العميق لاستخراج البيانات الاستراتيجية والمؤشرات الإحصائية بدقة فائقة."
         : "High-precision intelligent engine for deep search and extracting strategic data and statistical indicators.",
@@ -84,7 +84,7 @@ export const About: React.FC = () => {
     },
     {
       id: "image",
-      title: isAr ? "توليد صورة" : "Image Generation",
+      title: isAr ? "صورة" : "Image",
       desc: isAr
         ? "محرك توليد بصري عالي الدقة للأصول المهنية. إمكانية تحويل النصوص لصور بمستوى إبداعي استثنائي لمختلف الاستخدامات."
         : "High-precision visual synthesis engine for professional assets. Text to image generation with exceptional creativity.",
@@ -94,7 +94,7 @@ export const About: React.FC = () => {
     },
     {
       id: "video",
-      title: isAr ? "توليد فيديو" : "Video Generation",
+      title: isAr ? "فيديو" : "Video",
       desc: isAr
         ? "توليد مشاهد بصرية احترافية وتحريك العناصر بناءً على التعليمات الوصفية، مع الالتزام بالمعايير الدولية السينمائية."
         : "Generate professional visual scenes and animate elements with strict international cinematic standards.",
@@ -104,7 +104,7 @@ export const About: React.FC = () => {
     },
     {
       id: "learning",
-      title: isAr ? "مساعد التعليم" : "Education Assistant",
+      title: isAr ? "تعليم" : "Education",
       desc: isAr
         ? "مساعد مخصص لتقديم الشروحات التعليمية، تصميم الخطط الدراسية، وطرح أمثلة عملية مبسطة للمفاهيم الصعبة."
         : "A tailored assistant for educational explanations, study plan design, and practical examples for complex concepts.",
@@ -114,7 +114,7 @@ export const About: React.FC = () => {
     },
     {
       id: "legal_analysis",
-      title: isAr ? "مساعد القانون" : "Legal Assistant",
+      title: isAr ? "قانون" : "Legal",
       desc: isAr
         ? "تدقيق الوثائق، استخراج النصوص التشريعية، وتوفير المشورة الدقيقة للقضايا القانونية المعقدة بمنهجية احترافية."
         : "Document auditing, legislative text extraction, and precise advisory for complex legal matters with professional methodology.",
@@ -134,7 +134,7 @@ export const About: React.FC = () => {
     },
     {
       id: "notebook",
-      title: isAr ? "المفكرة البحثية" : "Research Notebook",
+      title: isAr ? "بحث" : "Research",
       desc: isAr
         ? "أداة متطورة لتلخيص المستندات البحثية، تنظيم المعلومات الرقمية، وحفظ المعرفة للاسترجاع السريع والموثوق."
         : "Advanced tool for summarizing research documents, organizing digital information, and deep knowledge retention.",

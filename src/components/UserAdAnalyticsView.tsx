@@ -75,7 +75,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl min-h-[400px]">
+      <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-3 bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] min-h-[400px]">
         <RefreshCw size={28} className="animate-spin text-accent" />
         <span className="font-bold text-sm text-[var(--text-primary)]">
           {isRtl ? 'جاري تحليل نتائج الحملات والإعلانات الخاصة بك...' : 'Analyzing your ad campaigns & audience data...'}
@@ -86,7 +86,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
   if (!data || !data.summary) {
     return (
-      <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl min-h-[300px]">
+      <div className="p-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-3 bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] min-h-[300px]">
         <BarChart2 size={36} className="text-gray-500 opacity-50" />
         <span className="font-bold text-sm text-[var(--text-primary)]">
           {isRtl ? 'لا توجد بيانات إحصائية متاحة حالياً' : 'No ad analytics data available yet.'}
@@ -100,16 +100,14 @@ export const UserAdAnalyticsView: React.FC = () => {
 
   return (
     <div className="space-y-6 transition-theme [will-change:background-color,border-color,color]">
-      <div className="bg-gradient-to-r from-gray-500/10 via-teal-950/30 to-[var(--bg-secondary)] border border-accent/20 rounded-2xl p-6 relative overflow-hidden shadow-xl">
-        <div className="absolute -top-12 -end-12 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 text-accent text-xs font-black uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-[var(--fg-accent)] text-xs font-bold uppercase tracking-wider mb-1">
               <Sparkles size={16} />
               <span>{isRtl ? 'محلل نتائج الحملات والجمهور المستهدف' : 'Ad Performance & Demographic Intelligence'}</span>
             </div>
-            <h2 className="text-2xl font-black text-[var(--text-primary)] flex items-center gap-2">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
               <span>{isRtl ? 'لوحة تتبع نتائج الإعلانات الفردية' : 'My Ad Analytics Dashboard'}</span>
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl leading-relaxed">
@@ -121,86 +119,86 @@ export const UserAdAnalyticsView: React.FC = () => {
 
           <button
             onClick={fetchAnalytics}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/30 text-accent font-bold text-xs hover:bg-accent hover:text-white transition-theme shadow-sm shrink-0"
+            className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-[0px] bg-[var(--surface-subtle)] border border-[var(--border-main)] text-[var(--fg-accent)] font-bold text-xs hover:bg-[var(--surface-inset)] transition-theme shrink-0 cursor-pointer"
           >
-            <RefreshCw size={15} />
+            <RefreshCw size={14} />
             <span>{isRtl ? 'تحديث البيانات' : 'Refresh Data'}</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
           <div className="flex items-center justify-between text-blue-500">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'المشاهدات' : 'Impressions'}</span>
-            <Eye size={16} />
+            <Eye size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-[var(--text-primary)]">{summary.totalImpressions.toLocaleString()}</div>
+            <div className="text-lg font-bold text-[var(--text-primary)]">{summary.totalImpressions.toLocaleString()}</div>
             <div className="text-[10px] text-blue-500 font-bold mt-0.5">{summary.activeAds} {isRtl ? 'إعلانات نشطة' : 'Active ads'}</div>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
           <div className="flex items-center justify-between text-purple-500">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'النقرات' : 'Clicks'}</span>
-            <MousePointerClick size={16} />
+            <MousePointerClick size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-[var(--text-primary)]">{summary.totalClicks.toLocaleString()}</div>
+            <div className="text-lg font-bold text-[var(--text-primary)]">{summary.totalClicks.toLocaleString()}</div>
             <div className="text-[10px] text-purple-500 font-bold mt-0.5">{isRtl ? 'نقرة حقيقية' : 'Unique clicks'}</div>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between text-accent">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[var(--fg-accent)]">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'نسبة النقر CTR' : 'Click Rate (CTR)'}</span>
-            <TrendingUp size={16} />
+            <TrendingUp size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-accent">{summary.ctr}%</div>
-            <div className="text-[10px] text-accent font-bold mt-0.5">
+            <div className="text-lg font-bold text-[var(--fg-accent)]">{summary.ctr}%</div>
+            <div className="text-[10px] text-[var(--fg-accent)] font-bold mt-0.5">
               {summary.ctr >= 2.5 ? (isRtl ? '🔥 ممتاز (أعلى من المتوسط)' : '🔥 High Performance') : (isRtl ? 'متوسط' : 'Average')}
             </div>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
           <div className="flex items-center justify-between text-amber-500">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'إجمالي الإنفاق' : 'Total Spend'}</span>
-            <DollarSign size={16} />
+            <DollarSign size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-[var(--text-primary)]">${summary.totalSpend}</div>
+            <div className="text-lg font-bold text-[var(--text-primary)]">${summary.totalSpend}</div>
             <div className="text-[10px] text-amber-500 font-bold mt-0.5">{summary.totalAds} {isRtl ? 'حملات مدفوعة' : 'Campaigns'}</div>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
           <div className="flex items-center justify-between text-teal-500">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'الاستفسارات والرسائل' : 'Customer Leads'}</span>
-            <MessageCircle size={16} />
+            <MessageCircle size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-[var(--text-primary)]">{summary.totalInquiries}</div>
+            <div className="text-lg font-bold text-[var(--text-primary)]">{summary.totalInquiries}</div>
             <div className="text-[10px] text-teal-500 font-bold mt-0.5">{isRtl ? 'محادثة خاصة' : 'Direct Inquiries'}</div>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] p-4 rounded-xl flex flex-col justify-between">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] p-3.5 rounded-[0px] flex flex-col justify-between">
           <div className="flex items-center justify-between text-pink-500">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">{isRtl ? 'التفاعل والإعجابات' : 'Engagements'}</span>
-            <ThumbsUp size={16} />
+            <ThumbsUp size={15} />
           </div>
           <div className="mt-2">
-            <div className="text-xl font-black text-[var(--text-primary)]">{summary.totalLikes + summary.totalShares}</div>
+            <div className="text-lg font-bold text-[var(--text-primary)]">{summary.totalLikes + summary.totalShares}</div>
             <div className="text-[10px] text-pink-500 font-bold mt-0.5">👍 {summary.totalLikes} • ↗️ {summary.totalShares}</div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="lg:col-span-2 bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-main)]">
             <div>
               <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -262,7 +260,7 @@ export const UserAdAnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
               <MapPin size={18} className="text-blue-500" />
@@ -283,12 +281,12 @@ export const UserAdAnalyticsView: React.FC = () => {
                   contentStyle={{
                     backgroundColor: '#18181b',
                     borderColor: '#27272a',
-                    borderRadius: '8px',
+                    borderRadius: '0px',
                     fontSize: '11px',
                     color: '#fff'
                   }}
                 />
-                <Bar dataKey="percentage" name={isRtl ? 'نسبة الجمهور (%)' : 'Audience Share (%)'} radius={[0, 4, 4, 0]}>
+                <Bar dataKey="percentage" name={isRtl ? 'نسبة الجمهور (%)' : 'Audience Share (%)'} radius={[0, 0, 0, 0]}>
                   {locations.map((_entry: any, index: number) => (
                     <Cell key={`cell-loc-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
@@ -300,7 +298,7 @@ export const UserAdAnalyticsView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
               <Users size={18} className="text-purple-500" />
@@ -321,18 +319,18 @@ export const UserAdAnalyticsView: React.FC = () => {
                   contentStyle={{
                     backgroundColor: '#18181b',
                     borderColor: '#27272a',
-                    borderRadius: '8px',
+                    borderRadius: '0px',
                     fontSize: '11px',
                     color: '#fff'
                   }}
                 />
-                <Bar dataKey="percentage" name={isRtl ? 'النسبة المئوية (%)' : 'Percentage (%)'} fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="percentage" name={isRtl ? 'النسبة المئوية (%)' : 'Percentage (%)'} fill="#8b5cf6" radius={[0, 0, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
               <PieIcon size={18} className="text-pink-500" />
@@ -363,7 +361,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                   contentStyle={{
                     backgroundColor: '#18181b',
                     borderColor: '#27272a',
-                    borderRadius: '8px',
+                    borderRadius: '0px',
                     fontSize: '11px',
                     color: '#fff'
                   }}
@@ -374,7 +372,7 @@ export const UserAdAnalyticsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4 shadow-sm">
+        <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
           <div className="pb-3 border-b border-[var(--border-main)]">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
               <Smartphone size={18} className="text-accent" />
@@ -421,7 +419,7 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4">
+      <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
         <div className="pb-3 border-b border-[var(--border-main)]">
           <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
             <Zap size={18} className="text-amber-500 animate-pulse" />
@@ -436,9 +434,9 @@ export const UserAdAnalyticsView: React.FC = () => {
           {insights.map((item: any, idx: number) => (
             <div
               key={`insight-${idx}-${item.title_en || item.title_ar}`}
-              className="p-4 rounded-xl border bg-gradient-to-br from-[var(--bg-base)] to-[var(--bg-secondary)] space-y-2 border-accent/20 shadow-sm"
+              className="p-4 rounded-[0px] border border-[var(--border-main)] bg-[var(--surface-subtle)] space-y-2"
             >
-              <div className="font-extrabold text-xs text-accent flex items-center gap-1.5">
+              <div className="font-extrabold text-xs text-[var(--fg-accent)] flex items-center gap-1.5">
                 <CheckCircle2 size={15} />
                 <span>{isRtl ? item.title_ar : item.title_en}</span>
               </div>
@@ -450,11 +448,11 @@ export const UserAdAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border-main)] rounded-2xl p-5 space-y-4">
+      <div className="bg-[var(--surface-card)] border border-[var(--border-main)] rounded-[0px] p-5 space-y-4">
         <div className="pb-3 border-b border-[var(--border-main)] flex items-center justify-between">
           <div>
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
-              <Award size={18} className="text-accent" />
+              <Award size={18} className="text-[var(--fg-accent)]" />
               <span>{isRtl ? 'جدول نتائج إعلاناتك الفردية' : 'Individual Ad Performance Breakdown'}</span>
             </h3>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -471,7 +469,7 @@ export const UserAdAnalyticsView: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-start text-xs border-collapse">
               <thead>
-                <tr className="bg-[var(--bg-base)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
+                <tr className="bg-[var(--surface-subtle)] border-b border-[var(--border-main)] text-[var(--text-muted)] font-bold">
                   <th className="p-3 text-start">{isRtl ? 'الإعلان' : 'Ad Title'}</th>
                   <th className="p-3 text-center">{isRtl ? 'الفئة والمدينة' : 'Category & City'}</th>
                   <th className="p-3 text-center">{isRtl ? 'المشاهدات' : 'Impressions'}</th>
@@ -483,7 +481,7 @@ export const UserAdAnalyticsView: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-[var(--border-main)]">
                 {ads.map((ad: any) => (
-                  <tr key={ad.id} className="hover:bg-[var(--bg-base)]/50 transition-colors">
+                  <tr key={ad.id} className="hover:bg-[var(--surface-subtle)]/50 transition-colors">
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <AdThumbnailRenderer
@@ -491,7 +489,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                           alt={ad.title}
                           width={48}
                           height={48}
-                          className="rounded-lg border border-[var(--border-main)]"
+                          className="rounded-[0px] border border-[var(--border-main)]"
                         />
                         <div>
                           <div className="font-extrabold text-[var(--text-primary)] text-xs line-clamp-1">{ad.title}</div>
@@ -502,7 +500,7 @@ export const UserAdAnalyticsView: React.FC = () => {
 
                     <td className="p-3 text-center">
                       <div className="font-bold text-[var(--text-primary)]">{ad.category || 'عام'}</div>
-                      <div className="text-[10px] text-accent font-medium">{ad.location_city || 'فلسطين'}</div>
+                      <div className="text-[10px] text-[var(--fg-accent)] font-medium">{ad.location_city || 'فلسطين'}</div>
                     </td>
 
                     <td className="p-3 text-center font-bold text-blue-500 font-mono">
@@ -513,7 +511,7 @@ export const UserAdAnalyticsView: React.FC = () => {
                       {(ad.clicks_count || 0).toLocaleString()}
                     </td>
 
-                    <td className="p-3 text-center font-black text-accent font-mono">
+                    <td className="p-3 text-center font-black text-[var(--fg-accent)] font-mono">
                       {ad.ctr}%
                     </td>
 
@@ -522,12 +520,12 @@ export const UserAdAnalyticsView: React.FC = () => {
                     </td>
 
                     <td className="p-3 text-center">
-                      <span className={`px-2.5 py-1 rounded-[6px] text-[10px] font-black ${
+                      <span className={`px-2.5 py-1 rounded-[0px] text-[10px] font-black ${
                         ad.status === 'approved'
-                          ? 'bg-accent/10 text-accent'
+                          ? 'bg-accent/10 text-[var(--fg-accent)] border border-accent/30'
                           : ad.status === 'pending'
-                          ? 'bg-amber-500/10 text-amber-500 animate-pulse'
-                          : 'bg-red-500/10 text-red-500'
+                          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                          : 'bg-red-500/10 text-red-500 border border-red-500/30'
                       }`}>
                         {ad.status === 'approved' && (isRtl ? 'نشط' : 'Active')}
                         {ad.status === 'pending' && (isRtl ? 'مراجعة' : 'Pending')}

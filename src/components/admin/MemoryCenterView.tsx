@@ -504,7 +504,7 @@ export const MemoryCenterView = ({
                   );
                 }
                 return (
-                  <span className="text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                  <span className="text-xs font-mono text-[var(--fg-success)] bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/30 px-2 py-0.5 rounded flex items-center gap-1">
                     <CheckCircle2 size={10} /> {pct}% {language === "ar" ? "مستقر" : "HEALTHY"}
                   </span>
                 );

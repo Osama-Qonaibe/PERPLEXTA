@@ -53,17 +53,17 @@ import {
 } from "lucide-react";
 import { ActionConfirmationModal } from "../ActionConfirmationModal";
 import { ComplianceAuditLogsViewProps } from "./adminTypes";
+import { AdminRateLimitMetricsView } from "../../pages/AdminRateLimitMetricsView";
+import { AdminRenderMetricsView } from "../AdminRenderMetricsView";
 
 export const ComplianceAuditLogsView = ({
   theme,
   t,
   dir,
-}: {
-  theme: string;
-  t: (key: string) => string;
-  dir: string;
-}) => {
+  initialTab = "logs",
+}: ComplianceAuditLogsViewProps) => {
   const { token, language } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'logs' | 'radar' | 'metrics'>(initialTab);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -83,6 +83,12 @@ export const ComplianceAuditLogsView = ({
   } | null>(null);
 
   const isRtl = language === "ar";
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const toggleSelectLog = (id: any) => {
     setSelectedLogIds((prev) =>
@@ -225,8 +231,82 @@ export const ComplianceAuditLogsView = ({
 
   return (
     <div className="space-y-6 font-sans" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Search & Audit Filters Bar */}
-      <form onSubmit={handleSearch} className="p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] flex flex-col md:flex-row gap-4 items-end justify-between">
+      {/* Master Section Header & Internal Navigation Tabs */}
+      <div className="p-6 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] shadow-sm transition-theme">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-[var(--radius-md)] bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--border-default)] flex-shrink-0">
+              <ShieldAlert size={26} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-[var(--text-primary)] tracking-tight">
+                {isRtl ? "التدقيق والامتثال والأمان" : "Audit, Compliance & Security Hub"}
+              </h1>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
+                {isRtl
+                  ? "المركز الموحد لمراقبة أمان النظام، سجلات التدقيق الإداري، ومقاييس الأداء ورندر المكونات."
+                  : "Unified master console for system security surveillance, compliance audit trail, and component render performance metrics."}
+              </p>
+            </div>
+          </div>
+
+          {/* Internal Navigation Sub-Tabs */}
+          <div className="flex items-center p-1 rounded-[var(--radius-md)] bg-[var(--surface-subtle)] border border-[var(--border-default)] self-start lg:self-auto overflow-x-auto max-w-full">
+            <button
+              type="button"
+              onClick={() => setActiveTab('logs')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'logs'
+                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+              }`}
+            >
+              <ShieldAlert size={15} className={activeTab === 'logs' ? 'text-[var(--accent)]' : ''} />
+              <span>{isRtl ? "سجلات التدقيق" : "Compliance Audit Trail"}</span>
+              {total > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--accent-subtle)] text-[var(--accent)] font-mono font-bold">
+                  {total}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('radar')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'radar'
+                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+              }`}
+            >
+              <Shield size={15} className={activeTab === 'radar' ? 'text-[var(--accent)]' : ''} />
+              <span>{isRtl ? "رادار الأمان والحدود" : "Security Radar"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('metrics')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-[var(--radius-sm)] text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'metrics'
+                  ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+              }`}
+            >
+              <Activity size={15} className={activeTab === 'metrics' ? 'text-[var(--accent)]' : ''} />
+              <span>{isRtl ? "مقاييس الأداء والرندر" : "Render & Latency Metrics"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {activeTab === 'radar' ? (
+        <AdminRateLimitMetricsView theme={theme} t={t} />
+      ) : activeTab === 'metrics' ? (
+        <AdminRenderMetricsView />
+      ) : (
+        <>
+          {/* Search & Audit Filters Bar */}
+          <form onSubmit={handleSearch} className="p-4 rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] flex flex-col md:flex-row gap-4 items-end justify-between">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-bold text-[var(--fg-muted)] uppercase tracking-wider">
@@ -516,6 +596,8 @@ export const ComplianceAuditLogsView = ({
           </div>
         )}
       </AnimatePresence>
+        </>
+      )}
 
       {/* Action Confirmation Modal */}
       {confirmModal && confirmModal.isOpen && (

@@ -130,10 +130,10 @@ export const DiagnosticMobileOverlay: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-zinc-900/90 text-emerald-400 border border-emerald-500/40 shadow-xl backdrop-blur-md text-[11px] font-mono font-bold hover:scale-105 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-zinc-900/90 text-[var(--fg-success)] border border-[var(--fg-success)]/40 shadow-xl backdrop-blur-md text-[11px] font-mono font-bold hover:scale-105 transition-all cursor-pointer"
             title="Open Mobile 74px Safe Area Diagnostic Overlay"
           >
-            <Ruler size={13} className="text-emerald-400 animate-pulse" />
+            <Ruler size={13} className="text-[var(--fg-success)] animate-pulse" />
             <span>74px Diag</span>
           </button>
         )}
@@ -168,13 +168,13 @@ export const DiagnosticMobileOverlay: React.FC = () => {
                 ? 'border-amber-500 bg-amber-500/10 text-amber-300'
                 : isHeader
                 ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                : 'border-emerald-500 bg-emerald-500/10 text-emerald-300';
+                : 'border-[var(--fg-success)] bg-[var(--status-success-subtle)] text-[var(--fg-success)]';
 
               const badgeColor = isFooter
                 ? 'bg-amber-600'
                 : isHeader
                 ? 'bg-cyan-600'
-                : 'bg-emerald-600';
+                : 'bg-[var(--fg-success)]';
 
               return (
                 <div
@@ -206,8 +206,8 @@ export const DiagnosticMobileOverlay: React.FC = () => {
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-400 text-xs">
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                <div className="flex items-center gap-1.5 font-bold text-[var(--fg-success)] text-xs">
+                  <ShieldCheck size={14} className="text-[var(--fg-success)]" />
                   <span>74px Safe Area Diagnostic</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -233,12 +233,12 @@ export const DiagnosticMobileOverlay: React.FC = () => {
               {!isMinimized && (
                 <div className="space-y-2.5">
                   {/* Status Banner */}
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px]">
-                    <div className="flex items-center gap-1.5 text-emerald-300 font-bold">
-                      <CheckCircle2 size={13} className="text-emerald-400 flex-shrink-0" />
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-[var(--status-success-subtle)] border border-[var(--fg-success)]/30 text-[11px]">
+                    <div className="flex items-center gap-1.5 text-[var(--fg-success)] font-bold">
+                      <CheckCircle2 size={13} className="text-[var(--fg-success)] flex-shrink-0" />
                       <span>Mobile Design System Active</span>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9.5px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded bg-[var(--fg-success)]/20 text-[var(--fg-success)] font-mono text-[9.5px] font-bold">
                       74px ZONE OK
                     </span>
                   </div>
@@ -276,7 +276,7 @@ export const DiagnosticMobileOverlay: React.FC = () => {
                             key={`metric-item-${i}`}
                             className="flex items-center justify-between text-[10px] p-1.5 rounded bg-slate-900/80 border border-slate-800"
                           >
-                            <span className={`font-bold ${m.type === 'footer' ? 'text-amber-400' : m.type === 'header' ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                            <span className={`font-bold ${m.type === 'footer' ? 'text-amber-400' : m.type === 'header' ? 'text-cyan-400' : 'text-[var(--fg-success)]'}`}>
                               {m.selector}
                             </span>
                             <span className="text-slate-300">

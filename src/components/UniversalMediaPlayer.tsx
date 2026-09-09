@@ -746,7 +746,7 @@ export const UniversalMediaPlayer: React.FC<UniversalMediaPlayerProps> = ({
                       e.stopPropagation();
                       setShowDiagnostics(prev => !prev);
                     }}
-                    className={`p-2 sm:p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer min-w-[38px] min-h-[38px] flex items-center justify-center ${showDiagnostics ? 'text-emerald-400 bg-white/10' : 'text-white'}`}
+                    className={`p-2 sm:p-1.5 rounded-lg hover:bg-white/20 transition-colors cursor-pointer min-w-[38px] min-h-[38px] flex items-center justify-center ${showDiagnostics ? 'text-[var(--fg-success)] bg-white/10' : 'text-white'}`}
                     title={isRtl ? 'لوحة الفحص والتشخيص' : 'Diagnostics HUD'}
                   >
                     <Activity size={18} />
@@ -972,7 +972,7 @@ export const UniversalMediaPlayer: React.FC<UniversalMediaPlayerProps> = ({
                   <VolumeX size={16} />
                 </div>
               ) : (
-                <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full bg-[var(--fg-success)]/20 text-[var(--fg-success)] flex items-center justify-center">
                   <Volume2 size={16} />
                 </div>
               )}

@@ -54,8 +54,10 @@ const getTxLabel = (type: string, isAr: boolean) => {
 const getToolLabel = (toolId: string, isAr: boolean) => {
   const tools: Record<string, { en: string; ar: string }> = {
     chat: { en: 'Chat', ar: 'المحادثة والدردشة' },
-    image_generation: { en: 'Image Generation', ar: 'توليد الصور' },
-    code_analysis: { en: 'Code Analysis', ar: 'تحليل الأكواد' },
+    image: { en: 'Image', ar: 'صورة' },
+    image_generation: { en: 'Image', ar: 'صورة' },
+    code: { en: 'Code', ar: 'كود' },
+    code_analysis: { en: 'Code', ar: 'كود' },
     smart_search: { en: 'Smart Search', ar: 'البحث الذكي' },
     custom_tool: { en: 'Custom Tool', ar: 'أداة مخصصة' },
     document_summarizer: { en: 'Document Summarizer', ar: 'ملخص المستندات' },
@@ -2080,18 +2082,14 @@ export const RewardsPage: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className={`relative max-w-sm w-full p-6 rounded-xl border shadow-2xl transition-theme z-10 ${
-                theme === 'dark' 
-                  ? 'bg-[#161618] border-zinc-800 text-gray-100' 
-                  : 'bg-white border-gray-150 text-gray-900'
-              }`}
+              className="relative max-w-sm w-full p-6 rounded-[var(--radius-lg)] border border-[var(--border-main)] bg-[var(--surface-card)] text-[var(--text-primary)] shadow-2xl transition-theme z-10"
             >
-              <h3 className="text-base font-bold tracking-tight font-sans text-start text-red-500 dark:text-red-400 flex items-center gap-2">
-                <AlertTriangle size={18} className="text-red-500 animate-pulse" />
+              <h3 className="text-base font-bold tracking-tight font-sans text-start text-[var(--fg-danger)] flex items-center gap-2">
+                <AlertTriangle size={18} className="text-[var(--fg-danger)] animate-pulse" />
                 <span>{dir === 'rtl' ? 'مسح سجل المعاملات؟' : 'Clear Transaction History?'}</span>
               </h3>
               
-              <p className={`text-xs mt-2.5 font-sans leading-relaxed text-start ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className="text-xs mt-2.5 font-sans leading-relaxed text-start text-[var(--text-secondary)]">
                 {dir === 'rtl' 
                   ? 'هل أنت متأكد من رغبتك في مسح سجل المعاملات بالكامل؟ سيتم إزالة كافة السجلات لضمان نظافة البيانات وعدم التضخم، ولا يمكن التراجع عن هذا الإتلاف.' 
                   : 'Are you sure you want to completely clear your entire transaction history? All records will be removed to ensure clean data and prevent bloat. This action is irreversible.'}
@@ -2101,11 +2099,7 @@ export const RewardsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsClearHistoryConfirmOpen(false)}
-                  className={`px-4 py-2 text-xs font-semibold rounded-[4px] font-sans transition-theme ${
-                    theme === 'dark' 
-                      ? 'text-gray-400 hover:text-white hover:bg-[#252528]' 
-                      : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  className="px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] font-sans transition-theme text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)]"
                 >
                   {dir === 'rtl' ? 'إلغاء' : 'Cancel'}
                 </button>
@@ -2113,7 +2107,7 @@ export const RewardsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleClearHistoryConfirm}
-                  className="px-4 py-2 text-xs font-bold bg-[#db6b7a] hover:bg-[#c95968] text-white rounded-[4px] font-sans transition-theme shadow-[0_0_12px_rgba(219,107,122,0.25)]"
+                  className="px-4 py-2 text-xs font-bold bg-[var(--status-danger)] hover:opacity-90 text-white rounded-[var(--radius-sm)] font-sans transition-theme shadow-sm"
                 >
                   {dir === 'rtl' ? 'تطهير السجل ومسحه' : 'Wipe & Clear History'}
                 </button>

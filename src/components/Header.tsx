@@ -11,15 +11,15 @@ import { NotificationIconRenderer } from '../utils/imageProcessor';
 import { triggerHaptic } from '../utils/haptics';
 
 export const HEADER_SIZING = {
-  headerHeight: 'h-[calc(56px+env(safe-area-inset-top,0px)+6px)]',
+  headerHeight: 'h-[calc(56px+env(safe-area-inset-top,0px))]',
   contentHeight: 'h-[50px]',
   buttonBox: 'w-8 h-8',
   buttonPill: 'w-8 sm:w-auto px-0 sm:px-2 md:px-2.5 h-8',
-  buttonRadius: 'rounded-[var(--radius-sm)]',
+  buttonRadius: 'rounded-[8px]',
   iconSize: 14,
   logoMobile: 'w-8 h-8',
-  logoDesktop: 'w-8.5 h-8.5',
-  logoRadius: 'rounded-[var(--radius-sm)]',
+  logoDesktop: 'w-8 h-8',
+  logoRadius: 'rounded-[8px]',
 } as const;
 
 export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }) => {
@@ -159,7 +159,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
 
   const isAdminPath = location.pathname.startsWith('/admin');
   const isMobileView = windowWidth < 1024;
-  const shouldShowMenuButton = !isSidebarOpen;
+  const isChatPage = location.pathname === '/' || location.pathname.startsWith('/chat');
+  const canToggleSidebarFromLogo = !isMobileView && isChatPage;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -204,16 +205,24 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
       
       <div className="w-full flex justify-between items-center h-[50px]">
         <div className="flex items-center h-full">
-          <div className={`flex items-center gap-1.5 h-full transition-theme ${!isMobileView ? 'min-w-[220px]' : 'w-auto px-3 sm:px-4 md:ps-6'}`}>
-              <NavLink 
-                to="/chat" 
-                onClick={handleNewChat} 
-                className={`flex items-center gap-0 h-full transition-theme group text-[var(--text-primary)]`}
+          <div className={`flex items-center gap-2 h-full transition-theme ${!isMobileView ? 'ps-[9px]' : 'w-auto px-3 sm:px-4 md:ps-6'}`}>
+            {canToggleSidebarFromLogo && !isSidebarOpen ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  triggerHaptic('medium');
+                  setIsSidebarOpen(true);
+                }}
+                className="group/logo-btn relative w-8 h-8 rounded-[8px] overflow-hidden border border-[var(--border-main)] hover:border-accent/60 bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)] transition-all duration-200 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+                title={language === 'ar' ? 'فتح الشريط الجانبي' : 'Open Sidebar'}
+                aria-label="Open Sidebar"
               >
-                <div className={`${isMobileView ? 'w-8' : 'w-[52px]'} h-full flex-shrink-0 flex items-center justify-center p-0 relative`}>
+                {/* Normal Logo (Custom logo image or icon) */}
+                <div className="w-full h-full flex items-center justify-center transition-all duration-200 group-hover/logo-btn:opacity-0 group-hover/logo-btn:scale-75">
                   {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
                     <motion.div 
-                      className={`${isMobileView ? 'w-8 h-8' : 'w-8.5 h-8.5'} rounded-[8px] overflow-hidden border border-[var(--border-main)] transition-theme group-hover:border-accent/50 group-hover:scale-105 relative z-10 flex-shrink-0 bg-[var(--bg-secondary)] shadow-sm`}
+                      className="w-full h-full overflow-hidden flex items-center justify-center"
                       animate={isStreaming ? {
                         scale: [1, 1.03, 1],
                         borderColor: ["var(--border-main)", "rgba(156,163,175,0.4)", "var(--border-main)"]
@@ -224,15 +233,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         ease: "easeInOut"
                       } : {}}
                     >
-                      <img 
+                      <NotificationIconRenderer 
                         src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
-                        alt="Logo" 
-                        className="w-full h-full object-cover block"
+                        alt={t('appName') || "Perplexta"} 
+                        size={32}
+                        className="w-full h-full object-contain block"
+                        fallbackIcon={<Cpu size={14} className="text-accent" />}
                       />
                     </motion.div>
                   ) : (
                     <motion.div
-                      className={`${isMobileView ? 'w-8 h-8' : 'w-8.5 h-8.5'} rounded-[8px] bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-main)] flex items-center justify-center relative z-10 transition-theme group-hover:border-accent/50`}
+                      className="flex items-center justify-center text-[var(--text-primary)]"
                       animate={isStreaming ? {
                         scale: [1, 1.05, 1]
                       } : {}}
@@ -242,53 +253,61 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                         ease: "easeInOut"
                       } : {}}
                     >
-                      <Cpu className={isMobileView ? "w-4 h-4 text-accent" : "w-5 h-5 text-accent"} />
+                      <Cpu size={14} className="text-accent" />
                     </motion.div>
                   )}
                 </div>
-                 {!isMobileView ? (
-                  <div className="flex items-center select-none px-1">
-                    {/[\u0600-\u06FF]/.test(String(t('appName') || "Perplexta")) ? (
-                      <motion.span
-                        className="text-[16px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-gray-900 dark:group-hover:text-white transition-theme"
-                      >
-                        {t('appName')}
-                      </motion.span>
-                    ) : (
-                      String(t('appName') || "Perplexta").split("").map((char, index) => (
-                        <span 
-                          key={`app-name-char-${char}-${index}`}
-                          className="text-[16px] font-bold tracking-tight font-sans text-[var(--text-primary)] group-hover:text-gray-900 dark:group-hover:text-white transition-theme"
-                        >
-                          {char === " " ? "\u00A0" : char}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                ) : null}
-              </NavLink>
-              
-              <AnimatePresence>
-                {!isSidebarOpen && (
-                  <motion.button 
-                    key="header-menu-open-btn"
-                    initial={{ opacity: 0, scale: 0.85 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.85 }}
-                    transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      triggerHaptic('medium');
-                      setIsSidebarOpen(true);
-                    }} 
-                    className="hidden lg:flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-transparent transition-theme relative active:scale-95 group shrink-0 hover:bg-[var(--bg-secondary)] cursor-pointer"
-                    title={language === 'ar' ? 'فتح القائمة' : 'Open Menu'}
-                    aria-label="Open Sidebar"
+
+                {/* Sidebar Open / Menu Icon that smoothly transforms on hover */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 scale-75 group-hover/logo-btn:opacity-100 group-hover/logo-btn:scale-100 transition-all duration-200 pointer-events-none">
+                  <Menu size={14} className="text-accent stroke-[2.2]" />
+                </div>
+              </button>
+            ) : (
+              <NavLink 
+                to="/" 
+                onClick={handleNewChat} 
+                className="group/logo-link relative w-8 h-8 rounded-[8px] overflow-hidden border border-[var(--border-main)] hover:border-accent/50 bg-[var(--bg-secondary)] transition-all duration-200 flex items-center justify-center flex-shrink-0 shadow-sm active:scale-95"
+                title={t('appName') || "Perplexta"}
+              >
+                {(siteSettings.logoBase64 || siteSettings.logoLightBase64) ? (
+                  <motion.div 
+                    className="w-full h-full overflow-hidden flex items-center justify-center"
+                    animate={isStreaming ? {
+                      scale: [1, 1.03, 1],
+                      borderColor: ["var(--border-main)", "rgba(156,163,175,0.4)", "var(--border-main)"]
+                    } : {}}
+                    transition={isStreaming ? {
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    } : {}}
                   >
-                    <Menu size={18} className="text-[var(--text-primary)] group-hover:text-accent transition-theme" />
-                  </motion.button>
+                    <NotificationIconRenderer 
+                      src={resolveImageUrl((theme === 'light' && siteSettings.logoLightBase64) ? siteSettings.logoLightBase64 : siteSettings.logoBase64, 'general')} 
+                      alt={t('appName') || "Perplexta"} 
+                      size={32}
+                      className="w-full h-full object-contain block"
+                      fallbackIcon={<Cpu size={14} className="text-accent" />}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    className="flex items-center justify-center text-[var(--text-primary)]"
+                    animate={isStreaming ? {
+                      scale: [1, 1.05, 1]
+                    } : {}}
+                    transition={isStreaming ? {
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    } : {}}
+                  >
+                    <Cpu size={14} className="text-accent" />
+                  </motion.div>
                 )}
-              </AnimatePresence>
+              </NavLink>
+            )}
           </div>
         </div>
 
@@ -358,17 +377,17 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 to="/viralbook"
                 className={`flex items-center justify-center w-8 h-8 rounded-[8px] border transition-theme active:scale-95 group shrink-0 ${
                   isViralbookActive 
-                    ? 'bg-accent/[0.04] border-accent/30 text-accent' 
-                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+                    ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]' 
+                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--surface-subtle)] text-[var(--text-muted)]'
                 }`}
-                title={language === 'ar' ? 'فايرال بوك - شبكة المحتوى والمنشورات' : 'Viralbook - Content Hub'}
+                title={language === 'ar' ? 'فيرال بوك - شبكة المحتوى والمنشورات' : 'Viralbook - Content Hub'}
               >
                 <Megaphone 
                   size={14} 
                   className={`transition-theme ${
                     isViralbookActive 
-                      ? 'text-accent' 
-                      : 'text-gray-400 group-hover:text-accent'
+                      ? 'text-[var(--fg-accent)]' 
+                      : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
                   }`} 
                 />
               </NavLink>
@@ -379,8 +398,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 to="/Studio"
                 className={`flex items-center justify-center w-8 h-8 rounded-[8px] border transition-theme active:scale-95 group shrink-0 ${
                   location.pathname === '/Studio' || location.pathname === '/studio' 
-                    ? 'bg-accent/[0.04] border-accent/30 text-accent' 
-                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
+                    ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]' 
+                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--surface-subtle)] text-[var(--text-muted)]'
                 }`}
                 title={language === 'ar' ? 'استوديو بيربليكستا للمطورين' : 'Perplexta Developer Studio'}
               >
@@ -388,8 +407,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   size={14} 
                   className={`transition-theme ${
                     location.pathname === '/Studio' || location.pathname === '/studio'
-                      ? 'text-accent' 
-                      : 'text-gray-400 group-hover:text-accent'
+                      ? 'text-[var(--fg-accent)]' 
+                      : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
                   }`} 
                 />
               </NavLink>
@@ -405,8 +424,8 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                 title={language === 'ar' ? 'أنت تعمل دون اتصال بالإنترنت' : 'You are working offline'}
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-[2px] bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-[2px] h-2 w-2 bg-amber-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                 </span>
                 <WifiOff size={13} className="text-amber-500" />
                 <span className="hidden sm:inline text-[10px] text-amber-500 font-bold tracking-tight uppercase">
@@ -422,40 +441,39 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   triggerHaptic('light');
                   toggleLanguage();
                 }}
-                className="flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] transition-theme active:scale-95 group shrink-0"
+                className="flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border border-[var(--border-main)] hover:bg-[var(--surface-subtle)] transition-theme active:scale-95 group shrink-0 cursor-pointer"
                 title={language === 'ar' ? 'تغيير اللغة (English)' : 'Change Language (العربية)'}
               >
-            <Languages size={14} className="text-gray-400 group-hover:text-accent transition-theme" />
+            <Languages size={14} className="text-[var(--text-muted)] group-hover:text-[var(--fg-accent)] transition-theme" />
           </button>
 
           <ThemeToggleButton variant="icon-button" size="sm" className="rounded-[8px]" />
         
         {(user || token) && (
           <div className="flex items-center gap-1 sm:gap-1.5 h-full">
-            {isViralbookActive && (
-              <button
-                onClick={() => {
-                  triggerHaptic('light');
-                  navigate('/viralbook/inquiries');
-                  window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
-                }}
-                className={`hidden md:flex items-center justify-center w-8 h-8 rounded-[8px] border transition-theme relative active:scale-95 group shrink-0 cursor-pointer ${
-                  location.pathname === '/viralbook/inquiries' || location.pathname.includes('/inquiries')
-                    ? 'bg-accent/[0.04] border-accent/30 text-accent'
-                    : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)] text-gray-500'
-                }`}
-                title={language === 'ar' ? 'صندوق محادثات واستفسارات فايرال بوك' : 'Viralbook Messenger & Inquiries'}
-              >
-                <MessageSquare 
-                  size={14} 
-                  className={`transition-theme ${
-                    location.pathname === '/viralbook/inquiries' || location.pathname.includes('/inquiries')
-                      ? 'text-accent'
-                      : 'text-gray-400 group-hover:text-accent'
-                  }`} 
-                />
-              </button>
-            )}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                navigate('/viralbook?tab=inquiries');
+                window.dispatchEvent(new CustomEvent('open-bulletin-inquiries'));
+              }}
+              className={`flex items-center justify-center w-8 h-8 rounded-[var(--radius-xs)] border transition-theme relative active:scale-95 group shrink-0 cursor-pointer ${
+                location.pathname.includes('/inquiries') || location.search.includes('tab=inquiries')
+                  ? 'bg-[var(--bg-accent-muted)] border-[var(--border-accent)]/40 text-[var(--fg-accent)]'
+                  : 'bg-transparent border-[var(--border-main)] hover:bg-[var(--surface-subtle)] text-[var(--text-muted)]'
+              }`}
+              title={language === 'ar' ? 'صندوق المحادثات والرسائل' : 'Messages & Inquiries Inbox'}
+              aria-label={language === 'ar' ? 'صندوق المحادثات والرسائل' : 'Messages & Inquiries Inbox'}
+            >
+              <MessageSquare 
+                size={14} 
+                className={`transition-theme ${
+                  location.pathname.includes('/inquiries') || location.search.includes('tab=inquiries')
+                    ? 'text-[var(--fg-accent)]'
+                    : 'text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]'
+                }`} 
+              />
+            </button>
 
             <div className="relative flex items-center h-full" ref={dropdownRef}>
               <button 
@@ -463,11 +481,11 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   triggerHaptic('light');
                   setIsNotifOpen(!isNotifOpen);
                 }}
-                className={`flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 ${isNotifOpen ? 'border-accent/50 bg-[var(--bg-secondary)]' : 'border-[var(--border-main)] hover:bg-[var(--bg-secondary)] dark:hover:bg-[var(--bg-secondary)]'}`}
+                className={`flex items-center justify-center w-8 h-8 rounded-[8px] bg-transparent border transition-theme relative active:scale-95 group shrink-0 cursor-pointer ${isNotifOpen ? 'border-[var(--border-accent)]/50 bg-[var(--surface-subtle)]' : 'border-[var(--border-main)] hover:bg-[var(--surface-subtle)]'}`}
               >
-                <Bell size={14} className={`transition-theme ${unreadCount > 0 ? "text-accent" : "text-gray-400 group-hover:text-accent"}`} />
+                <Bell size={14} className={`transition-theme ${unreadCount > 0 ? "text-[var(--fg-accent)]" : "text-[var(--text-muted)] group-hover:text-[var(--fg-accent)]"}`} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-pink-500 rounded-[2px] border border-[var(--bg-primary)]"></span>
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-pink-500 rounded-full border border-[var(--bg-primary)]"></span>
                 )}
               </button>
 
@@ -477,7 +495,7 @@ export const Header: React.FC<{ activeLanguage?: string }> = ({ activeLanguage }
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className={`absolute top-full mt-2 w-[280px] xs:w-80 sm:w-96 max-h-[350px] sm:max-h-[480px] overflow-hidden rounded-lg border shadow-2xl z-[100] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'}`}
+                  className={`absolute top-full mt-2 w-[280px] xs:w-80 sm:w-96 max-h-[350px] sm:max-h-[480px] overflow-hidden rounded-[12px] border shadow-2xl z-[100] flex flex-col bg-[var(--bg-secondary)] border-[var(--border-main)] ${dir === 'rtl' ? 'left-0' : 'right-0'}`}
                 >
                   <div className="p-3 sm:p-4 border-b border-[var(--border-main)] flex items-center justify-between">
                     <h3 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">{language === 'ar' ? 'الإشعارات' : 'Notifications'}</h3>

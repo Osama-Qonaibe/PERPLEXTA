@@ -325,10 +325,10 @@ export const VideoTrimmerModal: React.FC<VideoTrimmerModalProps> = ({
                     key={ratio}
                     type="button"
                     onClick={() => setAspectRatio(ratio as any)}
-                    className={`py-2 px-1 rounded-xl text-xs font-mono font-bold transition-theme border ${
+                    className={`h-8 rounded-[8px] text-[11px] font-mono font-bold transition-theme border active:scale-95 flex items-center justify-center ${
                       aspectRatio === ratio
-                        ? 'bg-accent text-white border-accent shadow-md shadow-none'
-                        : 'bg-black/40 text-gray-300 border-gray-800 hover:bg-gray-800'
+                        ? 'text-[var(--fg-accent)] font-extrabold border-[var(--border-main)] bg-transparent hover:bg-[var(--surface-subtle)]'
+                        : 'border-[var(--border-main)] bg-transparent text-[var(--text-muted)] hover:text-[var(--fg-accent)] hover:bg-[var(--surface-subtle)]'
                     }`}
                   >
                     {ratio}

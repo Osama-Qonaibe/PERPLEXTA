@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, BarChart2, Sparkles, Zap } from 'lucide-react';
+import { TrendingUp, Activity, BarChart2, Sparkles, Zap, ChevronDown } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export interface TrendDataPoint {
@@ -32,6 +32,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
   const [data, setData] = useState<TrendDataPoint[]>([]);
   const [hoveredPoint, setHoveredPoint] = useState<TrendDataPoint | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [isMobileChartExpanded, setIsMobileChartExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
@@ -259,7 +260,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
         setHoveredPoint(null);
         setTooltipPos(null);
       });
-  }, [data, activeMetric, theme, language]);
+  }, [data, activeMetric, theme, language, isMobileChartExpanded]);
 
   const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
   const avgMatch = data.length ? (data.reduce((acc, curr) => acc + curr.matchScore, 0) / data.length).toFixed(1) : '94.5';
@@ -267,7 +268,7 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
   const totalConversions = data.reduce((acc, curr) => acc + curr.conversions, 0);
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3 sm:space-y-4">
       {/* Header Controls & Metric Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
@@ -317,74 +318,96 @@ export const EngagementTrendsChart: React.FC<EngagementTrendsChartProps> = ({
       </div>
 
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         <button
           onClick={() => setActiveMetric('clicks')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-2.5 sm:p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'clicks'
               ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
               : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
-            <span>{isRtl ? 'نقرات التوصيات' : 'Total Recommendation Clicks'}</span>
-            <Activity size={12} className="text-accent" />
+            <span className="truncate">{isRtl ? 'نقرات التوصيات' : 'Total Recommendation Clicks'}</span>
+            <Activity size={12} className="text-accent shrink-0 ms-1" />
           </p>
-          <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalClicks.toLocaleString()}</p>
+          <p className="text-sm sm:text-base font-black text-[var(--text-primary)] mt-1">{totalClicks.toLocaleString()}</p>
           <p className="text-[10px] font-bold text-accent mt-0.5">+18.4% WoW</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('matchScore')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-2.5 sm:p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'matchScore'
               ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
               : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
-            <span>{isRtl ? 'متوسط التوافق' : 'Avg Match Precision'}</span>
-            <Sparkles size={12} className="text-accent" />
+            <span className="truncate">{isRtl ? 'متوسط التوافق' : 'Avg Match Precision'}</span>
+            <Sparkles size={12} className="text-accent shrink-0 ms-1" />
           </p>
-          <p className="text-base font-black text-[var(--text-primary)] mt-1">{avgMatch}%</p>
+          <p className="text-sm sm:text-base font-black text-[var(--text-primary)] mt-1">{avgMatch}%</p>
           <p className="text-[10px] font-bold text-accent mt-0.5">{isRtl ? 'دقة فائقة' : 'High Precision'}</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('impressions')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-2.5 sm:p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'impressions'
               ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
               : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
-            <span>{isRtl ? 'الظهور والوصول' : 'Total Impressions'}</span>
-            <BarChart2 size={12} className="text-accent" />
+            <span className="truncate">{isRtl ? 'الظهور والوصول' : 'Total Impressions'}</span>
+            <BarChart2 size={12} className="text-accent shrink-0 ms-1" />
           </p>
-          <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalImpressions.toLocaleString()}</p>
+          <p className="text-sm sm:text-base font-black text-[var(--text-primary)] mt-1">{totalImpressions.toLocaleString()}</p>
           <p className="text-[10px] font-bold text-accent mt-0.5">+24.1% {isRtl ? 'نمو' : 'Growth'}</p>
         </button>
 
         <button
           onClick={() => setActiveMetric('conversions')}
-          className={`p-3 rounded-xl border text-start transition-theme ${
+          className={`p-2.5 sm:p-3 rounded-xl border text-start transition-theme ${
             activeMetric === 'conversions'
               ? 'border-[var(--border-accent)] bg-[var(--surface-subtle)] shadow-xs ring-1 ring-[var(--border-accent)]'
               : 'border-[var(--border)] bg-[var(--surface-card)] hover:border-[var(--border-accent)]/50'
           }`}
         >
           <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center justify-between">
-            <span>{isRtl ? 'التحويلات الناجحة' : 'Direct Conversions'}</span>
-            <Zap size={12} className="text-accent" />
+            <span className="truncate">{isRtl ? 'التحويلات الناجحة' : 'Direct Conversions'}</span>
+            <Zap size={12} className="text-accent shrink-0 ms-1" />
           </p>
-          <p className="text-base font-black text-[var(--text-primary)] mt-1">{totalConversions.toLocaleString()}</p>
+          <p className="text-sm sm:text-base font-black text-[var(--text-primary)] mt-1">{totalConversions.toLocaleString()}</p>
           <p className="text-[10px] font-bold text-accent mt-0.5">3.8x {isRtl ? 'معدل تحويل' : 'CVR'}</p>
         </button>
       </div>
 
-      {/* D3 Canvas Container */}
-      <div ref={containerRef} className="relative w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-2 sm:p-4 overflow-hidden">
+      {/* Mobile Toggle Button for D3 Chart */}
+      <button
+        type="button"
+        onClick={() => setIsMobileChartExpanded(prev => !prev)}
+        className="sm:hidden w-full py-2 px-3 rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] text-xs font-bold text-[var(--text-primary)] hover:border-accent/40 transition-theme flex items-center justify-between cursor-pointer"
+      >
+        <span className="flex items-center gap-2">
+          <BarChart2 size={15} className="text-accent shrink-0" />
+          <span>
+            {isMobileChartExpanded
+              ? (isRtl ? 'إخفاء الرسم البياني التفاعلي' : 'Hide Interactive D3 Chart')
+              : (isRtl ? 'عرض الرسم البياني التفاعلي (D3)' : 'Show Interactive D3 Chart')}
+          </span>
+        </span>
+        <ChevronDown size={15} className={`text-[var(--text-muted)] transition-transform duration-200 ${isMobileChartExpanded ? 'rotate-180 text-accent' : ''}`} />
+      </button>
+
+      {/* D3 Canvas Container (Always visible on desktop, toggleable on mobile) */}
+      <div
+        ref={containerRef}
+        className={`relative w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-2 sm:p-4 overflow-hidden transition-all duration-300 ${
+          isMobileChartExpanded ? 'block' : 'hidden sm:block'
+        }`}
+      >
         <svg ref={svgRef} className="w-full overflow-visible" />
 
         {/* Floating Tooltip */}
